@@ -7,6 +7,6 @@ namespace Serializer.Consumer;
 public partial class Test
 {
     public int A { get; set; }
-    public string B { get; set; }
-    public List<int> C { get; set; }
+    public string B { get; set; } = string.Empty;
+    public List<int> C { get; set; } = new();
 }

@@ -11,8 +11,10 @@ var test = new Test
 
 var size = Test.GetPacketSize(test);
 var buffer = new byte[size];
-Test.Serialize(test, buffer);
-var deserialized = Test.Deserialize(buffer);
+var span = new Span<byte>(buffer);
+Test.Serialize(test, span);
+var readOnlySpan = new ReadOnlySpan<byte>(buffer);
+var deserialized = Test.Deserialize(readOnlySpan);
 
 Console.WriteLine($"A: {deserialized.A}");
 Console.WriteLine($"B: {deserialized.B}");
