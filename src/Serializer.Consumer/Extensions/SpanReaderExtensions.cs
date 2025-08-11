@@ -80,6 +80,7 @@ namespace FourServerProxy.HighPerformance.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
         public static uint ReadPackedUInt32(this ref ReadOnlySpan<byte> input)
         {
             bool readMore = true;

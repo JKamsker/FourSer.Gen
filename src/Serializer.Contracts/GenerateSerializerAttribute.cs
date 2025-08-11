@@ -2,7 +2,7 @@ using System;
 
 namespace Serializer.Contracts;
 
-[AttributeUsage(AttributeTargets.Class)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Property)]
 public class GenerateSerializerAttribute : Attribute
 {
     public Type? CountType { get; set; }
