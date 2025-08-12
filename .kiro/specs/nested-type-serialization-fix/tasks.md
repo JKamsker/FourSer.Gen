@@ -16,27 +16,32 @@
 
 - [x] 3. Update Deserialize method generation for nested types
 
-
   - Replace `typeArgument.Name` with `GetTypeReference(typeArgument, namedTypeSymbol)` in collection deserialization
   - Ensure proper type references in the generated Deserialize calls
   - Maintain existing behavior for non-nested types
   - _Requirements: 1.3, 3.2, 4.4_
 
-- [ ] 4. Update Serialize method generation for nested types
+- [x] 4. Update Serialize method generation for nested types
 
   - Replace `typeArgument.Name` with `GetTypeReference(typeArgument, namedTypeSymbol)` in collection serialization
   - Ensure proper type references in the generated Serialize calls
   - Maintain existing behavior for non-nested types
   - _Requirements: 1.4, 3.3, 4.4_
 
-- [ ] 5. Test the fix with TestWithListOfNestedReferenceTypes
+- [x] 5. Test the fix with TestWithListOfNestedReferenceTypes
 
   - Build the solution to verify the generated code compiles successfully
   - Verify that TestWithListOfNestedReferenceTypes generates correct code
   - Ensure the generated code uses `TestWithListOfNestedReferenceTypes.NestedEntity` references
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-- [ ] 6. Verify backward compatibility with existing functionality
+
+- [x] 6. Verify backward compatibility with existing functionality
+
+
+
+
+
   - Test that non-nested types continue to generate the same code as before
   - Ensure primitive types, strings, and unmanaged types work unchanged
   - Verify no regression in existing serialization functionality

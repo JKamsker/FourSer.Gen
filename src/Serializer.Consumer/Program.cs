@@ -22,7 +22,8 @@ public class TestRunner
             typeof(TestWithCountSizeReferenceTest),
             typeof(MixedFieldsAndPropsTest),
             typeof(TestWithListOfReferenceTypesTest),
-            typeof(NestedObjectTest)
+            typeof(NestedObjectTest),
+            typeof(BackwardCompatibilityTest)
         };
 
         foreach (var testClass in testClasses)

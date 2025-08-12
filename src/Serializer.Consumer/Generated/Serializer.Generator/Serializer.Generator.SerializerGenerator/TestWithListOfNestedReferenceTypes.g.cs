@@ -43,9 +43,43 @@ public partial class TestWithListOfNestedReferenceTypes : ISerializable<TestWith
         data.WriteInt32(obj.MyList.Count);
         for (int i = 0; i < obj.MyList.Count; i++)
         {
-            var bytesWritten = NestedEntity.Serialize(obj.MyList[i], data);
+            var bytesWritten = TestWithListOfNestedReferenceTypes.NestedEntity.Serialize(obj.MyList[i], data);
             data = data.Slice(bytesWritten);
         }
         return originalData.Length - data.Length;
+    }
+
+    public partial class NestedEntity : ISerializable<NestedEntity>
+    {
+        public static int GetPacketSize(NestedEntity obj)
+        {
+            var size = 0;
+            size += sizeof(int); // Size for unmanaged type Id
+            size += sizeof(int); // Size for unmanaged type Age
+            size += sizeof(int); // Size for string length
+            size += System.Text.Encoding.UTF8.GetByteCount(obj.Name);
+            return size;
+        }
+
+        public static NestedEntity Deserialize(ReadOnlySpan<byte> data, out int bytesRead)
+        {
+            bytesRead = 0;
+            var originalData = data;
+            var obj = new NestedEntity();
+            obj.Id = data.ReadInt32();
+            obj.Age = data.ReadInt32();
+            obj.Name = data.ReadString();
+            bytesRead = originalData.Length - data.Length;
+            return obj;
+        }
+
+        public static int Serialize(NestedEntity obj, Span<byte> data)
+        {
+            var originalData = data;
+            data.WriteInt32(obj.Id);
+            data.WriteInt32(obj.Age);
+            data.WriteString(obj.Name);
+            return originalData.Length - data.Length;
+        }
     }
 }
