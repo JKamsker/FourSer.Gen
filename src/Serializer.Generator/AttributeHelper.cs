@@ -65,4 +65,27 @@ public static class AttributeHelper
             .FirstOrDefault(arg => arg.Key == "TypeIdType")
             .Value.Value as ITypeSymbol;
     }
+
+    public static int GetPolymorphicMode(AttributeData? collectionAttribute)
+    {
+        var polymorphicModeArg = collectionAttribute?.NamedArguments
+            .FirstOrDefault(arg => arg.Key == "PolymorphicMode");
+
+        // The enum value is returned as an int. 0=None, 1=SingleTypeId, 2=IndividualTypeIds
+        return polymorphicModeArg?.Value.Value as int? ?? 0;
+    }
+
+    public static ITypeSymbol? GetCollectionTypeIdType(AttributeData? collectionAttribute)
+    {
+        return collectionAttribute?.NamedArguments
+            .FirstOrDefault(arg => arg.Key == "TypeIdType")
+            .Value.Value as ITypeSymbol;
+    }
+
+    public static string? GetCollectionTypeIdProperty(AttributeData? collectionAttribute)
+    {
+        return collectionAttribute?.NamedArguments
+            .FirstOrDefault(arg => arg.Key == "TypeIdProperty")
+            .Value.Value?.ToString();
+    }
 }

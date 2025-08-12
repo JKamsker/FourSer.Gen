@@ -58,6 +58,8 @@ public class SerializerGenerator : IIncrementalGenerator
             // Get nested types that need to be generated
             var nestedTypes = typeGroups.ContainsKey(typeSymbol) ? typeGroups[typeSymbol] : new List<INamedTypeSymbol>();
 
+            TypeAnalyzer.ValidateSerializableType(context, typeSymbol);
+
             var source = SourceGenerator.GenerateSource(classToGenerate, typeSymbol, nestedTypes);
             context.AddSource($"{classToGenerate.Name}.g.cs", source);
         }

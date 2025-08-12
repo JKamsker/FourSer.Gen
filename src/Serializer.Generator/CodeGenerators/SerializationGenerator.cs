@@ -118,6 +118,7 @@ public static class SerializationGenerator
         var countSizeReference = AttributeHelper.GetCountSizeReference(collectionAttribute);
         var countType = AttributeHelper.GetCountType(collectionAttribute);
         var countSize = AttributeHelper.GetCountSize(collectionAttribute);
+        var polymorphicMode = (PolymorphicMode)AttributeHelper.GetPolymorphicMode(collectionAttribute);
 
         if (string.IsNullOrEmpty(countSizeReference))
         {
@@ -135,20 +136,78 @@ public static class SerializationGenerator
             }
         }
 
-        sb.AppendLine($"        for (int i = 0; i < obj.{member.Name}.Count; i++)");
-        sb.AppendLine("        {");
-
-        if (typeArgument.IsUnmanagedType)
+        if (polymorphicMode == PolymorphicMode.None)
         {
-            sb.AppendLine($"            data.Write{typeArgument.Name}(obj.{member.Name}[i]);");
+            sb.AppendLine($"        for (int i = 0; i < obj.{member.Name}.Count; i++)");
+            sb.AppendLine("        {");
+            if (typeArgument.IsUnmanagedType)
+            {
+                sb.AppendLine($"            data.Write{typeArgument.Name}(obj.{member.Name}[i]);");
+            }
+            else
+            {
+                sb.AppendLine($"            var bytesWritten = {TypeAnalyzer.GetTypeReference(typeArgument, namedTypeSymbol)}.Serialize(obj.{member.Name}[i], data);");
+                sb.AppendLine($"            data = data.Slice(bytesWritten);");
+            }
+            sb.AppendLine("        }");
         }
         else
         {
-            sb.AppendLine($"            var bytesWritten = {TypeAnalyzer.GetTypeReference(typeArgument, namedTypeSymbol)}.Serialize(obj.{member.Name}[i], data);");
-            sb.AppendLine($"            data = data.Slice(bytesWritten);");
-        }
+            var typeIdType = AttributeHelper.GetCollectionTypeIdType(collectionAttribute);
+            var writeMethod = GetWriteMethod(typeIdType);
+            var polymorphicOptions = AttributeHelper.GetPolymorphicOptions(member);
 
-        sb.AppendLine("        }");
+            if (polymorphicMode == PolymorphicMode.SingleTypeId)
+            {
+                var typeIdProperty = AttributeHelper.GetCollectionTypeIdProperty(collectionAttribute);
+                var castExpression = typeIdType?.TypeKind == TypeKind.Enum ? $"({GetUnderlyingTypeName(typeIdType)})obj.{typeIdProperty}" : $"obj.{typeIdProperty}";
+                sb.AppendLine($"        data.{writeMethod}({castExpression});");
+            }
+
+            sb.AppendLine($"        foreach (var item in obj.{member.Name})");
+            sb.AppendLine("        {");
+
+            if (polymorphicMode == PolymorphicMode.IndividualTypeIds)
+            {
+                var isFirst = true;
+                foreach (var option in polymorphicOptions)
+                {
+                    var id = option.ConstructorArguments[0].Value;
+                    var type = option.ConstructorArguments[1].Value as ITypeSymbol;
+                    if (type != null)
+                    {
+                        var typeReference = TypeAnalyzer.GetTypeReference(type, namedTypeSymbol);
+                        var keyword = isFirst ? "if" : "else if";
+                        sb.AppendLine($"            {keyword} (item is {typeReference})");
+                        sb.AppendLine("            {");
+                        var idValue = FormatIdValue(id, typeIdType);
+                        var castExpression = typeIdType?.TypeKind == TypeKind.Enum ? $"({GetUnderlyingTypeName(typeIdType)}){idValue}" : idValue;
+                        sb.AppendLine($"                data.{writeMethod}({castExpression});");
+                        sb.AppendLine("            }");
+                        isFirst = false;
+                    }
+                }
+                sb.AppendLine("            else { throw new InvalidOperationException($\"Unknown polymorphic type in collection: {item.GetType().Name}\"); }");
+            }
+
+            var isFirstSwitch = true;
+            foreach (var option in polymorphicOptions)
+            {
+                var type = option.ConstructorArguments[1].Value as ITypeSymbol;
+                if (type != null)
+                {
+                    var typeReference = TypeAnalyzer.GetTypeReference(type, namedTypeSymbol);
+                    var keyword = isFirstSwitch ? "if" : "else if";
+                    sb.AppendLine($"            {keyword} (item is {typeReference} typedItem{type.Name})");
+                    sb.AppendLine("            {");
+                    sb.AppendLine($"                var bytesWritten{type.Name} = {typeReference}.Serialize(typedItem{type.Name}, data);");
+                    sb.AppendLine($"                data = data.Slice(bytesWritten{type.Name});");
+                    sb.AppendLine("            }");
+                    isFirstSwitch = false;
+                }
+            }
+            sb.AppendLine("        }");
+        }
     }
 
     private static void GeneratePolymorphicSerialization(StringBuilder sb, ISymbol member, AttributeData polymorphicAttribute)
