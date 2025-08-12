@@ -22,6 +22,7 @@ public class TestRunner
             typeof(TestWithCountSizeReferenceTest),
             typeof(MixedFieldsAndPropsTest),
             typeof(TestWithListOfReferenceTypesTest),
+            typeof(TestWithListOfNestedReferenceTypesTest),
             typeof(NestedObjectTest),
             typeof(BackwardCompatibilityTest)
         };

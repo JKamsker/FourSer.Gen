@@ -35,11 +35,11 @@ public partial class LoginPacket
 ### 2. Use the generated methods
 
 ```csharp
-var packet = new LoginPacket 
-{ 
-    Result = 1, 
-    UserID = 12345, 
-    Username = "player1" 
+var packet = new LoginPacket
+{
+    Result = 1,
+    UserID = 12345,
+    Username = "player1"
 };
 
 // Get required buffer size
@@ -91,7 +91,7 @@ public partial class MyPacket
     // Use ushort (2 bytes) for count
     [SerializeCollection(CountType = typeof(ushort))]
     public List<int> Numbers { get; set; } = new();
-    
+
     // Use custom bit size for count
     [SerializeCollection(CountSize = 2)] // 2 bytes = 16 bits
     public List<string> Names { get; set; } = new();
@@ -108,7 +108,7 @@ public partial class MyPacket
 {
     public int EntityCount { get; set; }
     public string PacketName { get; set; }
-    
+
     [SerializeCollection(CountSizeReference = nameof(EntityCount))]
     public List<Entity> Entities { get; set; } = new();
 }
@@ -135,6 +135,7 @@ public partial class NestedData
 ## Supported Types
 
 ### Primitive Types
+
 - `byte`, `sbyte`
 - `short`, `ushort`
 - `int`, `uint`
@@ -144,10 +145,12 @@ public partial class NestedData
 - `string` (UTF-8 encoded with length prefix)
 
 ### Collections
+
 - `List<T>` where T is any supported type
 - Arrays (planned)
 
 ### Custom Types
+
 - Any class or struct marked with `[GenerateSerializer]`
 
 ## Project Structure
@@ -195,9 +198,9 @@ public partial class LoginAckPacket
 }
 
 // Usage
-var loginAck = new LoginAckPacket 
-{ 
-    bResult = 1, 
+var loginAck = new LoginAckPacket
+{
+    bResult = 1,
     dwUserID = 12345,
     // ... set other fields
 };
