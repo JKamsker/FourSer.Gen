@@ -6,7 +6,7 @@ using System.Linq;
 namespace Serializer.Consumer;
 
 [GenerateSerializer]
-public partial class LoginAckPacket
+public partial class TestPacket1
 {
     public int A { get; set; }
     public string B { get; set; } = string.Empty;
@@ -50,39 +50,44 @@ public partial class ContainerPacket
 }
 
 [GenerateSerializer]
-public partial class LoginAckPacketX
+public partial class MixedFieldsAndPropsPacket
 {
-    public byte bResult;
-    public uint dwUserID;
-    public uint dwKickID;
-    public uint dwKEY;
-    public uint Address;
-    public ushort Port;
-    public byte bCreateCardCnt;
-    public byte bInPcRoom;
-    public uint dwPremiumPcRoom;
-    public long dCurrentTime;
-    public long dKey;
+    // Properties (should be serialized)
+    public int PropertyInt { get; set; }
+    public string PropertyString { get; set; } = string.Empty;
+    
+    // Public fields (should now be serialized)
+    public int FieldInt;
+    public string FieldString = string.Empty;
+    public float FieldFloat;
+    
+    // Private field (should NOT be serialized)
+    private int privateField;
+    
+    // Read-only field (should NOT be serialized)
+    public readonly int ReadOnlyField = 42;
+    
+    // Property without setter (should NOT be serialized)
+    public int ReadOnlyProperty => 123;
 }
-
 
 public class TestCases
 {
     public void LoginAckPacketTest()
     {
-        var original = new LoginAckPacket
+        var original = new TestPacket1
         {
             A = 1,
             B = "Hello",
             C = new List<int> { 1, 2, 3 }
         };
 
-        var size = LoginAckPacket.GetPacketSize(original);
+        var size = TestPacket1.GetPacketSize(original);
         var buffer = new byte[size];
         var span = new Span<byte>(buffer);
-        LoginAckPacket.Serialize(original, span);
+        TestPacket1.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = LoginAckPacket.Deserialize(readOnlySpan, out _);
+        var deserialized = TestPacket1.Deserialize(readOnlySpan, out _);
 
         Assert.AreEqual(original.A, deserialized.A);
         Assert.AreEqual(original.B, deserialized.B);
@@ -159,5 +164,33 @@ public class TestCases
 
         Assert.AreEqual(original.Name, deserialized.Name);
         Assert.AreEqual(original.Nested.Id, deserialized.Nested.Id);
+    }
+
+    public void MixedFieldsAndPropertiesTest()
+    {
+        var original = new MixedFieldsAndPropsPacket
+        {
+            PropertyInt = 123,
+            PropertyString = "TestProperty",
+            FieldInt = 456,
+            FieldString = "TestField",
+            FieldFloat = 3.14f
+        };
+
+        var size = MixedFieldsAndPropsPacket.GetPacketSize(original);
+        var buffer = new byte[size];
+        var span = new Span<byte>(buffer);
+        MixedFieldsAndPropsPacket.Serialize(original, span);
+        var readOnlySpan = new ReadOnlySpan<byte>(buffer);
+        var deserialized = MixedFieldsAndPropsPacket.Deserialize(readOnlySpan, out _);
+
+        // Verify properties are serialized/deserialized
+        Assert.AreEqual(original.PropertyInt, deserialized.PropertyInt);
+        Assert.AreEqual(original.PropertyString, deserialized.PropertyString);
+        
+        // Verify public fields are serialized/deserialized
+        Assert.AreEqual(original.FieldInt, deserialized.FieldInt);
+        Assert.AreEqual(original.FieldString, deserialized.FieldString);
+        Assert.AreEqual(original.FieldFloat, deserialized.FieldFloat);
     }
 }

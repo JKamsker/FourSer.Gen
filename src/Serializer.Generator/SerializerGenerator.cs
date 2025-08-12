@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System;
 
 namespace Serializer.Generator;
 
@@ -12,44 +13,66 @@ public class SerializerGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var classDeclarations = context.SyntaxProvider
-            .ForAttributeWithMetadataName(
+        var typeDeclarations = context.SyntaxProvider
+            .ForAttributeWithMetadataName
+            (
                 "Serializer.Contracts.GenerateSerializerAttribute",
-                predicate: (node, _) => node is ClassDeclarationSyntax,
-                transform: (context, _) => (ClassDeclarationSyntax)context.TargetNode);
+                predicate: (node, _) => node is ClassDeclarationSyntax or StructDeclarationSyntax,
+                transform: (context, _) => (TypeDeclarationSyntax)context.TargetNode
+            );
 
-       context.RegisterSourceOutput(context.CompilationProvider.Combine(classDeclarations.Collect()),
-           (spc, source) => Execute(source.Left, source.Right, spc));
-   }
+        context.RegisterSourceOutput
+        (
+            context.CompilationProvider.Combine(typeDeclarations.Collect()),
+            (spc, source) => Execute(source.Left, source.Right, spc)
+        );
+    }
 
-   private static void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> classes, SourceProductionContext context)
-   {
-       if (classes.IsDefaultOrEmpty)
-       {
-           return;
-       }
-
-       foreach (var classDeclaration in classes.Distinct())
+    private static void Execute
+        (Compilation compilation, ImmutableArray<TypeDeclarationSyntax> types, SourceProductionContext context)
+    {
+        if (types.IsDefaultOrEmpty)
         {
-            var semanticModel = compilation.GetSemanticModel(classDeclaration.SyntaxTree);
-            var classSymbol = semanticModel.GetDeclaredSymbol(classDeclaration);
+            return;
+        }
 
-            if (classSymbol is null)
+        foreach (var typeDeclaration in types.Distinct())
+        {
+            var semanticModel = compilation.GetSemanticModel(typeDeclaration.SyntaxTree);
+            var typeSymbol = semanticModel.GetDeclaredSymbol(typeDeclaration);
+
+            if (typeSymbol is not INamedTypeSymbol namedTypeSymbol)
             {
                 continue;
             }
 
-            var members = ((INamedTypeSymbol)classSymbol).GetMembers()
-                .Where(m => m.Kind == SymbolKind.Property)
-                .Cast<IPropertySymbol>()
+            var members = namedTypeSymbol.GetMembers()
+                .Where
+                (
+                    m =>
+                        (m.Kind == SymbolKind.Property && ((IPropertySymbol)m).SetMethod != null) ||
+                        (m.Kind == SymbolKind.Field && m.DeclaredAccessibility == Accessibility.Public
+                            && !((IFieldSymbol)m).IsReadOnly)
+                )
                 .OrderBy(m => m.Locations.First().SourceSpan.Start)
                 .ToList();
 
-            var classToGenerate = new ClassToGenerate(classSymbol.Name, classSymbol.ContainingNamespace.ToDisplayString(), members);
+            var classToGenerate = new ClassToGenerate(namedTypeSymbol.Name,
+                namedTypeSymbol.ContainingNamespace.ToDisplayString(), members, namedTypeSymbol.IsValueType);
 
             var source = GenerateSource(classToGenerate);
             context.AddSource($"{classToGenerate.Name}.g.cs", source);
         }
+    }
+
+    private static ITypeSymbol GetMemberType(ISymbol member)
+    {
+        return member switch
+        {
+            IPropertySymbol property => property.Type,
+            IFieldSymbol field => field.Type,
+            _ => throw new ArgumentException($"Unsupported member type: {member.GetType()}")
+        };
     }
 
     private static string GenerateSource(ClassToGenerate classToGenerate)
@@ -64,63 +87,74 @@ public class SerializerGenerator : IIncrementalGenerator
         sb.AppendLine();
         sb.AppendLine($"namespace {classToGenerate.Namespace};");
         sb.AppendLine();
-        sb.AppendLine($"public partial class {classToGenerate.Name} : ISerializable<{classToGenerate.Name}>");
+        var typeKeyword = classToGenerate.IsValueType ? "struct" : "class";
+        sb.AppendLine(
+            $"public partial {typeKeyword} {classToGenerate.Name} : ISerializable<{classToGenerate.Name}>");
         sb.AppendLine("{");
         sb.AppendLine($"    public static int GetPacketSize({classToGenerate.Name} obj)");
         sb.AppendLine("    {");
         sb.AppendLine("        var size = 0;");
         foreach (var member in classToGenerate.Members)
         {
-           var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "GenerateSerializerAttribute");
-           if (member.Type is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>")
-           {
-               var typeArgument = namedTypeSymbol.TypeArguments[0];
-               var countSizeReference = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSizeReference").Value.Value?.ToString();
-               var countType = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountType").Value.Value as ITypeSymbol;
-               var countSize = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSize").Value.Value as int?;
-
-               if (string.IsNullOrEmpty(countSizeReference))
-               {
-                   if (countType != null)
-                   {
-                       sb.AppendLine($"        size += sizeof({countType.ToDisplayString()});");
-                   }
-                   else if (countSize.HasValue)
-                   {
-                       sb.AppendLine($"        size += {countSize.Value};");
-                   }
-                   else
-                   {
-                       sb.AppendLine($"        size += sizeof(int);");
-                   }
-               }
-
-               if (typeArgument.IsUnmanagedType)
-               {
-                   sb.AppendLine($"        size += obj.{member.Name}.Count * sizeof({typeArgument.ToDisplayString()});");
-               }
-               else
-               {
-                   sb.AppendLine($"        foreach(var item in obj.{member.Name})");
-                   sb.AppendLine("        {");
-                   sb.AppendLine($"            size += {typeArgument.Name}.GetPacketSize(item);");
-                   sb.AppendLine("        }");
-               }
-           }
-           else if (member.Type.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"))
-           {
-               sb.AppendLine($"        size += {member.Type.Name}.GetPacketSize(obj.{member.Name});");
-           }
-            else if (member.Type.SpecialType == SpecialType.System_String)
+            var memberType = GetMemberType(member);
+            var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "GenerateSerializerAttribute");
+            if (memberType is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.OriginalDefinition.ToDisplayString()
+                == "System.Collections.Generic.List<T>")
             {
-                sb.AppendLine($"        size += sizeof(int);");
+                var typeArgument = namedTypeSymbol.TypeArguments[0];
+                var countSizeReference = attribute?.NamedArguments.FirstOrDefault
+                        (arg => arg.Key == "CountSizeReference")
+                    .Value.Value?.ToString();
+                var countType = attribute?.NamedArguments.FirstOrDefault
+                        (arg => arg.Key == "CountType")
+                    .Value.Value as ITypeSymbol;
+                var countSize = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSize").Value.Value as int?;
+
+                if (string.IsNullOrEmpty(countSizeReference))
+                {
+                    if (countType != null)
+                    {
+                        sb.AppendLine($"        size += sizeof({countType.ToDisplayString()}); // Count size for {member.Name}");
+                    }
+                    else if (countSize.HasValue)
+                    {
+                        sb.AppendLine($"        size += {countSize.Value}; // Count size for {member.Name} (in bits)");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"        size += sizeof(int); // Default count size for {member.Name}");
+                    }
+                }
+
+                if (typeArgument.IsUnmanagedType)
+                {
+                    sb.AppendLine($"        size += obj.{member.Name}.Count * sizeof({typeArgument.ToDisplayString()});");
+                }
+                else
+                {
+                    sb.AppendLine($"        foreach(var item in obj.{member.Name})");
+                    sb.AppendLine("        {");
+                    sb.AppendLine($"            size += {typeArgument.Name}.GetPacketSize(item);");
+                    sb.AppendLine("        }");
+                }
+            }
+            else if (memberType.GetAttributes()
+                     .Any(a => a.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"))
+            {
+                sb.AppendLine($"        size += {memberType.Name}.GetPacketSize(obj.{member.Name});");
+            }
+            else if (memberType.SpecialType == SpecialType.System_String)
+            {
+                sb.AppendLine($"        size += sizeof(int); // Size for string length");
                 sb.AppendLine($"        size += System.Text.Encoding.UTF8.GetByteCount(obj.{member.Name});");
             }
-            else if (member.Type.IsUnmanagedType)
+            else if (memberType.IsUnmanagedType)
             {
-                sb.AppendLine($"        size += sizeof({member.Type.ToDisplayString()});");
+                sb.AppendLine
+                    ($"        size += sizeof({memberType.ToDisplayString()}); // Size for unmanaged type {member.Name}");
             }
         }
+
         sb.AppendLine("        return size;");
         sb.AppendLine("    }");
         sb.AppendLine();
@@ -131,60 +165,73 @@ public class SerializerGenerator : IIncrementalGenerator
         sb.AppendLine($"        var obj = new {classToGenerate.Name}();");
         foreach (var member in classToGenerate.Members)
         {
-           var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "GenerateSerializerAttribute");
-           if (member.Type is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>")
-           {
-               var typeArgument = namedTypeSymbol.TypeArguments[0];
-               var countSizeReference = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSizeReference").Value.Value?.ToString();
-               var countType = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountType").Value.Value as ITypeSymbol;
-               var countSize = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSize").Value.Value as int?;
+            var memberType = GetMemberType(member);
+            var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "GenerateSerializerAttribute");
+            if (memberType is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.OriginalDefinition.ToDisplayString()
+                == "System.Collections.Generic.List<T>")
+            {
+                var typeArgument = namedTypeSymbol.TypeArguments[0];
+                var countSizeReference = attribute?.NamedArguments.FirstOrDefault
+                        (arg => arg.Key == "CountSizeReference")
+                    .Value.Value?.ToString();
+                var countType = attribute?.NamedArguments.FirstOrDefault
+                        (arg => arg.Key == "CountType")
+                    .Value.Value as ITypeSymbol;
+                var countSize = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSize").Value.Value as int?;
 
-               sb.AppendLine($"        var {member.Name}Count = 0;");
-               if (!string.IsNullOrEmpty(countSizeReference))
-               {
-                   sb.AppendLine($"        {member.Name}Count = (int)obj.{countSizeReference};");
-               }
-               else if (countType != null)
-               {
-                   sb.AppendLine($"        {member.Name}Count = data.Read{countType.Name}();");
-               }
-               else if (countSize.HasValue)
-               {
-                   sb.AppendLine($"        {member.Name}Count = data.ReadInt{countSize * 8}();");
-               }
-               else
-               {
-                   sb.AppendLine($"        {member.Name}Count = data.ReadInt32();");
-               }
+                sb.AppendLine($"        var {member.Name}Count = 0;");
+                if (!string.IsNullOrEmpty(countSizeReference))
+                {
+                    sb.AppendLine($"        {member.Name}Count = (int)obj.{countSizeReference};");
+                }
+                else if (countType != null)
+                {
+                    sb.AppendLine($"        {member.Name}Count = data.Read{countType.Name}();");
+                }
+                else if (countSize.HasValue)
+                {
+                    sb.AppendLine($"        {member.Name}Count = data.ReadInt{countSize * 8}();");
+                }
+                else
+                {
+                    sb.AppendLine($"        {member.Name}Count = data.ReadInt32();");
+                }
 
-               sb.AppendLine($"        obj.{member.Name} = new System.Collections.Generic.List<{typeArgument.ToDisplayString()}>({member.Name}Count);");
-               sb.AppendLine($"        for (int i = 0; i < {member.Name}Count; i++)");
-               sb.AppendLine("        {");
-               if (typeArgument.IsUnmanagedType)
-               {
-                   sb.AppendLine($"            obj.{member.Name}.Add(data.Read{typeArgument.Name}());");
-               }
-               else
-               {
-                   sb.AppendLine($"            obj.{member.Name}.Add({typeArgument.Name}.Deserialize(data, out var itemBytesRead));");
-                   sb.AppendLine($"            data = data.Slice(itemBytesRead);");
-               }
-               sb.AppendLine("        }");
-           }
-           else if (member.Type.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"))
-           {
-               sb.AppendLine($"        obj.{member.Name} = {member.Type.Name}.Deserialize(data, out var nestedBytesRead);");
-               sb.AppendLine($"        data = data.Slice(nestedBytesRead);");
-           }
-            else if (member.Type.SpecialType == SpecialType.System_String)
+                sb.AppendLine
+                (
+                    $"        obj.{member.Name} = new System.Collections.Generic.List<{typeArgument.ToDisplayString()}>({member.Name}Count);"
+                );
+                sb.AppendLine($"        for (int i = 0; i < {member.Name}Count; i++)");
+                sb.AppendLine("        {");
+                if (typeArgument.IsUnmanagedType)
+                {
+                    sb.AppendLine($"            obj.{member.Name}.Add(data.Read{typeArgument.Name}());");
+                }
+                else
+                {
+                    sb.AppendLine
+                        ($"            obj.{member.Name}.Add({typeArgument.Name}.Deserialize(data, out var itemBytesRead));");
+                    sb.AppendLine($"            data = data.Slice(itemBytesRead);");
+                }
+
+                sb.AppendLine("        }");
+            }
+            else if (memberType.GetAttributes()
+                     .Any(a => a.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"))
+            {
+                sb.AppendLine($"        obj.{member.Name} = {memberType.Name}.Deserialize(data, out var nestedBytesRead);");
+                sb.AppendLine($"        data = data.Slice(nestedBytesRead);");
+            }
+            else if (memberType.SpecialType == SpecialType.System_String)
             {
                 sb.AppendLine($"        obj.{member.Name} = data.ReadString();");
             }
-            else if (member.Type.IsUnmanagedType)
+            else if (memberType.IsUnmanagedType)
             {
-                sb.AppendLine($"        obj.{member.Name} = data.Read{member.Type.Name}();");
+                sb.AppendLine($"        obj.{member.Name} = data.Read{memberType.Name}();");
             }
         }
+
         sb.AppendLine("        bytesRead = originalData.Length - data.Length;");
         sb.AppendLine("        return obj;");
         sb.AppendLine("    }");
@@ -194,57 +241,66 @@ public class SerializerGenerator : IIncrementalGenerator
         sb.AppendLine($"        var originalData = data;");
         foreach (var member in classToGenerate.Members)
         {
-           var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "GenerateSerializerAttribute");
-           if (member.Type is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>")
-           {
-               var typeArgument = namedTypeSymbol.TypeArguments[0];
-               var countSizeReference = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSizeReference").Value.Value?.ToString();
-               var countType = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountType").Value.Value as ITypeSymbol;
-               var countSize = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSize").Value.Value as int?;
+            var memberType = GetMemberType(member);
+            var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "GenerateSerializerAttribute");
+            if (memberType is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.OriginalDefinition.ToDisplayString()
+                == "System.Collections.Generic.List<T>")
+            {
+                var typeArgument = namedTypeSymbol.TypeArguments[0];
+                var countSizeReference = attribute?.NamedArguments.FirstOrDefault
+                        (arg => arg.Key == "CountSizeReference")
+                    .Value.Value?.ToString();
+                var countType = attribute?.NamedArguments.FirstOrDefault
+                        (arg => arg.Key == "CountType")
+                    .Value.Value as ITypeSymbol;
+                var countSize = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSize").Value.Value as int?;
 
-               if (string.IsNullOrEmpty(countSizeReference))
-               {
-                   if (countType != null)
-                   {
-                       sb.AppendLine($"        data.Write{countType.Name}((ushort)obj.{member.Name}.Count);");
-                   }
-                   else if (countSize.HasValue)
-                   {
-                       sb.AppendLine($"        data.WriteInt{countSize * 8}((ushort)obj.{member.Name}.Count);");
-                   }
-                   else
-                   {
-                       sb.AppendLine($"        data.WriteInt32(obj.{member.Name}.Count);");
-                   }
-               }
+                if (string.IsNullOrEmpty(countSizeReference))
+                {
+                    if (countType != null)
+                    {
+                        sb.AppendLine($"        data.Write{countType.Name}((ushort)obj.{member.Name}.Count);");
+                    }
+                    else if (countSize.HasValue)
+                    {
+                        sb.AppendLine($"        data.WriteInt{countSize * 8}((ushort)obj.{member.Name}.Count);");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"        data.WriteInt32(obj.{member.Name}.Count);");
+                    }
+                }
 
-               sb.AppendLine($"        for (int i = 0; i < obj.{member.Name}.Count; i++)");
-               sb.AppendLine("        {");
-               if (typeArgument.IsUnmanagedType)
-               {
-                   sb.AppendLine($"            data.Write{typeArgument.Name}(obj.{member.Name}[i]);");
-               }
-               else
-               {
-                   sb.AppendLine($"            var bytesWritten = {typeArgument.Name}.Serialize(obj.{member.Name}[i], data);");
-                   sb.AppendLine($"            data = data.Slice(bytesWritten);");
-               }
-               sb.AppendLine("        }");
-           }
-           else if (member.Type.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"))
-           {
-               sb.AppendLine($"        var bytesWritten = {member.Type.Name}.Serialize(obj.{member.Name}, data);");
-               sb.AppendLine($"        data = data.Slice(bytesWritten);");
-           }
-            else if (member.Type.SpecialType == SpecialType.System_String)
+                sb.AppendLine($"        for (int i = 0; i < obj.{member.Name}.Count; i++)");
+                sb.AppendLine("        {");
+                if (typeArgument.IsUnmanagedType)
+                {
+                    sb.AppendLine($"            data.Write{typeArgument.Name}(obj.{member.Name}[i]);");
+                }
+                else
+                {
+                    sb.AppendLine($"            var bytesWritten = {typeArgument.Name}.Serialize(obj.{member.Name}[i], data);");
+                    sb.AppendLine($"            data = data.Slice(bytesWritten);");
+                }
+
+                sb.AppendLine("        }");
+            }
+            else if (memberType.GetAttributes()
+                     .Any(a => a.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"))
+            {
+                sb.AppendLine($"        var bytesWritten = {memberType.Name}.Serialize(obj.{member.Name}, data);");
+                sb.AppendLine($"        data = data.Slice(bytesWritten);");
+            }
+            else if (memberType.SpecialType == SpecialType.System_String)
             {
                 sb.AppendLine($"        data.WriteString(obj.{member.Name});");
             }
-            else if (member.Type.IsUnmanagedType)
+            else if (memberType.IsUnmanagedType)
             {
-                sb.AppendLine($"        data.Write{member.Type.Name}(obj.{member.Name});");
+                sb.AppendLine($"        data.Write{memberType.Name}(obj.{member.Name});");
             }
         }
+
         sb.AppendLine("        return originalData.Length - data.Length;");
         sb.AppendLine("    }");
         sb.AppendLine("}");
