@@ -37,12 +37,12 @@ public class MixedFieldsAndPropsTest
             FieldFloat = 3.14f
         };
 
-        var size = Consumer.MixedFieldsAndPropsPacket.GetPacketSize(original);
+        var size = MixedFieldsAndPropsPacket.GetPacketSize(original);
         var buffer = new byte[size];
         var span = new Span<byte>(buffer);
-        Consumer.MixedFieldsAndPropsPacket.Serialize(original, span);
+        MixedFieldsAndPropsPacket.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = Consumer.MixedFieldsAndPropsPacket.Deserialize(readOnlySpan, out _);
+        var deserialized = MixedFieldsAndPropsPacket.Deserialize(readOnlySpan, out _);
 
         // Verify properties are serialized/deserialized
         Assert.AreEqual(original.PropertyInt, deserialized.PropertyInt);

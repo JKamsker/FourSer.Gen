@@ -30,12 +30,12 @@ public class TestWithListOfReferenceTypesTest
             }
         };
 
-        var size = Consumer.TestWithListOfReferenceTypes.GetPacketSize(original);
+        var size = TestWithListOfReferenceTypes.GetPacketSize(original);
         var buffer = new byte[size];
         var span = new Span<byte>(buffer);
-        Consumer.TestWithListOfReferenceTypes.Serialize(original, span);
+        TestWithListOfReferenceTypes.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = Consumer.TestWithListOfReferenceTypes.Deserialize(readOnlySpan, out _);
+        var deserialized = TestWithListOfReferenceTypes.Deserialize(readOnlySpan, out _);
 
         Assert.AreEqual(original.MyList.Count, deserialized.MyList.Count);
         for (int i = 0; i < original.MyList.Count; i++)

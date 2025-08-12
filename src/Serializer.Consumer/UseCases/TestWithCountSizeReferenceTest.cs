@@ -21,12 +21,12 @@ public class TestWithCountSizeReferenceTest
         };
         original.MyListCount = (ushort)original.MyList.Count;
 
-        var size = Consumer.TestWithCountSizeReference.GetPacketSize(original);
+        var size = TestWithCountSizeReference.GetPacketSize(original);
         var buffer = new byte[size];
         var span = new Span<byte>(buffer);
-        Consumer.TestWithCountSizeReference.Serialize(original, span);
+        TestWithCountSizeReference.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = Consumer.TestWithCountSizeReference.Deserialize(readOnlySpan, out _);
+        var deserialized = TestWithCountSizeReference.Deserialize(readOnlySpan, out _);
 
         Assert.AreEqual(original.MyListCount, deserialized.MyListCount);
         Assert.AreEqual(true, original.MyList.SequenceEqual(deserialized.MyList));

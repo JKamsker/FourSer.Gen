@@ -25,12 +25,12 @@ public class NestedObjectTest
             Name = "Container"
         };
 
-        var size = Consumer.ContainerPacket.GetPacketSize(original);
+        var size = ContainerPacket.GetPacketSize(original);
         var buffer = new byte[size];
         var span = new Span<byte>(buffer);
-        Consumer.ContainerPacket.Serialize(original, span);
+        ContainerPacket.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = Consumer.ContainerPacket.Deserialize(readOnlySpan, out _);
+        var deserialized = ContainerPacket.Deserialize(readOnlySpan, out _);
 
         Assert.AreEqual(original.Name, deserialized.Name);
         Assert.AreEqual(original.Nested.Id, deserialized.Nested.Id);

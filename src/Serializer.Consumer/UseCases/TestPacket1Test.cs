@@ -22,12 +22,12 @@ public class TestPacket1Test
             C = new List<int> { 1, 2, 3 }
         };
 
-        var size = Consumer.TestPacket1.GetPacketSize(original);
+        var size = TestPacket1.GetPacketSize(original);
         var buffer = new byte[size];
         var span = new Span<byte>(buffer);
-        Consumer.TestPacket1.Serialize(original, span);
+        TestPacket1.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = Consumer.TestPacket1.Deserialize(readOnlySpan, out _);
+        var deserialized = TestPacket1.Deserialize(readOnlySpan, out _);
 
         Assert.AreEqual(original.A, deserialized.A);
         Assert.AreEqual(original.B, deserialized.B);

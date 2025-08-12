@@ -1,8 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Serializer.Generator\Serializer.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Serializer.Generator\Serializer.Generator.csproj"
+      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Serializer.Contracts\Serializer.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile
+      Remove="Generated\**" />
+    <None
+      Include="Generated\**" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -11,6 +19,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
 </Project>
