@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace FourServerProxy.HighPerformance.Extensions;
+namespace Serializer.Consumer.Extensions;
 
 public class StringEx
 {

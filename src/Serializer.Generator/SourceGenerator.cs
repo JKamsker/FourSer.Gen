@@ -42,7 +42,7 @@ public static class SourceGenerator
         sb.AppendLine($"using System.Collections.Generic;");
         sb.AppendLine($"using System.Text;");
         sb.AppendLine($"using Serializer.Contracts;");
-        sb.AppendLine($"using FourServerProxy.HighPerformance.Extensions;");
+        sb.AppendLine($"using Serializer.Consumer.Extensions;");
         sb.AppendLine();
         sb.AppendLine($"namespace {classToGenerate.Namespace};");
         sb.AppendLine();

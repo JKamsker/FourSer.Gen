@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace FourServerProxy.HighPerformance.Extensions;
+namespace Serializer.Consumer.Extensions;
 
 public static class RoSpanReaderExtensions
 {

@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 
-namespace FourServerProxy.HighPerformance.Extensions;
+namespace Serializer.Consumer.Extensions;
 
 public static class SpanReaderExtensions
 {
