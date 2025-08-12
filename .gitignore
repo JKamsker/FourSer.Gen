@@ -340,3 +340,5 @@ ASALocalRun/
 healthchecksdb
 /.local/TLoginOLD
 /src/FourServerProxy.WorkerService/Recordings/LoginSteps/GlossyDumps
+
+src/Serializer.Consumer/Generated/
