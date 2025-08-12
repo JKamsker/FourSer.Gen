@@ -54,10 +54,10 @@ internal static class SpanReaderExtensions
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static float ReadSingle(this ref Span<byte> input)
+    public static unsafe float ReadSingle(this ref Span<byte> input)
     {
-        var original = Advance<float>(ref input);
-        return BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(original));
+        int val = ReadInt32(ref input);
+        return *(float*)&val;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

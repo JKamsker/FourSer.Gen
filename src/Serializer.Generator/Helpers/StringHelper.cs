@@ -22,30 +22,30 @@ internal class StringEx
     public static string ReadString(ref ReadOnlySpan<byte> input)
     {
         var length = input.ReadInt32();
-        var strSpan = input[..length];
-        input = input[length..];
+        var strSpan = input.Slice(0, length);
+        input = input.Slice(length);
 
         if (length == 0)
         {
             return string.Empty;
         }
 
-        return Utf8Encoding.GetString(strSpan);
+        return Utf8Encoding.GetString(strSpan.ToArray());
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string ReadString(ref Span<byte> input)
     {
         var length = input.ReadInt32();
-        var strSpan = input[..length];
-        input = input[length..];
+        var strSpan = input.Slice(0, length);
+        input = input.Slice(length);
 
         if (length == 0)
         {
             return string.Empty;
         }
 
-        return Utf8Encoding.GetString(strSpan);
+        return Utf8Encoding.GetString(strSpan.ToArray());
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -60,14 +60,14 @@ internal class StringEx
         var encoding = Utf8Encoding;
         var byteCount = encoding.GetByteCount(value);
         input.WriteInt32(byteCount);
-        var original = input[..byteCount];
-        input = input[byteCount..];
+        var destination = input.Slice(0, byteCount);
+        input = input.Slice(byteCount);
 
         if (byteCount == 0)
         {
             return;
         }
 
-        encoding.GetBytes(value, original);
+        encoding.GetBytes(value).CopyTo(destination);
     }
 }

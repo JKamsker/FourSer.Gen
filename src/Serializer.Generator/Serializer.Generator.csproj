@@ -18,12 +18,11 @@
   </ItemGroup>-->
 
   <ItemGroup>
-	<Compile Remove="Helpers\**" />
-    <EmbeddedResource Include="Helpers\BinaryWriterExtensions.cs" />
-    <EmbeddedResource Include="Helpers\RoSpanReaderExtensions.cs" />
-    <EmbeddedResource Include="Helpers\SpanReaderExtensions.cs" />
-    <EmbeddedResource Include="Helpers\SpanWriterExtensions.cs" />
-    <EmbeddedResource Include="Helpers\StringHelper.cs" />
+    <!--
+      The helper files are now compiled by default.
+      The original project file excluded them from compilation and included them as embedded resources.
+      This has been removed to allow the generator itself to call the helper methods directly.
+    -->
   </ItemGroup>
 
 </Project>

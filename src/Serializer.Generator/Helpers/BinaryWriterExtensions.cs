@@ -27,16 +27,16 @@ internal static class BinaryWriterExtensions
         
         
 
-    //[MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteString(this BinaryWriter input, string value)
     {
-        var encoding = Encoding.UTF8;
-        var byteCount = encoding.GetByteCount(value.AsSpan());
+        if (string.IsNullOrEmpty(value))
+        {
+            input.Write(0);
+            return;
+        }
 
-        Span<byte> buffer = byteCount <= 1024 ? stackalloc byte[byteCount] : new byte[byteCount];
-        encoding.GetBytes(value, buffer);
-            
-        input.WriteInt32(byteCount);
+        var buffer = Encoding.UTF8.GetBytes(value);
+        input.Write(buffer.Length);
         input.Write(buffer);
     }
 }

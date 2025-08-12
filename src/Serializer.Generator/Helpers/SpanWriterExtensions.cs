@@ -119,11 +119,7 @@ internal static class SpanWriterExtensions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteString(this ref Span<byte> input, string value)
     {
-        var encoding = Encoding.UTF8;
-        var byteCount = encoding.GetByteCount(value.AsSpan());
-        input.WriteInt32(byteCount);
-        encoding.GetBytes(value, input);
-        input = input[byteCount..];
+        StringEx.WriteString(ref input, value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
