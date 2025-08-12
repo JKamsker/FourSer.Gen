@@ -63,6 +63,7 @@ public static class DeserializationGenerator
             "byte" => "Byte",
             "float" => "Single",
             "bool" => "Boolean",
+            "double" => "Double",
             _ => GetSimpleTypeName(typeName)
         };
     }

@@ -64,9 +64,16 @@ internal static class RoSpanReaderExtensions
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe double ReadDouble(this ref ReadOnlySpan<byte> input)
+    {
+        ulong val = ReadUInt64(ref input);
+        return *(double*)&val;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string ReadString(this ref ReadOnlySpan<byte> input)
         => StringEx.ReadString(ref input);
-        
+
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool ReadBoolean(this ref ReadOnlySpan<byte> input)
