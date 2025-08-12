@@ -61,7 +61,7 @@ public class SerializerGenerator : IIncrementalGenerator
         }
 
         var serializableMembers = GetSerializableMembers(typeSymbol);
-        var nestedTypes = GetNestedTypes(typeSymbol, context.SemanticModel.Compilation);
+        var nestedTypes = GetNestedTypes(typeSymbol);
 
         return new TypeToGenerate(
             typeSymbol.Name,
@@ -129,7 +129,7 @@ public class SerializerGenerator : IIncrementalGenerator
         return new EquatableArray<MemberToGenerate>(members.ToImmutableArray());
     }
 
-    private static EquatableArray<TypeToGenerate> GetNestedTypes(INamedTypeSymbol parentType, Compilation compilation)
+    private static EquatableArray<TypeToGenerate> GetNestedTypes(INamedTypeSymbol parentType)
     {
         var nestedTypes = ImmutableArray.CreateBuilder<TypeToGenerate>();
 
@@ -139,7 +139,7 @@ public class SerializerGenerator : IIncrementalGenerator
                 nestedTypeSymbol.GetAttributes().Any(ad => ad.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"))
             {
                  var nestedMembers = GetSerializableMembers(nestedTypeSymbol);
-                 var deeperNestedTypes = GetNestedTypes(nestedTypeSymbol, compilation);
+                 var deeperNestedTypes = GetNestedTypes(nestedTypeSymbol);
 
                  nestedTypes.Add(new TypeToGenerate(
                      nestedTypeSymbol.Name,
@@ -160,8 +160,11 @@ public class SerializerGenerator : IIncrementalGenerator
 
         var polymorphicMode = (PolymorphicMode)AttributeHelper.GetPolymorphicMode(attribute);
         var typeIdProperty = AttributeHelper.GetCollectionTypeIdProperty(attribute);
+        var countType = AttributeHelper.GetCountType(attribute)?.ToDisplayString(s_typeNameFormat);
+        var countSize = AttributeHelper.GetCountSize(attribute);
+        var countSizeReference = AttributeHelper.GetCountSizeReference(attribute);
 
-        return new CollectionInfo(polymorphicMode, typeIdProperty);
+        return new CollectionInfo(polymorphicMode, typeIdProperty, countType, countSize, countSizeReference);
     }
 
     private static PolymorphicInfo? GetPolymorphicInfo(ISymbol member)
@@ -201,7 +204,7 @@ public class SerializerGenerator : IIncrementalGenerator
         var assembly = Assembly.GetExecutingAssembly();
         foreach (var file in s_helperFileNames)
         {
-            var resourceName = $"Serializer.Generator.Helpers.{file}";
+            var resourceName = $"Serializer.Generator.Embedded_Helpers.{file}";
             using var stream = assembly.GetManifestResourceStream(resourceName);
             if (stream is null) continue;
 

@@ -1,6 +1,5 @@
 using Serializer.Generator.Models;
 using System.Text;
-using Serializer.Generator.Helpers;
 
 namespace Serializer.Generator.CodeGenerators;
 
@@ -39,7 +38,7 @@ public static class DeserializationGenerator
         }
         else if (member.HasGenerateSerializerAttribute)
         {
-            sb.AppendLine($"        obj.{member.Name} = {GetSimpleTypeName(member.TypeName)}.Deserialize(data, out var nestedBytesRead);");
+            sb.AppendLine($"        obj.{member.Name} = {TypeHelper.GetSimpleTypeName(member.TypeName)}.Deserialize(data, out var nestedBytesRead);");
             sb.AppendLine($"        data = data.Slice(nestedBytesRead);");
         }
         else if (member.IsStringType)
@@ -68,14 +67,17 @@ public static class DeserializationGenerator
             "float" => "Single",
             "bool" => "Boolean",
             "double" => "Double",
-            _ => GetSimpleTypeName(typeName)
+            _ => TypeHelper.GetMethodFriendlyTypeName(typeName)
         };
     }
 
     private static void GenerateCollectionDeserialization(StringBuilder sb, MemberToGenerate member)
     {
-        sb.AppendLine($"        var {member.Name}Count = data.ReadInt32();");
-        // sb.AppendLine($"        data = data.Slice(sizeof(int));");
+        // Determine the count type to use
+        var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
+        var countReadMethod = TypeHelper.GetReadMethodName(countType);
+        
+        sb.AppendLine($"        var {member.Name}Count = data.{countReadMethod}();");
         sb.AppendLine($"        obj.{member.Name} = new System.Collections.Generic.List<{member.ListTypeArgument!.Value.TypeName}>({member.Name}Count);");
 
         if (member.CollectionInfo is not null && member.PolymorphicInfo is not null)
@@ -126,7 +128,7 @@ public static class DeserializationGenerator
                     sb.AppendLine("            {");
                     sb.AppendLine($"                for (int i = 0; i < {member.Name}Count; i++)");
                     sb.AppendLine("                {");
-                    sb.AppendLine($"                    var item = {GetSimpleTypeName(option.Type)}.Deserialize(data, out var itemBytesRead);");
+                    sb.AppendLine($"                    var item = {TypeHelper.GetSimpleTypeName(option.Type)}.Deserialize(data, out var itemBytesRead);");
                     sb.AppendLine($"                    obj.{member.Name}.Add(item);");
                     sb.AppendLine($"                    data = data.Slice(itemBytesRead);");
                     sb.AppendLine("                }");
@@ -156,22 +158,11 @@ public static class DeserializationGenerator
         }
         else if (typeArg.HasGenerateSerializerAttribute)
         {
-            sb.AppendLine($"            obj.{member.Name}.Add({GetSimpleTypeName(typeArg.TypeName)}.Deserialize(data, out var itemBytesRead));");
+            sb.AppendLine($"            obj.{member.Name}.Add({TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.Deserialize(data, out var itemBytesRead));");
             sb.AppendLine($"            data = data.Slice(itemBytesRead);");
         }
 
         sb.AppendLine("        }");
-    }
-
-    private static string GetSimpleTypeName(string? fullyQualifiedName)
-    {
-        if (string.IsNullOrEmpty(fullyQualifiedName)) return string.Empty;
-        var lastDot = fullyQualifiedName.LastIndexOf('.');
-        if (lastDot == -1)
-        {
-            return fullyQualifiedName;
-        }
-        return fullyQualifiedName.Substring(lastDot + 1);
     }
 
     private static void GeneratePolymorphicDeserialization(StringBuilder sb, MemberToGenerate member)
@@ -208,7 +199,7 @@ public static class DeserializationGenerator
 
 
             sb.AppendLine($"            case {key}:");
-            sb.AppendLine($"                obj.{member.Name} = {GetSimpleTypeName(option.Type)}.Deserialize(data, out {bytesReadVar});");
+            sb.AppendLine($"                obj.{member.Name} = {TypeHelper.GetSimpleTypeName(option.Type)}.Deserialize(data, out {bytesReadVar});");
             sb.AppendLine($"                data = data.Slice({bytesReadVar});");
             sb.AppendLine("                break;");
         }
@@ -244,7 +235,7 @@ public static class DeserializationGenerator
             }
 
             sb.AppendLine($"                case {key}:");
-            sb.AppendLine($"                    {assignmentTarget} = {GetSimpleTypeName(option.Type)}.Deserialize(data, out {bytesReadVar});");
+            sb.AppendLine($"                    {assignmentTarget} = {TypeHelper.GetSimpleTypeName(option.Type)}.Deserialize(data, out {bytesReadVar});");
             sb.AppendLine($"                    data = data.Slice({bytesReadVar});");
             sb.AppendLine("                    break;");
         }

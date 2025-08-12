@@ -1,6 +1,5 @@
 using Serializer.Generator.Models;
 using System.Text;
-using Serializer.Generator.Helpers;
 
 namespace Serializer.Generator.CodeGenerators;
 
@@ -35,7 +34,7 @@ public static class PacketSizeGenerator
             }
             else if (member.HasGenerateSerializerAttribute)
             {
-                sb.AppendLine($"        size += {GetSimpleTypeName(member.TypeName)}.GetPacketSize(obj.{member.Name}); // Size for nested type {member.Name}");
+                sb.AppendLine($"        size += {TypeHelper.GetSimpleTypeName(member.TypeName)}.GetPacketSize(obj.{member.Name}); // Size for nested type {member.Name}");
             }
             else if (member.IsStringType)
             {
@@ -53,7 +52,11 @@ public static class PacketSizeGenerator
 
     private static void GenerateCollectionSizeCalculation(StringBuilder sb, MemberToGenerate member)
     {
-        sb.AppendLine($"        size += sizeof(int); // Default count size for {member.Name}");
+        // Determine the count type to use
+        var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
+        var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
+        
+        sb.AppendLine($"        size += {countSizeExpression}; // Count size for {member.Name}");
 
         if (member.CollectionInfo is not null && member.PolymorphicInfo is not null && member.CollectionInfo.Value.PolymorphicMode != PolymorphicMode.None)
         {
@@ -98,7 +101,7 @@ public static class PacketSizeGenerator
             {
                 sb.AppendLine($"        foreach(var item in obj.{member.Name})");
                 sb.AppendLine("        {");
-                sb.AppendLine($"            size += {GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item);");
+                sb.AppendLine($"            size += {TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item);");
                 sb.AppendLine("        }");
             }
         
@@ -119,7 +122,7 @@ public static class PacketSizeGenerator
 
         foreach (var option in info.Options)
         {
-            var typeName = GetSimpleTypeName(option.Type);
+            var typeName = TypeHelper.GetSimpleTypeName(option.Type);
             sb.AppendLine($"            case {typeName} typedInstance:");
             sb.AppendLine($"                size += {typeName}.GetPacketSize(typedInstance);");
             sb.AppendLine("                break;");
@@ -129,16 +132,5 @@ public static class PacketSizeGenerator
         sb.AppendLine("            default:");
         sb.AppendLine($"                throw new System.IO.InvalidDataException($\"Unknown type for {member.Name}: {{{instanceName}?.GetType().FullName}}\");");
         sb.AppendLine("        }");
-    }
-
-    private static string GetSimpleTypeName(string? fullyQualifiedName)
-    {
-        if (string.IsNullOrEmpty(fullyQualifiedName)) return string.Empty;
-        var lastDot = fullyQualifiedName.LastIndexOf('.');
-        if (lastDot == -1)
-        {
-            return fullyQualifiedName;
-        }
-        return fullyQualifiedName.Substring(lastDot + 1);
     }
 }

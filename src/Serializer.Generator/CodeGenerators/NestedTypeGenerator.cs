@@ -1,6 +1,5 @@
 using Serializer.Generator.Models;
 using System.Text;
-using Serializer.Generator.Helpers;
 
 namespace Serializer.Generator.CodeGenerators;
 
@@ -51,7 +50,11 @@ public static class NestedTypeGenerator
         {
             if (member.IsList)
             {
-                sb.AppendLine($"            size += sizeof(int);");
+                // Determine the count type to use
+                var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
+                var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
+                
+                sb.AppendLine($"            size += {countSizeExpression}; // Count size for {member.Name}");
                 if (member.ListTypeArgument is not null)
                 {
                     var typeArg = member.ListTypeArgument.Value;
@@ -65,13 +68,13 @@ public static class NestedTypeGenerator
                     }
                     else if (typeArg.HasGenerateSerializerAttribute)
                     {
-                        sb.AppendLine($"            foreach(var item in obj.{member.Name}) {{ size += {GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item); }}");
+                        sb.AppendLine($"            foreach(var item in obj.{member.Name}) {{ size += {TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item); }}");
                     }
                 }
             }
             else if (member.HasGenerateSerializerAttribute)
             {
-                sb.AppendLine($"            size += {GetSimpleTypeName(member.TypeName)}.GetPacketSize(obj.{member.Name});");
+                sb.AppendLine($"            size += {TypeHelper.GetSimpleTypeName(member.TypeName)}.GetPacketSize(obj.{member.Name});");
             }
             else if (member.IsStringType)
             {
@@ -97,7 +100,11 @@ public static class NestedTypeGenerator
         {
             if (member.IsList)
             {
-                sb.AppendLine($"            var {member.Name}Count = data.ReadInt32();");
+                // Determine the count type to use
+                var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
+                var countReadMethod = TypeHelper.GetReadMethodName(countType);
+                
+                sb.AppendLine($"            var {member.Name}Count = data.{countReadMethod}();");
                 if (member.ListTypeArgument is not null)
                 {
                     sb.AppendLine($"            obj.{member.Name} = new System.Collections.Generic.List<{member.ListTypeArgument.Value.TypeName}>({member.Name}Count);");
@@ -115,7 +122,7 @@ public static class NestedTypeGenerator
                     }
                     else if (typeArg.HasGenerateSerializerAttribute)
                     {
-                        sb.AppendLine($"                obj.{member.Name}.Add({GetSimpleTypeName(typeArg.TypeName)}.Deserialize(data, out var itemBytesRead));");
+                        sb.AppendLine($"                obj.{member.Name}.Add({TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.Deserialize(data, out var itemBytesRead));");
                         sb.AppendLine($"                data = data.Slice(itemBytesRead);");
                     }
                     sb.AppendLine("            }");
@@ -123,7 +130,7 @@ public static class NestedTypeGenerator
             }
             else if (member.HasGenerateSerializerAttribute)
             {
-                sb.AppendLine($"            obj.{member.Name} = {GetSimpleTypeName(member.TypeName)}.Deserialize(data, out var nestedBytesRead);");
+                sb.AppendLine($"            obj.{member.Name} = {TypeHelper.GetSimpleTypeName(member.TypeName)}.Deserialize(data, out var nestedBytesRead);");
                 sb.AppendLine($"            data = data.Slice(nestedBytesRead);");
             }
             else if (member.IsStringType)
@@ -151,7 +158,11 @@ public static class NestedTypeGenerator
         {
             if (member.IsList)
             {
-                sb.AppendLine($"            data.WriteInt32(obj.{member.Name}.Count);");
+                // Determine the count type to use
+                var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
+                var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
+                
+                sb.AppendLine($"            data.{countWriteMethod}(obj.{member.Name}.Count);");
                 if (member.ListTypeArgument is not null)
                 {
                     sb.AppendLine($"            for (int i = 0; i < obj.{member.Name}.Count; i++)");
@@ -168,7 +179,7 @@ public static class NestedTypeGenerator
                     }
                     else if (typeArg.HasGenerateSerializerAttribute)
                     {
-                        sb.AppendLine($"                var bytesWritten = {GetSimpleTypeName(typeArg.TypeName)}.Serialize(obj.{member.Name}[i], data);");
+                        sb.AppendLine($"                var bytesWritten = {TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.Serialize(obj.{member.Name}[i], data);");
                         sb.AppendLine($"                data = data.Slice(bytesWritten);");
                     }
                     sb.AppendLine("            }");
@@ -176,7 +187,7 @@ public static class NestedTypeGenerator
             }
             else if (member.HasGenerateSerializerAttribute)
             {
-                sb.AppendLine($"            var bytesWritten = {GetSimpleTypeName(member.TypeName)}.Serialize(obj.{member.Name}, data);");
+                sb.AppendLine($"            var bytesWritten = {TypeHelper.GetSimpleTypeName(member.TypeName)}.Serialize(obj.{member.Name}, data);");
                 sb.AppendLine($"            data = data.Slice(bytesWritten);");
             }
             else if (member.IsStringType)
@@ -207,18 +218,8 @@ public static class NestedTypeGenerator
             "byte" => "Byte",
             "float" => "Single",
             "bool" => "Boolean",
-            _ => GetSimpleTypeName(typeName)
+            _ => TypeHelper.GetMethodFriendlyTypeName(typeName)
         };
     }
 
-    private static string GetSimpleTypeName(string? fullyQualifiedName)
-    {
-        if (string.IsNullOrEmpty(fullyQualifiedName)) return string.Empty;
-        var lastDot = fullyQualifiedName.LastIndexOf('.');
-        if (lastDot == -1)
-        {
-            return fullyQualifiedName;
-        }
-        return fullyQualifiedName.Substring(lastDot + 1);
-    }
 }

@@ -58,9 +58,15 @@ public readonly record struct ListTypeArgumentInfo(
 /// </summary>
 /// <param name="PolymorphicMode">The polymorphic mode for the collection.</param>
 /// <param name="TypeIdProperty">The name of the property used for type discrimination.</param>
+/// <param name="CountType">The type to use for the collection count (e.g., "byte", "ushort", "int").</param>
+/// <param name="CountSize">The size in bytes for the collection count.</param>
+/// <param name="CountSizeReference">The name of a property/field that contains the count.</param>
 public readonly record struct CollectionInfo(
     PolymorphicMode PolymorphicMode,
-    string? TypeIdProperty) : IEquatable<CollectionInfo>;
+    string? TypeIdProperty,
+    string? CountType,
+    int? CountSize,
+    string? CountSizeReference) : IEquatable<CollectionInfo>;
 
 /// <summary>
 /// A model describing a polymorphic option.

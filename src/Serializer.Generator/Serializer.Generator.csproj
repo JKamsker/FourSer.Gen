@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <!-- Disable default items so we can control compilation and embedding explicitly -->
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+<!--    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>-->
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,21 +15,22 @@
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- These are compiled as part of the generator -->
-    <Compile Include="SerializerGenerator.cs" />
-    <Compile Include="SourceGenerator.cs" />
-    <Compile Include="PolymorphicMode.cs" />
-    <Compile Include="AttributeHelper.cs" />
-    <Compile Include="IsExternalInit.cs" />
-    <Compile Include="CodeGenerators\**\*.cs" />
-    <Compile Include="Helpers\**\*.cs" />
-    <Compile Include="Models\**\*.cs" />
-  </ItemGroup>
+<!--  <ItemGroup>-->
+<!--    &lt;!&ndash; These are compiled as part of the generator &ndash;&gt;-->
+<!--    <Compile Include="SerializerGenerator.cs" />-->
+<!--    <Compile Include="SourceGenerator.cs" />-->
+<!--    <Compile Include="PolymorphicMode.cs" />-->
+<!--    <Compile Include="AttributeHelper.cs" />-->
+<!--    <Compile Include="IsExternalInit.cs" />-->
+<!--    <Compile Include="CodeGenerators\**\*.cs" />-->
+<!--    <Compile Include="Helpers\**\*.cs" />-->
+<!--    <Compile Include="Models\**\*.cs" />-->
+<!--  </ItemGroup>-->
 
   <ItemGroup>
     <!-- These are also embedded to be injected into the consumer's compilation -->
-    <EmbeddedResource Include="Helpers\**\*.cs" />
+    <Compile Remove="Embedded_Helpers\**\*.cs" />
+    <EmbeddedResource Include="Embedded_Helpers\**\*.cs" />
   </ItemGroup>
 
 </Project>
