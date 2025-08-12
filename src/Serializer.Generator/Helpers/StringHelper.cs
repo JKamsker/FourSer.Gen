@@ -1,9 +1,10 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace Serializer.Consumer.Extensions;
+namespace Serializer.Generator.Helpers;
 
-public class StringEx
+internal class StringEx
 {
     private static readonly Encoding Utf8Encoding = Encoding.UTF8;
     

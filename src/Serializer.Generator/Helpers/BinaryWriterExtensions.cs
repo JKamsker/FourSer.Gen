@@ -6,9 +6,9 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Serializer.Consumer.Extensions;
+namespace Serializer.Generator.Helpers;
 
-public static class BinaryWriterExtensions
+internal static class BinaryWriterExtensions
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)] public static void WriteByte(this BinaryWriter input, byte value) => input.Write(value);
 

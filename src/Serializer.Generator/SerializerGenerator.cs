@@ -2,7 +2,9 @@ using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace Serializer.Generator;
@@ -10,8 +12,19 @@ namespace Serializer.Generator;
 [Generator]
 public class SerializerGenerator : IIncrementalGenerator
 {
+    private static readonly string[] s_helperFileNames =
+    {
+        "BinaryWriterExtensions.cs",
+        "RoSpanReaderExtensions.cs",
+        "SpanReaderExtensions.cs",
+        "SpanWriterExtensions.cs",
+        "StringHelper.cs"
+    };
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        context.RegisterPostInitializationOutput(AddHelpers);
+
         var typeDeclarations = context.SyntaxProvider
             .ForAttributeWithMetadataName
             (
@@ -25,6 +38,25 @@ public class SerializerGenerator : IIncrementalGenerator
             context.CompilationProvider.Combine(typeDeclarations.Collect()),
             (spc, source) => Execute(source.Left, source.Right, spc)
         );
+    }
+
+    private void AddHelpers(IncrementalGeneratorPostInitializationContext context)
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+
+        foreach (var file in s_helperFileNames)
+        {
+            var resourceName = $"Serializer.Generator.Helpers.{file}";
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream is null)
+            {
+                continue;
+            }
+
+            using var reader = new StreamReader(stream);
+            var source = reader.ReadToEnd();
+            context.AddSource(file, source);
+        }
     }
 
     private static void Execute
