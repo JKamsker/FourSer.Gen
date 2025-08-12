@@ -13,25 +13,38 @@ public class TestRunner
 
     public void RunTests()
     {
-        var testClass = typeof(TestCases);
-        var testMethods = testClass.GetMethods(BindingFlags.Public | BindingFlags.Instance)
-            .Where(m => m.Name.EndsWith("Test"));
-
-        foreach (var testMethod in testMethods)
+        var testClasses = new[]
         {
-            try
+            typeof(MyPacketTest),
+            typeof(TestPacket1Test),
+            typeof(TestWithCountTypeTest),
+            typeof(TestWithCountSizeReferenceTest),
+            typeof(MixedFieldsAndPropsTest),
+            typeof(TestWithListOfReferenceTypesTest),
+            typeof(NestedObjectTest)
+        };
+
+        foreach (var testClass in testClasses)
+        {
+            var testMethods = testClass.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                .Where(m => m.Name.EndsWith("Test"));
+
+            foreach (var testMethod in testMethods)
             {
-                Console.WriteLine($"Running test: {testMethod.Name}");
-                var testInstance = Activator.CreateInstance(testClass);
-                testMethod.Invoke(testInstance, null);
-                Console.WriteLine($"Test passed: {testMethod.Name}");
+                try
+                {
+                    Console.WriteLine($"Running test: {testClass.Name}.{testMethod.Name}");
+                    var testInstance = Activator.CreateInstance(testClass);
+                    testMethod.Invoke(testInstance, null);
+                    Console.WriteLine($"Test passed: {testClass.Name}.{testMethod.Name}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Test failed: {testClass.Name}.{testMethod.Name}");
+                    Console.WriteLine(ex.InnerException?.Message);
+                }
+                Console.WriteLine();
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Test failed: {testMethod.Name}");
-                Console.WriteLine(ex.InnerException?.Message);
-            }
-            Console.WriteLine();
         }
     }
 }
