@@ -25,31 +25,31 @@ public static class PolymorphicComparison
         Console.WriteLine($"  Packet size: {explicitSize} bytes");
         Console.WriteLine($"  Bytes written: {explicitBytesWritten}");
         
-        // Test with automatic TypeId inference
-        var autoEntity = new AutoPolymorphicEntity
+        // Test with implicit TypeId inference
+        var implicitEntity = new PolymorphicEntityImplicitTypeId
         {
             Id = 100,
-            Entity = new AutoPolymorphicEntity.AutoEntityType1 { Name = "Auto Test" }
+            Entity = new PolymorphicEntityImplicitTypeId.EntityType1 { Name = "Implicit Test" }
         };
         
-        var autoSize = AutoPolymorphicEntity.GetPacketSize(autoEntity);
-        var autoBuffer = new byte[autoSize];
-        var autoBytesWritten = AutoPolymorphicEntity.Serialize(autoEntity, autoBuffer);
+        var implicitSize = PolymorphicEntityImplicitTypeId.GetPacketSize(implicitEntity);
+        var implicitBuffer = new byte[implicitSize];
+        var implicitBytesWritten = PolymorphicEntityImplicitTypeId.Serialize(implicitEntity, implicitBuffer);
         
-        Console.WriteLine($"Automatic TypeId approach:");
+        Console.WriteLine($"Implicit TypeId approach:");
         Console.WriteLine($"  Model has no TypeId property");
-        Console.WriteLine($"  Packet size: {autoSize} bytes");
-        Console.WriteLine($"  Bytes written: {autoBytesWritten}");
+        Console.WriteLine($"  Packet size: {implicitSize} bytes");
+        Console.WriteLine($"  Bytes written: {implicitBytesWritten}");
         
-        // Both should have the same packet size since both write the TypeId to the stream
-        Console.WriteLine($"Packet sizes match: {explicitSize == autoSize}");
+        // Compare packet sizes
+        Console.WriteLine($"Packet sizes match: {explicitSize == implicitSize}");
         
         // Deserialize both
         var explicitDeserialized = PolymorphicEntity.Deserialize(explicitBuffer, out var explicitBytesRead);
-        var autoDeserialized = AutoPolymorphicEntity.Deserialize(autoBuffer, out var autoBytesRead);
+        var implicitDeserialized = PolymorphicEntityImplicitTypeId.Deserialize(implicitBuffer, out var implicitBytesRead);
         
-        Console.WriteLine($"Both deserialized successfully: {explicitDeserialized.Id == 100 && autoDeserialized.Id == 100}");
-        Console.WriteLine($"Both have correct types: {explicitDeserialized.Entity is PolymorphicEntity.EntityType1 && autoDeserialized.Entity is AutoPolymorphicEntity.AutoEntityType1}");
+        Console.WriteLine($"Both deserialized successfully: {explicitDeserialized.Id == 100 && implicitDeserialized.Id == 100}");
+        Console.WriteLine($"Both have correct types: {explicitDeserialized.Entity is PolymorphicEntity.EntityType1 && implicitDeserialized.Entity is PolymorphicEntityImplicitTypeId.EntityType1}");
         
         Console.WriteLine("=== Comparison Complete ===\n");
     }

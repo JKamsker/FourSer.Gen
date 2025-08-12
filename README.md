@@ -314,6 +314,7 @@ src/
 - **Zero allocations** during serialization/deserialization
 - **Compile-time code generation** eliminates reflection overhead
 - **Direct memory access** using Span<T> for maximum throughput
+- **Pattern matching** for polymorphic type detection (faster than reflection)
 - **Little-endian byte order** for cross-platform compatibility
 - **UTF-8 string encoding** with length prefixes
 

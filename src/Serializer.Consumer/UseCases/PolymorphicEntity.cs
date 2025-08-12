@@ -125,32 +125,3 @@ public static class PolymorphicTest
         Console.WriteLine($"  Test {testName}: PASSED\n");
     }
 }
-
-
-[GenerateSerializer]
-public partial class PolymorphicEntity1
-{
-    public int Id { get; set; }
-    
-    [SerializePolymorphic]
-    [PolymorphicOption(1, typeof(EntityType1))]
-    [PolymorphicOption(2, typeof(EntityType2))]
-    public BaseEntity Entity { get; set; }
-    
-    [GenerateSerializer]
-    public partial class BaseEntity
-    {
-    }
-    
-    [GenerateSerializer]
-    public partial class EntityType1 : BaseEntity
-    {
-        public string Name { get; set; } = string.Empty;
-    }
-    
-    [GenerateSerializer]
-    public partial class EntityType2 : BaseEntity
-    {
-        public string Description { get; set; } = string.Empty;
-    }
-}
