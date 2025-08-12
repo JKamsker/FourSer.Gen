@@ -97,8 +97,8 @@ public class SerializerGenerator : IIncrementalGenerator
         foreach (var member in classToGenerate.Members)
         {
             var memberType = GetMemberType(member);
-            var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "GenerateSerializerAttribute");
-            if (memberType is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.OriginalDefinition.ToDisplayString()
+            var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "SerializeCollectionAttribute");
+            if (attribute != null && memberType is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.OriginalDefinition.ToDisplayString()
                 == "System.Collections.Generic.List<T>")
             {
                 var typeArgument = namedTypeSymbol.TypeArguments[0];
@@ -116,7 +116,7 @@ public class SerializerGenerator : IIncrementalGenerator
                     {
                         sb.AppendLine($"        size += sizeof({countType.ToDisplayString()}); // Count size for {member.Name}");
                     }
-                    else if (countSize.HasValue)
+                    else if (countSize.HasValue && countSize != -1)
                     {
                         sb.AppendLine($"        size += {countSize.Value}; // Count size for {member.Name} (in bits)");
                     }
@@ -166,8 +166,8 @@ public class SerializerGenerator : IIncrementalGenerator
         foreach (var member in classToGenerate.Members)
         {
             var memberType = GetMemberType(member);
-            var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "GenerateSerializerAttribute");
-            if (memberType is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.OriginalDefinition.ToDisplayString()
+            var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "SerializeCollectionAttribute");
+            if (attribute != null && memberType is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.OriginalDefinition.ToDisplayString()
                 == "System.Collections.Generic.List<T>")
             {
                 var typeArgument = namedTypeSymbol.TypeArguments[0];
@@ -188,7 +188,7 @@ public class SerializerGenerator : IIncrementalGenerator
                 {
                     sb.AppendLine($"        {member.Name}Count = data.Read{countType.Name}();");
                 }
-                else if (countSize.HasValue)
+                else if (countSize.HasValue && countSize != -1)
                 {
                     sb.AppendLine($"        {member.Name}Count = data.ReadInt{countSize * 8}();");
                 }
@@ -242,8 +242,8 @@ public class SerializerGenerator : IIncrementalGenerator
         foreach (var member in classToGenerate.Members)
         {
             var memberType = GetMemberType(member);
-            var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "GenerateSerializerAttribute");
-            if (memberType is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.OriginalDefinition.ToDisplayString()
+            var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "SerializeCollectionAttribute");
+            if (attribute != null && memberType is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.OriginalDefinition.ToDisplayString()
                 == "System.Collections.Generic.List<T>")
             {
                 var typeArgument = namedTypeSymbol.TypeArguments[0];
@@ -261,7 +261,7 @@ public class SerializerGenerator : IIncrementalGenerator
                     {
                         sb.AppendLine($"        data.Write{countType.Name}((ushort)obj.{member.Name}.Count);");
                     }
-                    else if (countSize.HasValue)
+                    else if (countSize.HasValue && countSize != -1)
                     {
                         sb.AppendLine($"        data.WriteInt{countSize * 8}((ushort)obj.{member.Name}.Count);");
                     }

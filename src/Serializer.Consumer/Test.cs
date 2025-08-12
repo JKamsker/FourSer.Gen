@@ -10,12 +10,14 @@ public partial class TestPacket1
 {
     public int A { get; set; }
     public string B { get; set; } = string.Empty;
+    [SerializeCollection]
     public List<int> C { get; set; } = new();
 }
 
 [GenerateSerializer]
 public partial class MyPacket
 {
+    [SerializeCollection]
     public List<byte> Data { get; set; } = new();
 }
 
@@ -23,7 +25,7 @@ public partial class MyPacket
 [GenerateSerializer]
 public partial class TestWithCountType
 {
-   [GenerateSerializer(CountType = typeof(ushort))]
+   [SerializeCollection(CountType = typeof(ushort))]
    public List<int> MyList { get; set; } = new();
 }
 
@@ -32,8 +34,22 @@ public partial class TestWithCountSizeReference
 {
    public ushort MyListCount { get; set; }
 
-   [GenerateSerializer(CountSizeReference = "MyListCount")]
+   [SerializeCollection(CountSizeReference = "MyListCount")]
    public List<int> MyList { get; set; } = new();
+}
+
+[GenerateSerializer]
+public partial class TestWithListOfReferenceTypes
+{
+    [SerializeCollection]
+    public List<CXEntity> MyList { get; set; } = new();
+}
+
+[GenerateSerializer]
+public partial class CXEntity
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
 }
 
 [GenerateSerializer]
@@ -70,6 +86,8 @@ public partial class MixedFieldsAndPropsPacket
     // Property without setter (should NOT be serialized)
     public int ReadOnlyProperty => 123;
 }
+
+
 
 public class TestCases
 {

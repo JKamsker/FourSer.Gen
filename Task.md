@@ -110,14 +110,15 @@ Special cases:
 public partial class MyPacket
 {
     // It is implicitly assumed, that the count of the collection is int32 (4 bytes)
-    // Or we can use [GenerateSerializer(CountSize = 2)] to specify the static count size
-    // Or we can specify the count type by using [GenerateSerializer(CountType = typeof(ushort))]
+    // Or we can use [SerializeCollection(CountSize = 2)] to specify the static count size
+    // Or we can specify the count type by using [SerializeCollection(CountType = typeof(ushort))]
+    [SerializeCollection]
     public Entity[] Entities { get; set; }
 
     public partial class Entity{
         public int Id { get; set; }
         public string Name { get; set; }
-    }   
+    }
 }
 ```
 
@@ -176,13 +177,13 @@ public partial class MyPacket
 
     public string Name { get; set; }
 
-    [GenerateSerializer(CountSizeReference = nameof(EntityCount))]
+    [SerializeCollection(CountSizeReference = nameof(EntityCount))]
     public Entity[] Entities { get; set; }
 
     public partial class Entity{
         public int Id { get; set; }
         public string Name { get; set; }
-    }   
+    }
 }
 ```
 
