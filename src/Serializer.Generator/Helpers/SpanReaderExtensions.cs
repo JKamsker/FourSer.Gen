@@ -1,9 +1,10 @@
+using System;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 
-namespace Serializer.Consumer.Extensions;
+namespace Serializer.Generator.Helpers;
 
-public static class SpanReaderExtensions
+internal static class SpanReaderExtensions
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static byte ReadByte(this ref Span<byte> input)
