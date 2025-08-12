@@ -46,8 +46,8 @@ public static class SourceGenerator
         sb.AppendLine("using Serializer.Contracts;");
         // sb.AppendLine("using Serializer.Consumer.Extensions;");
         sb.AppendLine($"using System.IO;");
-        sb.AppendLine($"using System.Runtime.CompilerServices;");
-        sb.AppendLine($"using Serializer.Contracts;");
+        // sb.AppendLine($"using System.Runtime.CompilerServices;");
+        // sb.AppendLine($"using Serializer.Contracts;");
         sb.AppendLine($"using Serializer.Generator.Helpers;");
         sb.AppendLine();
         sb.AppendLine($"namespace {classToGenerate.Namespace};");

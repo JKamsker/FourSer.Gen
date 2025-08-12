@@ -13,9 +13,7 @@
       Include="Generated\**" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Generated\Serializer.Generator\Serializer.Generator.SerializerGenerator\" />
-  </ItemGroup>
+
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
