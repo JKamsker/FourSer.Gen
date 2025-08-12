@@ -3,9 +3,9 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace Serializer.Consumer.Extensions;
+namespace Serializer.Generator.Helpers;
 
-public static class SpanWriterExtensions
+internal static class SpanWriterExtensions
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteByte(this ref Span<byte> input, byte value)

@@ -5,9 +5,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Serializer.Consumer.Extensions;
+namespace Serializer.Generator.Helpers;
 
-public static class RoSpanReaderExtensions
+internal static class RoSpanReaderExtensions
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static byte ReadByte(this ref ReadOnlySpan<byte> input)
