@@ -24,7 +24,7 @@ public class SerializerGenerator : IIncrementalGenerator
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         context.RegisterPostInitializationOutput(AddHelpers);
-
+        
         var typeDeclarations = context.SyntaxProvider
             .ForAttributeWithMetadataName
             (

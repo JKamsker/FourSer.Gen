@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Serializer.Generator\Serializer.Generator.csproj"
@@ -13,9 +13,7 @@
       Include="Generated\**" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Generated\Serializer.Generator\Serializer.Generator.SerializerGenerator\" />
-  </ItemGroup>
+
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
