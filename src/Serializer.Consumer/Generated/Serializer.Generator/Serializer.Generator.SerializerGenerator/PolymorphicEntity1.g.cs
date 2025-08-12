@@ -7,21 +7,21 @@ using FourServerProxy.HighPerformance.Extensions;
 
 namespace Serializer.Consumer.UseCases;
 
-public partial class AutoPolymorphicEntity : ISerializable<AutoPolymorphicEntity>
+public partial class PolymorphicEntity1 : ISerializable<PolymorphicEntity1>
 {
-    public static int GetPacketSize(AutoPolymorphicEntity obj)
+    public static int GetPacketSize(PolymorphicEntity1 obj)
     {
         var size = 0;
         size += sizeof(int); // Size for unmanaged type Id
         // Polymorphic size calculation for Entity - infer type from actual object
         size += sizeof(int); // TypeId for polymorphic Entity
-        if (obj.Entity is AutoEntityType1 entityAutoEntityType1)
+        if (obj.Entity is EntityType1 entityEntityType1)
         {
-            size += AutoEntityType1.GetPacketSize(entityAutoEntityType1);
+            size += EntityType1.GetPacketSize(entityEntityType1);
         }
-        else if (obj.Entity is AutoEntityType2 entityAutoEntityType2)
+        else if (obj.Entity is EntityType2 entityEntityType2)
         {
-            size += AutoEntityType2.GetPacketSize(entityAutoEntityType2);
+            size += EntityType2.GetPacketSize(entityEntityType2);
         }
         else
         {
@@ -30,22 +30,22 @@ public partial class AutoPolymorphicEntity : ISerializable<AutoPolymorphicEntity
         return size;
     }
 
-    public static AutoPolymorphicEntity Deserialize(ReadOnlySpan<byte> data, out int bytesRead)
+    public static PolymorphicEntity1 Deserialize(ReadOnlySpan<byte> data, out int bytesRead)
     {
         bytesRead = 0;
         var originalData = data;
-        var obj = new AutoPolymorphicEntity();
+        var obj = new PolymorphicEntity1();
         obj.Id = data.ReadInt32();
         // Polymorphic deserialization for Entity
         var EntityTypeId = data.ReadInt32();
         switch (EntityTypeId)
         {
             case 1:
-                obj.Entity = AutoEntityType1.Deserialize(data, out var EntityBytesRead1);
+                obj.Entity = EntityType1.Deserialize(data, out var EntityBytesRead1);
                 data = data.Slice(EntityBytesRead1);
                 break;
             case 2:
-                obj.Entity = AutoEntityType2.Deserialize(data, out var EntityBytesRead2);
+                obj.Entity = EntityType2.Deserialize(data, out var EntityBytesRead2);
                 data = data.Slice(EntityBytesRead2);
                 break;
             default:
@@ -55,17 +55,17 @@ public partial class AutoPolymorphicEntity : ISerializable<AutoPolymorphicEntity
         return obj;
     }
 
-    public static int Serialize(AutoPolymorphicEntity obj, Span<byte> data)
+    public static int Serialize(PolymorphicEntity1 obj, Span<byte> data)
     {
         var originalData = data;
         data.WriteInt32(obj.Id);
         // Polymorphic serialization for Entity
         var EntityTypeId = 0;
-        if (obj.Entity is AutoEntityType1)
+        if (obj.Entity is EntityType1)
         {
             EntityTypeId = 1;
         }
-        else if (obj.Entity is AutoEntityType2)
+        else if (obj.Entity is EntityType2)
         {
             EntityTypeId = 2;
         }
@@ -77,11 +77,11 @@ public partial class AutoPolymorphicEntity : ISerializable<AutoPolymorphicEntity
         switch (EntityTypeId)
         {
             case 1:
-                var EntityBytesWritten1 = AutoEntityType1.Serialize((AutoEntityType1)obj.Entity, data);
+                var EntityBytesWritten1 = EntityType1.Serialize((EntityType1)obj.Entity, data);
                 data = data.Slice(EntityBytesWritten1);
                 break;
             case 2:
-                var EntityBytesWritten2 = AutoEntityType2.Serialize((AutoEntityType2)obj.Entity, data);
+                var EntityBytesWritten2 = EntityType2.Serialize((EntityType2)obj.Entity, data);
                 data = data.Slice(EntityBytesWritten2);
                 break;
             default:
@@ -90,33 +90,33 @@ public partial class AutoPolymorphicEntity : ISerializable<AutoPolymorphicEntity
         return originalData.Length - data.Length;
     }
 
-    public partial class BaseAutoEntity : ISerializable<BaseAutoEntity>
+    public partial class BaseEntity : ISerializable<BaseEntity>
     {
-        public static int GetPacketSize(BaseAutoEntity obj)
+        public static int GetPacketSize(BaseEntity obj)
         {
             var size = 0;
             return size;
         }
 
-        public static BaseAutoEntity Deserialize(ReadOnlySpan<byte> data, out int bytesRead)
+        public static BaseEntity Deserialize(ReadOnlySpan<byte> data, out int bytesRead)
         {
             bytesRead = 0;
             var originalData = data;
-            var obj = new BaseAutoEntity();
+            var obj = new BaseEntity();
             bytesRead = originalData.Length - data.Length;
             return obj;
         }
 
-        public static int Serialize(BaseAutoEntity obj, Span<byte> data)
+        public static int Serialize(BaseEntity obj, Span<byte> data)
         {
             var originalData = data;
             return originalData.Length - data.Length;
         }
     }
 
-    public partial class AutoEntityType1 : ISerializable<AutoEntityType1>
+    public partial class EntityType1 : ISerializable<EntityType1>
     {
-        public static int GetPacketSize(AutoEntityType1 obj)
+        public static int GetPacketSize(EntityType1 obj)
         {
             var size = 0;
             size += sizeof(int); // Size for string length
@@ -124,17 +124,17 @@ public partial class AutoPolymorphicEntity : ISerializable<AutoPolymorphicEntity
             return size;
         }
 
-        public static AutoEntityType1 Deserialize(ReadOnlySpan<byte> data, out int bytesRead)
+        public static EntityType1 Deserialize(ReadOnlySpan<byte> data, out int bytesRead)
         {
             bytesRead = 0;
             var originalData = data;
-            var obj = new AutoEntityType1();
+            var obj = new EntityType1();
             obj.Name = data.ReadString();
             bytesRead = originalData.Length - data.Length;
             return obj;
         }
 
-        public static int Serialize(AutoEntityType1 obj, Span<byte> data)
+        public static int Serialize(EntityType1 obj, Span<byte> data)
         {
             var originalData = data;
             data.WriteString(obj.Name);
@@ -142,9 +142,9 @@ public partial class AutoPolymorphicEntity : ISerializable<AutoPolymorphicEntity
         }
     }
 
-    public partial class AutoEntityType2 : ISerializable<AutoEntityType2>
+    public partial class EntityType2 : ISerializable<EntityType2>
     {
-        public static int GetPacketSize(AutoEntityType2 obj)
+        public static int GetPacketSize(EntityType2 obj)
         {
             var size = 0;
             size += sizeof(int); // Size for string length
@@ -152,17 +152,17 @@ public partial class AutoPolymorphicEntity : ISerializable<AutoPolymorphicEntity
             return size;
         }
 
-        public static AutoEntityType2 Deserialize(ReadOnlySpan<byte> data, out int bytesRead)
+        public static EntityType2 Deserialize(ReadOnlySpan<byte> data, out int bytesRead)
         {
             bytesRead = 0;
             var originalData = data;
-            var obj = new AutoEntityType2();
+            var obj = new EntityType2();
             obj.Description = data.ReadString();
             bytesRead = originalData.Length - data.Length;
             return obj;
         }
 
-        public static int Serialize(AutoEntityType2 obj, Span<byte> data)
+        public static int Serialize(EntityType2 obj, Span<byte> data)
         {
             var originalData = data;
             data.WriteString(obj.Description);

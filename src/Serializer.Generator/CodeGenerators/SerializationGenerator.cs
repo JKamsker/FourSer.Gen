@@ -52,25 +52,30 @@ public static class SerializationGenerator
                         hasTypeIdSynchronization = true;
                     }
                     
-                    sb.AppendLine($"        var actualType{polymorphicMember.Name} = obj.{polymorphicMember.Name}.GetType().Name;");
-                    sb.AppendLine($"        switch (actualType{polymorphicMember.Name})");
-                    sb.AppendLine("        {");
-
+                    // Use pattern matching instead of GetType().Name
+                    var isFirst = true;
                     foreach (var option in polymorphicOptions)
                     {
                         var id = option.ConstructorArguments[0].Value;
                         var type = option.ConstructorArguments[1].Value as ITypeSymbol;
                         if (type != null)
                         {
-                            sb.AppendLine($"            case \"{type.Name}\":");
-                            sb.AppendLine($"                obj.{typeIdProperty} = {id};");
-                            sb.AppendLine("                break;");
+                            var keyword = isFirst ? "if" : "else if";
+                            sb.AppendLine($"        {keyword} (obj.{polymorphicMember.Name} is {type.Name})");
+                            sb.AppendLine("        {");
+                            sb.AppendLine($"            obj.{typeIdProperty} = {id};");
+                            sb.AppendLine("        }");
+                            isFirst = false;
                         }
                     }
-
-                    sb.AppendLine("            default:");
-                    sb.AppendLine($"                throw new InvalidOperationException($\"Unknown polymorphic type: {{actualType{polymorphicMember.Name}}}\");");
-                    sb.AppendLine("        }");
+                    
+                    if (!isFirst) // Only add else if we had any options
+                    {
+                        sb.AppendLine("        else");
+                        sb.AppendLine("        {");
+                        sb.AppendLine($"            throw new InvalidOperationException($\"Unknown polymorphic type: {{obj.{polymorphicMember.Name}.GetType().Name}}\");");
+                        sb.AppendLine("        }");
+                    }
                 }
             }
         }
@@ -162,27 +167,33 @@ public static class SerializationGenerator
             }
             else
             {
-                // Infer TypeId from actual object type and write it directly
+                // Infer TypeId from actual object type and write it directly using pattern matching
                 sb.AppendLine($"        var {member.Name}TypeId = 0;");
-                sb.AppendLine($"        var actualType{member.Name} = obj.{member.Name}.GetType().Name;");
-                sb.AppendLine($"        switch (actualType{member.Name})");
-                sb.AppendLine("        {");
-
+                
+                var isFirst = true;
                 foreach (var option in polymorphicOptions)
                 {
                     var id = option.ConstructorArguments[0].Value;
                     var type = option.ConstructorArguments[1].Value as ITypeSymbol;
                     if (type != null)
                     {
-                        sb.AppendLine($"            case \"{type.Name}\":");
-                        sb.AppendLine($"                {member.Name}TypeId = {id};");
-                        sb.AppendLine("                break;");
+                        var keyword = isFirst ? "if" : "else if";
+                        sb.AppendLine($"        {keyword} (obj.{member.Name} is {type.Name})");
+                        sb.AppendLine("        {");
+                        sb.AppendLine($"            {member.Name}TypeId = {id};");
+                        sb.AppendLine("        }");
+                        isFirst = false;
                     }
                 }
-
-                sb.AppendLine("            default:");
-                sb.AppendLine($"                throw new InvalidOperationException($\"Unknown polymorphic type: {{actualType{member.Name}}}\");");
-                sb.AppendLine("        }");
+                
+                if (!isFirst) // Only add else if we had any options
+                {
+                    sb.AppendLine("        else");
+                    sb.AppendLine("        {");
+                    sb.AppendLine($"            throw new InvalidOperationException($\"Unknown polymorphic type: {{obj.{member.Name}.GetType().Name}}\");");
+                    sb.AppendLine("        }");
+                }
+                
                 sb.AppendLine($"        data.WriteInt32({member.Name}TypeId);");
                 sb.AppendLine($"        switch ({member.Name}TypeId)");
             }

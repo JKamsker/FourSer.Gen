@@ -15,16 +15,17 @@ public partial class PolymorphicEntity : ISerializable<PolymorphicEntity>
         size += sizeof(int); // Size for unmanaged type Id
         size += sizeof(int); // Size for unmanaged type TypeId
         // Polymorphic size calculation for Entity - infer type from actual object
-        switch (obj.Entity.GetType().Name)
+        if (obj.Entity is EntityType1 entityEntityType1)
         {
-            case "EntityType1":
-                size += EntityType1.GetPacketSize((EntityType1)obj.Entity);
-                break;
-            case "EntityType2":
-                size += EntityType2.GetPacketSize((EntityType2)obj.Entity);
-                break;
-            default:
-                throw new InvalidOperationException($"Unknown polymorphic type: {obj.Entity.GetType().Name}");
+            size += EntityType1.GetPacketSize(entityEntityType1);
+        }
+        else if (obj.Entity is EntityType2 entityEntityType2)
+        {
+            size += EntityType2.GetPacketSize(entityEntityType2);
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unknown polymorphic type: {obj.Entity.GetType().Name}");
         }
         return size;
     }
@@ -58,17 +59,17 @@ public partial class PolymorphicEntity : ISerializable<PolymorphicEntity>
     {
         var originalData = data;
         // Ensure TypeId properties are synchronized with actual object types
-        var actualTypeEntity = obj.Entity.GetType().Name;
-        switch (actualTypeEntity)
+        if (obj.Entity is EntityType1)
         {
-            case "EntityType1":
-                obj.TypeId = 1;
-                break;
-            case "EntityType2":
-                obj.TypeId = 2;
-                break;
-            default:
-                throw new InvalidOperationException($"Unknown polymorphic type: {actualTypeEntity}");
+            obj.TypeId = 1;
+        }
+        else if (obj.Entity is EntityType2)
+        {
+            obj.TypeId = 2;
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unknown polymorphic type: {obj.Entity.GetType().Name}");
         }
         data.WriteInt32(obj.Id);
         data.WriteInt32(obj.TypeId);

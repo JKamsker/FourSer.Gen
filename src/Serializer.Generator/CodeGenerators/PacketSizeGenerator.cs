@@ -106,24 +106,30 @@ public static class PacketSizeGenerator
                 sb.AppendLine($"        size += sizeof(int); // TypeId for polymorphic {member.Name}");
             }
             
-            sb.AppendLine($"        switch (obj.{member.Name}.GetType().Name)");
-            sb.AppendLine("        {");
-
+            // Use pattern matching instead of GetType().Name
+            var isFirst = true;
             foreach (var option in polymorphicOptions)
             {
                 var id = option.ConstructorArguments[0].Value;
                 var type = option.ConstructorArguments[1].Value as ITypeSymbol;
                 if (type != null)
                 {
-                    sb.AppendLine($"            case \"{type.Name}\":");
-                    sb.AppendLine($"                size += {type.Name}.GetPacketSize(({type.Name})obj.{member.Name});");
-                    sb.AppendLine("                break;");
+                    var keyword = isFirst ? "if" : "else if";
+                    sb.AppendLine($"        {keyword} (obj.{member.Name} is {type.Name} {member.Name.ToLower()}{type.Name})");
+                    sb.AppendLine("        {");
+                    sb.AppendLine($"            size += {type.Name}.GetPacketSize({member.Name.ToLower()}{type.Name});");
+                    sb.AppendLine("        }");
+                    isFirst = false;
                 }
             }
-
-            sb.AppendLine("            default:");
-            sb.AppendLine($"                throw new InvalidOperationException($\"Unknown polymorphic type: {{obj.{member.Name}.GetType().Name}}\");");
-            sb.AppendLine("        }");
+            
+            if (!isFirst) // Only add else if we had any options
+            {
+                sb.AppendLine("        else");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            throw new InvalidOperationException($\"Unknown polymorphic type: {{obj.{member.Name}.GetType().Name}}\");");
+                sb.AppendLine("        }");
+            }
         }
     }
 
