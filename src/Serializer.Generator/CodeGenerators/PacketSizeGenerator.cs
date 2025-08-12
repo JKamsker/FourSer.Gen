@@ -1,6 +1,6 @@
-using Microsoft.CodeAnalysis;
-using System.Linq;
+using Serializer.Generator.Models;
 using System.Text;
+using Serializer.Generator.Helpers;
 
 namespace Serializer.Generator.CodeGenerators;
 
@@ -9,212 +9,136 @@ namespace Serializer.Generator.CodeGenerators;
 /// </summary>
 public static class PacketSizeGenerator
 {
-    public static void GenerateGetPacketSize(StringBuilder sb, ClassToGenerate classToGenerate, INamedTypeSymbol namedTypeSymbol)
+    public static void GenerateGetPacketSize(StringBuilder sb, TypeToGenerate typeToGenerate)
     {
-        sb.AppendLine($"    public static int GetPacketSize({classToGenerate.Name} obj)");
+        sb.AppendLine($"    public static int GetPacketSize({typeToGenerate.Name} obj)");
         sb.AppendLine("    {");
         sb.AppendLine("        var size = 0;");
 
-        foreach (var member in classToGenerate.Members)
+        foreach (var member in typeToGenerate.Members)
         {
-            GenerateMemberSizeCalculation(sb, member, namedTypeSymbol);
+            if (member.IsList)
+            {
+                GenerateCollectionSizeCalculation(sb, member);
+            }
+            else if (member.PolymorphicInfo is not null)
+            {
+                var info = member.PolymorphicInfo.Value;
+                if (string.IsNullOrEmpty(info.TypeIdProperty))
+                {
+                    var typeIdSize = info.EnumUnderlyingType is not null
+                        ? $"sizeof({info.EnumUnderlyingType})"
+                        : $"sizeof({info.TypeIdType})";
+                    sb.AppendLine($"        size += {typeIdSize};");
+                }
+                GeneratePolymorphicSizeCalculation(sb, member);
+            }
+            else if (member.HasGenerateSerializerAttribute)
+            {
+                sb.AppendLine($"        size += {GetSimpleTypeName(member.TypeName)}.GetPacketSize(obj.{member.Name}); // Size for nested type {member.Name}");
+            }
+            else if (member.IsStringType)
+            {
+                sb.AppendLine($"        size += StringEx.MeasureSize(obj.{member.Name}); // Size for string {member.Name}");
+            }
+            else if (member.IsUnmanagedType)
+            {
+                sb.AppendLine($"        size += sizeof({member.TypeName}); // Size for unmanaged type {member.Name}");
+            }
         }
 
         sb.AppendLine("        return size;");
         sb.AppendLine("    }");
     }
 
-    private static void GenerateMemberSizeCalculation(StringBuilder sb, ISymbol member, INamedTypeSymbol namedTypeSymbol)
+    private static void GenerateCollectionSizeCalculation(StringBuilder sb, MemberToGenerate member)
     {
-        var memberType = TypeAnalyzer.GetMemberType(member);
-        var collectionAttribute = AttributeHelper.GetCollectionAttribute(member);
-        var polymorphicAttribute = AttributeHelper.GetPolymorphicAttribute(member);
+        sb.AppendLine($"        size += sizeof(int); // Default count size for {member.Name}");
 
-        if (collectionAttribute != null && IsListType(memberType))
+        if (member.CollectionInfo is not null && member.PolymorphicInfo is not null && member.CollectionInfo.Value.PolymorphicMode != PolymorphicMode.None)
         {
-            GenerateCollectionSizeCalculation(sb, member, memberType, collectionAttribute, namedTypeSymbol);
-        }
-        else if (polymorphicAttribute != null)
-        {
-            GeneratePolymorphicSizeCalculation(sb, member, polymorphicAttribute);
-        }
-        else if (AttributeHelper.HasGenerateSerializerAttribute(memberType))
-        {
-            sb.AppendLine($"        size += {memberType.Name}.GetPacketSize(obj.{member.Name});");
-        }
-        else if (memberType.SpecialType == SpecialType.System_String)
-        {
-            sb.AppendLine($"        size += StringEx.MeasureSize(obj.{member.Name}); // Size for string {member.Name}");
-        }
-        else if (memberType.IsUnmanagedType)
-        {
-            sb.AppendLine($"        size += sizeof({memberType.ToDisplayString()}); // Size for unmanaged type {member.Name}");
-        }
-    }
-
-    private static void GenerateCollectionSizeCalculation
-    (
-        StringBuilder sb,
-        ISymbol member,
-        ITypeSymbol memberType,
-        AttributeData collectionAttribute,
-        INamedTypeSymbol namedTypeSymbol
-    )
-    {
-        var listTypeSymbol = (INamedTypeSymbol)memberType;
-        var typeArgument = listTypeSymbol.TypeArguments[0];
-        var countSizeReference = AttributeHelper.GetCountSizeReference(collectionAttribute);
-        var countType = AttributeHelper.GetCountType(collectionAttribute);
-        var countSize = AttributeHelper.GetCountSize(collectionAttribute);
-        var polymorphicMode = (PolymorphicMode)AttributeHelper.GetPolymorphicMode(collectionAttribute);
-
-        if (string.IsNullOrEmpty(countSizeReference))
-        {
-            if (countType != null)
+            sb.AppendLine($"        foreach(var item in obj.{member.Name})");
+            sb.AppendLine("        {");
+            var info = member.PolymorphicInfo.Value;
+            if (string.IsNullOrEmpty(info.TypeIdProperty))
             {
-                sb.AppendLine($"        size += sizeof({countType.ToDisplayString()}); // Count size for {member.Name}");
+                var typeIdSize = info.EnumUnderlyingType is not null
+                    ? $"sizeof({info.EnumUnderlyingType})"
+                    : $"sizeof({info.TypeIdType})";
+                sb.AppendLine($"            size += {typeIdSize};");
             }
-            else if (countSize.HasValue && countSize != -1)
-            {
-                sb.AppendLine($"        size += {countSize.Value}; // Count size for {member.Name} (in bits)");
-            }
-            else
-            {
-                sb.AppendLine($"        size += sizeof(int); // Default count size for {member.Name}");
-            }
+            var itemMember = new MemberToGenerate(
+                "item",
+                member.ListTypeArgument!.Value.TypeName,
+                member.ListTypeArgument.Value.IsUnmanagedType,
+                member.ListTypeArgument.Value.IsStringType,
+                member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
+                false,
+                null,
+                null,
+                member.PolymorphicInfo
+            );
+            GeneratePolymorphicSizeCalculation(sb, itemMember, "item");
+            sb.AppendLine("        }");
+            return;
         }
 
-        if (polymorphicMode == PolymorphicMode.None)
+        if (member.ListTypeArgument is not null)
         {
-            if (typeArgument.IsUnmanagedType)
+            var typeArg = member.ListTypeArgument.Value;
+            if (typeArg.IsUnmanagedType)
             {
-                sb.AppendLine($"        size += obj.{member.Name}.Count * sizeof({typeArgument.ToDisplayString()});");
+                sb.AppendLine($"        size += obj.{member.Name}.Count * sizeof({typeArg.TypeName});");
             }
-            else
+            else if (typeArg.IsStringType)
+            {
+                sb.AppendLine($"        foreach(var item in obj.{member.Name}) {{ size += StringEx.MeasureSize(item); }}");
+            }
+            else if (typeArg.HasGenerateSerializerAttribute)
             {
                 sb.AppendLine($"        foreach(var item in obj.{member.Name})");
                 sb.AppendLine("        {");
-                sb.AppendLine($"            size += {TypeAnalyzer.GetTypeReference(typeArgument, namedTypeSymbol)}.GetPacketSize(item);");
+                sb.AppendLine($"            size += {GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item);");
                 sb.AppendLine("        }");
             }
-        }
-        else
-        {
-            var typeIdType = AttributeHelper.GetCollectionTypeIdType(collectionAttribute);
-            var typeIdSize = GetSizeOfType(typeIdType);
-            var polymorphicOptions = AttributeHelper.GetPolymorphicOptions(member);
-
-            if (polymorphicMode == PolymorphicMode.SingleTypeId)
-            {
-                sb.AppendLine($"        size += {typeIdSize}; // Single TypeId for collection {member.Name}");
-            }
-
-            sb.AppendLine($"        foreach(var item in obj.{member.Name})");
-            sb.AppendLine("        {");
-
-            if (polymorphicMode == PolymorphicMode.IndividualTypeIds)
-            {
-                sb.AppendLine($"            size += {typeIdSize}; // Individual TypeId for item in {member.Name}");
-            }
-
-            var isFirst = true;
-            foreach (var option in polymorphicOptions)
-            {
-                var type = option.ConstructorArguments[1].Value as ITypeSymbol;
-                if (type != null)
-                {
-                    var typeReference = TypeAnalyzer.GetTypeReference(type, namedTypeSymbol);
-                    var keyword = isFirst ? "if" : "else if";
-                    sb.AppendLine($"            {keyword} (item is {typeReference} typedItem{type.Name})");
-                    sb.AppendLine("            {");
-                    sb.AppendLine($"                size += {typeReference}.GetPacketSize(typedItem{type.Name});");
-                    sb.AppendLine("            }");
-                    isFirst = false;
-                }
-            }
-            if (!isFirst)
-            {
-                sb.AppendLine("            else { throw new InvalidOperationException($\"Unknown polymorphic type in collection: {item.GetType().Name}\"); }");
-            }
-            sb.AppendLine("        }");
+        
         }
     }
 
-    private static void GeneratePolymorphicSizeCalculation(StringBuilder sb, ISymbol member, AttributeData polymorphicAttribute)
+    private static void GeneratePolymorphicSizeCalculation(StringBuilder sb, MemberToGenerate member, string instanceName = "")
     {
-        var polymorphicOptions = AttributeHelper.GetPolymorphicOptions(member);
-        var typeIdProperty = AttributeHelper.GetTypeIdProperty(polymorphicAttribute);
-        var typeIdType = AttributeHelper.GetTypeIdType(polymorphicAttribute);
-        
-
-
-        if (polymorphicOptions.Any())
+        if (string.IsNullOrEmpty(instanceName))
         {
-            sb.AppendLine($"        // Polymorphic size calculation for {member.Name} - infer type from actual object");
-            
-            // If no TypeId property is specified, we need to account for the TypeId we'll write
-            if (string.IsNullOrEmpty(typeIdProperty))
-            {
-                var sizeOfType = GetSizeOfType(typeIdType);
-                sb.AppendLine($"        size += {sizeOfType}; // TypeId for polymorphic {member.Name}");
-            }
-            
-            // Use pattern matching instead of GetType().Name
-            var isFirst = true;
-            foreach (var option in polymorphicOptions)
-            {
-                var id = option.ConstructorArguments[0].Value;
-                var type = option.ConstructorArguments[1].Value as ITypeSymbol;
-                if (type != null)
-                {
-                    var keyword = isFirst ? "if" : "else if";
-                    sb.AppendLine($"        {keyword} (obj.{member.Name} is {type.Name} {member.Name.ToLower()}{type.Name})");
-                    sb.AppendLine("        {");
-                    sb.AppendLine($"            size += {type.Name}.GetPacketSize({member.Name.ToLower()}{type.Name});");
-                    sb.AppendLine("        }");
-                    isFirst = false;
-                }
-            }
-            
-            if (!isFirst) // Only add else if we had any options
-            {
-                sb.AppendLine("        else");
-                sb.AppendLine("        {");
-                sb.AppendLine($"            throw new InvalidOperationException($\"Unknown polymorphic type: {{obj.{member.Name}.GetType().Name}}\");");
-                sb.AppendLine("        }");
-            }
+            instanceName = $"obj.{member.Name}";
         }
-    }
 
-    private static bool IsListType(ITypeSymbol memberType)
-    {
-        return memberType is INamedTypeSymbol listTypeSymbol && 
-               listTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>";
-    }
-
-    private static string GetSizeOfType(ITypeSymbol? typeIdType)
-    {
-        if (typeIdType == null) return "sizeof(int)";
+        var info = member.PolymorphicInfo!.Value;
         
-        if (typeIdType.TypeKind == TypeKind.Enum)
+        sb.AppendLine($"        switch ({instanceName})");
+        sb.AppendLine("        {");
+
+        foreach (var option in info.Options)
         {
-            var enumType = (INamedTypeSymbol)typeIdType;
-            var underlyingType = enumType.EnumUnderlyingType?.Name ?? "int";
-            return underlyingType switch
-            {
-                "Byte" => "sizeof(byte)",
-                "UInt16" => "sizeof(ushort)",
-                "Int64" => "sizeof(long)",
-                _ => "sizeof(int)"
-            };
+            var typeName = GetSimpleTypeName(option.Type);
+            sb.AppendLine($"            case {typeName} typedInstance:");
+            sb.AppendLine($"                size += {typeName}.GetPacketSize(typedInstance);");
+            sb.AppendLine("                break;");
         }
         
-        return typeIdType.Name switch
+        sb.AppendLine("            case null: break;");
+        sb.AppendLine("            default:");
+        sb.AppendLine($"                throw new System.IO.InvalidDataException($\"Unknown type for {member.Name}: {{{instanceName}?.GetType().FullName}}\");");
+        sb.AppendLine("        }");
+    }
+
+    private static string GetSimpleTypeName(string? fullyQualifiedName)
+    {
+        if (string.IsNullOrEmpty(fullyQualifiedName)) return string.Empty;
+        var lastDot = fullyQualifiedName.LastIndexOf('.');
+        if (lastDot == -1)
         {
-            "Byte" => "sizeof(byte)",
-            "UInt16" => "sizeof(ushort)",
-            "Int64" => "sizeof(long)",
-            _ => "sizeof(int)"
-        };
+            return fullyQualifiedName;
+        }
+        return fullyQualifiedName.Substring(lastDot + 1);
     }
 }

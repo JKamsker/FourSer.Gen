@@ -339,6 +339,6 @@ ASALocalRun/
 # BeatPulse healthcheck temp database
 healthchecksdb
 /.local/TLoginOLD
-/src/FourServerProxy.WorkerService/Recordings/LoginSteps/GlossyDumps
+# /src/FourServerProxy.WorkerService/Recordings/LoginSteps/GlossyDumps
 
 src/Serializer.Consumer/Generated/

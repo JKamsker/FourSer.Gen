@@ -14,6 +14,13 @@ internal static class SpanWriterExtensions
         original[0] = value;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteSByte(this ref Span<byte> input, sbyte value)
+    {
+        var original = Advance<sbyte>(ref input);
+        original[0] = (byte)value;
+    }
+
     /// <summary>
     /// Copied from <see cref="BinaryWriter.Write(uint)"/>
     /// </summary>
@@ -37,6 +44,9 @@ internal static class SpanWriterExtensions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void WriteSingle(this ref Span<byte> input, float value) => input.WriteUInt32(*(uint*)&value);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void WriteDouble(this ref Span<byte> input, double value) => input.WriteUInt64(*(ulong*)&value);
+
     /// <summary>
     /// Copied from <see cref="BinaryWriter.Write(ushort)"/>
     /// </summary>
@@ -46,6 +56,14 @@ internal static class SpanWriterExtensions
     public static void WriteUInt16(this ref Span<byte> input, ushort value)
     {
         var original = Advance<ushort>(ref input);
+        original[0] = (byte)value;
+        original[1] = (byte)(value >> 8);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteInt16(this ref Span<byte> input, short value)
+    {
+        var original = Advance<short>(ref input);
         original[0] = (byte)value;
         original[1] = (byte)(value >> 8);
     }
@@ -88,17 +106,11 @@ internal static class SpanWriterExtensions
         original[7] = (byte)(value >> 56);
     }
 
-    /// <summary>
-    /// Copied from <see cref="BinaryWriter.Write(ushort)"/>
-    /// </summary>
-    /// <param name="input"></param>
-    /// <param name="value"></param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteUShort(this ref Span<byte> input, ushort value)
+    public static void WriteBoolean(this ref Span<byte> input, bool value)
     {
-        var original = Advance<ushort>(ref input);
-        original[0] = (byte)value;
-        original[1] = (byte)(value >> 8);
+        var original = Advance<byte>(ref input);
+        original[0] = (byte)(value ? 1 : 0);
     }
 
     /// <summary>
@@ -119,11 +131,7 @@ internal static class SpanWriterExtensions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteString(this ref Span<byte> input, string value)
     {
-        var encoding = Encoding.UTF8;
-        var byteCount = encoding.GetByteCount(value.AsSpan());
-        input.WriteInt32(byteCount);
-        encoding.GetBytes(value, input);
-        input = input[byteCount..];
+        StringEx.WriteString(ref input, value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,6 +1,6 @@
-using Microsoft.CodeAnalysis;
-using System.Linq;
+using Serializer.Generator.Models;
 using System.Text;
+using Serializer.Generator.Helpers;
 
 namespace Serializer.Generator.CodeGenerators;
 
@@ -9,17 +9,17 @@ namespace Serializer.Generator.CodeGenerators;
 /// </summary>
 public static class DeserializationGenerator
 {
-    public static void GenerateDeserialize(StringBuilder sb, ClassToGenerate classToGenerate, INamedTypeSymbol namedTypeSymbol)
+    public static void GenerateDeserialize(StringBuilder sb, TypeToGenerate typeToGenerate)
     {
-        sb.AppendLine($"    public static {classToGenerate.Name} Deserialize(ReadOnlySpan<byte> data, out int bytesRead)");
+        sb.AppendLine($"    public static {typeToGenerate.Name} Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)");
         sb.AppendLine("    {");
         sb.AppendLine($"        bytesRead = 0;");
         sb.AppendLine($"        var originalData = data;");
-        sb.AppendLine($"        var obj = new {classToGenerate.Name}();");
+        sb.AppendLine($"        var obj = new {typeToGenerate.Name}();");
 
-        foreach (var member in classToGenerate.Members)
+        foreach (var member in typeToGenerate.Members)
         {
-            GenerateMemberDeserialization(sb, member, namedTypeSymbol);
+            GenerateMemberDeserialization(sb, member);
         }
 
         sb.AppendLine("        bytesRead = originalData.Length - data.Length;");
@@ -27,249 +27,230 @@ public static class DeserializationGenerator
         sb.AppendLine("    }");
     }
 
-    private static void GenerateMemberDeserialization(StringBuilder sb, ISymbol member, INamedTypeSymbol namedTypeSymbol)
+    private static void GenerateMemberDeserialization(StringBuilder sb, MemberToGenerate member)
     {
-        var memberType = TypeAnalyzer.GetMemberType(member);
-        var collectionAttribute = AttributeHelper.GetCollectionAttribute(member);
-        var polymorphicAttribute = AttributeHelper.GetPolymorphicAttribute(member);
-
-        if (collectionAttribute != null && IsListType(memberType))
+        if (member.IsList)
         {
-            GenerateCollectionDeserialization(sb, member, memberType, collectionAttribute, namedTypeSymbol);
+            GenerateCollectionDeserialization(sb, member);
         }
-        else if (polymorphicAttribute != null)
+        else if (member.PolymorphicInfo is not null)
         {
-            GeneratePolymorphicDeserialization(sb, member, polymorphicAttribute);
+            GeneratePolymorphicDeserialization(sb, member);
         }
-        else if (AttributeHelper.HasGenerateSerializerAttribute(memberType))
+        else if (member.HasGenerateSerializerAttribute)
         {
-            sb.AppendLine($"        obj.{member.Name} = {memberType.Name}.Deserialize(data, out var nestedBytesRead);");
+            sb.AppendLine($"        obj.{member.Name} = {GetSimpleTypeName(member.TypeName)}.Deserialize(data, out var nestedBytesRead);");
             sb.AppendLine($"        data = data.Slice(nestedBytesRead);");
         }
-        else if (memberType.SpecialType == SpecialType.System_String)
+        else if (member.IsStringType)
         {
             sb.AppendLine($"        obj.{member.Name} = data.ReadString();");
         }
-        else if (memberType.IsUnmanagedType)
+        else if (member.IsUnmanagedType)
         {
-            sb.AppendLine($"        obj.{member.Name} = data.Read{memberType.Name}();");
+            var typeName = GetMethodFriendlyTypeName(member.TypeName);
+            var readMethod = $"Read{typeName}";
+            sb.AppendLine($"        obj.{member.Name} = data.{readMethod}();");
         }
     }
 
-    private static void GenerateCollectionDeserialization(StringBuilder sb, ISymbol member, ITypeSymbol memberType,
-        AttributeData collectionAttribute, INamedTypeSymbol namedTypeSymbol)
+    private static string GetMethodFriendlyTypeName(string typeName)
     {
-        var listTypeSymbol = (INamedTypeSymbol)memberType;
-        var typeArgument = listTypeSymbol.TypeArguments[0];
-        var countSizeReference = AttributeHelper.GetCountSizeReference(collectionAttribute);
-        var countType = AttributeHelper.GetCountType(collectionAttribute);
-        var countSize = AttributeHelper.GetCountSize(collectionAttribute);
-        var polymorphicMode = (PolymorphicMode)AttributeHelper.GetPolymorphicMode(collectionAttribute);
-
-        sb.AppendLine($"        var {member.Name}Count = 0;");
-        if (!string.IsNullOrEmpty(countSizeReference))
+        return typeName switch
         {
-            sb.AppendLine($"        {member.Name}Count = (int)obj.{countSizeReference};");
-        }
-        else if (countType != null)
-        {
-            sb.AppendLine($"        {member.Name}Count = data.Read{countType.Name}();");
-        }
-        else if (countSize.HasValue && countSize != -1)
-        {
-            sb.AppendLine($"        {member.Name}Count = data.ReadInt{countSize * 8}();");
-        }
-        else
-        {
-            sb.AppendLine($"        {member.Name}Count = data.ReadInt32();");
-        }
-
-        sb.AppendLine($"        obj.{member.Name} = new System.Collections.Generic.List<{typeArgument.ToDisplayString()}>({member.Name}Count);");
-
-        if (polymorphicMode == PolymorphicMode.None)
-        {
-            sb.AppendLine($"        for (int i = 0; i < {member.Name}Count; i++)");
-            sb.AppendLine("        {");
-            if (typeArgument.IsUnmanagedType)
-            {
-                sb.AppendLine($"            obj.{member.Name}.Add(data.Read{typeArgument.Name}());");
-            }
-            else
-            {
-                sb.AppendLine($"            obj.{member.Name}.Add({TypeAnalyzer.GetTypeReference(typeArgument, namedTypeSymbol)}.Deserialize(data, out var itemBytesRead));");
-                sb.AppendLine($"            data = data.Slice(itemBytesRead);");
-            }
-            sb.AppendLine("        }");
-        }
-        else
-        {
-            var typeIdType = AttributeHelper.GetCollectionTypeIdType(collectionAttribute);
-            var readMethod = GetReadMethod(typeIdType);
-            var polymorphicOptions = AttributeHelper.GetPolymorphicOptions(member);
-            var typeIdVarType = typeIdType?.ToDisplayString() ?? "int";
-
-            if (polymorphicMode == PolymorphicMode.SingleTypeId)
-            {
-                var castExpression = typeIdType?.TypeKind == TypeKind.Enum ? $"({typeIdVarType})data.{readMethod}()" : $"data.{readMethod}()";
-                sb.AppendLine($"        var {member.Name}TypeId = {castExpression};");
-                sb.AppendLine($"        for (int i = 0; i < {member.Name}Count; i++)");
-                sb.AppendLine("        {");
-                sb.AppendLine($"            switch ({member.Name}TypeId)");
-                sb.AppendLine("            {");
-                foreach (var option in polymorphicOptions)
-                {
-                    var id = option.ConstructorArguments[0].Value;
-                    var type = option.ConstructorArguments[1].Value as ITypeSymbol;
-                    if (type != null)
-                    {
-                        var typeReference = TypeAnalyzer.GetTypeReference(type, namedTypeSymbol);
-                        var caseValue = FormatCaseValue(id, typeIdType);
-                        var safeId = GetSafeIdForVariableName(id);
-                        sb.AppendLine($"                case {caseValue}:");
-                        sb.AppendLine($"                    obj.{member.Name}.Add({typeReference}.Deserialize(data, out var itemBytesRead{safeId}));");
-                        sb.AppendLine($"                    data = data.Slice(itemBytesRead{safeId});");
-                        sb.AppendLine("                    break;");
-                    }
-                }
-                sb.AppendLine($"                default: throw new InvalidOperationException($\"Unknown type ID: {{{member.Name}TypeId}}\");");
-                sb.AppendLine("            }");
-                sb.AppendLine("        }");
-            }
-            else // IndividualTypeIds
-            {
-                sb.AppendLine($"        for (int i = 0; i < {member.Name}Count; i++)");
-                sb.AppendLine("        {");
-                var castExpression = typeIdType?.TypeKind == TypeKind.Enum ? $"({typeIdVarType})data.{readMethod}()" : $"data.{readMethod}()";
-                sb.AppendLine($"            var itemTypeId = {castExpression};");
-                sb.AppendLine("            switch (itemTypeId)");
-                sb.AppendLine("            {");
-                foreach (var option in polymorphicOptions)
-                {
-                    var id = option.ConstructorArguments[0].Value;
-                    var type = option.ConstructorArguments[1].Value as ITypeSymbol;
-                    if (type != null)
-                    {
-                        var typeReference = TypeAnalyzer.GetTypeReference(type, namedTypeSymbol);
-                        var caseValue = FormatCaseValue(id, typeIdType);
-                        var safeId = GetSafeIdForVariableName(id);
-                        sb.AppendLine($"                case {caseValue}:");
-                        sb.AppendLine($"                    obj.{member.Name}.Add({typeReference}.Deserialize(data, out var itemBytesRead{safeId}));");
-                        sb.AppendLine($"                    data = data.Slice(itemBytesRead{safeId});");
-                        sb.AppendLine("                    break;");
-                    }
-                }
-                sb.AppendLine("                default: throw new InvalidOperationException($\"Unknown type ID: {itemTypeId}\");");
-                sb.AppendLine("            }");
-                sb.AppendLine("        }");
-            }
-        }
-    }
-
-    private static void GeneratePolymorphicDeserialization(StringBuilder sb, ISymbol member, AttributeData polymorphicAttribute)
-    {
-        var polymorphicOptions = AttributeHelper.GetPolymorphicOptions(member);
-        var typeIdProperty = AttributeHelper.GetTypeIdProperty(polymorphicAttribute);
-        var typeIdType = AttributeHelper.GetTypeIdType(polymorphicAttribute);
-        
-
-
-        if (polymorphicOptions.Any())
-        {
-            sb.AppendLine($"        // Polymorphic deserialization for {member.Name}");
-            
-            if (!string.IsNullOrEmpty(typeIdProperty))
-            {
-                // Use existing TypeId property
-                sb.AppendLine($"        switch (obj.{typeIdProperty})");
-            }
-            else
-            {
-                // Read TypeId directly from stream without storing in model
-                var readMethod = GetReadMethod(typeIdType);
-                var variableType = typeIdType?.ToDisplayString() ?? "int";
-                var castExpression = typeIdType?.TypeKind == TypeKind.Enum 
-                    ? $"({variableType})data.{readMethod}()" 
-                    : $"data.{readMethod}()";
-                sb.AppendLine($"        var {member.Name}TypeId = {castExpression};");
-                sb.AppendLine($"        switch ({member.Name}TypeId)");
-            }
-            
-            sb.AppendLine("        {");
-
-            foreach (var option in polymorphicOptions)
-            {
-                var id = option.ConstructorArguments[0].Value;
-                var type = option.ConstructorArguments[1].Value as ITypeSymbol;
-                if (type != null)
-                {
-                    var caseValue = FormatCaseValue(id, typeIdType);
-                    var safeId = GetSafeIdForVariableName(id);
-                    sb.AppendLine($"            case {caseValue}:");
-                    sb.AppendLine($"                obj.{member.Name} = {type.Name}.Deserialize(data, out var {member.Name}BytesRead{safeId});");
-                    sb.AppendLine($"                data = data.Slice({member.Name}BytesRead{safeId});");
-                    sb.AppendLine("                break;");
-                }
-            }
-
-            sb.AppendLine("            default:");
-            if (!string.IsNullOrEmpty(typeIdProperty))
-            {
-                sb.AppendLine($"                throw new InvalidOperationException($\"Unknown type ID: {{obj.{typeIdProperty}}}\");");
-            }
-            else
-            {
-                sb.AppendLine($"                throw new InvalidOperationException($\"Unknown type ID: {{{member.Name}TypeId}}\");");
-            }
-            sb.AppendLine("        }");
-        }
-    }
-
-    private static bool IsListType(ITypeSymbol memberType)
-    {
-        return memberType is INamedTypeSymbol listTypeSymbol && 
-               listTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>";
-    }
-
-    private static string GetReadMethod(ITypeSymbol? typeIdType)
-    {
-        if (typeIdType == null) return "ReadInt32";
-        
-        if (typeIdType.TypeKind == TypeKind.Enum)
-        {
-            var enumType = (INamedTypeSymbol)typeIdType;
-            var underlyingType = enumType.EnumUnderlyingType?.Name ?? "int";
-            return underlyingType switch
-            {
-                "Byte" => "ReadByte",
-                "UInt16" => "ReadUInt16",
-                "Int64" => "ReadInt64",
-                _ => "ReadInt32"
-            };
-        }
-        
-        return typeIdType.Name switch
-        {
-            "Byte" => "ReadByte",
-            "UInt16" => "ReadUInt16",
-            "Int64" => "ReadInt64",
-            _ => "ReadInt32"
+            "int" => "Int32",
+            "uint" => "UInt32",
+            "short" => "Int16",
+            "ushort" => "UInt16",
+            "long" => "Int64",
+            "ulong" => "UInt64",
+            "byte" => "Byte",
+            "float" => "Single",
+            "bool" => "Boolean",
+            "double" => "Double",
+            _ => GetSimpleTypeName(typeName)
         };
     }
 
-    private static string FormatCaseValue(object? id, ITypeSymbol? typeIdType)
+    private static void GenerateCollectionDeserialization(StringBuilder sb, MemberToGenerate member)
     {
-        if (id == null) return "0";
-        
-        if (typeIdType?.TypeKind == TypeKind.Enum)
+        sb.AppendLine($"        var {member.Name}Count = data.ReadInt32();");
+        // sb.AppendLine($"        data = data.Slice(sizeof(int));");
+        sb.AppendLine($"        obj.{member.Name} = new System.Collections.Generic.List<{member.ListTypeArgument!.Value.TypeName}>({member.Name}Count);");
+
+        if (member.CollectionInfo is not null && member.PolymorphicInfo is not null)
         {
-            return $"({typeIdType.ToDisplayString()}){id}";
+            if (member.CollectionInfo.Value.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
+            {
+                sb.AppendLine($"        for (int i = 0; i < {member.Name}Count; i++)");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            {member.ListTypeArgument!.Value.TypeName} item;");
+                var itemMember = new MemberToGenerate(
+                    "item",
+                    member.ListTypeArgument!.Value.TypeName,
+                    member.ListTypeArgument.Value.IsUnmanagedType,
+                    member.ListTypeArgument.Value.IsStringType,
+                    member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
+                    false,
+                    null,
+                    null,
+                    member.PolymorphicInfo
+                );
+                GeneratePolymorphicItemDeserialization(sb, itemMember, "item");
+                sb.AppendLine($"            obj.{member.Name}.Add(item);");
+                sb.AppendLine("        }");
+                return;
+            }
+
+            if (member.CollectionInfo.Value.PolymorphicMode == PolymorphicMode.SingleTypeId)
+            {
+                var info = member.PolymorphicInfo!.Value;
+                var typeIdProperty = member.CollectionInfo.Value.TypeIdProperty;
+
+                sb.AppendLine($"        switch (obj.{typeIdProperty})");
+                sb.AppendLine("        {");
+
+                foreach (var option in info.Options)
+                {
+                    var key = option.Key.ToString();
+                    if (info.EnumUnderlyingType is not null)
+                    {
+                        key = $"({info.TypeIdType}){key}";
+                    }
+                    else if (info.TypeIdType.EndsWith("Enum"))
+                    {
+                        key = $"{info.TypeIdType}.{key}";
+                    }
+                    
+                    sb.AppendLine($"            case {key}:");
+                    sb.AppendLine("            {");
+                    sb.AppendLine($"                for (int i = 0; i < {member.Name}Count; i++)");
+                    sb.AppendLine("                {");
+                    sb.AppendLine($"                    var item = {GetSimpleTypeName(option.Type)}.Deserialize(data, out var itemBytesRead);");
+                    sb.AppendLine($"                    obj.{member.Name}.Add(item);");
+                    sb.AppendLine($"                    data = data.Slice(itemBytesRead);");
+                    sb.AppendLine("                }");
+                    sb.AppendLine("                break;");
+                    sb.AppendLine("            }");
+                }
+
+                sb.AppendLine("            default:");
+                sb.AppendLine($"                throw new System.IO.InvalidDataException($\"Unknown type id for {member.Name}: {{obj.{typeIdProperty}}}\");");
+                sb.AppendLine("        }");
+                return;
+            }
         }
-        
-        return id.ToString() ?? "0";
+
+        sb.AppendLine($"        for (int i = 0; i < {member.Name}Count; i++)");
+        sb.AppendLine("        {");
+
+        var typeArg = member.ListTypeArgument.Value;
+        if (typeArg.IsUnmanagedType)
+        {
+            var typeName = GetMethodFriendlyTypeName(typeArg.TypeName);
+            sb.AppendLine($"            obj.{member.Name}.Add(data.Read{typeName}());");
+        }
+        else if (typeArg.IsStringType)
+        {
+            sb.AppendLine($"            obj.{member.Name}.Add(data.ReadString());");
+        }
+        else if (typeArg.HasGenerateSerializerAttribute)
+        {
+            sb.AppendLine($"            obj.{member.Name}.Add({GetSimpleTypeName(typeArg.TypeName)}.Deserialize(data, out var itemBytesRead));");
+            sb.AppendLine($"            data = data.Slice(itemBytesRead);");
+        }
+
+        sb.AppendLine("        }");
     }
 
-    private static string GetSafeIdForVariableName(object? id)
+    private static string GetSimpleTypeName(string? fullyQualifiedName)
     {
-        return id?.ToString()?.Replace("-", "Neg") ?? "0";
+        if (string.IsNullOrEmpty(fullyQualifiedName)) return string.Empty;
+        var lastDot = fullyQualifiedName.LastIndexOf('.');
+        if (lastDot == -1)
+        {
+            return fullyQualifiedName;
+        }
+        return fullyQualifiedName.Substring(lastDot + 1);
+    }
+
+    private static void GeneratePolymorphicDeserialization(StringBuilder sb, MemberToGenerate member)
+    {
+        var info = member.PolymorphicInfo!.Value;
+        var typeIdProperty = info.TypeIdProperty;
+        var bytesReadVar = $"{member.Name}BytesRead";
+
+        sb.AppendLine($"        int {bytesReadVar};");
+        sb.AppendLine($"        obj.{member.Name} = default;");
+
+        string typeIdVar = $"obj.{typeIdProperty}";
+        if (string.IsNullOrEmpty(typeIdProperty))
+        {
+            var typeIdTypeName = GetMethodFriendlyTypeName(info.EnumUnderlyingType ?? info.TypeIdType);
+            sb.AppendLine($"        var typeId = data.Read{typeIdTypeName}();");
+            typeIdVar = "typeId";
+        }
+        
+        sb.AppendLine($"        switch (({info.TypeIdType}){typeIdVar})");
+        sb.AppendLine("        {");
+
+        foreach (var option in info.Options)
+        {
+            var key = option.Key.ToString();
+            if (info.EnumUnderlyingType is not null)
+            {
+                key = $"({info.TypeIdType}){key}";
+            }
+            else if (info.TypeIdType.EndsWith("Enum"))
+            {
+                key = $"{info.TypeIdType}.{key}";
+            }
+
+
+            sb.AppendLine($"            case {key}:");
+            sb.AppendLine($"                obj.{member.Name} = {GetSimpleTypeName(option.Type)}.Deserialize(data, out {bytesReadVar});");
+            sb.AppendLine($"                data = data.Slice({bytesReadVar});");
+            sb.AppendLine("                break;");
+        }
+
+        sb.AppendLine("            default:");
+        sb.AppendLine($"                throw new System.IO.InvalidDataException($\"Unknown type id for {member.Name}: {{{typeIdVar}}}\");");
+        sb.AppendLine("        }");
+    }
+    private static void GeneratePolymorphicItemDeserialization(StringBuilder sb, MemberToGenerate member, string assignmentTarget)
+    {
+        var info = member.PolymorphicInfo!.Value;
+        var bytesReadVar = $"{assignmentTarget}BytesRead";
+
+        sb.AppendLine($"            int {bytesReadVar};");
+
+        var typeIdTypeName = GetMethodFriendlyTypeName(info.EnumUnderlyingType ?? info.TypeIdType);
+        sb.AppendLine($"            var typeId = data.Read{typeIdTypeName}();");
+        var typeIdVar = "typeId";
+
+        sb.AppendLine($"            switch (({info.TypeIdType}){typeIdVar})");
+        sb.AppendLine("            {");
+
+        foreach (var option in info.Options)
+        {
+            var key = option.Key.ToString();
+            if (info.EnumUnderlyingType is not null)
+            {
+                key = $"({info.TypeIdType}){key}";
+            }
+            else if (info.TypeIdType.EndsWith("Enum"))
+            {
+                key = $"{info.TypeIdType}.{key}";
+            }
+
+            sb.AppendLine($"                case {key}:");
+            sb.AppendLine($"                    {assignmentTarget} = {GetSimpleTypeName(option.Type)}.Deserialize(data, out {bytesReadVar});");
+            sb.AppendLine($"                    data = data.Slice({bytesReadVar});");
+            sb.AppendLine("                    break;");
+        }
+
+        sb.AppendLine("                default:");
+        sb.AppendLine($"                    throw new System.IO.InvalidDataException($\"Unknown type id for {member.Name}: {{{typeIdVar}}}\");");
+        sb.AppendLine("            }");
     }
 }

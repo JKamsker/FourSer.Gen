@@ -200,7 +200,7 @@ public partial class LoginPacket : ISerializable<LoginPacket>
         return size;
     }
 
-    public static LoginPacket Deserialize(ReadOnlySpan<byte> data, out int bytesRead)
+    public static LoginPacket Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
     {
         bytesRead = 0;
         var originalData = data;
@@ -212,7 +212,7 @@ public partial class LoginPacket : ISerializable<LoginPacket>
         return obj;
     }
 
-    public static int Serialize(LoginPacket obj, Span<byte> data)
+    public static int Serialize(LoginPacket obj, System.Span<byte> data)
     {
         var originalData = data;
         data.WriteByte(obj.Result);
@@ -285,11 +285,11 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
     {
         var size = 0;
         size += sizeof(int); // Size for unmanaged type Id
-        size += NestedData.GetPacketSize(obj.Data);
+        size += NestedData.GetPacketSize(obj.Data); // Size for nested type Data
         return size;
     }
 
-    public static ContainerPacket Deserialize(ReadOnlySpan<byte> data, out int bytesRead)
+    public static ContainerPacket Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
     {
         bytesRead = 0;
         var originalData = data;
@@ -301,7 +301,7 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
         return obj;
     }
 
-    public static int Serialize(ContainerPacket obj, Span<byte> data)
+    public static int Serialize(ContainerPacket obj, System.Span<byte> data)
     {
         var originalData = data;
         data.WriteInt32(obj.Id);
@@ -377,13 +377,12 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         return size;
     }
 
-    public static CollectionPacket Deserialize(ReadOnlySpan<byte> data, out int bytesRead)
+    public static CollectionPacket Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
     {
         bytesRead = 0;
         var originalData = data;
         var obj = new CollectionPacket();
-        var NumbersCount = 0;
-        NumbersCount = data.ReadInt32();
+        var NumbersCount = data.ReadInt32();
         obj.Numbers = new System.Collections.Generic.List<int>(NumbersCount);
         for (int i = 0; i < NumbersCount; i++)
         {
@@ -393,7 +392,7 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         return obj;
     }
 
-    public static int Serialize(CollectionPacket obj, Span<byte> data)
+    public static int Serialize(CollectionPacket obj, System.Span<byte> data)
     {
         var originalData = data;
         data.WriteInt32(obj.Numbers.Count);
