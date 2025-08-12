@@ -14,6 +14,9 @@ public class TestRunner
 
     public void RunTests()
     {
+        // Run polymorphic test first
+        PolymorphicTest.RunTest();
+        
         var testClasses = new[]
         {
             typeof(MyPacketTest),

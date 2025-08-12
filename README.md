@@ -132,6 +132,80 @@ public partial class NestedData
 }
 ```
 
+## Polymorphic Serialization
+
+Support for polymorphic types using type discriminators:
+
+```csharp
+[GenerateSerializer]
+public partial class PolymorphicEntity
+{
+    public int Id { get; set; }
+    public int TypeId { get; set; } // Type discriminator
+    
+    [SerializePolymorphic(nameof(TypeId))]
+    [PolymorphicOption(1, typeof(EntityType1))]
+    [PolymorphicOption(2, typeof(EntityType2))]
+    public BaseEntity Entity { get; set; }
+    
+    [GenerateSerializer]
+    public partial class BaseEntity
+    {
+    }
+    
+    [GenerateSerializer]
+    public partial class EntityType1 : BaseEntity
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+    
+    [GenerateSerializer]
+    public partial class EntityType2 : BaseEntity
+    {
+        public string Description { get; set; } = string.Empty;
+    }
+}
+```
+
+### Usage
+
+```csharp
+var entity = new PolymorphicEntity
+{
+    Id = 100,
+    TypeId = 1, // Indicates EntityType1
+    Entity = new PolymorphicEntity.EntityType1 { Name = "Test" }
+};
+
+// Serialization automatically uses the correct type based on TypeId
+var size = PolymorphicEntity.GetPacketSize(entity);
+var buffer = new byte[size];
+var bytesWritten = PolymorphicEntity.Serialize(entity, buffer);
+
+// Deserialization automatically creates the correct type
+var deserialized = PolymorphicEntity.Deserialize(buffer, out var bytesRead);
+// deserialized.Entity will be of type EntityType1
+```
+
+### Automatic TypeId Inference
+
+The generator automatically ensures TypeId properties are synchronized with the actual object types during serialization:
+
+```csharp
+var entity = new PolymorphicEntity
+{
+    Id = 100,
+    TypeId = 999, // Wrong TypeId!
+    Entity = new PolymorphicEntity.EntityType1 { Name = "Test" }
+};
+
+// During serialization, TypeId is automatically corrected to 1
+var bytesWritten = PolymorphicEntity.Serialize(entity, buffer);
+// entity.TypeId is now 1 (corrected from 999)
+```
+
+This prevents serialization errors when the TypeId property doesn't match the actual object type.
+
 ## Supported Types
 
 ### Primitive Types
@@ -152,6 +226,7 @@ public partial class NestedData
 ### Custom Types
 
 - Any class or struct marked with `[GenerateSerializer]`
+- Polymorphic types using `[SerializePolymorphic]` and `[PolymorphicOption]` attributes
 
 ## Project Structure
 

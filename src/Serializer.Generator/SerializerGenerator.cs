@@ -145,18 +145,20 @@ public class SerializerGenerator : IIncrementalGenerator
         foreach (var member in classToGenerate.Members)
         {
             var memberType = GetMemberType(member);
-            var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "SerializeCollectionAttribute");
-            if (attribute != null && memberType is INamedTypeSymbol listTypeSymbol && listTypeSymbol.OriginalDefinition.ToDisplayString()
+            var collectionAttribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "SerializeCollectionAttribute");
+            var polymorphicAttribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "SerializePolymorphicAttribute");
+            
+            if (collectionAttribute != null && memberType is INamedTypeSymbol listTypeSymbol && listTypeSymbol.OriginalDefinition.ToDisplayString()
                 == "System.Collections.Generic.List<T>")
             {
                 var typeArgument = listTypeSymbol.TypeArguments[0];
-                var countSizeReference = attribute?.NamedArguments.FirstOrDefault
+                var countSizeReference = collectionAttribute?.NamedArguments.FirstOrDefault
                         (arg => arg.Key == "CountSizeReference")
                     .Value.Value?.ToString();
-                var countType = attribute?.NamedArguments.FirstOrDefault
+                var countType = collectionAttribute?.NamedArguments.FirstOrDefault
                         (arg => arg.Key == "CountType")
                     .Value.Value as ITypeSymbol;
-                var countSize = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSize").Value.Value as int?;
+                var countSize = collectionAttribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSize").Value.Value as int?;
 
                 if (string.IsNullOrEmpty(countSizeReference))
                 {
@@ -183,6 +185,38 @@ public class SerializerGenerator : IIncrementalGenerator
                     sb.AppendLine($"        foreach(var item in obj.{member.Name})");
                     sb.AppendLine("        {");
                     sb.AppendLine($"            size += {GetTypeReference(typeArgument, namedTypeSymbol)}.GetPacketSize(item);");
+                    sb.AppendLine("        }");
+                }
+            }
+            else if (polymorphicAttribute != null)
+            {
+                // Handle polymorphic size calculation
+                var polymorphicOptions = member.GetAttributes()
+                    .Where(a => a.AttributeClass?.Name == "PolymorphicOptionAttribute")
+                    .ToList();
+
+                var typeIdProperty = polymorphicAttribute.ConstructorArguments.FirstOrDefault().Value?.ToString();
+                
+                if (!string.IsNullOrEmpty(typeIdProperty) && polymorphicOptions.Any())
+                {
+                    sb.AppendLine($"        // Polymorphic size calculation for {member.Name} - infer type from actual object");
+                    sb.AppendLine($"        switch (obj.{member.Name}.GetType().Name)");
+                    sb.AppendLine("        {");
+                    
+                    foreach (var option in polymorphicOptions)
+                    {
+                        var id = option.ConstructorArguments[0].Value;
+                        var type = option.ConstructorArguments[1].Value as ITypeSymbol;
+                        if (type != null)
+                        {
+                            sb.AppendLine($"            case \"{type.Name}\":");
+                            sb.AppendLine($"                size += {GetTypeReference(type, namedTypeSymbol)}.GetPacketSize(({GetTypeReference(type, namedTypeSymbol)})obj.{member.Name});");
+                            sb.AppendLine("                break;");
+                        }
+                    }
+                    
+                    sb.AppendLine("            default:");
+                    sb.AppendLine($"                throw new InvalidOperationException($\"Unknown polymorphic type: {{obj.{member.Name}.GetType().Name}}\");");
                     sb.AppendLine("        }");
                 }
             }
@@ -214,18 +248,20 @@ public class SerializerGenerator : IIncrementalGenerator
         foreach (var member in classToGenerate.Members)
         {
             var memberType = GetMemberType(member);
-            var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "SerializeCollectionAttribute");
-            if (attribute != null && memberType is INamedTypeSymbol listTypeSymbol && listTypeSymbol.OriginalDefinition.ToDisplayString()
+            var collectionAttribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "SerializeCollectionAttribute");
+            var polymorphicAttribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "SerializePolymorphicAttribute");
+            
+            if (collectionAttribute != null && memberType is INamedTypeSymbol listTypeSymbol && listTypeSymbol.OriginalDefinition.ToDisplayString()
                 == "System.Collections.Generic.List<T>")
             {
                 var typeArgument = listTypeSymbol.TypeArguments[0];
-                var countSizeReference = attribute?.NamedArguments.FirstOrDefault
+                var countSizeReference = collectionAttribute?.NamedArguments.FirstOrDefault
                         (arg => arg.Key == "CountSizeReference")
                     .Value.Value?.ToString();
-                var countType = attribute?.NamedArguments.FirstOrDefault
+                var countType = collectionAttribute?.NamedArguments.FirstOrDefault
                         (arg => arg.Key == "CountType")
                     .Value.Value as ITypeSymbol;
-                var countSize = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSize").Value.Value as int?;
+                var countSize = collectionAttribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSize").Value.Value as int?;
 
                 sb.AppendLine($"        var {member.Name}Count = 0;");
                 if (!string.IsNullOrEmpty(countSizeReference))
@@ -264,6 +300,39 @@ public class SerializerGenerator : IIncrementalGenerator
 
                 sb.AppendLine("        }");
             }
+            else if (polymorphicAttribute != null)
+            {
+                // Handle polymorphic deserialization
+                var polymorphicOptions = member.GetAttributes()
+                    .Where(a => a.AttributeClass?.Name == "PolymorphicOptionAttribute")
+                    .ToList();
+
+                var typeIdProperty = polymorphicAttribute.ConstructorArguments.FirstOrDefault().Value?.ToString();
+                
+                if (!string.IsNullOrEmpty(typeIdProperty) && polymorphicOptions.Any())
+                {
+                    sb.AppendLine($"        // Polymorphic deserialization for {member.Name}");
+                    sb.AppendLine($"        switch (obj.{typeIdProperty})");
+                    sb.AppendLine("        {");
+                    
+                    foreach (var option in polymorphicOptions)
+                    {
+                        var id = option.ConstructorArguments[0].Value;
+                        var type = option.ConstructorArguments[1].Value as ITypeSymbol;
+                        if (type != null)
+                        {
+                            sb.AppendLine($"            case {id}:");
+                            sb.AppendLine($"                obj.{member.Name} = {GetTypeReference(type, namedTypeSymbol)}.Deserialize(data, out var {member.Name}BytesRead{id});");
+                            sb.AppendLine($"                data = data.Slice({member.Name}BytesRead{id});");
+                            sb.AppendLine("                break;");
+                        }
+                    }
+                    
+                    sb.AppendLine("            default:");
+                    sb.AppendLine($"                throw new InvalidOperationException($\"Unknown type ID: {{obj.{typeIdProperty}}}\");");
+                    sb.AppendLine("        }");
+                }
+            }
             else if (memberType.GetAttributes()
                      .Any(a => a.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"))
             {
@@ -287,21 +356,65 @@ public class SerializerGenerator : IIncrementalGenerator
         sb.AppendLine($"    public static int Serialize({classToGenerate.Name} obj, Span<byte> data)");
         sb.AppendLine("    {");
         sb.AppendLine($"        var originalData = data;");
+        
+        // Generate helper method to infer TypeId from polymorphic properties
+        var polymorphicMembers = classToGenerate.Members
+            .Where(m => m.GetAttributes().Any(a => a.AttributeClass?.Name == "SerializePolymorphicAttribute"))
+            .ToList();
+            
+        if (polymorphicMembers.Any())
+        {
+            sb.AppendLine("        // Ensure TypeId properties are synchronized with actual object types");
+            foreach (var polymorphicMember in polymorphicMembers)
+            {
+                var polymorphicAttribute = polymorphicMember.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "SerializePolymorphicAttribute");
+                var polymorphicOptions = polymorphicMember.GetAttributes()
+                    .Where(a => a.AttributeClass?.Name == "PolymorphicOptionAttribute")
+                    .ToList();
+
+                var typeIdProperty = polymorphicAttribute?.ConstructorArguments.FirstOrDefault().Value?.ToString();
+                
+                if (!string.IsNullOrEmpty(typeIdProperty) && polymorphicOptions.Any())
+                {
+                    sb.AppendLine($"        var actualType{polymorphicMember.Name} = obj.{polymorphicMember.Name}.GetType().Name;");
+                    sb.AppendLine($"        switch (actualType{polymorphicMember.Name})");
+                    sb.AppendLine("        {");
+                    
+                    foreach (var option in polymorphicOptions)
+                    {
+                        var id = option.ConstructorArguments[0].Value;
+                        var type = option.ConstructorArguments[1].Value as ITypeSymbol;
+                        if (type != null)
+                        {
+                            sb.AppendLine($"            case \"{type.Name}\":");
+                            sb.AppendLine($"                obj.{typeIdProperty} = {id};");
+                            sb.AppendLine("                break;");
+                        }
+                    }
+                    
+                    sb.AppendLine("            default:");
+                    sb.AppendLine($"                throw new InvalidOperationException($\"Unknown polymorphic type: {{actualType{polymorphicMember.Name}}}\");");
+                    sb.AppendLine("        }");
+                }
+            }
+        }
         foreach (var member in classToGenerate.Members)
         {
             var memberType = GetMemberType(member);
-            var attribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "SerializeCollectionAttribute");
-            if (attribute != null && memberType is INamedTypeSymbol listTypeSymbol && listTypeSymbol.OriginalDefinition.ToDisplayString()
+            var collectionAttribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "SerializeCollectionAttribute");
+            var polymorphicAttribute = member.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "SerializePolymorphicAttribute");
+            
+            if (collectionAttribute != null && memberType is INamedTypeSymbol listTypeSymbol && listTypeSymbol.OriginalDefinition.ToDisplayString()
                 == "System.Collections.Generic.List<T>")
             {
                 var typeArgument = listTypeSymbol.TypeArguments[0];
-                var countSizeReference = attribute?.NamedArguments.FirstOrDefault
+                var countSizeReference = collectionAttribute?.NamedArguments.FirstOrDefault
                         (arg => arg.Key == "CountSizeReference")
                     .Value.Value?.ToString();
-                var countType = attribute?.NamedArguments.FirstOrDefault
+                var countType = collectionAttribute?.NamedArguments.FirstOrDefault
                         (arg => arg.Key == "CountType")
                     .Value.Value as ITypeSymbol;
-                var countSize = attribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSize").Value.Value as int?;
+                var countSize = collectionAttribute?.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSize").Value.Value as int?;
 
                 if (string.IsNullOrEmpty(countSizeReference))
                 {
@@ -332,6 +445,39 @@ public class SerializerGenerator : IIncrementalGenerator
                 }
 
                 sb.AppendLine("        }");
+            }
+            else if (polymorphicAttribute != null)
+            {
+                // Handle polymorphic serialization - TypeId already synchronized above
+                var polymorphicOptions = member.GetAttributes()
+                    .Where(a => a.AttributeClass?.Name == "PolymorphicOptionAttribute")
+                    .ToList();
+
+                var typeIdProperty = polymorphicAttribute.ConstructorArguments.FirstOrDefault().Value?.ToString();
+                
+                if (!string.IsNullOrEmpty(typeIdProperty) && polymorphicOptions.Any())
+                {
+                    sb.AppendLine($"        // Polymorphic serialization for {member.Name}");
+                    sb.AppendLine($"        switch (obj.{typeIdProperty})");
+                    sb.AppendLine("        {");
+                    
+                    foreach (var option in polymorphicOptions)
+                    {
+                        var id = option.ConstructorArguments[0].Value;
+                        var type = option.ConstructorArguments[1].Value as ITypeSymbol;
+                        if (type != null)
+                        {
+                            sb.AppendLine($"            case {id}:");
+                            sb.AppendLine($"                var {member.Name}BytesWritten{id} = {GetTypeReference(type, namedTypeSymbol)}.Serialize(({GetTypeReference(type, namedTypeSymbol)})obj.{member.Name}, data);");
+                            sb.AppendLine($"                data = data.Slice({member.Name}BytesWritten{id});");
+                            sb.AppendLine("                break;");
+                        }
+                    }
+                    
+                    sb.AppendLine("            default:");
+                    sb.AppendLine($"                throw new InvalidOperationException($\"Unknown type ID: {{obj.{typeIdProperty}}}\");");
+                    sb.AppendLine("        }");
+                }
             }
             else if (memberType.GetAttributes()
                      .Any(a => a.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"))
