@@ -20,6 +20,8 @@ public class TestRunner
         PolymorphicTypeIdTest.RunTest();
         PolymorphicComparison.RunComparison();
         PolymorphicApproachComparison.RunComparison();
+        IndividualTypeIdsTestRunner.RunTest();
+        SingleTypeIdTestRunner.RunTest();
         
         var testClasses = new[]
         {

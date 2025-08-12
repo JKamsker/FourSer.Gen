@@ -54,10 +54,10 @@ public static class PacketSizeGenerator
 
     private static void GenerateCollectionSizeCalculation
     (
-        StringBuilder sb, 
-        ISymbol member, 
-        ITypeSymbol memberType, 
-        AttributeData collectionAttribute, 
+        StringBuilder sb,
+        ISymbol member,
+        ITypeSymbol memberType,
+        AttributeData collectionAttribute,
         INamedTypeSymbol namedTypeSymbol
     )
     {
@@ -66,6 +66,7 @@ public static class PacketSizeGenerator
         var countSizeReference = AttributeHelper.GetCountSizeReference(collectionAttribute);
         var countType = AttributeHelper.GetCountType(collectionAttribute);
         var countSize = AttributeHelper.GetCountSize(collectionAttribute);
+        var polymorphicMode = (PolymorphicMode)AttributeHelper.GetPolymorphicMode(collectionAttribute);
 
         if (string.IsNullOrEmpty(countSizeReference))
         {
@@ -83,15 +84,58 @@ public static class PacketSizeGenerator
             }
         }
 
-        if (typeArgument.IsUnmanagedType)
+        if (polymorphicMode == PolymorphicMode.None)
         {
-            sb.AppendLine($"        size += obj.{member.Name}.Count * sizeof({typeArgument.ToDisplayString()});");
+            if (typeArgument.IsUnmanagedType)
+            {
+                sb.AppendLine($"        size += obj.{member.Name}.Count * sizeof({typeArgument.ToDisplayString()});");
+            }
+            else
+            {
+                sb.AppendLine($"        foreach(var item in obj.{member.Name})");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            size += {TypeAnalyzer.GetTypeReference(typeArgument, namedTypeSymbol)}.GetPacketSize(item);");
+                sb.AppendLine("        }");
+            }
         }
         else
         {
+            var typeIdType = AttributeHelper.GetCollectionTypeIdType(collectionAttribute);
+            var typeIdSize = GetSizeOfType(typeIdType);
+            var polymorphicOptions = AttributeHelper.GetPolymorphicOptions(member);
+
+            if (polymorphicMode == PolymorphicMode.SingleTypeId)
+            {
+                sb.AppendLine($"        size += {typeIdSize}; // Single TypeId for collection {member.Name}");
+            }
+
             sb.AppendLine($"        foreach(var item in obj.{member.Name})");
             sb.AppendLine("        {");
-            sb.AppendLine($"            size += {TypeAnalyzer.GetTypeReference(typeArgument, namedTypeSymbol)}.GetPacketSize(item);");
+
+            if (polymorphicMode == PolymorphicMode.IndividualTypeIds)
+            {
+                sb.AppendLine($"            size += {typeIdSize}; // Individual TypeId for item in {member.Name}");
+            }
+
+            var isFirst = true;
+            foreach (var option in polymorphicOptions)
+            {
+                var type = option.ConstructorArguments[1].Value as ITypeSymbol;
+                if (type != null)
+                {
+                    var typeReference = TypeAnalyzer.GetTypeReference(type, namedTypeSymbol);
+                    var keyword = isFirst ? "if" : "else if";
+                    sb.AppendLine($"            {keyword} (item is {typeReference} typedItem{type.Name})");
+                    sb.AppendLine("            {");
+                    sb.AppendLine($"                size += {typeReference}.GetPacketSize(typedItem{type.Name});");
+                    sb.AppendLine("            }");
+                    isFirst = false;
+                }
+            }
+            if (!isFirst)
+            {
+                sb.AppendLine("            else { throw new InvalidOperationException($\"Unknown polymorphic type in collection: {item.GetType().Name}\"); }");
+            }
             sb.AppendLine("        }");
         }
     }

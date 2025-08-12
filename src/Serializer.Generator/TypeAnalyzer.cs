@@ -42,13 +42,22 @@ public static class TypeAnalyzer
 
     public static List<ISymbol> GetSerializableMembers(INamedTypeSymbol typeSymbol)
     {
-        return typeSymbol.GetMembers()
-            .Where(m =>
-                (m.Kind == SymbolKind.Property && ((IPropertySymbol)m).SetMethod != null) ||
-                (m.Kind == SymbolKind.Field && m.DeclaredAccessibility == Accessibility.Public
-                    && !((IFieldSymbol)m).IsReadOnly))
-            .OrderBy(m => m.Locations.First().SourceSpan.Start)
-            .ToList();
+        var members = new List<ISymbol>();
+        var currentType = typeSymbol;
+        while (currentType != null && currentType.SpecialType != SpecialType.System_Object)
+        {
+            var typeMembers = currentType.GetMembers()
+                .Where(m =>
+                    !m.IsImplicitlyDeclared &&
+                    ((m.Kind == SymbolKind.Property && ((IPropertySymbol)m).SetMethod != null) ||
+                    (m.Kind == SymbolKind.Field && m.DeclaredAccessibility == Accessibility.Public
+                        && !((IFieldSymbol)m).IsReadOnly)))
+                .OrderBy(m => m.Locations.First().SourceSpan.Start)
+                .ToList();
+            members.InsertRange(0, typeMembers);
+            currentType = currentType.BaseType;
+        }
+        return members;
     }
 
     public static Dictionary<INamedTypeSymbol, List<INamedTypeSymbol>> GroupTypesByContainer(
@@ -71,5 +80,37 @@ public static class TypeAnalyzer
         }
 
         return typeGroups;
+    }
+
+    public static void ValidateSerializableType(SourceProductionContext context, INamedTypeSymbol typeSymbol)
+    {
+        foreach (var member in GetSerializableMembers(typeSymbol))
+        {
+            var collectionAttribute = AttributeHelper.GetCollectionAttribute(member);
+            if (collectionAttribute != null)
+            {
+                var polymorphicMode = (PolymorphicMode)AttributeHelper.GetPolymorphicMode(collectionAttribute);
+                var typeIdProperty = AttributeHelper.GetCollectionTypeIdProperty(collectionAttribute);
+
+                if (polymorphicMode == PolymorphicMode.SingleTypeId)
+                {
+                    if (string.IsNullOrEmpty(typeIdProperty))
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(
+                            new DiagnosticDescriptor("SER001", "Missing TypeIdProperty", "TypeIdProperty must be specified when PolymorphicMode is SingleTypeId.", "Serialization", DiagnosticSeverity.Error, true),
+                            member.Locations.FirstOrDefault()));
+                    }
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(typeIdProperty))
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(
+                            new DiagnosticDescriptor("SER002", "Invalid TypeIdProperty", "TypeIdProperty must not be specified when PolymorphicMode is not SingleTypeId.", "Serialization", DiagnosticSeverity.Error, true),
+                            member.Locations.FirstOrDefault()));
+                    }
+                }
+            }
+        }
     }
 }
