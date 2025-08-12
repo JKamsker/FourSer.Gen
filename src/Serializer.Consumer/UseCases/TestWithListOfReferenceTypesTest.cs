@@ -1,9 +1,6 @@
 using Serializer.Contracts;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace Serializer.Consumer;
+namespace Serializer.Consumer.UseCases;
 
 [GenerateSerializer]
 public partial class CXEntity
@@ -33,12 +30,12 @@ public class TestWithListOfReferenceTypesTest
             }
         };
 
-        var size = TestWithListOfReferenceTypes.GetPacketSize(original);
+        var size = Consumer.TestWithListOfReferenceTypes.GetPacketSize(original);
         var buffer = new byte[size];
         var span = new Span<byte>(buffer);
-        TestWithListOfReferenceTypes.Serialize(original, span);
+        Consumer.TestWithListOfReferenceTypes.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = TestWithListOfReferenceTypes.Deserialize(readOnlySpan, out _);
+        var deserialized = Consumer.TestWithListOfReferenceTypes.Deserialize(readOnlySpan, out _);
 
         Assert.AreEqual(original.MyList.Count, deserialized.MyList.Count);
         for (int i = 0; i < original.MyList.Count; i++)

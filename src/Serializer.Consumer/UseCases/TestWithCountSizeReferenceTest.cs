@@ -1,9 +1,6 @@
 using Serializer.Contracts;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace Serializer.Consumer;
+namespace Serializer.Consumer.UseCases;
 
 [GenerateSerializer]
 public partial class TestWithCountSizeReference
@@ -24,12 +21,12 @@ public class TestWithCountSizeReferenceTest
         };
         original.MyListCount = (ushort)original.MyList.Count;
 
-        var size = TestWithCountSizeReference.GetPacketSize(original);
+        var size = Consumer.TestWithCountSizeReference.GetPacketSize(original);
         var buffer = new byte[size];
         var span = new Span<byte>(buffer);
-        TestWithCountSizeReference.Serialize(original, span);
+        Consumer.TestWithCountSizeReference.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = TestWithCountSizeReference.Deserialize(readOnlySpan, out _);
+        var deserialized = Consumer.TestWithCountSizeReference.Deserialize(readOnlySpan, out _);
 
         Assert.AreEqual(original.MyListCount, deserialized.MyListCount);
         Assert.AreEqual(true, original.MyList.SequenceEqual(deserialized.MyList));

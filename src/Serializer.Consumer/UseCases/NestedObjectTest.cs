@@ -1,9 +1,6 @@
 using Serializer.Contracts;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace Serializer.Consumer;
+namespace Serializer.Consumer.UseCases;
 
 [GenerateSerializer]
 public partial class NestedPacket
@@ -28,12 +25,12 @@ public class NestedObjectTest
             Name = "Container"
         };
 
-        var size = ContainerPacket.GetPacketSize(original);
+        var size = Consumer.ContainerPacket.GetPacketSize(original);
         var buffer = new byte[size];
         var span = new Span<byte>(buffer);
-        ContainerPacket.Serialize(original, span);
+        Consumer.ContainerPacket.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = ContainerPacket.Deserialize(readOnlySpan, out _);
+        var deserialized = Consumer.ContainerPacket.Deserialize(readOnlySpan, out _);
 
         Assert.AreEqual(original.Name, deserialized.Name);
         Assert.AreEqual(original.Nested.Id, deserialized.Nested.Id);

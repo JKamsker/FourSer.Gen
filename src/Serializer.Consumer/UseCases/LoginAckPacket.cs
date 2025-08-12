@@ -1,6 +1,6 @@
 ﻿using Serializer.Contracts;
 
-namespace Serializer.Consumer;
+namespace Serializer.Consumer.UseCases;
 
 [GenerateSerializer]
 public partial class LoginAckPacket

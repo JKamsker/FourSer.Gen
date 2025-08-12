@@ -1,9 +1,6 @@
 using Serializer.Contracts;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace Serializer.Consumer;
+namespace Serializer.Consumer.UseCases;
 
 [GenerateSerializer]
 public partial class MixedFieldsAndPropsPacket
@@ -40,12 +37,12 @@ public class MixedFieldsAndPropsTest
             FieldFloat = 3.14f
         };
 
-        var size = MixedFieldsAndPropsPacket.GetPacketSize(original);
+        var size = Consumer.MixedFieldsAndPropsPacket.GetPacketSize(original);
         var buffer = new byte[size];
         var span = new Span<byte>(buffer);
-        MixedFieldsAndPropsPacket.Serialize(original, span);
+        Consumer.MixedFieldsAndPropsPacket.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = MixedFieldsAndPropsPacket.Deserialize(readOnlySpan, out _);
+        var deserialized = Consumer.MixedFieldsAndPropsPacket.Deserialize(readOnlySpan, out _);
 
         // Verify properties are serialized/deserialized
         Assert.AreEqual(original.PropertyInt, deserialized.PropertyInt);
