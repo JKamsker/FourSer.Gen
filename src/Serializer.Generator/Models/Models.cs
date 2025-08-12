@@ -37,7 +37,8 @@ public readonly record struct MemberToGenerate(
     bool HasGenerateSerializerAttribute,
     bool IsList,
     ListTypeArgumentInfo? ListTypeArgument,
-    CollectionInfo? CollectionInfo) : IEquatable<MemberToGenerate>;
+    CollectionInfo? CollectionInfo,
+    PolymorphicInfo? PolymorphicInfo) : IEquatable<MemberToGenerate>;
 
 /// <summary>
 /// A model describing the type argument of a List&lt;T&gt;.
@@ -60,3 +61,24 @@ public readonly record struct ListTypeArgumentInfo(
 public readonly record struct CollectionInfo(
     PolymorphicMode PolymorphicMode,
     string? TypeIdProperty) : IEquatable<CollectionInfo>;
+
+/// <summary>
+/// A model describing a polymorphic option.
+/// </summary>
+/// <param name="Key">The key used to identify the type.</param>
+/// <param name="Type">The type associated with the key.</param>
+public readonly record struct PolymorphicOption(
+    object Key,
+    string Type) : IEquatable<PolymorphicOption>;
+
+/// <summary>
+/// A model describing the [SerializePolymorphic] attribute on a member.
+/// </summary>
+/// <param name="TypeIdProperty">The name of the property used for type discrimination.</param>
+/// <param name="TypeIdType">The type of the TypeId property.</param>
+/// <param name="Options">The list of polymorphic options.</param>
+public readonly record struct PolymorphicInfo(
+    string? TypeIdProperty,
+    string TypeIdType,
+    EquatableArray<PolymorphicOption> Options,
+    string? EnumUnderlyingType) : IEquatable<PolymorphicInfo>;

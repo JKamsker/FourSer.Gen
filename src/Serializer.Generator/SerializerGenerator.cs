@@ -107,6 +107,8 @@ public class SerializerGenerator : IIncrementalGenerator
                         );
                     }
 
+                    var polymorphicInfo = GetPolymorphicInfo(m);
+
                     return new MemberToGenerate(
                         m.Name,
                         memberTypeSymbol.ToDisplayString(s_typeNameFormat),
@@ -115,7 +117,8 @@ public class SerializerGenerator : IIncrementalGenerator
                         memberTypeSymbol.GetAttributes().Any(ad => ad.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"),
                         isList,
                         listTypeArgumentInfo,
-                        GetCollectionInfo(m));
+                        GetCollectionInfo(m),
+                        polymorphicInfo);
                 })
                 .ToList();
 
@@ -159,6 +162,38 @@ public class SerializerGenerator : IIncrementalGenerator
         var typeIdProperty = AttributeHelper.GetCollectionTypeIdProperty(attribute);
 
         return new CollectionInfo(polymorphicMode, typeIdProperty);
+    }
+
+    private static PolymorphicInfo? GetPolymorphicInfo(ISymbol member)
+    {
+        var attribute = AttributeHelper.GetPolymorphicAttribute(member);
+        var collectionAttribute = AttributeHelper.GetCollectionAttribute(member);
+
+        if (attribute is null && collectionAttribute is null)
+        {
+            return null;
+        }
+
+        var typeIdProperty = AttributeHelper.GetTypeIdProperty(attribute) ?? AttributeHelper.GetCollectionTypeIdProperty(collectionAttribute);
+        var typeIdType = AttributeHelper.GetTypeIdType(attribute) ?? AttributeHelper.GetCollectionTypeIdType(collectionAttribute);
+        var options = AttributeHelper.GetPolymorphicOptions(member);
+
+        var polymorphicOptions = options.Select(optionAttribute =>
+        {
+            var (key, type) = AttributeHelper.GetPolymorphicOption(optionAttribute);
+            return new PolymorphicOption(key, type.ToDisplayString());
+        }).ToImmutableArray();
+
+        var enumUnderlyingType = typeIdType is { TypeKind: TypeKind.Enum }
+            ? ((INamedTypeSymbol)typeIdType).EnumUnderlyingType!.ToDisplayString()
+            : null;
+
+        return new PolymorphicInfo(
+            typeIdProperty,
+            typeIdType?.ToDisplayString() ?? "int",
+            new EquatableArray<PolymorphicOption>(polymorphicOptions),
+            enumUnderlyingType
+        );
     }
 
     private static void AddHelpers(IncrementalGeneratorPostInitializationContext context)

@@ -15,6 +15,41 @@ public static class SerializationGenerator
         sb.AppendLine("    {");
         sb.AppendLine($"        var originalData = data;");
 
+        // Pre-pass to update TypeId properties
+        foreach (var member in typeToGenerate.Members)
+        {
+            if (member.PolymorphicInfo is { } info && !string.IsNullOrEmpty(info.TypeIdProperty))
+            {
+                // Skip collections with SingleTypeId mode - they use the TypeIdProperty directly
+                if (member.IsList && member.CollectionInfo?.PolymorphicMode == PolymorphicMode.SingleTypeId)
+                {
+                    continue;
+                }
+
+                sb.AppendLine($"        switch (obj.{member.Name})");
+                sb.AppendLine("        {");
+                foreach (var option in info.Options)
+                {
+                    var typeName = GetSimpleTypeName(option.Type);
+                    var key = option.Key.ToString();
+                    if (info.EnumUnderlyingType is not null)
+                    {
+                        key = $"({info.TypeIdType}){key}";
+                    }
+                    else if (info.TypeIdType.EndsWith("Enum"))
+                    {
+                        key = $"{info.TypeIdType}.{key}";
+                    }
+                    sb.AppendLine($"            case {typeName}:");
+                    sb.AppendLine($"                obj.{info.TypeIdProperty} = {key};");
+                    sb.AppendLine("                break;");
+                }
+                sb.AppendLine("            case null:");
+                sb.AppendLine("                break;");
+                sb.AppendLine("        }");
+            }
+        }
+
         foreach (var member in typeToGenerate.Members)
         {
             GenerateMemberSerialization(sb, member);
@@ -29,6 +64,10 @@ public static class SerializationGenerator
         if (member.IsList)
         {
             GenerateCollectionSerialization(sb, member);
+        }
+        else if (member.PolymorphicInfo is not null)
+        {
+            GeneratePolymorphicSerialization(sb, member);
         }
         else if (member.HasGenerateSerializerAttribute)
         {
@@ -69,10 +108,68 @@ public static class SerializationGenerator
     {
         sb.AppendLine($"        data.WriteInt32(obj.{member.Name}.Count);");
 
-        if (member.CollectionInfo is not null && member.CollectionInfo.Value.PolymorphicMode != PolymorphicMode.None)
+        if (member.CollectionInfo is not null && member.PolymorphicInfo is not null)
         {
-            sb.AppendLine($"        throw new System.NotImplementedException(\"Polymorphic collection serialization is not implemented for member {member.Name}.\");");
-            return;
+            if (member.CollectionInfo.Value.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
+            {
+                var itemBytesWrittenVar = $"{member.Name}ItemBytesWritten";
+                sb.AppendLine($"        int {itemBytesWrittenVar};");
+                sb.AppendLine($"        foreach(var item in obj.{member.Name})");
+                sb.AppendLine("        {");
+
+                var itemMember = new MemberToGenerate(
+                    "item",
+                    member.ListTypeArgument!.Value.TypeName,
+                    member.ListTypeArgument.Value.IsUnmanagedType,
+                    member.ListTypeArgument.Value.IsStringType,
+                    member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
+                    false,
+                    null,
+                    null,
+                    member.PolymorphicInfo
+                );
+
+                GeneratePolymorphicItemSerialization(sb, itemMember, "item", itemBytesWrittenVar);
+                sb.AppendLine("        }");
+                return;
+            }
+
+            if (member.CollectionInfo.Value.PolymorphicMode == PolymorphicMode.SingleTypeId)
+            {
+                var info = member.PolymorphicInfo!.Value;
+                var typeIdProperty = member.CollectionInfo.Value.TypeIdProperty;
+
+                sb.AppendLine($"        switch (obj.{typeIdProperty})");
+                sb.AppendLine("        {");
+
+                foreach (var option in info.Options)
+                {
+                    var key = option.Key.ToString();
+                    if (info.EnumUnderlyingType is not null)
+                    {
+                        key = $"({info.TypeIdType}){key}";
+                    }
+                    else if (info.TypeIdType.EndsWith("Enum"))
+                    {
+                        key = $"{info.TypeIdType}.{key}";
+                    }
+                    
+                    sb.AppendLine($"            case {key}:");
+                    sb.AppendLine("            {");
+                    sb.AppendLine($"                foreach(var item in obj.{member.Name})");
+                    sb.AppendLine("                {");
+                    sb.AppendLine($"                    var bytesWritten = {GetSimpleTypeName(option.Type)}.Serialize(({GetSimpleTypeName(option.Type)})item, data);");
+                    sb.AppendLine($"                    data = data.Slice(bytesWritten);");
+                    sb.AppendLine("                }");
+                    sb.AppendLine("                break;");
+                    sb.AppendLine("            }");
+                }
+
+                sb.AppendLine("            default:");
+                sb.AppendLine($"                throw new System.IO.InvalidDataException($\"Unknown type id for {member.Name}: {{obj.{typeIdProperty}}}\");");
+                sb.AppendLine("        }");
+                return;
+            }
         }
 
         sb.AppendLine($"        for (int i = 0; i < obj.{member.Name}.Count; i++)");
@@ -106,5 +203,85 @@ public static class SerializationGenerator
             return fullyQualifiedName;
         }
         return fullyQualifiedName.Substring(lastDot + 1);
+    }
+
+    private static void GeneratePolymorphicSerialization(StringBuilder sb, MemberToGenerate member)
+    {
+        var info = member.PolymorphicInfo!.Value;
+        var bytesWrittenVar = $"{member.Name}BytesWritten";
+
+        sb.AppendLine($"        int {bytesWrittenVar};");
+        sb.AppendLine($"        switch (obj.{member.Name})");
+        sb.AppendLine("        {");
+
+        foreach (var option in info.Options)
+        {
+            var typeName = GetSimpleTypeName(option.Type);
+            sb.AppendLine($"            case {typeName} typedInstance:");
+
+            if (string.IsNullOrEmpty(info.TypeIdProperty))
+            {
+                var key = option.Key.ToString();
+                if (info.EnumUnderlyingType is not null)
+                {
+                    key = $"({info.TypeIdType}){key}";
+                }
+                else if (info.TypeIdType.EndsWith("Enum"))
+                {
+                    key = $"{info.TypeIdType}.{key}";
+                }
+                var typeIdTypeName = GetMethodFriendlyTypeName(info.EnumUnderlyingType ?? info.TypeIdType);
+                sb.AppendLine($"                data.Write{typeIdTypeName}(({info.EnumUnderlyingType ?? info.TypeIdType}){key});");
+            }
+
+            sb.AppendLine($"                {bytesWrittenVar} = {typeName}.Serialize(typedInstance, data);");
+            sb.AppendLine($"                data = data.Slice({bytesWrittenVar});");
+            sb.AppendLine("                break;");
+        }
+
+        sb.AppendLine("            case null:");
+        sb.AppendLine("                break;");
+        sb.AppendLine("            default:");
+        sb.AppendLine($"                throw new System.IO.InvalidDataException($\"Unknown type for {member.Name}: {{obj.{member.Name}?.GetType().FullName}}\");");
+        sb.AppendLine("        }");
+    }
+
+    private static void GeneratePolymorphicItemSerialization(StringBuilder sb, MemberToGenerate member, string instanceName, string bytesWrittenVar)
+    {
+        var info = member.PolymorphicInfo!.Value;
+
+        sb.AppendLine($"            switch ({instanceName})");
+        sb.AppendLine("            {");
+
+        foreach (var option in info.Options)
+        {
+            var typeName = GetSimpleTypeName(option.Type);
+            sb.AppendLine($"                case {typeName} typedInstance:");
+
+            if (string.IsNullOrEmpty(info.TypeIdProperty))
+            {
+                var key = option.Key.ToString();
+                if (info.EnumUnderlyingType is not null)
+                {
+                    key = $"({info.TypeIdType}){key}";
+                }
+                else if (info.TypeIdType.EndsWith("Enum"))
+                {
+                    key = $"{info.TypeIdType}.{key}";
+                }
+                var typeIdTypeName = GetMethodFriendlyTypeName(info.EnumUnderlyingType ?? info.TypeIdType);
+                sb.AppendLine($"                    data.Write{typeIdTypeName}(({info.EnumUnderlyingType ?? info.TypeIdType}){key});");
+            }
+
+            sb.AppendLine($"                    {bytesWrittenVar} = {typeName}.Serialize(typedInstance, data);");
+            sb.AppendLine($"                    data = data.Slice({bytesWrittenVar});");
+            sb.AppendLine("                    break;");
+        }
+
+        sb.AppendLine("                case null:");
+        sb.AppendLine("                    break;");
+        sb.AppendLine("                default:");
+        sb.AppendLine($"                    throw new System.IO.InvalidDataException($\"Unknown type for {instanceName}: {{{instanceName}?.GetType().FullName}}\");");
+        sb.AppendLine("            }");
     }
 }

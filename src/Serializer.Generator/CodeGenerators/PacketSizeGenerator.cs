@@ -21,6 +21,18 @@ public static class PacketSizeGenerator
             {
                 GenerateCollectionSizeCalculation(sb, member);
             }
+            else if (member.PolymorphicInfo is not null)
+            {
+                var info = member.PolymorphicInfo.Value;
+                if (string.IsNullOrEmpty(info.TypeIdProperty))
+                {
+                    var typeIdSize = info.EnumUnderlyingType is not null
+                        ? $"sizeof({info.EnumUnderlyingType})"
+                        : $"sizeof({info.TypeIdType})";
+                    sb.AppendLine($"        size += {typeIdSize};");
+                }
+                GeneratePolymorphicSizeCalculation(sb, member);
+            }
             else if (member.HasGenerateSerializerAttribute)
             {
                 sb.AppendLine($"        size += {GetSimpleTypeName(member.TypeName)}.GetPacketSize(obj.{member.Name}); // Size for nested type {member.Name}");
@@ -43,9 +55,31 @@ public static class PacketSizeGenerator
     {
         sb.AppendLine($"        size += sizeof(int); // Default count size for {member.Name}");
 
-        if (member.CollectionInfo is not null && member.CollectionInfo.Value.PolymorphicMode != PolymorphicMode.None)
+        if (member.CollectionInfo is not null && member.PolymorphicInfo is not null && member.CollectionInfo.Value.PolymorphicMode != PolymorphicMode.None)
         {
-            sb.AppendLine($"        throw new System.NotImplementedException(\"Polymorphic collection size calculation is not implemented for member {member.Name}.\");");
+            sb.AppendLine($"        foreach(var item in obj.{member.Name})");
+            sb.AppendLine("        {");
+            var info = member.PolymorphicInfo.Value;
+            if (string.IsNullOrEmpty(info.TypeIdProperty))
+            {
+                var typeIdSize = info.EnumUnderlyingType is not null
+                    ? $"sizeof({info.EnumUnderlyingType})"
+                    : $"sizeof({info.TypeIdType})";
+                sb.AppendLine($"            size += {typeIdSize};");
+            }
+            var itemMember = new MemberToGenerate(
+                "item",
+                member.ListTypeArgument!.Value.TypeName,
+                member.ListTypeArgument.Value.IsUnmanagedType,
+                member.ListTypeArgument.Value.IsStringType,
+                member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
+                false,
+                null,
+                null,
+                member.PolymorphicInfo
+            );
+            GeneratePolymorphicSizeCalculation(sb, itemMember, "item");
+            sb.AppendLine("        }");
             return;
         }
 
@@ -67,7 +101,34 @@ public static class PacketSizeGenerator
                 sb.AppendLine($"            size += {GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item);");
                 sb.AppendLine("        }");
             }
+        
         }
+    }
+
+    private static void GeneratePolymorphicSizeCalculation(StringBuilder sb, MemberToGenerate member, string instanceName = "")
+    {
+        if (string.IsNullOrEmpty(instanceName))
+        {
+            instanceName = $"obj.{member.Name}";
+        }
+
+        var info = member.PolymorphicInfo!.Value;
+        
+        sb.AppendLine($"        switch ({instanceName})");
+        sb.AppendLine("        {");
+
+        foreach (var option in info.Options)
+        {
+            var typeName = GetSimpleTypeName(option.Type);
+            sb.AppendLine($"            case {typeName} typedInstance:");
+            sb.AppendLine($"                size += {typeName}.GetPacketSize(typedInstance);");
+            sb.AppendLine("                break;");
+        }
+        
+        sb.AppendLine("            case null: break;");
+        sb.AppendLine("            default:");
+        sb.AppendLine($"                throw new System.IO.InvalidDataException($\"Unknown type for {member.Name}: {{{instanceName}?.GetType().FullName}}\");");
+        sb.AppendLine("        }");
     }
 
     private static string GetSimpleTypeName(string? fullyQualifiedName)

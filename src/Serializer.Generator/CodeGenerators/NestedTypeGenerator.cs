@@ -52,18 +52,21 @@ public static class NestedTypeGenerator
             if (member.IsList)
             {
                 sb.AppendLine($"            size += sizeof(int);");
-                var typeArg = member.ListTypeArgument.Value;
-                if (typeArg.IsUnmanagedType)
+                if (member.ListTypeArgument is not null)
                 {
-                    sb.AppendLine($"            size += obj.{member.Name}.Count * sizeof({typeArg.TypeName});");
-                }
-                else if (typeArg.IsStringType)
-                {
-                    sb.AppendLine($"            foreach(var item in obj.{member.Name}) {{ size += StringEx.MeasureSize(item); }}");
-                }
-                else if (typeArg.HasGenerateSerializerAttribute)
-                {
-                    sb.AppendLine($"            foreach(var item in obj.{member.Name}) {{ size += {GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item); }}");
+                    var typeArg = member.ListTypeArgument.Value;
+                    if (typeArg.IsUnmanagedType)
+                    {
+                        sb.AppendLine($"            size += obj.{member.Name}.Count * sizeof({typeArg.TypeName});");
+                    }
+                    else if (typeArg.IsStringType)
+                    {
+                        sb.AppendLine($"            foreach(var item in obj.{member.Name}) {{ size += StringEx.MeasureSize(item); }}");
+                    }
+                    else if (typeArg.HasGenerateSerializerAttribute)
+                    {
+                        sb.AppendLine($"            foreach(var item in obj.{member.Name}) {{ size += {GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item); }}");
+                    }
                 }
             }
             else if (member.HasGenerateSerializerAttribute)
@@ -95,25 +98,28 @@ public static class NestedTypeGenerator
             if (member.IsList)
             {
                 sb.AppendLine($"            var {member.Name}Count = data.ReadInt32();");
-                sb.AppendLine($"            obj.{member.Name} = new System.Collections.Generic.List<{member.ListTypeArgument!.Value.TypeName}>({member.Name}Count);");
-                sb.AppendLine($"            for (int i = 0; i < {member.Name}Count; i++)");
-                sb.AppendLine("            {");
-                var typeArg = member.ListTypeArgument.Value;
-                if (typeArg.IsUnmanagedType)
+                if (member.ListTypeArgument is not null)
                 {
-                    var typeName = GetMethodFriendlyTypeName(typeArg.TypeName);
-                    sb.AppendLine($"                obj.{member.Name}.Add(data.Read{typeName}());");
+                    sb.AppendLine($"            obj.{member.Name} = new System.Collections.Generic.List<{member.ListTypeArgument.Value.TypeName}>({member.Name}Count);");
+                    sb.AppendLine($"            for (int i = 0; i < {member.Name}Count; i++)");
+                    sb.AppendLine("            {");
+                    var typeArg = member.ListTypeArgument.Value;
+                    if (typeArg.IsUnmanagedType)
+                    {
+                        var typeName = GetMethodFriendlyTypeName(typeArg.TypeName);
+                        sb.AppendLine($"                obj.{member.Name}.Add(data.Read{typeName}());");
+                    }
+                    else if (typeArg.IsStringType)
+                    {
+                        sb.AppendLine($"                obj.{member.Name}.Add(data.ReadString());");
+                    }
+                    else if (typeArg.HasGenerateSerializerAttribute)
+                    {
+                        sb.AppendLine($"                obj.{member.Name}.Add({GetSimpleTypeName(typeArg.TypeName)}.Deserialize(data, out var itemBytesRead));");
+                        sb.AppendLine($"                data = data.Slice(itemBytesRead);");
+                    }
+                    sb.AppendLine("            }");
                 }
-                else if (typeArg.IsStringType)
-                {
-                    sb.AppendLine($"                obj.{member.Name}.Add(data.ReadString());");
-                }
-                else if (typeArg.HasGenerateSerializerAttribute)
-                {
-                    sb.AppendLine($"                obj.{member.Name}.Add({GetSimpleTypeName(typeArg.TypeName)}.Deserialize(data, out var itemBytesRead));");
-                    sb.AppendLine($"                data = data.Slice(itemBytesRead);");
-                }
-                sb.AppendLine("            }");
             }
             else if (member.HasGenerateSerializerAttribute)
             {
@@ -146,24 +152,27 @@ public static class NestedTypeGenerator
             if (member.IsList)
             {
                 sb.AppendLine($"            data.WriteInt32(obj.{member.Name}.Count);");
-                sb.AppendLine($"            for (int i = 0; i < obj.{member.Name}.Count; i++)");
-                sb.AppendLine("            {");
-                var typeArg = member.ListTypeArgument.Value;
-                if (typeArg.IsUnmanagedType)
+                if (member.ListTypeArgument is not null)
                 {
-                    var typeName = GetMethodFriendlyTypeName(typeArg.TypeName);
-                    sb.AppendLine($"                data.Write{typeName}(obj.{member.Name}[i]);");
+                    sb.AppendLine($"            for (int i = 0; i < obj.{member.Name}.Count; i++)");
+                    sb.AppendLine("            {");
+                    var typeArg = member.ListTypeArgument.Value;
+                    if (typeArg.IsUnmanagedType)
+                    {
+                        var typeName = GetMethodFriendlyTypeName(typeArg.TypeName);
+                        sb.AppendLine($"                data.Write{typeName}(obj.{member.Name}[i]);");
+                    }
+                    else if (typeArg.IsStringType)
+                    {
+                        sb.AppendLine($"                data.WriteString(obj.{member.Name}[i]);");
+                    }
+                    else if (typeArg.HasGenerateSerializerAttribute)
+                    {
+                        sb.AppendLine($"                var bytesWritten = {GetSimpleTypeName(typeArg.TypeName)}.Serialize(obj.{member.Name}[i], data);");
+                        sb.AppendLine($"                data = data.Slice(bytesWritten);");
+                    }
+                    sb.AppendLine("            }");
                 }
-                else if (typeArg.IsStringType)
-                {
-                    sb.AppendLine($"                data.WriteString(obj.{member.Name}[i]);");
-                }
-                else if (typeArg.HasGenerateSerializerAttribute)
-                {
-                    sb.AppendLine($"                var bytesWritten = {GetSimpleTypeName(typeArg.TypeName)}.Serialize(obj.{member.Name}[i], data);");
-                    sb.AppendLine($"                data = data.Slice(bytesWritten);");
-                }
-                sb.AppendLine("            }");
             }
             else if (member.HasGenerateSerializerAttribute)
             {

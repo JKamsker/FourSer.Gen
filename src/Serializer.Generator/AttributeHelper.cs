@@ -27,6 +27,13 @@ public static class AttributeHelper
             .ToList();
     }
 
+    public static (object Key, ITypeSymbol Type) GetPolymorphicOption(AttributeData optionAttribute)
+    {
+        var key = optionAttribute.ConstructorArguments[0].Value!;
+        var type = (ITypeSymbol)optionAttribute.ConstructorArguments[1].Value!;
+        return (key, type);
+    }
+
     public static bool HasGenerateSerializerAttribute(ITypeSymbol typeSymbol)
     {
         return typeSymbol.GetAttributes()
