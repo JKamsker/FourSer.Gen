@@ -184,7 +184,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Serializer.Contracts;
-using Serializer.Consumer.Extensions;
+using System.IO;
+using Serializer.Generator.Helpers;
 
 namespace TestNamespace;
 
@@ -235,7 +236,9 @@ public partial class LoginPacket : ISerializable<LoginPacket>
 
         // Assert
         Assert.False(result.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error));
-        var generatedCode = result.Results.Single().GeneratedSources.Single().SourceText.ToString();
+        var generatedCode = result.Results.Single().GeneratedSources
+            .Where(g => g.HintName.EndsWith("g.cs"))
+            .Single().SourceText.ToString();
         Assert.Equal(expectedGeneratedCode.ReplaceLineEndings(), generatedCode.ReplaceLineEndings());
     }
 
@@ -271,7 +274,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Serializer.Contracts;
-using Serializer.Consumer.Extensions;
+using System.IO;
+using Serializer.Generator.Helpers;
 
 namespace TestNamespace;
 
@@ -323,7 +327,9 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
         // Assert
         Assert.False(result.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error));
 
-        var generatedSources = result.Results.SelectMany(r => r.GeneratedSources).ToList();
+        var generatedSources = result.Results.SelectMany(r => r.GeneratedSources)
+            .Where(g => g.HintName.EndsWith("g.cs"))
+            .ToList();
         Assert.Equal(2, generatedSources.Count);
 
         var containerPacketGenerated = generatedSources.First(g => g.HintName.Contains("ContainerPacket")).SourceText.ToString();
@@ -356,7 +362,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Serializer.Contracts;
-using Serializer.Consumer.Extensions;
+using System.IO;
+using Serializer.Generator.Helpers;
 
 namespace TestNamespace;
 
@@ -414,7 +421,8 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         // Assert
         Assert.False(result.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error));
 
-        var generatedCode = result.Results.Single().GeneratedSources.Single().SourceText.ToString();
+        var generatedCode = result.Results.Single().GeneratedSources
+            .Single(x => x.HintName.EndsWith("g.cs")).SourceText.ToString();
         Assert.Equal(expectedGeneratedCode.ReplaceLineEndings(), generatedCode.ReplaceLineEndings());
     }
 }
