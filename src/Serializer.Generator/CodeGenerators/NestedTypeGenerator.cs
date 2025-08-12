@@ -46,8 +46,7 @@ public static class NestedTypeGenerator
             var memberType = TypeAnalyzer.GetMemberType(member);
             if (memberType.SpecialType == SpecialType.System_String)
             {
-                sb.AppendLine($"            size += sizeof(int); // Size for string length");
-                sb.AppendLine($"            size += System.Text.Encoding.UTF8.GetByteCount(obj.{member.Name});");
+                sb.AppendLine($"            size += StringEx.MeasureSize(obj.{member.Name}); // Size for string {member.Name}");
             }
             else if (memberType.IsUnmanagedType)
             {
@@ -72,7 +71,7 @@ public static class NestedTypeGenerator
             var memberType = TypeAnalyzer.GetMemberType(member);
             if (memberType.SpecialType == SpecialType.System_String)
             {
-                sb.AppendLine($"            obj.{member.Name} = data.ReadString();");
+                sb.AppendLine($"            obj.{member.Name} = StringEx.ReadString(ref data);");
             }
             else if (memberType.IsUnmanagedType)
             {
@@ -96,7 +95,7 @@ public static class NestedTypeGenerator
             var memberType = TypeAnalyzer.GetMemberType(member);
             if (memberType.SpecialType == SpecialType.System_String)
             {
-                sb.AppendLine($"            data.WriteString(obj.{member.Name});");
+                sb.AppendLine($"            StringEx.WriteString(ref data, obj.{member.Name});");
             }
             else if (memberType.IsUnmanagedType)
             {

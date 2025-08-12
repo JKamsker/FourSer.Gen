@@ -13,8 +13,7 @@ public partial class TestPacket1 : ISerializable<TestPacket1>
     {
         var size = 0;
         size += sizeof(int); // Size for unmanaged type A
-        size += sizeof(int); // Size for string length
-        size += System.Text.Encoding.UTF8.GetByteCount(obj.B);
+        size += StringEx.MeasureSize(obj.B); // Size for string B
         size += sizeof(int); // Default count size for C
         size += obj.C.Count * sizeof(int);
         return size;

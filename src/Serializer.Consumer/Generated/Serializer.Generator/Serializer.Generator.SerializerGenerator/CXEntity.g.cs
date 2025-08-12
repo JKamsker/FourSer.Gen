@@ -13,8 +13,7 @@ public partial class CXEntity : ISerializable<CXEntity>
     {
         var size = 0;
         size += sizeof(int); // Size for unmanaged type Id
-        size += sizeof(int); // Size for string length
-        size += System.Text.Encoding.UTF8.GetByteCount(obj.Name);
+        size += StringEx.MeasureSize(obj.Name); // Size for string Name
         return size;
     }
 

@@ -48,7 +48,7 @@ public static class DeserializationGenerator
         }
         else if (memberType.SpecialType == SpecialType.System_String)
         {
-            sb.AppendLine($"        obj.{member.Name} = data.ReadString();");
+            sb.AppendLine($"        obj.{member.Name} = StringEx.ReadString(ref data);");
         }
         else if (memberType.IsUnmanagedType)
         {
@@ -104,6 +104,9 @@ public static class DeserializationGenerator
     {
         var polymorphicOptions = AttributeHelper.GetPolymorphicOptions(member);
         var typeIdProperty = AttributeHelper.GetTypeIdProperty(polymorphicAttribute);
+        var typeIdType = AttributeHelper.GetTypeIdType(polymorphicAttribute);
+        
+
 
         if (polymorphicOptions.Any())
         {
@@ -117,7 +120,12 @@ public static class DeserializationGenerator
             else
             {
                 // Read TypeId directly from stream without storing in model
-                sb.AppendLine($"        var {member.Name}TypeId = data.ReadInt32();");
+                var readMethod = GetReadMethod(typeIdType);
+                var variableType = typeIdType?.ToDisplayString() ?? "int";
+                var castExpression = typeIdType?.TypeKind == TypeKind.Enum 
+                    ? $"({variableType})data.{readMethod}()" 
+                    : $"data.{readMethod}()";
+                sb.AppendLine($"        var {member.Name}TypeId = {castExpression};");
                 sb.AppendLine($"        switch ({member.Name}TypeId)");
             }
             
@@ -129,9 +137,11 @@ public static class DeserializationGenerator
                 var type = option.ConstructorArguments[1].Value as ITypeSymbol;
                 if (type != null)
                 {
-                    sb.AppendLine($"            case {id}:");
-                    sb.AppendLine($"                obj.{member.Name} = {type.Name}.Deserialize(data, out var {member.Name}BytesRead{id});");
-                    sb.AppendLine($"                data = data.Slice({member.Name}BytesRead{id});");
+                    var caseValue = FormatCaseValue(id, typeIdType);
+                    var safeId = GetSafeIdForVariableName(id);
+                    sb.AppendLine($"            case {caseValue}:");
+                    sb.AppendLine($"                obj.{member.Name} = {type.Name}.Deserialize(data, out var {member.Name}BytesRead{safeId});");
+                    sb.AppendLine($"                data = data.Slice({member.Name}BytesRead{safeId});");
                     sb.AppendLine("                break;");
                 }
             }
@@ -153,5 +163,48 @@ public static class DeserializationGenerator
     {
         return memberType is INamedTypeSymbol listTypeSymbol && 
                listTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>";
+    }
+
+    private static string GetReadMethod(ITypeSymbol? typeIdType)
+    {
+        if (typeIdType == null) return "ReadInt32";
+        
+        if (typeIdType.TypeKind == TypeKind.Enum)
+        {
+            var enumType = (INamedTypeSymbol)typeIdType;
+            var underlyingType = enumType.EnumUnderlyingType?.Name ?? "int";
+            return underlyingType switch
+            {
+                "Byte" => "ReadByte",
+                "UInt16" => "ReadUInt16",
+                "Int64" => "ReadInt64",
+                _ => "ReadInt32"
+            };
+        }
+        
+        return typeIdType.Name switch
+        {
+            "Byte" => "ReadByte",
+            "UInt16" => "ReadUInt16",
+            "Int64" => "ReadInt64",
+            _ => "ReadInt32"
+        };
+    }
+
+    private static string FormatCaseValue(object? id, ITypeSymbol? typeIdType)
+    {
+        if (id == null) return "0";
+        
+        if (typeIdType?.TypeKind == TypeKind.Enum)
+        {
+            return $"({typeIdType.ToDisplayString()}){id}";
+        }
+        
+        return id.ToString() ?? "0";
+    }
+
+    private static string GetSafeIdForVariableName(object? id)
+    {
+        return id?.ToString()?.Replace("-", "Neg") ?? "0";
     }
 }

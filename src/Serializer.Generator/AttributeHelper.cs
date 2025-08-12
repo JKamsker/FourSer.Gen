@@ -58,4 +58,11 @@ public static class AttributeHelper
     {
         return polymorphicAttribute?.ConstructorArguments.FirstOrDefault().Value?.ToString();
     }
+
+    public static ITypeSymbol? GetTypeIdType(AttributeData? polymorphicAttribute)
+    {
+        return polymorphicAttribute?.NamedArguments
+            .FirstOrDefault(arg => arg.Key == "TypeIdType")
+            .Value.Value as ITypeSymbol;
+    }
 }

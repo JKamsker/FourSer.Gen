@@ -17,6 +17,7 @@ public class TestRunner
         // Run polymorphic tests first
         PolymorphicTest.RunTest();
         PolymorphicImplicitTypeIdTest.RunTest();
+        PolymorphicTypeIdTest.RunTest();
         PolymorphicComparison.RunComparison();
         PolymorphicApproachComparison.RunComparison();
         

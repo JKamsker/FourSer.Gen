@@ -155,6 +155,9 @@ public static class SerializationGenerator
     {
         var polymorphicOptions = AttributeHelper.GetPolymorphicOptions(member);
         var typeIdProperty = AttributeHelper.GetTypeIdProperty(polymorphicAttribute);
+        var typeIdType = AttributeHelper.GetTypeIdType(polymorphicAttribute);
+        
+
 
         if (polymorphicOptions.Any())
         {
@@ -168,7 +171,11 @@ public static class SerializationGenerator
             else
             {
                 // Infer TypeId from actual object type and write it directly using pattern matching
-                sb.AppendLine($"        var {member.Name}TypeId = 0;");
+                var typeIdTypeName = GetTypeIdTypeName(typeIdType);
+                var defaultValue = GetDefaultValue(typeIdType);
+                var variableType = typeIdType?.ToDisplayString() ?? "int";
+                
+                sb.AppendLine($"        var {member.Name}TypeId = {defaultValue};");
                 
                 var isFirst = true;
                 foreach (var option in polymorphicOptions)
@@ -180,7 +187,7 @@ public static class SerializationGenerator
                         var keyword = isFirst ? "if" : "else if";
                         sb.AppendLine($"        {keyword} (obj.{member.Name} is {type.Name})");
                         sb.AppendLine("        {");
-                        sb.AppendLine($"            {member.Name}TypeId = {id};");
+                        sb.AppendLine($"            {member.Name}TypeId = {FormatIdValue(id, typeIdType)};");
                         sb.AppendLine("        }");
                         isFirst = false;
                     }
@@ -194,7 +201,11 @@ public static class SerializationGenerator
                     sb.AppendLine("        }");
                 }
                 
-                sb.AppendLine($"        data.WriteInt32({member.Name}TypeId);");
+                var writeMethod = GetWriteMethod(typeIdType);
+                var castExpression = typeIdType?.TypeKind == TypeKind.Enum 
+                    ? $"({GetUnderlyingTypeName(typeIdType)}){member.Name}TypeId" 
+                    : $"{member.Name}TypeId";
+                sb.AppendLine($"        data.{writeMethod}({castExpression});");
                 sb.AppendLine($"        switch ({member.Name}TypeId)");
             }
             
@@ -206,9 +217,11 @@ public static class SerializationGenerator
                 var type = option.ConstructorArguments[1].Value as ITypeSymbol;
                 if (type != null)
                 {
-                    sb.AppendLine($"            case {id}:");
-                    sb.AppendLine($"                var {member.Name}BytesWritten{id} = {type.Name}.Serialize(({type.Name})obj.{member.Name}, data);");
-                    sb.AppendLine($"                data = data.Slice({member.Name}BytesWritten{id});");
+                    var caseValue = FormatCaseValue(id, typeIdType);
+                    var safeId = GetSafeIdForVariableName(id);
+                    sb.AppendLine($"            case {caseValue}:");
+                    sb.AppendLine($"                var {member.Name}BytesWritten{safeId} = {type.Name}.Serialize(({type.Name})obj.{member.Name}, data);");
+                    sb.AppendLine($"                data = data.Slice({member.Name}BytesWritten{safeId});");
                     sb.AppendLine("                break;");
                 }
             }
@@ -230,5 +243,113 @@ public static class SerializationGenerator
     {
         return memberType is INamedTypeSymbol listTypeSymbol && 
                listTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>";
+    }
+
+    private static string GetTypeIdTypeName(ITypeSymbol? typeIdType)
+    {
+        if (typeIdType == null) return "int";
+        
+        if (typeIdType.TypeKind == TypeKind.Enum)
+        {
+            var enumType = (INamedTypeSymbol)typeIdType;
+            return enumType.EnumUnderlyingType?.Name ?? "int";
+        }
+        
+        return typeIdType.Name;
+    }
+
+    private static string GetDefaultValue(ITypeSymbol? typeIdType)
+    {
+        if (typeIdType == null) return "0";
+        
+        if (typeIdType.TypeKind == TypeKind.Enum)
+        {
+            return $"default({typeIdType.ToDisplayString()})";
+        }
+        
+        return typeIdType.Name switch
+        {
+            "Byte" => "(byte)0",
+            "UInt16" => "(ushort)0",
+            "Int64" => "0L",
+            _ => "0"
+        };
+    }
+
+    private static string FormatIdValue(object? id, ITypeSymbol? typeIdType)
+    {
+        if (id == null) return "0";
+        
+        if (typeIdType?.TypeKind == TypeKind.Enum)
+        {
+            // For enums, we need to cast the underlying value, not the enum itself
+            return $"({typeIdType.ToDisplayString()}){id}";
+        }
+        
+        if (typeIdType != null)
+        {
+            return typeIdType.Name switch
+            {
+                "Byte" => $"(byte){id}",
+                "UInt16" => $"(ushort){id}",
+                "Int64" => $"{id}L",
+                _ => id.ToString() ?? "0"
+            };
+        }
+        
+        return id.ToString() ?? "0";
+    }
+
+    private static string GetWriteMethod(ITypeSymbol? typeIdType)
+    {
+        if (typeIdType == null) return "WriteInt32";
+        
+        if (typeIdType.TypeKind == TypeKind.Enum)
+        {
+            var enumType = (INamedTypeSymbol)typeIdType;
+            var underlyingType = enumType.EnumUnderlyingType?.Name ?? "int";
+            return underlyingType switch
+            {
+                "Byte" => "WriteByte",
+                "UInt16" => "WriteUInt16",
+                "Int64" => "WriteInt64",
+                _ => "WriteInt32"
+            };
+        }
+        
+        return typeIdType.Name switch
+        {
+            "Byte" => "WriteByte",
+            "UInt16" => "WriteUInt16", 
+            "Int64" => "WriteInt64",
+            _ => "WriteInt32"
+        };
+    }
+
+    private static string GetUnderlyingTypeName(ITypeSymbol? typeIdType)
+    {
+        if (typeIdType?.TypeKind == TypeKind.Enum)
+        {
+            var enumType = (INamedTypeSymbol)typeIdType;
+            return enumType.EnumUnderlyingType?.Name ?? "int";
+        }
+        return typeIdType?.Name ?? "int";
+    }
+
+    private static string FormatCaseValue(object? id, ITypeSymbol? typeIdType)
+    {
+        if (id == null) return "0";
+        
+        if (typeIdType?.TypeKind == TypeKind.Enum)
+        {
+            return $"({typeIdType.ToDisplayString()}){id}";
+        }
+        
+        return id.ToString() ?? "0";
+    }
+
+    private static string GetSafeIdForVariableName(object? id)
+    {
+        return id?.ToString()?.Replace("-", "Neg") ?? "0";
     }
 }

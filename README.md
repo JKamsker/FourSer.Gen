@@ -245,6 +245,42 @@ public partial class AutoPolymorphicEntity
 }
 ```
 
+### 3. Custom TypeId Types
+
+You can specify different TypeId types (byte, ushort, long) and custom enums for more efficient serialization:
+
+```csharp
+// Using byte TypeId (1 byte instead of 4)
+[SerializePolymorphic(TypeIdType = typeof(byte))]
+[PolymorphicOption((byte)1, typeof(EntityType1))]
+[PolymorphicOption((byte)2, typeof(EntityType2))]
+public BaseEntity Entity { get; set; }
+
+// Using ushort TypeId (2 bytes)
+[SerializePolymorphic(TypeIdType = typeof(ushort))]
+[PolymorphicOption((ushort)1000, typeof(EntityType1))]
+[PolymorphicOption((ushort)2000, typeof(EntityType2))]
+public BaseEntity Entity { get; set; }
+
+// Using long TypeId (8 bytes)
+[SerializePolymorphic(TypeIdType = typeof(long))]
+[PolymorphicOption(1000000L, typeof(EntityType1))]
+[PolymorphicOption(2000000L, typeof(EntityType2))]
+public BaseEntity Entity { get; set; }
+
+// Using custom enum TypeId
+public enum EntityTypeEnum : byte
+{
+    Type1 = 10,
+    Type2 = 20
+}
+
+[SerializePolymorphic(TypeIdType = typeof(EntityTypeEnum))]
+[PolymorphicOption(EntityTypeEnum.Type1, typeof(EntityType1))]
+[PolymorphicOption(EntityTypeEnum.Type2, typeof(EntityType2))]
+public BaseEntity Entity { get; set; }
+```
+
 #### Usage
 
 ```csharp
@@ -269,6 +305,14 @@ In this mode:
 - During serialization: The actual object type is used to determine the TypeId, which is written to the stream
 - During deserialization: The TypeId is read from the stream and used to create the correct object type
 - The TypeId is not stored in your model, keeping it clean
+
+### Benefits of Custom TypeId Types:
+
+- **byte TypeId**: Uses only 1 byte instead of 4 bytes (int), saving 3 bytes per polymorphic field
+- **ushort TypeId**: Uses 2 bytes, good for scenarios with many type variants (up to 65,535)
+- **long TypeId**: Uses 8 bytes, for scenarios requiring very large type identifiers
+- **Custom Enums**: Provides type safety and uses the enum's underlying type (byte, ushort, int, long)
+- **Automatic Casting**: The generator handles all type conversions and casting automatically
 
 ## Supported Types
 

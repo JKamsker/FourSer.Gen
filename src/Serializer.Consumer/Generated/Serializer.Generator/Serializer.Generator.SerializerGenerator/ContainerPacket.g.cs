@@ -13,8 +13,7 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
     {
         var size = 0;
         size += NestedPacket.GetPacketSize(obj.Nested);
-        size += sizeof(int); // Size for string length
-        size += System.Text.Encoding.UTF8.GetByteCount(obj.Name);
+        size += StringEx.MeasureSize(obj.Name); // Size for string Name
         return size;
     }
 

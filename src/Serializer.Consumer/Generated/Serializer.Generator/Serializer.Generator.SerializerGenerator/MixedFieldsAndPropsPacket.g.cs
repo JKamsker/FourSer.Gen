@@ -13,11 +13,9 @@ public partial class MixedFieldsAndPropsPacket : ISerializable<MixedFieldsAndPro
     {
         var size = 0;
         size += sizeof(int); // Size for unmanaged type PropertyInt
-        size += sizeof(int); // Size for string length
-        size += System.Text.Encoding.UTF8.GetByteCount(obj.PropertyString);
+        size += StringEx.MeasureSize(obj.PropertyString); // Size for string PropertyString
         size += sizeof(int); // Size for unmanaged type FieldInt
-        size += sizeof(int); // Size for string length
-        size += System.Text.Encoding.UTF8.GetByteCount(obj.FieldString);
+        size += StringEx.MeasureSize(obj.FieldString); // Size for string FieldString
         size += sizeof(float); // Size for unmanaged type FieldFloat
         return size;
     }

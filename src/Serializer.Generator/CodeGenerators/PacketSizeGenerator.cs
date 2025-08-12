@@ -44,8 +44,7 @@ public static class PacketSizeGenerator
         }
         else if (memberType.SpecialType == SpecialType.System_String)
         {
-            sb.AppendLine($"        size += sizeof(int); // Size for string length");
-            sb.AppendLine($"        size += System.Text.Encoding.UTF8.GetByteCount(obj.{member.Name});");
+            sb.AppendLine($"        size += StringEx.MeasureSize(obj.{member.Name}); // Size for string {member.Name}");
         }
         else if (memberType.IsUnmanagedType)
         {
@@ -53,8 +52,14 @@ public static class PacketSizeGenerator
         }
     }
 
-    private static void GenerateCollectionSizeCalculation(StringBuilder sb, ISymbol member, ITypeSymbol memberType, 
-        AttributeData collectionAttribute, INamedTypeSymbol namedTypeSymbol)
+    private static void GenerateCollectionSizeCalculation
+    (
+        StringBuilder sb, 
+        ISymbol member, 
+        ITypeSymbol memberType, 
+        AttributeData collectionAttribute, 
+        INamedTypeSymbol namedTypeSymbol
+    )
     {
         var listTypeSymbol = (INamedTypeSymbol)memberType;
         var typeArgument = listTypeSymbol.TypeArguments[0];
@@ -95,6 +100,9 @@ public static class PacketSizeGenerator
     {
         var polymorphicOptions = AttributeHelper.GetPolymorphicOptions(member);
         var typeIdProperty = AttributeHelper.GetTypeIdProperty(polymorphicAttribute);
+        var typeIdType = AttributeHelper.GetTypeIdType(polymorphicAttribute);
+        
+
 
         if (polymorphicOptions.Any())
         {
@@ -103,7 +111,8 @@ public static class PacketSizeGenerator
             // If no TypeId property is specified, we need to account for the TypeId we'll write
             if (string.IsNullOrEmpty(typeIdProperty))
             {
-                sb.AppendLine($"        size += sizeof(int); // TypeId for polymorphic {member.Name}");
+                var sizeOfType = GetSizeOfType(typeIdType);
+                sb.AppendLine($"        size += {sizeOfType}; // TypeId for polymorphic {member.Name}");
             }
             
             // Use pattern matching instead of GetType().Name
@@ -137,5 +146,31 @@ public static class PacketSizeGenerator
     {
         return memberType is INamedTypeSymbol listTypeSymbol && 
                listTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>";
+    }
+
+    private static string GetSizeOfType(ITypeSymbol? typeIdType)
+    {
+        if (typeIdType == null) return "sizeof(int)";
+        
+        if (typeIdType.TypeKind == TypeKind.Enum)
+        {
+            var enumType = (INamedTypeSymbol)typeIdType;
+            var underlyingType = enumType.EnumUnderlyingType?.Name ?? "int";
+            return underlyingType switch
+            {
+                "Byte" => "sizeof(byte)",
+                "UInt16" => "sizeof(ushort)",
+                "Int64" => "sizeof(long)",
+                _ => "sizeof(int)"
+            };
+        }
+        
+        return typeIdType.Name switch
+        {
+            "Byte" => "sizeof(byte)",
+            "UInt16" => "sizeof(ushort)",
+            "Int64" => "sizeof(long)",
+            _ => "sizeof(int)"
+        };
     }
 }

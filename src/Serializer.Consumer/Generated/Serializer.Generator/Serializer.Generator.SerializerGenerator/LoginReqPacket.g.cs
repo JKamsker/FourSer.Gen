@@ -13,10 +13,8 @@ public partial struct LoginReqPacket : ISerializable<LoginReqPacket>
     {
         var size = 0;
         size += sizeof(ushort); // Size for unmanaged type wVersion
-        size += sizeof(int); // Size for string length
-        size += System.Text.Encoding.UTF8.GetByteCount(obj.strUserID);
-        size += sizeof(int); // Size for string length
-        size += System.Text.Encoding.UTF8.GetByteCount(obj.strPasswd);
+        size += StringEx.MeasureSize(obj.strUserID); // Size for string strUserID
+        size += StringEx.MeasureSize(obj.strPasswd); // Size for string strPasswd
         size += sizeof(long); // Size for unmanaged type dlCheck
         return size;
     }
