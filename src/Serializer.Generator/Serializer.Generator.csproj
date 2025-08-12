@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -6,6 +6,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <!-- Disable default items so we can control compilation and embedding explicitly -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,16 +15,21 @@
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
   </ItemGroup>
 
-  <!--<ItemGroup>
-    <ProjectReference Include="..\Serializer.Contracts\Serializer.Contracts.csproj" />
-  </ItemGroup>-->
+  <ItemGroup>
+    <!-- These are compiled as part of the generator -->
+    <Compile Include="SerializerGenerator.cs" />
+    <Compile Include="SourceGenerator.cs" />
+    <Compile Include="PolymorphicMode.cs" />
+    <Compile Include="AttributeHelper.cs" />
+    <Compile Include="IsExternalInit.cs" />
+    <Compile Include="CodeGenerators\**\*.cs" />
+    <Compile Include="Helpers\**\*.cs" />
+    <Compile Include="Models\**\*.cs" />
+  </ItemGroup>
 
   <ItemGroup>
-    <!--
-      The helper files are now compiled by default.
-      The original project file excluded them from compilation and included them as embedded resources.
-      This has been removed to allow the generator itself to call the helper methods directly.
-    -->
+    <!-- These are also embedded to be injected into the consumer's compilation -->
+    <EmbeddedResource Include="Helpers\**\*.cs" />
   </ItemGroup>
 
 </Project>

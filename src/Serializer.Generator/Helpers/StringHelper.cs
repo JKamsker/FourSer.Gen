@@ -19,7 +19,7 @@ internal class StringEx
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static string ReadString(ref ReadOnlySpan<byte> input)
+    public static unsafe string ReadString(ref ReadOnlySpan<byte> input)
     {
         var length = input.ReadInt32();
         var strSpan = input.Slice(0, length);
@@ -30,11 +30,14 @@ internal class StringEx
             return string.Empty;
         }
 
-        return Utf8Encoding.GetString(strSpan.ToArray());
+        fixed (byte* p = strSpan)
+        {
+            return Utf8Encoding.GetString(p, strSpan.Length);
+        }
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static string ReadString(ref Span<byte> input)
+    public static unsafe string ReadString(ref Span<byte> input)
     {
         var length = input.ReadInt32();
         var strSpan = input.Slice(0, length);
@@ -45,11 +48,14 @@ internal class StringEx
             return string.Empty;
         }
 
-        return Utf8Encoding.GetString(strSpan.ToArray());
+        fixed (byte* p = strSpan)
+        {
+            return Utf8Encoding.GetString(p, strSpan.Length);
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteString(ref Span<byte> input, string value)
+    public static unsafe void WriteString(ref Span<byte> input, string value)
     {
         if (string.IsNullOrEmpty(value))
         {
@@ -57,17 +63,15 @@ internal class StringEx
             return;
         }
 
-        var encoding = Utf8Encoding;
-        var byteCount = encoding.GetByteCount(value);
+        var byteCount = Utf8Encoding.GetByteCount(value);
         input.WriteInt32(byteCount);
         var destination = input.Slice(0, byteCount);
         input = input.Slice(byteCount);
 
-        if (byteCount == 0)
+        fixed (char* pValue = value)
+        fixed (byte* pDestination = destination)
         {
-            return;
+            Utf8Encoding.GetBytes(pValue, value.Length, pDestination, destination.Length);
         }
-
-        encoding.GetBytes(value).CopyTo(destination);
     }
 }

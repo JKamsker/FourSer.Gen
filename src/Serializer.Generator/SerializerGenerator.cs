@@ -35,7 +35,7 @@ public class SerializerGenerator : IIncrementalGenerator
         var nonNullableTypes = typesToGenerate.Where(static m => m is not null);
 
         context.RegisterSourceOutput(nonNullableTypes,
-            (spc, source) => Execute(spc, source!));
+            (spc, source) => Execute(spc, source!.Value));
     }
 
     private static void Execute(SourceProductionContext context, TypeToGenerate typeToGenerate)
@@ -72,6 +72,13 @@ public class SerializerGenerator : IIncrementalGenerator
         );
     }
 
+    private static readonly SymbolDisplayFormat s_typeNameFormat = new(
+        globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
+        typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
+        genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+        miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes | SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers
+    );
+
     private static EquatableArray<MemberToGenerate> GetSerializableMembers(INamedTypeSymbol typeSymbol)
     {
         var members = new List<MemberToGenerate>();
@@ -88,16 +95,26 @@ public class SerializerGenerator : IIncrementalGenerator
                 {
                     var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
                     var isList = memberTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>";
-                    var listTypeArgument = isList ? ((INamedTypeSymbol)memberTypeSymbol).TypeArguments[0].ToDisplayString() : null;
+                    ListTypeArgumentInfo? listTypeArgumentInfo = null;
+                    if (isList)
+                    {
+                        var typeArgumentSymbol = ((INamedTypeSymbol)memberTypeSymbol).TypeArguments[0];
+                        listTypeArgumentInfo = new ListTypeArgumentInfo(
+                            typeArgumentSymbol.ToDisplayString(s_typeNameFormat),
+                            typeArgumentSymbol.IsUnmanagedType,
+                            typeArgumentSymbol.SpecialType == SpecialType.System_String,
+                            typeArgumentSymbol.GetAttributes().Any(ad => ad.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute")
+                        );
+                    }
 
                     return new MemberToGenerate(
                         m.Name,
-                        memberTypeSymbol.ToDisplayString(),
+                        memberTypeSymbol.ToDisplayString(s_typeNameFormat),
                         memberTypeSymbol.IsUnmanagedType,
                         memberTypeSymbol.SpecialType == SpecialType.System_String,
                         memberTypeSymbol.GetAttributes().Any(ad => ad.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"),
                         isList,
-                        listTypeArgument,
+                        listTypeArgumentInfo,
                         GetCollectionInfo(m));
                 })
                 .ToList();

@@ -28,8 +28,7 @@ public static class SerializationGenerator
     {
         if (member.IsList)
         {
-            sb.AppendLine($"        // Collection serialization for {member.Name} is not implemented.");
-            sb.AppendLine($"        throw new System.NotImplementedException(\"Collection serialization is not implemented for member {member.Name}.\");");
+            GenerateCollectionSerialization(sb, member);
         }
         else if (member.HasGenerateSerializerAttribute)
         {
@@ -38,15 +37,63 @@ public static class SerializationGenerator
         }
         else if (member.IsStringType)
         {
-            // Assuming WriteString is an extension method on Span<byte> provided by a helper
             sb.AppendLine($"        data.WriteString(obj.{member.Name});");
         }
         else if (member.IsUnmanagedType)
         {
-            // Assuming WriteT is an extension method for each unmanaged type
-            var writeMethod = $"Write{GetSimpleTypeName(member.TypeName)}";
+            var typeName = GetMethodFriendlyTypeName(member.TypeName);
+            var writeMethod = $"Write{typeName}";
             sb.AppendLine($"        data.{writeMethod}(obj.{member.Name});");
         }
+    }
+
+    private static string GetMethodFriendlyTypeName(string typeName)
+    {
+        return typeName switch
+        {
+            "int" => "Int32",
+            "uint" => "UInt32",
+            "short" => "Int16",
+            "ushort" => "UInt16",
+            "long" => "Int64",
+            "ulong" => "UInt64",
+            "byte" => "Byte",
+            "float" => "Single",
+            "bool" => "Boolean",
+            _ => GetSimpleTypeName(typeName)
+        };
+    }
+
+    private static void GenerateCollectionSerialization(StringBuilder sb, MemberToGenerate member)
+    {
+        sb.AppendLine($"        data.WriteInt32(obj.{member.Name}.Count);");
+
+        if (member.CollectionInfo is not null && member.CollectionInfo.Value.PolymorphicMode != PolymorphicMode.None)
+        {
+            sb.AppendLine($"        throw new System.NotImplementedException(\"Polymorphic collection serialization is not implemented for member {member.Name}.\");");
+            return;
+        }
+
+        sb.AppendLine($"        for (int i = 0; i < obj.{member.Name}.Count; i++)");
+        sb.AppendLine("        {");
+
+        var typeArg = member.ListTypeArgument.Value;
+        if (typeArg.IsUnmanagedType)
+        {
+            var typeName = GetMethodFriendlyTypeName(typeArg.TypeName);
+            sb.AppendLine($"            data.Write{typeName}(obj.{member.Name}[i]);");
+        }
+        else if (typeArg.IsStringType)
+        {
+            sb.AppendLine($"            data.WriteString(obj.{member.Name}[i]);");
+        }
+        else if (typeArg.HasGenerateSerializerAttribute)
+        {
+            sb.AppendLine($"            var bytesWritten = {GetSimpleTypeName(typeArg.TypeName)}.Serialize(obj.{member.Name}[i], data);");
+            sb.AppendLine($"            data = data.Slice(bytesWritten);");
+        }
+
+        sb.AppendLine("        }");
     }
 
     private static string GetSimpleTypeName(string? fullyQualifiedName)

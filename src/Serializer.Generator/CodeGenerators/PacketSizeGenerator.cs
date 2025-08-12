@@ -19,25 +19,55 @@ public static class PacketSizeGenerator
         {
             if (member.IsList)
             {
-                sb.AppendLine($"        // Collection size calculation for {member.Name} is not fully implemented in this version.");
-                sb.AppendLine($"        throw new System.NotImplementedException(\"Collection size calculation is not implemented for member {member.Name}.\");");
+                GenerateCollectionSizeCalculation(sb, member);
             }
             else if (member.HasGenerateSerializerAttribute)
             {
-                sb.AppendLine($"        size += {GetSimpleTypeName(member.TypeName)}.GetPacketSize(obj.{member.Name});");
+                sb.AppendLine($"        size += {GetSimpleTypeName(member.TypeName)}.GetPacketSize(obj.{member.Name}); // Size for nested type {member.Name}");
             }
             else if (member.IsStringType)
             {
-                sb.AppendLine($"        size += StringEx.MeasureSize(obj.{member.Name});");
+                sb.AppendLine($"        size += StringEx.MeasureSize(obj.{member.Name}); // Size for string {member.Name}");
             }
             else if (member.IsUnmanagedType)
             {
-                sb.AppendLine($"        size += sizeof({member.TypeName});");
+                sb.AppendLine($"        size += sizeof({member.TypeName}); // Size for unmanaged type {member.Name}");
             }
         }
 
         sb.AppendLine("        return size;");
         sb.AppendLine("    }");
+    }
+
+    private static void GenerateCollectionSizeCalculation(StringBuilder sb, MemberToGenerate member)
+    {
+        sb.AppendLine($"        size += sizeof(int); // Default count size for {member.Name}");
+
+        if (member.CollectionInfo is not null && member.CollectionInfo.Value.PolymorphicMode != PolymorphicMode.None)
+        {
+            sb.AppendLine($"        throw new System.NotImplementedException(\"Polymorphic collection size calculation is not implemented for member {member.Name}.\");");
+            return;
+        }
+
+        if (member.ListTypeArgument is not null)
+        {
+            var typeArg = member.ListTypeArgument.Value;
+            if (typeArg.IsUnmanagedType)
+            {
+                sb.AppendLine($"        size += obj.{member.Name}.Count * sizeof({typeArg.TypeName});");
+            }
+            else if (typeArg.IsStringType)
+            {
+                sb.AppendLine($"        foreach(var item in obj.{member.Name}) {{ size += StringEx.MeasureSize(item); }}");
+            }
+            else if (typeArg.HasGenerateSerializerAttribute)
+            {
+                sb.AppendLine($"        foreach(var item in obj.{member.Name})");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            size += {GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item);");
+                sb.AppendLine("        }");
+            }
+        }
     }
 
     private static string GetSimpleTypeName(string? fullyQualifiedName)

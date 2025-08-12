@@ -27,7 +27,7 @@ public readonly record struct TypeToGenerate(
 /// <param name="IsStringType">Whether the member's type is a string.</param>
 /// <param name="HasGenerateSerializerAttribute">Whether the member's type has the [GenerateSerializer] attribute.</param>
 /// <param name="IsList">Whether the member's type is a List&lt;T&gt;.</param>
-/// <param name="ListTypeArgument">The type argument for the list, if applicable.</param>
+/// <param name="ListTypeArgument">Information about the list's type argument, if applicable.</param>
 /// <param name="CollectionInfo">Information about the collection attribute, if present.</param>
 public readonly record struct MemberToGenerate(
     string Name,
@@ -36,8 +36,21 @@ public readonly record struct MemberToGenerate(
     bool IsStringType,
     bool HasGenerateSerializerAttribute,
     bool IsList,
-    string? ListTypeArgument,
+    ListTypeArgumentInfo? ListTypeArgument,
     CollectionInfo? CollectionInfo) : IEquatable<MemberToGenerate>;
+
+/// <summary>
+/// A model describing the type argument of a List&lt;T&gt;.
+/// </summary>
+/// <param name="TypeName">The name of the type argument.</param>
+/// <param name="IsUnmanagedType">Whether the type is unmanaged.</param>
+/// <param name="IsStringType">Whether the type is a string.</param>
+/// <param name="HasGenerateSerializerAttribute">Whether the type has the [GenerateSerializer] attribute.</param>
+public readonly record struct ListTypeArgumentInfo(
+    string TypeName,
+    bool IsUnmanagedType,
+    bool IsStringType,
+    bool HasGenerateSerializerAttribute) : IEquatable<ListTypeArgumentInfo>;
 
 /// <summary>
 /// A model describing the [Collection] attribute on a member.

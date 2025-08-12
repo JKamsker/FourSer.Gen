@@ -31,8 +31,7 @@ public static class DeserializationGenerator
     {
         if (member.IsList)
         {
-            sb.AppendLine($"        // Collection deserialization for {member.Name} is not implemented.");
-            sb.AppendLine($"        throw new System.NotImplementedException(\"Collection deserialization is not implemented for member {member.Name}.\");");
+            GenerateCollectionDeserialization(sb, member);
         }
         else if (member.HasGenerateSerializerAttribute)
         {
@@ -41,15 +40,64 @@ public static class DeserializationGenerator
         }
         else if (member.IsStringType)
         {
-            // Assuming ReadString is an extension method on ReadOnlySpan<byte> provided by a helper
             sb.AppendLine($"        obj.{member.Name} = data.ReadString();");
         }
         else if (member.IsUnmanagedType)
         {
-            // Assuming ReadT is an extension method for each unmanaged type
-            var readMethod = $"Read{GetSimpleTypeName(member.TypeName)}";
+            var typeName = GetMethodFriendlyTypeName(member.TypeName);
+            var readMethod = $"Read{typeName}";
             sb.AppendLine($"        obj.{member.Name} = data.{readMethod}();");
         }
+    }
+
+    private static string GetMethodFriendlyTypeName(string typeName)
+    {
+        return typeName switch
+        {
+            "int" => "Int32",
+            "uint" => "UInt32",
+            "short" => "Int16",
+            "ushort" => "UInt16",
+            "long" => "Int64",
+            "ulong" => "UInt64",
+            "byte" => "Byte",
+            "float" => "Single",
+            "bool" => "Boolean",
+            _ => GetSimpleTypeName(typeName)
+        };
+    }
+
+    private static void GenerateCollectionDeserialization(StringBuilder sb, MemberToGenerate member)
+    {
+        sb.AppendLine($"        var {member.Name}Count = data.ReadInt32();");
+        sb.AppendLine($"        obj.{member.Name} = new System.Collections.Generic.List<{member.ListTypeArgument!.Value.TypeName}>({member.Name}Count);");
+
+        if (member.CollectionInfo is not null && member.CollectionInfo.Value.PolymorphicMode != PolymorphicMode.None)
+        {
+            sb.AppendLine($"        throw new System.NotImplementedException(\"Polymorphic collection deserialization is not implemented for member {member.Name}.\");");
+            return;
+        }
+
+        sb.AppendLine($"        for (int i = 0; i < {member.Name}Count; i++)");
+        sb.AppendLine("        {");
+
+        var typeArg = member.ListTypeArgument.Value;
+        if (typeArg.IsUnmanagedType)
+        {
+            var typeName = GetMethodFriendlyTypeName(typeArg.TypeName);
+            sb.AppendLine($"            obj.{member.Name}.Add(data.Read{typeName}());");
+        }
+        else if (typeArg.IsStringType)
+        {
+            sb.AppendLine($"            obj.{member.Name}.Add(data.ReadString());");
+        }
+        else if (typeArg.HasGenerateSerializerAttribute)
+        {
+            sb.AppendLine($"            obj.{member.Name}.Add({GetSimpleTypeName(typeArg.TypeName)}.Deserialize(data, out var itemBytesRead));");
+            sb.AppendLine($"            data = data.Slice(itemBytesRead);");
+        }
+
+        sb.AppendLine("        }");
     }
 
     private static string GetSimpleTypeName(string? fullyQualifiedName)
