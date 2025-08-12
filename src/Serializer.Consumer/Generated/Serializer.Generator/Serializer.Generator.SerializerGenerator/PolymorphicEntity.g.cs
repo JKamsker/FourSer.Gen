@@ -18,10 +18,10 @@ public partial class PolymorphicEntity : ISerializable<PolymorphicEntity>
         switch (obj.Entity.GetType().Name)
         {
             case "EntityType1":
-                size += PolymorphicEntity.EntityType1.GetPacketSize((PolymorphicEntity.EntityType1)obj.Entity);
+                size += EntityType1.GetPacketSize((EntityType1)obj.Entity);
                 break;
             case "EntityType2":
-                size += PolymorphicEntity.EntityType2.GetPacketSize((PolymorphicEntity.EntityType2)obj.Entity);
+                size += EntityType2.GetPacketSize((EntityType2)obj.Entity);
                 break;
             default:
                 throw new InvalidOperationException($"Unknown polymorphic type: {obj.Entity.GetType().Name}");
@@ -40,11 +40,11 @@ public partial class PolymorphicEntity : ISerializable<PolymorphicEntity>
         switch (obj.TypeId)
         {
             case 1:
-                obj.Entity = PolymorphicEntity.EntityType1.Deserialize(data, out var EntityBytesRead1);
+                obj.Entity = EntityType1.Deserialize(data, out var EntityBytesRead1);
                 data = data.Slice(EntityBytesRead1);
                 break;
             case 2:
-                obj.Entity = PolymorphicEntity.EntityType2.Deserialize(data, out var EntityBytesRead2);
+                obj.Entity = EntityType2.Deserialize(data, out var EntityBytesRead2);
                 data = data.Slice(EntityBytesRead2);
                 break;
             default:
@@ -76,11 +76,11 @@ public partial class PolymorphicEntity : ISerializable<PolymorphicEntity>
         switch (obj.TypeId)
         {
             case 1:
-                var EntityBytesWritten1 = PolymorphicEntity.EntityType1.Serialize((PolymorphicEntity.EntityType1)obj.Entity, data);
+                var EntityBytesWritten1 = EntityType1.Serialize((EntityType1)obj.Entity, data);
                 data = data.Slice(EntityBytesWritten1);
                 break;
             case 2:
-                var EntityBytesWritten2 = PolymorphicEntity.EntityType2.Serialize((PolymorphicEntity.EntityType2)obj.Entity, data);
+                var EntityBytesWritten2 = EntityType2.Serialize((EntityType2)obj.Entity, data);
                 data = data.Slice(EntityBytesWritten2);
                 break;
             default:
