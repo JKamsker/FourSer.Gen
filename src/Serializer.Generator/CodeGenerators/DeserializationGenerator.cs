@@ -48,7 +48,7 @@ public static class DeserializationGenerator
         }
         else if (memberType.SpecialType == SpecialType.System_String)
         {
-            sb.AppendLine($"        obj.{member.Name} = StringEx.ReadString(ref data);");
+            sb.AppendLine($"        obj.{member.Name} = data.ReadString();");
         }
         else if (memberType.IsUnmanagedType)
         {
