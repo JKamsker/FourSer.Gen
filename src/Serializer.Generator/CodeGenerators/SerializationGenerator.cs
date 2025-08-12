@@ -35,15 +35,23 @@ public static class SerializationGenerator
 
         if (polymorphicMembers.Any())
         {
-            sb.AppendLine("        // Ensure TypeId properties are synchronized with actual object types");
+            var hasTypeIdSynchronization = false;
+            
             foreach (var polymorphicMember in polymorphicMembers)
             {
                 var polymorphicAttribute = AttributeHelper.GetPolymorphicAttribute(polymorphicMember);
                 var polymorphicOptions = AttributeHelper.GetPolymorphicOptions(polymorphicMember);
                 var typeIdProperty = AttributeHelper.GetTypeIdProperty(polymorphicAttribute);
 
+                // Only synchronize if there's a TypeId property specified
                 if (!string.IsNullOrEmpty(typeIdProperty) && polymorphicOptions.Any())
                 {
+                    if (!hasTypeIdSynchronization)
+                    {
+                        sb.AppendLine("        // Ensure TypeId properties are synchronized with actual object types");
+                        hasTypeIdSynchronization = true;
+                    }
+                    
                     sb.AppendLine($"        var actualType{polymorphicMember.Name} = obj.{polymorphicMember.Name}.GetType().Name;");
                     sb.AppendLine($"        switch (actualType{polymorphicMember.Name})");
                     sb.AppendLine("        {");
@@ -143,10 +151,42 @@ public static class SerializationGenerator
         var polymorphicOptions = AttributeHelper.GetPolymorphicOptions(member);
         var typeIdProperty = AttributeHelper.GetTypeIdProperty(polymorphicAttribute);
 
-        if (!string.IsNullOrEmpty(typeIdProperty) && polymorphicOptions.Any())
+        if (polymorphicOptions.Any())
         {
             sb.AppendLine($"        // Polymorphic serialization for {member.Name}");
-            sb.AppendLine($"        switch (obj.{typeIdProperty})");
+            
+            if (!string.IsNullOrEmpty(typeIdProperty))
+            {
+                // Use existing TypeId property
+                sb.AppendLine($"        switch (obj.{typeIdProperty})");
+            }
+            else
+            {
+                // Infer TypeId from actual object type and write it directly
+                sb.AppendLine($"        var {member.Name}TypeId = 0;");
+                sb.AppendLine($"        var actualType{member.Name} = obj.{member.Name}.GetType().Name;");
+                sb.AppendLine($"        switch (actualType{member.Name})");
+                sb.AppendLine("        {");
+
+                foreach (var option in polymorphicOptions)
+                {
+                    var id = option.ConstructorArguments[0].Value;
+                    var type = option.ConstructorArguments[1].Value as ITypeSymbol;
+                    if (type != null)
+                    {
+                        sb.AppendLine($"            case \"{type.Name}\":");
+                        sb.AppendLine($"                {member.Name}TypeId = {id};");
+                        sb.AppendLine("                break;");
+                    }
+                }
+
+                sb.AppendLine("            default:");
+                sb.AppendLine($"                throw new InvalidOperationException($\"Unknown polymorphic type: {{actualType{member.Name}}}\");");
+                sb.AppendLine("        }");
+                sb.AppendLine($"        data.WriteInt32({member.Name}TypeId);");
+                sb.AppendLine($"        switch ({member.Name}TypeId)");
+            }
+            
             sb.AppendLine("        {");
 
             foreach (var option in polymorphicOptions)
@@ -163,7 +203,14 @@ public static class SerializationGenerator
             }
 
             sb.AppendLine("            default:");
-            sb.AppendLine($"                throw new InvalidOperationException($\"Unknown type ID: {{obj.{typeIdProperty}}}\");");
+            if (!string.IsNullOrEmpty(typeIdProperty))
+            {
+                sb.AppendLine($"                throw new InvalidOperationException($\"Unknown type ID: {{obj.{typeIdProperty}}}\");");
+            }
+            else
+            {
+                sb.AppendLine($"                throw new InvalidOperationException($\"Unknown type ID: {{{member.Name}TypeId}}\");");
+            }
             sb.AppendLine("        }");
         }
     }

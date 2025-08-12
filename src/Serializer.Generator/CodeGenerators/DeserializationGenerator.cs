@@ -105,10 +105,22 @@ public static class DeserializationGenerator
         var polymorphicOptions = AttributeHelper.GetPolymorphicOptions(member);
         var typeIdProperty = AttributeHelper.GetTypeIdProperty(polymorphicAttribute);
 
-        if (!string.IsNullOrEmpty(typeIdProperty) && polymorphicOptions.Any())
+        if (polymorphicOptions.Any())
         {
             sb.AppendLine($"        // Polymorphic deserialization for {member.Name}");
-            sb.AppendLine($"        switch (obj.{typeIdProperty})");
+            
+            if (!string.IsNullOrEmpty(typeIdProperty))
+            {
+                // Use existing TypeId property
+                sb.AppendLine($"        switch (obj.{typeIdProperty})");
+            }
+            else
+            {
+                // Read TypeId directly from stream without storing in model
+                sb.AppendLine($"        var {member.Name}TypeId = data.ReadInt32();");
+                sb.AppendLine($"        switch ({member.Name}TypeId)");
+            }
+            
             sb.AppendLine("        {");
 
             foreach (var option in polymorphicOptions)
@@ -125,7 +137,14 @@ public static class DeserializationGenerator
             }
 
             sb.AppendLine("            default:");
-            sb.AppendLine($"                throw new InvalidOperationException($\"Unknown type ID: {{obj.{typeIdProperty}}}\");");
+            if (!string.IsNullOrEmpty(typeIdProperty))
+            {
+                sb.AppendLine($"                throw new InvalidOperationException($\"Unknown type ID: {{obj.{typeIdProperty}}}\");");
+            }
+            else
+            {
+                sb.AppendLine($"                throw new InvalidOperationException($\"Unknown type ID: {{{member.Name}TypeId}}\");");
+            }
             sb.AppendLine("        }");
         }
     }

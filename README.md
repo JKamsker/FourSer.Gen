@@ -134,7 +134,11 @@ public partial class NestedData
 
 ## Polymorphic Serialization
 
-Support for polymorphic types using type discriminators:
+Support for polymorphic types using type discriminators. The generator supports two modes:
+
+### 1. Explicit TypeId Property
+
+When you have a TypeId property in your model:
 
 ```csharp
 [GenerateSerializer]
@@ -167,7 +171,7 @@ public partial class PolymorphicEntity
 }
 ```
 
-### Usage
+#### Usage
 
 ```csharp
 var entity = new PolymorphicEntity
@@ -187,7 +191,7 @@ var deserialized = PolymorphicEntity.Deserialize(buffer, out var bytesRead);
 // deserialized.Entity will be of type EntityType1
 ```
 
-### Automatic TypeId Inference
+#### Automatic TypeId Inference
 
 The generator automatically ensures TypeId properties are synchronized with the actual object types during serialization:
 
@@ -205,6 +209,66 @@ var bytesWritten = PolymorphicEntity.Serialize(entity, buffer);
 ```
 
 This prevents serialization errors when the TypeId property doesn't match the actual object type.
+
+### 2. Automatic TypeId Inference (No TypeId Property)
+
+When you don't want a TypeId property in your model, the generator can automatically infer and handle the TypeId:
+
+```csharp
+[GenerateSerializer]
+public partial class AutoPolymorphicEntity
+{
+    public int Id { get; set; }
+    
+    // No TypeId property - will be inferred automatically
+    [SerializePolymorphic]
+    [PolymorphicOption(1, typeof(AutoEntityType1))]
+    [PolymorphicOption(2, typeof(AutoEntityType2))]
+    public BaseAutoEntity Entity { get; set; }
+    
+    [GenerateSerializer]
+    public partial class BaseAutoEntity
+    {
+    }
+    
+    [GenerateSerializer]
+    public partial class AutoEntityType1 : BaseAutoEntity
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+    
+    [GenerateSerializer]
+    public partial class AutoEntityType2 : BaseAutoEntity
+    {
+        public string Description { get; set; } = string.Empty;
+    }
+}
+```
+
+#### Usage
+
+```csharp
+var entity = new AutoPolymorphicEntity
+{
+    Id = 100,
+    // No TypeId needed - inferred from actual object type
+    Entity = new AutoPolymorphicEntity.AutoEntityType1 { Name = "Test" }
+};
+
+// TypeId is automatically inferred and written to the stream
+var size = AutoPolymorphicEntity.GetPacketSize(entity);
+var buffer = new byte[size];
+var bytesWritten = AutoPolymorphicEntity.Serialize(entity, buffer);
+
+// TypeId is read from stream and correct type is created
+var deserialized = AutoPolymorphicEntity.Deserialize(buffer, out var bytesRead);
+// deserialized.Entity will be of type AutoEntityType1
+```
+
+In this mode:
+- During serialization: The actual object type is used to determine the TypeId, which is written to the stream
+- During deserialization: The TypeId is read from the stream and used to create the correct object type
+- The TypeId is not stored in your model, keeping it clean
 
 ## Supported Types
 

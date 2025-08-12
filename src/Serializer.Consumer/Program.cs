@@ -14,8 +14,10 @@ public class TestRunner
 
     public void RunTests()
     {
-        // Run polymorphic test first
+        // Run polymorphic tests first
         PolymorphicTest.RunTest();
+        AutoPolymorphicTest.RunTest();
+        PolymorphicComparison.RunComparison();
         
         var testClasses = new[]
         {

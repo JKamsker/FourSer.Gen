@@ -96,9 +96,16 @@ public static class PacketSizeGenerator
         var polymorphicOptions = AttributeHelper.GetPolymorphicOptions(member);
         var typeIdProperty = AttributeHelper.GetTypeIdProperty(polymorphicAttribute);
 
-        if (!string.IsNullOrEmpty(typeIdProperty) && polymorphicOptions.Any())
+        if (polymorphicOptions.Any())
         {
             sb.AppendLine($"        // Polymorphic size calculation for {member.Name} - infer type from actual object");
+            
+            // If no TypeId property is specified, we need to account for the TypeId we'll write
+            if (string.IsNullOrEmpty(typeIdProperty))
+            {
+                sb.AppendLine($"        size += sizeof(int); // TypeId for polymorphic {member.Name}");
+            }
+            
             sb.AppendLine($"        switch (obj.{member.Name}.GetType().Name)");
             sb.AppendLine("        {");
 
