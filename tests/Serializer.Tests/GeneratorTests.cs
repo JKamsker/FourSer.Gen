@@ -215,8 +215,8 @@ public partial class LoginPacket : ISerializable<LoginPacket>
     public static int Serialize(LoginPacket obj, System.Span<byte> data)
     {
         var originalData = data;
-        data.WriteByte(obj.Result);
-        data.WriteUInt32(obj.UserID);
+        data.WriteByte((Byte)obj.Result);
+        data.WriteUInt32((UInt32)obj.UserID);
         data.WriteString(obj.Username);
         return originalData.Length - data.Length;
     }
@@ -304,7 +304,7 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
     public static int Serialize(ContainerPacket obj, System.Span<byte> data)
     {
         var originalData = data;
-        data.WriteInt32(obj.Id);
+        data.WriteInt32((Int32)obj.Id);
         var bytesWritten = NestedData.Serialize(obj.Data, data);
         data = data.Slice(bytesWritten);
         return originalData.Length - data.Length;
@@ -372,7 +372,7 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
     public static int GetPacketSize(CollectionPacket obj)
     {
         var size = 0;
-        size += sizeof(int); // Default count size for Numbers
+        size += sizeof(int); // Count size for Numbers
         size += obj.Numbers.Count * sizeof(int);
         return size;
     }
@@ -395,10 +395,10 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
     public static int Serialize(CollectionPacket obj, System.Span<byte> data)
     {
         var originalData = data;
-        data.WriteInt32(obj.Numbers.Count);
+        data.WriteInt32((int)obj.Numbers.Count);
         for (int i = 0; i < obj.Numbers.Count; i++)
         {
-            data.WriteInt32(obj.Numbers[i]);
+            data.WriteInt32((Int32)obj.Numbers[i]);
         }
         return originalData.Length - data.Length;
     }
