@@ -11,7 +11,8 @@ public static class DeserializationGenerator
 {
     public static void GenerateDeserialize(StringBuilder sb, TypeToGenerate typeToGenerate)
     {
-        sb.AppendLine($"    public static {typeToGenerate.Name} Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)");
+        var newKeyword = typeToGenerate.HasSerializableBaseType ? "new " : "";
+        sb.AppendLine($"    public static {newKeyword}{typeToGenerate.Name} Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)");
         sb.AppendLine("    {");
         sb.AppendLine($"        bytesRead = 0;");
         sb.AppendLine($"        var originalData = data;");

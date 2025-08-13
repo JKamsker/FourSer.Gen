@@ -10,7 +10,7 @@ public partial class PolymorphicEntityImplicitTypeId
     [SerializePolymorphic]
     [PolymorphicOption(1, typeof(EntityType1))]
     [PolymorphicOption(2, typeof(EntityType2))]
-    public BaseEntity Entity { get; set; }
+    public BaseEntity? Entity { get; set; }
     
     [GenerateSerializer]
     public partial class BaseEntity
@@ -97,21 +97,21 @@ public static class PolymorphicImplicitTypeIdTest
         Console.WriteLine($"  Original ID: {original.Id}, Deserialized ID: {deserialized.Id}");
         
         // Check the actual types match
-        var originalType = original.Entity.GetType().Name;
-        var deserializedType = deserialized.Entity.GetType().Name;
+        var originalType = original.Entity!.GetType().Name;
+        var deserializedType = deserialized.Entity!.GetType().Name;
         Console.WriteLine($"  Original Type: {originalType}, Deserialized Type: {deserializedType}");
         Console.WriteLine($"  Types match: {originalType == deserializedType}");
         
         // Verify content based on type
         if (deserialized.Entity is PolymorphicEntityImplicitTypeId.EntityType1 deserType1)
         {
-            var origType1 = (PolymorphicEntityImplicitTypeId.EntityType1)original.Entity;
+            var origType1 = (PolymorphicEntityImplicitTypeId.EntityType1)original.Entity!;
             Console.WriteLine($"  Original Name: '{origType1.Name}', Deserialized Name: '{deserType1.Name}'");
             Console.WriteLine($"  Names match: {origType1.Name == deserType1.Name}");
         }
         else if (deserialized.Entity is PolymorphicEntityImplicitTypeId.EntityType2 deserType2)
         {
-            var origType2 = (PolymorphicEntityImplicitTypeId.EntityType2)original.Entity;
+            var origType2 = (PolymorphicEntityImplicitTypeId.EntityType2)original.Entity!;
             Console.WriteLine($"  Original Description: '{origType2.Description}', Deserialized Description: '{deserType2.Description}'");
             Console.WriteLine($"  Descriptions match: {origType2.Description == deserType2.Description}");
         }

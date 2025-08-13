@@ -10,7 +10,7 @@ public partial class PolymorphicWithByteTypeId
     [SerializePolymorphic(TypeIdType = typeof(byte))]
     [PolymorphicOption((byte)1, typeof(ByteEntityType1))]
     [PolymorphicOption((byte)2, typeof(ByteEntityType2))]
-    public BaseByteEntity Entity { get; set; }
+    public BaseByteEntity? Entity { get; set; }
     
     [GenerateSerializer]
     public partial class BaseByteEntity
