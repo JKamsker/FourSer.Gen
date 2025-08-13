@@ -1,5 +1,6 @@
 using Serializer.Generator.Models;
 using System.Text;
+using Serializer.Generator.Helpers;
 
 namespace Serializer.Generator.CodeGenerators;
 

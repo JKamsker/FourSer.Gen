@@ -6,44 +6,35 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
+using Serializer.Generator.CodeGenerators;
+using Serializer.Generator.Helpers;
 
 namespace Serializer.Generator;
 
 [Generator]
 public class SerializerGenerator : IIncrementalGenerator
 {
-    private static readonly string[] s_helperFileNames =
-    {
-        "BinaryWriterExtensions.cs",
-        "RoSpanReaderExtensions.cs",
-        "SpanReaderExtensions.cs",
-        "SpanWriterExtensions.cs",
-        "StringHelper.cs"
-    };
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         context.RegisterPostInitializationOutput(AddHelpers);
 
         var typesToGenerate = context.SyntaxProvider
-            .ForAttributeWithMetadataName(
+            .ForAttributeWithMetadataName
+            (
                 "Serializer.Contracts.GenerateSerializerAttribute",
                 predicate: (node, _) => node is ClassDeclarationSyntax or StructDeclarationSyntax,
-                transform: GetSemanticTargetForGeneration);
+                transform: GetSemanticTargetForGeneration
+            );
 
         var nonNullableTypes = typesToGenerate.Where(static m => m is not null);
 
-        context.RegisterSourceOutput(nonNullableTypes,
-            (spc, source) => Execute(spc, source!.Value));
-    }
-
-    private static void Execute(SourceProductionContext context, TypeToGenerate typeToGenerate)
-    {
-        // In a real implementation, you would handle diagnostics here
-        // For example: context.ReportDiagnostic(diagnostic);
-        var source = SourceGenerator.GenerateSource(typeToGenerate);
-        context.AddSource($"{typeToGenerate.Name}.g.cs", source);
+        context.RegisterSourceOutput
+        (
+            nonNullableTypes,
+            (spc, source) => Execute(spc, source!.Value)
+        );
     }
 
     private static TypeToGenerate? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context, CancellationToken ct)
@@ -63,7 +54,8 @@ public class SerializerGenerator : IIncrementalGenerator
         var serializableMembers = GetSerializableMembers(typeSymbol);
         var nestedTypes = GetNestedTypes(typeSymbol);
 
-        return new TypeToGenerate(
+        return new TypeToGenerate
+        (
             typeSymbol.Name,
             typeSymbol.ContainingNamespace.ToDisplayString(),
             typeSymbol.IsValueType,
@@ -72,11 +64,13 @@ public class SerializerGenerator : IIncrementalGenerator
         );
     }
 
-    private static readonly SymbolDisplayFormat s_typeNameFormat = new(
+    private static readonly SymbolDisplayFormat s_typeNameFormat = new
+    (
         globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
         typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
         genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
-        miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes | SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers
+        miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes
+        | SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers
     );
 
     private static EquatableArray<MemberToGenerate> GetSerializableMembers(INamedTypeSymbol typeSymbol)
@@ -87,39 +81,59 @@ public class SerializerGenerator : IIncrementalGenerator
         while (currentType != null && currentType.SpecialType != SpecialType.System_Object)
         {
             var typeMembers = currentType.GetMembers()
-                .Where(m => !m.IsImplicitlyDeclared &&
-                            (m is IPropertySymbol { SetMethod: not null } ||
-                             m is IFieldSymbol { IsReadOnly: false, DeclaredAccessibility: Accessibility.Public }))
+                .Where
+                (
+                    m => !m.IsImplicitlyDeclared &&
+                        (m is IPropertySymbol { SetMethod: not null } ||
+                            m is IFieldSymbol { IsReadOnly: false, DeclaredAccessibility: Accessibility.Public })
+                )
                 .OrderBy(m => m.Locations.First().SourceSpan.Start)
-                .Select(m =>
-                {
-                    var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
-                    var isList = memberTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>";
-                    ListTypeArgumentInfo? listTypeArgumentInfo = null;
-                    if (isList)
+                .Select
+                (
+                    m =>
                     {
-                        var typeArgumentSymbol = ((INamedTypeSymbol)memberTypeSymbol).TypeArguments[0];
-                        listTypeArgumentInfo = new ListTypeArgumentInfo(
-                            typeArgumentSymbol.ToDisplayString(s_typeNameFormat),
-                            typeArgumentSymbol.IsUnmanagedType,
-                            typeArgumentSymbol.SpecialType == SpecialType.System_String,
-                            typeArgumentSymbol.GetAttributes().Any(ad => ad.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute")
+                        var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
+                        var isList = memberTypeSymbol.OriginalDefinition.ToDisplayString()
+                            == "System.Collections.Generic.List<T>";
+                        ListTypeArgumentInfo? listTypeArgumentInfo = null;
+                        if (isList)
+                        {
+                            var typeArgumentSymbol = ((INamedTypeSymbol)memberTypeSymbol).TypeArguments[0];
+                            listTypeArgumentInfo = new ListTypeArgumentInfo
+                            (
+                                typeArgumentSymbol.ToDisplayString(s_typeNameFormat),
+                                typeArgumentSymbol.IsUnmanagedType,
+                                typeArgumentSymbol.SpecialType == SpecialType.System_String,
+                                typeArgumentSymbol.GetAttributes()
+                                    .Any
+                                    (
+                                        ad => ad.AttributeClass?.ToDisplayString()
+                                            == "Serializer.Contracts.GenerateSerializerAttribute"
+                                    )
+                            );
+                        }
+
+                        var polymorphicInfo = GetPolymorphicInfo(m);
+
+                        return new MemberToGenerate
+                        (
+                            m.Name,
+                            memberTypeSymbol.ToDisplayString(s_typeNameFormat),
+                            memberTypeSymbol.IsUnmanagedType,
+                            memberTypeSymbol.SpecialType == SpecialType.System_String,
+                            memberTypeSymbol.GetAttributes()
+                                .Any
+                                (
+                                    ad => ad.AttributeClass?.ToDisplayString()
+                                        == "Serializer.Contracts.GenerateSerializerAttribute"
+                                ),
+                            isList,
+                            listTypeArgumentInfo,
+                            GetCollectionInfo(m),
+                            polymorphicInfo
                         );
                     }
-
-                    var polymorphicInfo = GetPolymorphicInfo(m);
-
-                    return new MemberToGenerate(
-                        m.Name,
-                        memberTypeSymbol.ToDisplayString(s_typeNameFormat),
-                        memberTypeSymbol.IsUnmanagedType,
-                        memberTypeSymbol.SpecialType == SpecialType.System_String,
-                        memberTypeSymbol.GetAttributes().Any(ad => ad.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"),
-                        isList,
-                        listTypeArgumentInfo,
-                        GetCollectionInfo(m),
-                        polymorphicInfo);
-                })
+                )
                 .ToList();
 
             members.InsertRange(0, typeMembers);
@@ -136,17 +150,23 @@ public class SerializerGenerator : IIncrementalGenerator
         foreach (var member in parentType.GetMembers())
         {
             if (member is INamedTypeSymbol nestedTypeSymbol &&
-                nestedTypeSymbol.GetAttributes().Any(ad => ad.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"))
+                nestedTypeSymbol.GetAttributes()
+                    .Any(ad => ad.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"))
             {
-                 var nestedMembers = GetSerializableMembers(nestedTypeSymbol);
-                 var deeperNestedTypes = GetNestedTypes(nestedTypeSymbol);
+                var nestedMembers = GetSerializableMembers(nestedTypeSymbol);
+                var deeperNestedTypes = GetNestedTypes(nestedTypeSymbol);
 
-                 nestedTypes.Add(new TypeToGenerate(
-                     nestedTypeSymbol.Name,
-                     nestedTypeSymbol.ContainingNamespace.ToDisplayString(),
-                     nestedTypeSymbol.IsValueType,
-                     nestedMembers,
-                     deeperNestedTypes));
+                nestedTypes.Add
+                (
+                    new TypeToGenerate
+                    (
+                        nestedTypeSymbol.Name,
+                        nestedTypeSymbol.ContainingNamespace.ToDisplayString(),
+                        nestedTypeSymbol.IsValueType,
+                        nestedMembers,
+                        deeperNestedTypes
+                    )
+                );
             }
         }
 
@@ -164,7 +184,14 @@ public class SerializerGenerator : IIncrementalGenerator
         var countSize = AttributeHelper.GetCountSize(attribute);
         var countSizeReference = AttributeHelper.GetCountSizeReference(attribute);
 
-        return new CollectionInfo(polymorphicMode, typeIdProperty, countType, countSize, countSizeReference);
+        return new CollectionInfo
+        (
+            polymorphicMode,
+            typeIdProperty,
+            countType,
+            countSize,
+            countSizeReference
+        );
     }
 
     private static PolymorphicInfo? GetPolymorphicInfo(ISymbol member)
@@ -177,21 +204,27 @@ public class SerializerGenerator : IIncrementalGenerator
             return null;
         }
 
-        var typeIdProperty = AttributeHelper.GetTypeIdProperty(attribute) ?? AttributeHelper.GetCollectionTypeIdProperty(collectionAttribute);
+        var typeIdProperty = AttributeHelper.GetTypeIdProperty(attribute) ?? AttributeHelper.GetCollectionTypeIdProperty
+            (collectionAttribute);
         var typeIdType = AttributeHelper.GetTypeIdType(attribute) ?? AttributeHelper.GetCollectionTypeIdType(collectionAttribute);
         var options = AttributeHelper.GetPolymorphicOptions(member);
 
-        var polymorphicOptions = options.Select(optionAttribute =>
-        {
-            var (key, type) = AttributeHelper.GetPolymorphicOption(optionAttribute);
-            return new PolymorphicOption(key, type.ToDisplayString());
-        }).ToImmutableArray();
+        var polymorphicOptions = options.Select
+            (
+                optionAttribute =>
+                {
+                    var (key, type) = AttributeHelper.GetPolymorphicOption(optionAttribute);
+                    return new PolymorphicOption(key, type.ToDisplayString());
+                }
+            )
+            .ToImmutableArray();
 
         var enumUnderlyingType = typeIdType is { TypeKind: TypeKind.Enum }
             ? ((INamedTypeSymbol)typeIdType).EnumUnderlyingType!.ToDisplayString()
             : null;
 
-        return new PolymorphicInfo(
+        return new PolymorphicInfo
+        (
             typeIdProperty,
             typeIdType?.ToDisplayString() ?? "int",
             new EquatableArray<PolymorphicOption>(polymorphicOptions),
@@ -199,13 +232,66 @@ public class SerializerGenerator : IIncrementalGenerator
         );
     }
 
+    private static void Execute(SourceProductionContext context, TypeToGenerate typeToGenerate)
+    {
+        // // In a real implementation, you would handle diagnostics here
+        // // For example: context.ReportDiagnostic(diagnostic);
+        // var source = SourceGenerator.GenerateSource(typeToGenerate);
+        var sb = new StringBuilder();
+
+        GenerateFileHeader(sb, typeToGenerate);
+        GenerateClassDeclaration(sb, typeToGenerate);
+
+        PacketSizeGenerator.GenerateGetPacketSize(sb, typeToGenerate);
+        sb.AppendLine();
+
+        DeserializationGenerator.GenerateDeserialize(sb, typeToGenerate);
+        sb.AppendLine();
+
+        SerializationGenerator.GenerateSerialize(sb, typeToGenerate);
+
+        if (!typeToGenerate.NestedTypes.IsEmpty)
+        {
+            NestedTypeGenerator.GenerateNestedTypes(sb, typeToGenerate.NestedTypes);
+        }
+
+        sb.AppendLine("}");
+
+        context.AddSource($"{typeToGenerate.Name}.g.cs", sb.ToString());
+    }
+
+    private static void GenerateFileHeader(StringBuilder sb, TypeToGenerate typeToGenerate)
+    {
+        sb.AppendLine($"// <auto-generated/>");
+        sb.AppendLine("using System;");
+        sb.AppendLine("using System.Buffers.Binary;");
+        sb.AppendLine("using System.Collections.Generic;");
+        sb.AppendLine("using System.Runtime.CompilerServices;");
+        sb.AppendLine("using System.Text;");
+        sb.AppendLine("using Serializer.Contracts;");
+        sb.AppendLine($"using System.IO;");
+        sb.AppendLine($"using Serializer.Generator.Helpers;");
+        sb.AppendLine();
+        sb.AppendLine($"namespace {typeToGenerate.Namespace};");
+        sb.AppendLine();
+    }
+
+    private static void GenerateClassDeclaration(StringBuilder sb, TypeToGenerate typeToGenerate)
+    {
+        var typeKeyword = typeToGenerate.IsValueType ? "struct" : "class";
+        sb.AppendLine($"public partial {typeKeyword} {typeToGenerate.Name} : ISerializable<{typeToGenerate.Name}>");
+        sb.AppendLine("{");
+    }
+
     private static void AddHelpers(IncrementalGeneratorPostInitializationContext context)
     {
         var assembly = Assembly.GetExecutingAssembly();
-        foreach (var file in s_helperFileNames)
+        var names = assembly.GetManifestResourceNames()
+            .Where(name => name.StartsWith("Serializer.Generator.Resources.Code."));
+
+        foreach (var file in names)
         {
-            var resourceName = $"Serializer.Generator.Embedded_Helpers.{file}";
-            using var stream = assembly.GetManifestResourceStream(resourceName);
+            using var stream = assembly.GetManifestResourceStream(file);
             if (stream is null) continue;
 
             using var reader = new StreamReader(stream);
