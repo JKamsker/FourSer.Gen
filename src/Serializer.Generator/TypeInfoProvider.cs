@@ -157,7 +157,28 @@ internal static class TypeInfoProvider
     private static CollectionInfo? GetCollectionInfo(ISymbol member)
     {
         var attribute = AttributeHelper.GetCollectionAttribute(member);
-        if (attribute is null) return null;
+        
+        // Check if this member is a collection type (List<T>)
+        var memberTypeSymbol = member is IPropertySymbol p ? p.Type : ((IFieldSymbol)member).Type;
+        var isList = memberTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>";
+        
+        // If it's a collection but has no attribute, provide default collection info
+        if (attribute is null)
+        {
+            if (isList)
+            {
+                // Return default CollectionInfo with no special configuration
+                return new CollectionInfo
+                (
+                    PolymorphicMode.None,
+                    null, // TypeIdProperty
+                    null, // CountType (will use default)
+                    null, // CountSize (will use default)
+                    null  // CountSizeReference
+                );
+            }
+            return null;
+        }
 
         var polymorphicMode = (PolymorphicMode)AttributeHelper.GetPolymorphicMode(attribute);
         var typeIdProperty = AttributeHelper.GetCollectionTypeIdProperty(attribute);

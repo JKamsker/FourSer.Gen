@@ -5,7 +5,6 @@ namespace Serializer.Consumer.UseCases;
 [GenerateSerializer]
 public partial class MyPacket
 {
-    [SerializeCollection]
     public List<byte> Data { get; set; } = new();
 }
 
