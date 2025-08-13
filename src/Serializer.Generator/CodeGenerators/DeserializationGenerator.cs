@@ -334,7 +334,12 @@ public static class DeserializationGenerator
 
     private static void GenerateListElementDeserialization(StringBuilder sb, ListTypeArgumentInfo elementInfo, string collectionTarget)
     {
-        if (elementInfo.IsUnmanagedType)
+        if (elementInfo.HasGenerateSerializerAttribute)
+        {
+            sb.AppendLine($"            {collectionTarget}.Add({TypeHelper.GetSimpleTypeName(elementInfo.TypeName)}.Deserialize(data, out var itemBytesRead));");
+            sb.AppendLine($"            data = data.Slice(itemBytesRead);");
+        }
+        else if (elementInfo.IsUnmanagedType)
         {
             var typeName = GetMethodFriendlyTypeName(elementInfo.TypeName);
             sb.AppendLine($"            {collectionTarget}.Add(data.Read{typeName}());");
@@ -342,11 +347,6 @@ public static class DeserializationGenerator
         else if (elementInfo.IsStringType)
         {
             sb.AppendLine($"            {collectionTarget}.Add(data.ReadString());");
-        }
-        else if (elementInfo.HasGenerateSerializerAttribute)
-        {
-            sb.AppendLine($"            {collectionTarget}.Add({TypeHelper.GetSimpleTypeName(elementInfo.TypeName)}.Deserialize(data, out var itemBytesRead));");
-            sb.AppendLine($"            data = data.Slice(itemBytesRead);");
         }
     }
 

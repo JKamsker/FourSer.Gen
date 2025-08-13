@@ -319,7 +319,12 @@ public static class SerializationGenerator
 
     private static void GenerateListElementSerialization(StringBuilder sb, ListTypeArgumentInfo elementInfo, string elementAccess)
     {
-        if (elementInfo.IsUnmanagedType)
+        if (elementInfo.HasGenerateSerializerAttribute)
+        {
+            sb.AppendLine($"            var bytesWritten = {TypeHelper.GetSimpleTypeName(elementInfo.TypeName)}.Serialize({elementAccess}, data);");
+            sb.AppendLine($"            data = data.Slice(bytesWritten);");
+        }
+        else if (elementInfo.IsUnmanagedType)
         {
             var typeName = GetMethodFriendlyTypeName(elementInfo.TypeName);
             sb.AppendLine($"            data.Write{typeName}(({typeName}){elementAccess});");
@@ -327,11 +332,6 @@ public static class SerializationGenerator
         else if (elementInfo.IsStringType)
         {
             sb.AppendLine($"            data.WriteString({elementAccess});");
-        }
-        else if (elementInfo.HasGenerateSerializerAttribute)
-        {
-            sb.AppendLine($"            var bytesWritten = {TypeHelper.GetSimpleTypeName(elementInfo.TypeName)}.Serialize({elementAccess}, data);");
-            sb.AppendLine($"            data = data.Slice(bytesWritten);");
         }
     }
 

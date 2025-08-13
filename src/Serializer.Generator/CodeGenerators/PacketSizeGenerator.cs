@@ -106,7 +106,14 @@ public static class PacketSizeGenerator
         if (member.ListTypeArgument is not null)
         {
             var typeArg = member.ListTypeArgument.Value;
-            if (typeArg.IsUnmanagedType)
+            if (typeArg.HasGenerateSerializerAttribute)
+            {
+                sb.AppendLine($"        foreach(var item in obj.{member.Name})");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            size += {TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item);");
+                sb.AppendLine("        }");
+            }
+            else if (typeArg.IsUnmanagedType)
             {
                 var countExpression = GetCountExpression(member, member.Name);
                 sb.AppendLine($"        size += {countExpression} * sizeof({typeArg.TypeName});");
@@ -114,13 +121,6 @@ public static class PacketSizeGenerator
             else if (typeArg.IsStringType)
             {
                 sb.AppendLine($"        foreach(var item in obj.{member.Name}) {{ size += StringEx.MeasureSize(item); }}");
-            }
-            else if (typeArg.HasGenerateSerializerAttribute)
-            {
-                sb.AppendLine($"        foreach(var item in obj.{member.Name})");
-                sb.AppendLine("        {");
-                sb.AppendLine($"            size += {TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item);");
-                sb.AppendLine("        }");
             }
         }
         else if (member.CollectionTypeInfo is not null)
