@@ -94,8 +94,32 @@ public static class DeserializationGenerator
         
         sb.AppendLine($"        var {member.Name}Count = data.{countReadMethod}();");
         
-        // Generate appropriate collection instantiation
         var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
+        var isByteCollection = TypeHelper.IsByteCollection(elementTypeName);
+
+        if (isByteCollection)
+        {
+            // Use bulk operations for byte collections, which is much more efficient.
+            if (member.CollectionTypeInfo?.IsArray == true)
+            {
+                // If the target is already a byte array, read directly into it.
+                sb.AppendLine($"        obj.{member.Name} = new byte[{member.Name}Count];");
+                sb.AppendLine($"        data.ReadBytes(obj.{member.Name});");
+            }
+            else if (member.CollectionTypeInfo?.CollectionTypeName == "System.Collections.Generic.List<T>")
+            {
+                sb.AppendLine($"        obj.{member.Name} = data.ReadBytes({member.Name}Count).ToList();");
+            }
+            else
+            {
+                // For any other collection type (IEnumerable<byte>, List<byte>, etc.),
+                // creating a byte[] is the most efficient concrete type.
+                sb.AppendLine($"        obj.{member.Name} = data.ReadBytes({member.Name}Count);");
+            }
+            return; // We're done with this member.
+        }
+
+        // For non-byte collections, we instantiate them upfront with capacity if possible.
         if (member.CollectionTypeInfo?.IsArray == true)
         {
             sb.AppendLine($"        obj.{member.Name} = new {elementTypeName}[{member.Name}Count];");
@@ -103,6 +127,7 @@ public static class DeserializationGenerator
         else if (member.CollectionTypeInfo?.ConcreteTypeName != null)
         {
             var concreteTypeName = member.CollectionTypeInfo.Value.ConcreteTypeName;
+            // Temp variable needed for interface types
             if (SupportsCapacityConstructor(concreteTypeName))
             {
                 sb.AppendLine($"        var temp{member.Name} = new {concreteTypeName}<{elementTypeName}>({member.Name}Count);");
@@ -181,7 +206,7 @@ public static class DeserializationGenerator
                 return;
             }
         }
-
+        
         sb.AppendLine($"        for (int i = 0; i < {member.Name}Count; i++)");
         sb.AppendLine("        {");
 
@@ -362,11 +387,35 @@ public static class DeserializationGenerator
         {
             "System.Collections.Generic.List" => true,
             "System.Collections.Generic.HashSet" => true,
+            "System.Collections.Generic.SortedSet" => false,
             "System.Collections.Generic.Queue" => true,
             "System.Collections.Generic.Stack" => true,
+            "System.Collections.ObjectModel.Collection" => false, // No capacity constructor
+            "System.Collections.ObjectModel.ObservableCollection" => false, // No capacity constructor
             "System.Collections.Concurrent.ConcurrentBag" => false, // No capacity constructor
             "System.Collections.Generic.LinkedList" => false, // No capacity constructor
             _ => false
         };
+    }
+
+    private static string GetCountExpression(MemberToGenerate member, string memberName)
+    {
+        // Arrays use .Length property
+        if (member.CollectionTypeInfo?.IsArray == true)
+        {
+            return $"obj.{memberName}.Length";
+        }
+        
+        // IEnumerable and interface types that need Count() method
+        if (member.CollectionTypeInfo?.CollectionTypeName?.Contains("IEnumerable") == true ||
+            member.CollectionTypeInfo?.CollectionTypeName?.Contains("ICollection") == true ||
+            member.CollectionTypeInfo?.CollectionTypeName?.Contains("IList") == true)
+        {
+            return $"obj.{memberName}.Count()";
+        }
+        
+        // Most concrete collection types use .Count property
+        // List<T>, HashSet<T>, Queue<T>, Stack<T>, ConcurrentBag<T>, LinkedList<T>, Collection<T>, etc.
+        return $"obj.{memberName}.Count";
     }
 }

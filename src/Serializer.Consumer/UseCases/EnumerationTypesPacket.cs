@@ -16,7 +16,9 @@ public partial class EnumerationTypesPacket
 
     // IEnumerable<T>
     [SerializeCollection]
-    public IEnumerable<byte> Data { get; set; } = new List<byte>();
+    public IEnumerable<byte> Data { get; set; } = new byte[1];
+    
+
 
     // ConcurrentBag<T>
     [SerializeCollection]

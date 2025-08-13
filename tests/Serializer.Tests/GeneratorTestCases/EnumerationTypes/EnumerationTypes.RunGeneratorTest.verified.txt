@@ -2,6 +2,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Serializer.Contracts;
@@ -20,7 +21,9 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         size += sizeof(int); // Count size for Names
         foreach(var item in obj.Names) { size += StringEx.MeasureSize(item); }
         size += sizeof(int); // Count size for Data
-        size += obj.Data.Count * sizeof(byte);
+        size += obj.Data.Count() * sizeof(byte);
+        size += sizeof(int); // Count size for Data1
+        size += obj.Data1.Count * sizeof(byte);
         size += sizeof(int); // Count size for Values
         size += obj.Values.Count * sizeof(float);
         size += sizeof(int); // Count size for UniqueIds
@@ -30,9 +33,9 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         size += sizeof(int); // Count size for ProcessingStack
         size += obj.ProcessingStack.Count * sizeof(uint);
         size += sizeof(int); // Count size for ArrayData
-        size += obj.ArrayData.Count * sizeof(int);
+        size += obj.ArrayData.Length * sizeof(int);
         size += sizeof(int); // Count size for Measurements
-        size += obj.Measurements.Count * sizeof(double);
+        size += obj.Measurements.Count() * sizeof(double);
         size += sizeof(int); // Count size for Flags
         size += obj.Flags.Count * sizeof(bool);
         size += sizeof(int); // Count size for ObservableData
@@ -69,12 +72,9 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         obj.Names = tempNames;
         var DataCount = data.ReadInt32();
-        var tempData = new System.Collections.Generic.List<byte>(DataCount);
-        for (int i = 0; i < DataCount; i++)
-        {
-            tempData.Add(data.ReadByte());
-        }
-        obj.Data = tempData;
+        obj.Data = data.ReadBytes(DataCount);
+        var Data1Count = data.ReadInt32();
+        obj.Data1 = data.ReadBytes(Data1Count).ToList();
         var ValuesCount = data.ReadInt32();
         var tempValues = new System.Collections.Concurrent.ConcurrentBag<float>();
         for (int i = 0; i < ValuesCount; i++)
@@ -117,14 +117,14 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         obj.Measurements = tempMeasurements;
         var FlagsCount = data.ReadInt32();
-        var tempFlags = new System.Collections.Generic.List<bool>(FlagsCount);
+        var tempFlags = new System.Collections.ObjectModel.Collection<bool>();
         for (int i = 0; i < FlagsCount; i++)
         {
             tempFlags.Add(data.ReadBoolean());
         }
         obj.Flags = tempFlags;
         var ObservableDataCount = data.ReadInt32();
-        var tempObservableData = new System.Collections.Generic.List<short>(ObservableDataCount);
+        var tempObservableData = new System.Collections.ObjectModel.ObservableCollection<short>();
         for (int i = 0; i < ObservableDataCount; i++)
         {
             tempObservableData.Add(data.ReadInt16());
@@ -138,7 +138,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         obj.Characters = tempCharacters;
         var SortedValuesCount = data.ReadInt32();
-        var tempSortedValues = new System.Collections.Generic.HashSet<long>(SortedValuesCount);
+        var tempSortedValues = new System.Collections.Generic.SortedSet<long>();
         for (int i = 0; i < SortedValuesCount; i++)
         {
             tempSortedValues.Add(data.ReadInt64());
@@ -177,16 +177,15 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         {
             data.WriteInt32((Int32)obj.Numbers[i]);
         }
-        data.WriteInt32((int)obj.Names.Count);
+        data.WriteInt32((int)obj.Names.Count());
         foreach (var item in obj.Names)
         {
             data.WriteString(item);
         }
-        data.WriteInt32((int)obj.Data.Count);
-        foreach (var item in obj.Data)
-        {
-            data.WriteByte((Byte)item);
-        }
+        data.WriteInt32((int)obj.Data.Count());
+        data.WriteBytes(obj.Data);
+        data.WriteInt32((int)obj.Data1.Count);
+        data.WriteBytes(obj.Data1);
         data.WriteInt32((int)obj.Values.Count);
         foreach (var item in obj.Values)
         {
@@ -207,12 +206,12 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         {
             data.WriteUInt32((UInt32)item);
         }
-        data.WriteInt32((int)obj.ArrayData.Count);
-        for (int i = 0; i < obj.ArrayData.Count; i++)
+        data.WriteInt32((int)obj.ArrayData.Length);
+        for (int i = 0; i < obj.ArrayData.Length; i++)
         {
             data.WriteInt32((Int32)obj.ArrayData[i]);
         }
-        data.WriteInt32((int)obj.Measurements.Count);
+        data.WriteInt32((int)obj.Measurements.Count());
         foreach (var item in obj.Measurements)
         {
             data.WriteDouble((Double)item);

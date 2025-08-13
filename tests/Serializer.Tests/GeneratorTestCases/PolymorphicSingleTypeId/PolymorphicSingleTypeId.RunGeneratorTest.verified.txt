@@ -2,6 +2,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Serializer.Contracts;
@@ -109,6 +110,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Serializer.Contracts;
@@ -152,6 +154,7 @@ public partial class Cat : ISerializable<Cat>
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Serializer.Contracts;
@@ -195,6 +198,7 @@ public partial class Dog : ISerializable<Dog>
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Serializer.Contracts;

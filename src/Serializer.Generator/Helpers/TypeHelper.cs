@@ -100,4 +100,12 @@ public static class TypeHelper
         }
         return fullyQualifiedName.Substring(lastDot + 1);
     }
+
+    /// <summary>
+    /// Determines if a collection contains byte elements and can use bulk operations
+    /// </summary>
+    public static bool IsByteCollection(string? elementTypeName)
+    {
+        return elementTypeName == "byte";
+    }
 }

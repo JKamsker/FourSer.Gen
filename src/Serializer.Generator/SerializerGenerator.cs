@@ -67,6 +67,7 @@ public class SerializerGenerator : IIncrementalGenerator
         sb.AppendLine("using System;");
         sb.AppendLine("using System.Buffers.Binary;");
         sb.AppendLine("using System.Collections.Generic;");
+        sb.AppendLine("using System.Linq;");
         sb.AppendLine("using System.Runtime.CompilerServices;");
         sb.AppendLine("using System.Text;");
         sb.AppendLine("using Serializer.Contracts;");

@@ -2,6 +2,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Serializer.Contracts;
@@ -26,11 +27,7 @@ public partial class MyPacket : ISerializable<MyPacket>
         var originalData = data;
         var obj = new MyPacket();
         var DataCount = data.ReadInt32();
-        obj.Data = new System.Collections.Generic.List<byte>(DataCount);
-        for (int i = 0; i < DataCount; i++)
-        {
-            obj.Data.Add(data.ReadByte());
-        }
+        obj.Data = data.ReadBytes(DataCount).ToList();
         bytesRead = originalData.Length - data.Length;
         return obj;
     }
@@ -39,10 +36,7 @@ public partial class MyPacket : ISerializable<MyPacket>
     {
         var originalData = data;
         data.WriteInt32((int)obj.Data.Count);
-        for (int i = 0; i < obj.Data.Count; i++)
-        {
-            data.WriteByte((Byte)obj.Data[i]);
-        }
+        data.WriteBytes(obj.Data);
         return originalData.Length - data.Length;
     }
 }

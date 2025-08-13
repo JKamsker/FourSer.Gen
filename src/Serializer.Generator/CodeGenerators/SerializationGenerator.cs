@@ -125,7 +125,8 @@ public static class SerializationGenerator
         var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
         var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
         
-        sb.AppendLine($"        data.{countWriteMethod}(({countType})obj.{member.Name}.Count);");
+        var countExpression = GetCountExpression(member, member.Name);
+        sb.AppendLine($"        data.{countWriteMethod}(({countType}){countExpression});");
 
         if (ShouldUsePolymorphicSerialization(member))
         {
@@ -193,30 +194,43 @@ public static class SerializationGenerator
             }
         }
 
-        // Use foreach for all collection types, indexer access only for List and Array
-        if (member.CollectionTypeInfo?.IsArray == true || member.IsList)
+        // Check if this is a byte collection that can use bulk operations
+        var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
+        var isByteCollection = TypeHelper.IsByteCollection(elementTypeName);
+
+        if (isByteCollection)
         {
-            sb.AppendLine($"        for (int i = 0; i < obj.{member.Name}.Count; i++)");
-            sb.AppendLine("        {");
-            if (member.ListTypeArgument is not null)
-            {
-                GenerateListElementSerialization(sb, member.ListTypeArgument.Value, $"obj.{member.Name}[i]");
-            }
-            else if (member.CollectionTypeInfo is not null)
-            {
-                GenerateCollectionElementSerialization(sb, member.CollectionTypeInfo.Value, $"obj.{member.Name}[i]");
-            }
-            sb.AppendLine("        }");
+            // We have an extension method for this now
+            sb.AppendLine($"        data.WriteBytes(obj.{member.Name});");
         }
         else
         {
-            sb.AppendLine($"        foreach (var item in obj.{member.Name})");
-            sb.AppendLine("        {");
-            if (member.CollectionTypeInfo is not null)
+            // Use foreach for all collection types, indexer access only for List and Array
+            if (member.CollectionTypeInfo?.IsArray == true || member.IsList)
             {
-                GenerateCollectionElementSerialization(sb, member.CollectionTypeInfo.Value, "item");
+                var loopCountExpression = GetCountExpression(member, member.Name);
+                sb.AppendLine($"        for (int i = 0; i < {loopCountExpression}; i++)");
+                sb.AppendLine("        {");
+                if (member.ListTypeArgument is not null)
+                {
+                    GenerateListElementSerialization(sb, member.ListTypeArgument.Value, $"obj.{member.Name}[i]");
+                }
+                else if (member.CollectionTypeInfo is not null)
+                {
+                    GenerateCollectionElementSerialization(sb, member.CollectionTypeInfo.Value, $"obj.{member.Name}[i]");
+                }
+                sb.AppendLine("        }");
             }
-            sb.AppendLine("        }");
+            else
+            {
+                sb.AppendLine($"        foreach (var item in obj.{member.Name})");
+                sb.AppendLine("        {");
+                if (member.CollectionTypeInfo is not null)
+                {
+                    GenerateCollectionElementSerialization(sb, member.CollectionTypeInfo.Value, "item");
+                }
+                sb.AppendLine("        }");
+            }
         }
     }
 
@@ -337,5 +351,26 @@ public static class SerializationGenerator
             sb.AppendLine($"            var bytesWritten = {TypeHelper.GetSimpleTypeName(elementInfo.ElementTypeName)}.Serialize({elementAccess}, data);");
             sb.AppendLine($"            data = data.Slice(bytesWritten);");
         }
+    }
+
+    private static string GetCountExpression(MemberToGenerate member, string memberName)
+    {
+        // Arrays use .Length property
+        if (member.CollectionTypeInfo?.IsArray == true)
+        {
+            return $"obj.{memberName}.Length";
+        }
+        
+        // IEnumerable and interface types that need Count() method
+        if (member.CollectionTypeInfo?.CollectionTypeName?.Contains("IEnumerable") == true ||
+            member.CollectionTypeInfo?.CollectionTypeName?.Contains("ICollection") == true ||
+            member.CollectionTypeInfo?.CollectionTypeName?.Contains("IList") == true)
+        {
+            return $"obj.{memberName}.Count()";
+        }
+        
+        // Most concrete collection types use .Count property
+        // List<T>, HashSet<T>, Queue<T>, Stack<T>, ConcurrentBag<T>, LinkedList<T>, Collection<T>, etc.
+        return $"obj.{memberName}.Count";
     }
 }

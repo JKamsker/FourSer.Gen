@@ -108,7 +108,8 @@ public static class PacketSizeGenerator
             var typeArg = member.ListTypeArgument.Value;
             if (typeArg.IsUnmanagedType)
             {
-                sb.AppendLine($"        size += obj.{member.Name}.Count * sizeof({typeArg.TypeName});");
+                var countExpression = GetCountExpression(member, member.Name);
+                sb.AppendLine($"        size += {countExpression} * sizeof({typeArg.TypeName});");
             }
             else if (typeArg.IsStringType)
             {
@@ -127,7 +128,8 @@ public static class PacketSizeGenerator
             var collectionInfo = member.CollectionTypeInfo.Value;
             if (collectionInfo.IsElementUnmanagedType)
             {
-                sb.AppendLine($"        size += obj.{member.Name}.Count * sizeof({collectionInfo.ElementTypeName});");
+                var countExpression = GetCountExpression(member, member.Name);
+                sb.AppendLine($"        size += {countExpression} * sizeof({collectionInfo.ElementTypeName});");
             }
             else if (collectionInfo.IsElementStringType)
             {
@@ -167,5 +169,26 @@ public static class PacketSizeGenerator
         sb.AppendLine("            default:");
         sb.AppendLine($"                throw new System.IO.InvalidDataException($\"Unknown type for {member.Name}: {{{instanceName}?.GetType().FullName}}\");");
         sb.AppendLine("        }");
+    }
+
+    private static string GetCountExpression(MemberToGenerate member, string memberName)
+    {
+        // Arrays use .Length property
+        if (member.CollectionTypeInfo?.IsArray == true)
+        {
+            return $"obj.{memberName}.Length";
+        }
+        
+        // IEnumerable and interface types that need Count() method
+        if (member.CollectionTypeInfo?.CollectionTypeName?.Contains("IEnumerable") == true ||
+            member.CollectionTypeInfo?.CollectionTypeName?.Contains("ICollection") == true ||
+            member.CollectionTypeInfo?.CollectionTypeName?.Contains("IList") == true)
+        {
+            return $"obj.{memberName}.Count()";
+        }
+        
+        // Most concrete collection types use .Count property
+        // List<T>, HashSet<T>, Queue<T>, Stack<T>, ConcurrentBag<T>, LinkedList<T>, Collection<T>, etc.
+        return $"obj.{memberName}.Count";
     }
 }

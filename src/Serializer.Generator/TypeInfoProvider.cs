@@ -196,18 +196,30 @@ internal static class TypeInfoProvider
         switch (originalDefinition)
         {
             case "System.Collections.Generic.List<T>":
+                isCollection = true;
+                concreteTypeName = null; // List<T> is already concrete, no temp variable needed
+                break;
             case "System.Collections.Generic.IList<T>":
             case "System.Collections.Generic.ICollection<T>":
             case "System.Collections.Generic.IEnumerable<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Generic.List"; // Interfaces map to List<T>
+                break;
             case "System.Collections.ObjectModel.Collection<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.ObjectModel.Collection";
+                break;
             case "System.Collections.ObjectModel.ObservableCollection<T>":
                 isCollection = true;
-                concreteTypeName = originalDefinition == "System.Collections.Generic.List<T>" ? null : "System.Collections.Generic.List";
+                concreteTypeName = "System.Collections.ObjectModel.ObservableCollection";
                 break;
             case "System.Collections.Generic.HashSet<T>":
-            case "System.Collections.Generic.SortedSet<T>":
                 isCollection = true;
                 concreteTypeName = "System.Collections.Generic.HashSet";
+                break;
+            case "System.Collections.Generic.SortedSet<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Generic.SortedSet";
                 break;
             case "System.Collections.Generic.Queue<T>":
                 isCollection = true;

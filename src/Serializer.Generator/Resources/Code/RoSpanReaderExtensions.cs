@@ -82,6 +82,24 @@ internal static class RoSpanReaderExtensions
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static byte[] ReadBytes(this ref ReadOnlySpan<byte> input, int count)
+    {
+        var result = new byte[count];
+        var source = input.Slice(0, count);
+        source.CopyTo(result);
+        input = input.Slice(count);
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ReadBytes(this ref ReadOnlySpan<byte> input, Span<byte> destination)
+    {
+        var source = input.Slice(0, destination.Length);
+        source.CopyTo(destination);
+        input = input.Slice(destination.Length);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static unsafe ReadOnlySpan<byte> Advance<T>(ref ReadOnlySpan<byte> input) where T : unmanaged
     {
         var original = input;
