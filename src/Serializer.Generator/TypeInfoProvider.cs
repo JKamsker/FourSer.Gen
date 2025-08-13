@@ -36,13 +36,17 @@ internal static class TypeInfoProvider
         var serializableMembers = GetSerializableMembers(typeSymbol);
         var nestedTypes = GetNestedTypes(typeSymbol);
 
+        var hasSerializableBaseType = typeSymbol.BaseType?.GetAttributes()
+            .Any(ad => ad.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute") ?? false;
+
         return new TypeToGenerate
         (
             typeSymbol.Name,
             typeSymbol.ContainingNamespace.ToDisplayString(),
             typeSymbol.IsValueType,
             serializableMembers,
-            nestedTypes
+            nestedTypes,
+            hasSerializableBaseType
         );
     }
 
@@ -129,6 +133,9 @@ internal static class TypeInfoProvider
                 var nestedMembers = GetSerializableMembers(nestedTypeSymbol);
                 var deeperNestedTypes = GetNestedTypes(nestedTypeSymbol);
 
+                var hasSerializableBaseType = nestedTypeSymbol.BaseType?.GetAttributes()
+                    .Any(ad => ad.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute") ?? false;
+
                 nestedTypes.Add
                 (
                     new TypeToGenerate
@@ -137,7 +144,8 @@ internal static class TypeInfoProvider
                         nestedTypeSymbol.ContainingNamespace.ToDisplayString(),
                         nestedTypeSymbol.IsValueType,
                         nestedMembers,
-                        deeperNestedTypes
+                        deeperNestedTypes,
+                        hasSerializableBaseType
                     )
                 );
             }

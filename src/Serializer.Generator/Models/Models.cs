@@ -11,12 +11,14 @@ namespace Serializer.Generator.Models;
 /// <param name="IsValueType">Whether the type is a value type (struct).</param>
 /// <param name="Members">The list of serializable members in the type.</param>
 /// <param name="NestedTypes">The list of nested types to be generated.</param>
+/// <param name="HasSerializableBaseType">Whether the type has a base type with the [GenerateSerializer] attribute.</param>
 public readonly record struct TypeToGenerate(
     string Name,
     string Namespace,
     bool IsValueType,
     EquatableArray<MemberToGenerate> Members,
-    EquatableArray<TypeToGenerate> NestedTypes) : IEquatable<TypeToGenerate>;
+    EquatableArray<TypeToGenerate> NestedTypes,
+    bool HasSerializableBaseType) : IEquatable<TypeToGenerate>;
 
 /// <summary>
 /// A model describing a member (property or field) to be serialized.

@@ -13,7 +13,7 @@ public partial class PolymorphicWithUShortTypeId
     [SerializePolymorphic(TypeIdType = typeof(ushort))]
     [PolymorphicOption((ushort)1000, typeof(UShortEntityType1))]
     [PolymorphicOption((ushort)2000, typeof(UShortEntityType2))]
-    public BaseUShortEntity Entity { get; set; }
+    public BaseUShortEntity? Entity { get; set; }
     
     [GenerateSerializer]
     public partial class BaseUShortEntity
@@ -42,7 +42,7 @@ public partial class PolymorphicWithLongTypeId
     [SerializePolymorphic(TypeIdType = typeof(long))]
     [PolymorphicOption(1000000L, typeof(LongEntityType1))]
     [PolymorphicOption(2000000L, typeof(LongEntityType2))]
-    public BaseLongEntity Entity { get; set; }
+    public BaseLongEntity? Entity { get; set; }
     
     [GenerateSerializer]
     public partial class BaseLongEntity
@@ -77,7 +77,7 @@ public partial class PolymorphicWithEnumTypeId
     [SerializePolymorphic(TypeIdType = typeof(EntityTypeEnum))]
     [PolymorphicOption(EntityTypeEnum.Type1, typeof(EnumEntityType1))]
     [PolymorphicOption(EntityTypeEnum.Type2, typeof(EnumEntityType2))]
-    public BaseEnumEntity Entity { get; set; }
+    public BaseEnumEntity? Entity { get; set; }
     
     [GenerateSerializer]
     public partial class BaseEnumEntity

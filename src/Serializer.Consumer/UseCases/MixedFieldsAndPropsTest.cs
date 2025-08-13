@@ -14,9 +14,6 @@ public partial class MixedFieldsAndPropsPacket
     public string FieldString = string.Empty;
     public float FieldFloat;
     
-    // Private field (should NOT be serialized)
-    private int privateField;
-    
     // Read-only field (should NOT be serialized)
     public readonly int ReadOnlyField = 42;
     

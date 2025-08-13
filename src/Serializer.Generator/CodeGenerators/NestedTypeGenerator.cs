@@ -92,7 +92,8 @@ public static class NestedTypeGenerator
 
     private static void GenerateNestedDeserialize(StringBuilder sb, TypeToGenerate nestedType)
     {
-        sb.AppendLine($"        public static {nestedType.Name} Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)");
+        var newKeyword = nestedType.HasSerializableBaseType ? "new " : "";
+        sb.AppendLine($"        public static {newKeyword}{nestedType.Name} Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)");
         sb.AppendLine("        {");
         sb.AppendLine("            bytesRead = 0;");
         sb.AppendLine("            var originalData = data;");

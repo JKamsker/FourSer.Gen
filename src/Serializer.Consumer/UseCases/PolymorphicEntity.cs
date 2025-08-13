@@ -11,7 +11,7 @@ public partial class PolymorphicEntity
     [SerializePolymorphic(nameof(TypeId))]
     [PolymorphicOption(1, typeof(EntityType1))]
     [PolymorphicOption(2, typeof(EntityType2))]
-    public BaseEntity Entity { get; set; }
+    public BaseEntity? Entity { get; set; }
     
     [GenerateSerializer]
     public partial class BaseEntity
@@ -109,15 +109,15 @@ public static class PolymorphicTest
         
         if (deserialized.TypeId == 1)
         {
-            var origType1 = (PolymorphicEntity.EntityType1)original.Entity;
-            var deserType1 = (PolymorphicEntity.EntityType1)deserialized.Entity;
+            var origType1 = (PolymorphicEntity.EntityType1)original.Entity!;
+            var deserType1 = (PolymorphicEntity.EntityType1)deserialized.Entity!;
             Console.WriteLine($"  Original Name: '{origType1.Name}', Deserialized Name: '{deserType1.Name}'");
             Console.WriteLine($"  Names match: {origType1.Name == deserType1.Name}");
         }
         else if (deserialized.TypeId == 2)
         {
-            var origType2 = (PolymorphicEntity.EntityType2)original.Entity;
-            var deserType2 = (PolymorphicEntity.EntityType2)deserialized.Entity;
+            var origType2 = (PolymorphicEntity.EntityType2)original.Entity!;
+            var deserType2 = (PolymorphicEntity.EntityType2)deserialized.Entity!;
             Console.WriteLine($"  Original Description: '{origType2.Description}', Deserialized Description: '{deserType2.Description}'");
             Console.WriteLine($"  Descriptions match: {origType2.Description == deserType2.Description}");
         }

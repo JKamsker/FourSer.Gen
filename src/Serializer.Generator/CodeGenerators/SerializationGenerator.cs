@@ -181,7 +181,7 @@ public static class SerializationGenerator
         sb.AppendLine($"        for (int i = 0; i < obj.{member.Name}.Count; i++)");
         sb.AppendLine("        {");
 
-        var typeArg = member.ListTypeArgument.Value;
+        var typeArg = member.ListTypeArgument!.Value;
         if (typeArg.IsUnmanagedType)
         {
             var typeName = GetMethodFriendlyTypeName(typeArg.TypeName);
