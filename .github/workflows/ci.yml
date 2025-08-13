@@ -36,3 +36,9 @@ jobs:
       with:
         name: nuget-package
         path: out/
+
+    - name: Build Package Test Project
+      run: dotnet build tests/Serializer.Package.Tests/Serializer.Package.Tests.sln -c Release
+
+    - name: Run Package Test Project
+      run: dotnet run --project tests/Serializer.Package.Tests/Serializer.Package.Tests.csproj --no-build

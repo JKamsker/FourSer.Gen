@@ -20,8 +20,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionIt
 		.gitignore = .gitignore
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serializer.Package.Tests", "tests\Serializer.Package.Tests\Serializer.Package.Tests.csproj", "{433EB2B3-D6F9-4ADA-B72A-FA149A258834}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -80,18 +78,6 @@ Global
 		{21C57AAC-2D3F-4941-880C-EFF2BB9AD7EF}.Release|x64.Build.0 = Release|Any CPU
 		{21C57AAC-2D3F-4941-880C-EFF2BB9AD7EF}.Release|x86.ActiveCfg = Release|Any CPU
 		{21C57AAC-2D3F-4941-880C-EFF2BB9AD7EF}.Release|x86.Build.0 = Release|Any CPU
-		{433EB2B3-D6F9-4ADA-B72A-FA149A258834}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{433EB2B3-D6F9-4ADA-B72A-FA149A258834}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{433EB2B3-D6F9-4ADA-B72A-FA149A258834}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{433EB2B3-D6F9-4ADA-B72A-FA149A258834}.Debug|x64.Build.0 = Debug|Any CPU
-		{433EB2B3-D6F9-4ADA-B72A-FA149A258834}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{433EB2B3-D6F9-4ADA-B72A-FA149A258834}.Debug|x86.Build.0 = Debug|Any CPU
-		{433EB2B3-D6F9-4ADA-B72A-FA149A258834}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{433EB2B3-D6F9-4ADA-B72A-FA149A258834}.Release|Any CPU.Build.0 = Release|Any CPU
-		{433EB2B3-D6F9-4ADA-B72A-FA149A258834}.Release|x64.ActiveCfg = Release|Any CPU
-		{433EB2B3-D6F9-4ADA-B72A-FA149A258834}.Release|x64.Build.0 = Release|Any CPU
-		{433EB2B3-D6F9-4ADA-B72A-FA149A258834}.Release|x86.ActiveCfg = Release|Any CPU
-		{433EB2B3-D6F9-4ADA-B72A-FA149A258834}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -101,6 +87,5 @@ Global
 		{05BCCB72-BF16-49D8-AD2D-5BECF35090BA} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{4E7D8405-48E3-4AD1-9F36-F63C36FC682D} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{21C57AAC-2D3F-4941-880C-EFF2BB9AD7EF} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
-		{433EB2B3-D6F9-4ADA-B72A-FA149A258834} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
