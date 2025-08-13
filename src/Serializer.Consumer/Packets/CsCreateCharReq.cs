@@ -3,6 +3,7 @@ using Serializer.Contracts;
 namespace Serializer.Consumer.Packets
 {
     [GenerateSerializer]
+    [OpCode(OpCode.CS_CREATECHAR_REQ)]
     public partial class CsCreateCharReq
     {
         public byte GroupID;

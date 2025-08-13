@@ -3,6 +3,7 @@ using Serializer.Contracts;
 namespace Serializer.Consumer.Packets
 {
     [GenerateSerializer]
+    [OpCode(OpCode.CS_CREATECHAR_ACK)]
     public partial class CsCreateCharAck
     {
         public byte Result;

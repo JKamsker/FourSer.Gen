@@ -3,6 +3,7 @@ using Serializer.Contracts;
 namespace Serializer.Consumer.Packets
 {
     [GenerateSerializer]
+    [OpCode(OpCode.CS_LOGIN_ACK)]
     public partial class CsLoginAck
     {
         public byte Result;

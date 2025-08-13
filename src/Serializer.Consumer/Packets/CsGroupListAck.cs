@@ -4,6 +4,7 @@ using Serializer.Contracts;
 namespace Serializer.Consumer.Packets
 {
     [GenerateSerializer]
+    [OpCode(OpCode.CS_GROUPLIST_ACK)]
     public partial class CsGroupListAck
     {
         public byte GroupCount;
