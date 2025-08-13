@@ -13,6 +13,12 @@ public partial class MixedFieldsAndPropsPacket
     public int FieldInt;
     public string FieldString = string.Empty;
     public float FieldFloat;
+        
+#pragma warning disable CS0169 // Field is never used
+    // Private field (should NOT be serialized)
+    // ReSharper disable once InconsistentNaming
+    private int privateField;
+#pragma warning restore CS0169 // Field is never used
     
     // Read-only field (should NOT be serialized)
     public readonly int ReadOnlyField = 42;
