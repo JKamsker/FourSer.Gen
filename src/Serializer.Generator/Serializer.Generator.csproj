@@ -17,6 +17,11 @@
     <!-- These are also embedded to be injected into the consumer's compilation -->
     <Compile Remove="Embedded_Helpers\**\*.cs" />
     <EmbeddedResource Include="Embedded_Helpers\**\*.cs" />
+    <EmbeddedResource Include="Resources\Code\BinaryWriterExtensions.cs" />
+    <EmbeddedResource Include="Resources\Code\RoSpanReaderExtensions.cs" />
+    <EmbeddedResource Include="Resources\Code\SpanReaderExtensions.cs" />
+    <EmbeddedResource Include="Resources\Code\SpanWriterExtensions.cs" />
+    <EmbeddedResource Include="Resources\Code\StringHelper.cs" />
   </ItemGroup>
 
 </Project>

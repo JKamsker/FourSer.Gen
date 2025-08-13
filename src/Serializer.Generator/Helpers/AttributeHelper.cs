@@ -1,7 +1,7 @@
-using Microsoft.CodeAnalysis;
 using System.Linq;
+using Microsoft.CodeAnalysis;
 
-namespace Serializer.Generator;
+namespace Serializer.Generator.Helpers;
 
 /// <summary>
 /// Helper methods for working with serialization attributes

@@ -1,4 +1,4 @@
-namespace Serializer.Generator;
+namespace Serializer.Generator.Helpers;
 
 /// <summary>
 /// Helper methods for type name conversions in code generation
