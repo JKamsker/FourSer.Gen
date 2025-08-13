@@ -1,6 +1,3 @@
-using Serializer.Contracts;
-using Serializer.Consumer.Extensions;
-
 namespace TestNamespace;
 
 [GenerateSerializer]

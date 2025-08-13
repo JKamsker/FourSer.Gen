@@ -1,8 +1,4 @@
-﻿using Serializer.Contracts;
-using Serializer.Consumer.Extensions;
-using System.Collections.Generic;
-
-namespace TestNamespace;
+﻿namespace TestNamespace;
 
 [GenerateSerializer]
 public partial class IndividualTypeIdsTest

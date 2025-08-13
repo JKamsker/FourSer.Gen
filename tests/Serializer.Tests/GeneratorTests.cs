@@ -115,10 +115,31 @@ public static class RoSpanReaderExtensions
         return val;
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int ReadInt32(this ref ReadOnlySpan<byte> input)
+    {
+        var val = BinaryPrimitives.ReadInt32LittleEndian(input);
+        input = input.Slice(sizeof(int));
+        return val;
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static uint ReadUInt32(this ref ReadOnlySpan<byte> input)
     {
         var val = BinaryPrimitives.ReadUInt32LittleEndian(input);
         input = input.Slice(sizeof(uint));
+        return val;
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ushort ReadUInt16(this ref ReadOnlySpan<byte> input)
+    {
+        var val = BinaryPrimitives.ReadUInt16LittleEndian(input);
+        input = input.Slice(sizeof(ushort));
+        return val;
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float ReadSingle(this ref ReadOnlySpan<byte> input)
+    {
+        var val = BinaryPrimitives.ReadSingleLittleEndian(input);
+        input = input.Slice(sizeof(float));
         return val;
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -139,10 +160,28 @@ public static class SpanWriterExtensions
         input = input.Slice(1);
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteInt32(this ref Span<byte> input, int value)
+    {
+        BinaryPrimitives.WriteInt32LittleEndian(input, value);
+        input = input.Slice(sizeof(int));
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteUInt32(this ref Span<byte> input, uint value)
     {
         BinaryPrimitives.WriteUInt32LittleEndian(input, value);
         input = input.Slice(sizeof(uint));
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteUInt16(this ref Span<byte> input, ushort value)
+    {
+        BinaryPrimitives.WriteUInt16LittleEndian(input, value);
+        input = input.Slice(sizeof(ushort));
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteSingle(this ref Span<byte> input, float value)
+    {
+        BinaryPrimitives.WriteSingleLittleEndian(input, value);
+        input = input.Slice(sizeof(float));
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteString(this ref Span<byte> input, string value)
@@ -188,20 +227,9 @@ public static class SpanWriterExtensions
     [MemberData(nameof(GetTestCases))]
     public Task RunGeneratorTest(string testCaseName)
     {
-        var assembly = Assembly.GetExecutingAssembly();
-        var resourceName = $"Serializer.Tests.GeneratorTestCases.{testCaseName}.input.cs";
-        string source;
-        using (var stream = assembly.GetManifestResourceStream(resourceName))
-        using (var reader = new StreamReader(stream))
-        {
-            source = reader.ReadToEnd();
-        }
-        
-        // source should not be null or empty
-        if (string.IsNullOrEmpty(source))
-        {
-            throw new InvalidOperationException($"Resource '{resourceName}' not found or is empty.");
-        }
+        var source = ReadSource(testCaseName);
+       
+
 
         var syntaxTrees = s_contractsSource.Select(s => CSharpSyntaxTree.ParseText(s)).ToList();
         syntaxTrees.AddRange(s_extensionsSource.Select(s => CSharpSyntaxTree.ParseText(s)));
@@ -228,7 +256,7 @@ public static class SpanWriterExtensions
             .GeneratedSources
             .Where(g => g.HintName.EndsWith("g.cs"))
             .Select(x => x.SourceText);
-        
+
         var generatedCode = string.Join("\n\n", generatedCodes.Select(x => x.ToString()));
 
         // return Verifier.Verify(driver)
@@ -236,9 +264,54 @@ public static class SpanWriterExtensions
         //     .UseTypeName("expected");
 
         return Verify(generatedCode)
-            .UseDirectory(Path.Combine("GeneratorTestCases", testCaseName))
-            .UseTypeName(testCaseName)
-            
+                .UseDirectory(Path.Combine("GeneratorTestCases", testCaseName))
+                .UseTypeName(testCaseName)
             ;
+    }
+
+    private static string ReadSource(string testCaseName)
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        var resourceName = $"Serializer.Tests.GeneratorTestCases.{testCaseName}.input.cs";
+        string source;
+        using (var stream = assembly.GetManifestResourceStream(resourceName))
+        using (var reader = new StreamReader(stream))
+        {
+            source = reader.ReadToEnd();
+        }
+
+        // source should not be null or empty
+        if (string.IsNullOrEmpty(source))
+        {
+            throw new InvalidOperationException($"Resource '{resourceName}' not found or is empty.");
+        }
+        
+        return AddDefaultUsings(source);
+    }
+
+    private static string AddDefaultUsings(string source)
+    {
+        var sb = new System.Text.StringBuilder(source);
+        if (!source.Contains("using Serializer.Contracts;", StringComparison.OrdinalIgnoreCase))
+        {
+            sb.Insert(0, "using Serializer.Contracts;\n");
+        }
+
+        if (!source.Contains("using Serializer.Consumer.Extensions;", StringComparison.OrdinalIgnoreCase))
+        {
+            sb.Insert(0, "using Serializer.Consumer.Extensions;\n");
+        }
+
+        if (!source.Contains("using System.Collections.Generic;", StringComparison.OrdinalIgnoreCase))
+        {
+            sb.Insert(0, "using System.Collections.Generic;\n");
+        }
+
+        if (source.Length != sb.Length)
+        {
+            source = sb.ToString();
+        }
+
+        return source;
     }
 }
