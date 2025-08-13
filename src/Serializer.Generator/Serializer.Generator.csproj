@@ -12,7 +12,6 @@
     <Authors>Jules</Authors>
     <Description>A source generator for serialization.</Description>
     <PackageTags>source-generator, csharp</PackageTags>
-    <DevelopmentDependency>true</DevelopmentDependency>
 
     <!-- Roslyn component properties -->
     <IsRoslynComponent>true</IsRoslynComponent>
