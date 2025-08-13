@@ -90,6 +90,8 @@ internal static class TypeInfoProvider
                             );
                         }
 
+                        var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(memberTypeSymbol);
+
                         var polymorphicInfo = GetPolymorphicInfo(m);
 
                         return new MemberToGenerate
@@ -107,7 +109,9 @@ internal static class TypeInfoProvider
                             isList,
                             listTypeArgumentInfo,
                             GetCollectionInfo(m),
-                            polymorphicInfo
+                            polymorphicInfo,
+                            isCollection,
+                            collectionTypeInfo
                         );
                     }
                 )
@@ -154,18 +158,104 @@ internal static class TypeInfoProvider
         return new EquatableArray<TypeToGenerate>(nestedTypes.ToImmutable());
     }
 
+    private static (bool IsCollection, CollectionTypeInfo? CollectionTypeInfo) GetCollectionTypeInfo(ITypeSymbol typeSymbol)
+    {
+        // Handle arrays first (arrays are not INamedTypeSymbol)
+        if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
+        {
+            var elementType = arrayTypeSymbol.ElementType;
+            return (true, new CollectionTypeInfo
+            (
+                typeSymbol.ToDisplayString(s_typeNameFormat),
+                elementType.ToDisplayString(s_typeNameFormat),
+                elementType.IsUnmanagedType,
+                elementType.SpecialType == SpecialType.System_String,
+                elementType.GetAttributes().Any(ad => ad.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"),
+                true,
+                null
+            ));
+        }
+
+        if (typeSymbol is not INamedTypeSymbol namedTypeSymbol)
+        {
+            return (false, null);
+        }
+
+        // Check if it's a generic collection type
+        if (!namedTypeSymbol.IsGenericType || namedTypeSymbol.TypeArguments.Length != 1)
+        {
+            return (false, null);
+        }
+
+        var originalDefinition = namedTypeSymbol.OriginalDefinition.ToDisplayString();
+        var genericElementType = namedTypeSymbol.TypeArguments[0];
+        
+        string? concreteTypeName = null;
+        bool isCollection = false;
+
+        switch (originalDefinition)
+        {
+            case "System.Collections.Generic.List<T>":
+            case "System.Collections.Generic.IList<T>":
+            case "System.Collections.Generic.ICollection<T>":
+            case "System.Collections.Generic.IEnumerable<T>":
+            case "System.Collections.ObjectModel.Collection<T>":
+            case "System.Collections.ObjectModel.ObservableCollection<T>":
+                isCollection = true;
+                concreteTypeName = originalDefinition == "System.Collections.Generic.List<T>" ? null : "System.Collections.Generic.List";
+                break;
+            case "System.Collections.Generic.HashSet<T>":
+            case "System.Collections.Generic.SortedSet<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Generic.HashSet";
+                break;
+            case "System.Collections.Generic.Queue<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Generic.Queue";
+                break;
+            case "System.Collections.Generic.Stack<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Generic.Stack";
+                break;
+            case "System.Collections.Generic.LinkedList<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Generic.LinkedList";
+                break;
+            case "System.Collections.Concurrent.ConcurrentBag<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Concurrent.ConcurrentBag";
+                break;
+        }
+
+        if (!isCollection)
+        {
+            return (false, null);
+        }
+
+        return (true, new CollectionTypeInfo
+        (
+            originalDefinition,
+            genericElementType.ToDisplayString(s_typeNameFormat),
+            genericElementType.IsUnmanagedType,
+            genericElementType.SpecialType == SpecialType.System_String,
+            genericElementType.GetAttributes().Any(ad => ad.AttributeClass?.ToDisplayString() == "Serializer.Contracts.GenerateSerializerAttribute"),
+            false,
+            concreteTypeName
+        ));
+    }
+
     private static CollectionInfo? GetCollectionInfo(ISymbol member)
     {
         var attribute = AttributeHelper.GetCollectionAttribute(member);
         
-        // Check if this member is a collection type (List<T>)
+        // Check if this member is any supported collection type
         var memberTypeSymbol = member is IPropertySymbol p ? p.Type : ((IFieldSymbol)member).Type;
-        var isList = memberTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>";
+        var (isCollection, _) = GetCollectionTypeInfo(memberTypeSymbol);
         
         // If it's a collection but has no attribute, provide default collection info
         if (attribute is null)
         {
-            if (isList)
+            if (isCollection)
             {
                 // Return default CollectionInfo with no special configuration
                 return new CollectionInfo

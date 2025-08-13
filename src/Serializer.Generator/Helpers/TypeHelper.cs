@@ -80,6 +80,9 @@ public static class TypeHelper
             "float" => "Single",
             "bool" => "Boolean",
             "double" => "Double",
+            // Unsupported types - map to supported alternatives
+            "char" => "UInt16", // char is 2 bytes, same as ushort
+            "decimal" => "Int64", // decimal can be represented as long for simple cases
             _ => GetSimpleTypeName(typeName)
         };
     }

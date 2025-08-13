@@ -31,6 +31,8 @@ public readonly record struct TypeToGenerate(
 /// <param name="IsList">Whether the member's type is a List&lt;T&gt;.</param>
 /// <param name="ListTypeArgument">Information about the list's type argument, if applicable.</param>
 /// <param name="CollectionInfo">Information about the collection attribute, if present.</param>
+/// <param name="IsCollection">Whether the member's type is any supported collection type.</param>
+/// <param name="CollectionTypeInfo">Information about the collection type, if applicable.</param>
 public readonly record struct MemberToGenerate(
     string Name,
     string TypeName,
@@ -40,7 +42,9 @@ public readonly record struct MemberToGenerate(
     bool IsList,
     ListTypeArgumentInfo? ListTypeArgument,
     CollectionInfo? CollectionInfo,
-    PolymorphicInfo? PolymorphicInfo) : IEquatable<MemberToGenerate>;
+    PolymorphicInfo? PolymorphicInfo,
+    bool IsCollection,
+    CollectionTypeInfo? CollectionTypeInfo) : IEquatable<MemberToGenerate>;
 
 /// <summary>
 /// A model describing the type argument of a List&lt;T&gt;.
@@ -54,6 +58,25 @@ public readonly record struct ListTypeArgumentInfo(
     bool IsUnmanagedType,
     bool IsStringType,
     bool HasGenerateSerializerAttribute) : IEquatable<ListTypeArgumentInfo>;
+
+/// <summary>
+/// A model describing information about a collection type.
+/// </summary>
+/// <param name="CollectionTypeName">The full name of the collection type (e.g., "System.Collections.Generic.List<T>").</param>
+/// <param name="ElementTypeName">The name of the element type.</param>
+/// <param name="IsElementUnmanagedType">Whether the element type is unmanaged.</param>
+/// <param name="IsElementStringType">Whether the element type is a string.</param>
+/// <param name="HasElementGenerateSerializerAttribute">Whether the element type has the [GenerateSerializer] attribute.</param>
+/// <param name="IsArray">Whether this is an array type.</param>
+/// <param name="ConcreteTypeName">The concrete type to instantiate for interfaces (e.g., "List<T>" for "ICollection<T>").</param>
+public readonly record struct CollectionTypeInfo(
+    string CollectionTypeName,
+    string ElementTypeName,
+    bool IsElementUnmanagedType,
+    bool IsElementStringType,
+    bool HasElementGenerateSerializerAttribute,
+    bool IsArray,
+    string? ConcreteTypeName) : IEquatable<CollectionTypeInfo>;
 
 /// <summary>
 /// A model describing the [Collection] attribute on a member.

@@ -30,7 +30,7 @@ public static class DeserializationGenerator
 
     private static void GenerateMemberDeserialization(StringBuilder sb, MemberToGenerate member)
     {
-        if (member.IsList)
+        if (member.IsList || member.IsCollection)
         {
             GenerateCollectionDeserialization(sb, member);
         }
@@ -93,7 +93,29 @@ public static class DeserializationGenerator
         var countReadMethod = TypeHelper.GetReadMethodName(countType);
         
         sb.AppendLine($"        var {member.Name}Count = data.{countReadMethod}();");
-        sb.AppendLine($"        obj.{member.Name} = new System.Collections.Generic.List<{member.ListTypeArgument!.Value.TypeName}>({member.Name}Count);");
+        
+        // Generate appropriate collection instantiation
+        var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
+        if (member.CollectionTypeInfo?.IsArray == true)
+        {
+            sb.AppendLine($"        obj.{member.Name} = new {elementTypeName}[{member.Name}Count];");
+        }
+        else if (member.CollectionTypeInfo?.ConcreteTypeName != null)
+        {
+            var concreteTypeName = member.CollectionTypeInfo.Value.ConcreteTypeName;
+            if (SupportsCapacityConstructor(concreteTypeName))
+            {
+                sb.AppendLine($"        var temp{member.Name} = new {concreteTypeName}<{elementTypeName}>({member.Name}Count);");
+            }
+            else
+            {
+                sb.AppendLine($"        var temp{member.Name} = new {concreteTypeName}<{elementTypeName}>();");
+            }
+        }
+        else
+        {
+            sb.AppendLine($"        obj.{member.Name} = new System.Collections.Generic.List<{elementTypeName}>({member.Name}Count);");
+        }
 
         if (ShouldUsePolymorphicSerialization(member))
         {
@@ -111,7 +133,9 @@ public static class DeserializationGenerator
                     false,
                     null,
                     null,
-                    member.PolymorphicInfo
+                    member.PolymorphicInfo,
+                    false,
+                    null
                 );
                 GeneratePolymorphicItemDeserialization(sb, itemMember, "item");
                 sb.AppendLine($"            obj.{member.Name}.Add(item);");
@@ -161,23 +185,28 @@ public static class DeserializationGenerator
         sb.AppendLine($"        for (int i = 0; i < {member.Name}Count; i++)");
         sb.AppendLine("        {");
 
-        var typeArg = member.ListTypeArgument.Value;
-        if (typeArg.IsUnmanagedType)
+        var collectionTarget = member.CollectionTypeInfo?.ConcreteTypeName != null ? $"temp{member.Name}" : $"obj.{member.Name}";
+        
+        if (member.CollectionTypeInfo?.IsArray == true)
         {
-            var typeName = GetMethodFriendlyTypeName(typeArg.TypeName);
-            sb.AppendLine($"            obj.{member.Name}.Add(data.Read{typeName}());");
+            GenerateArrayElementDeserialization(sb, member.CollectionTypeInfo.Value, member.Name, "i");
         }
-        else if (typeArg.IsStringType)
+        else if (member.ListTypeArgument is not null)
         {
-            sb.AppendLine($"            obj.{member.Name}.Add(data.ReadString());");
+            GenerateListElementDeserialization(sb, member.ListTypeArgument.Value, collectionTarget);
         }
-        else if (typeArg.HasGenerateSerializerAttribute)
+        else if (member.CollectionTypeInfo is not null)
         {
-            sb.AppendLine($"            obj.{member.Name}.Add({TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.Deserialize(data, out var itemBytesRead));");
-            sb.AppendLine($"            data = data.Slice(itemBytesRead);");
+            GenerateCollectionElementDeserialization(sb, member.CollectionTypeInfo.Value, collectionTarget);
         }
 
         sb.AppendLine("        }");
+        
+        // Assign temporary collection to the actual property if needed
+        if (member.CollectionTypeInfo?.ConcreteTypeName != null)
+        {
+            sb.AppendLine($"        obj.{member.Name} = temp{member.Name};");
+        }
     }
 
     private static void GeneratePolymorphicDeserialization(StringBuilder sb, MemberToGenerate member)
@@ -258,5 +287,86 @@ public static class DeserializationGenerator
         sb.AppendLine("                default:");
         sb.AppendLine($"                    throw new System.IO.InvalidDataException($\"Unknown type id for {member.Name}: {{{typeIdVar}}}\");");
         sb.AppendLine("            }");
+    }
+
+    private static void GenerateArrayElementDeserialization(StringBuilder sb, CollectionTypeInfo elementInfo, string arrayName, string indexVar)
+    {
+        if (elementInfo.IsElementUnmanagedType)
+        {
+            var typeName = GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
+            sb.AppendLine($"            obj.{arrayName}[{indexVar}] = data.Read{typeName}();");
+        }
+        else if (elementInfo.IsElementStringType)
+        {
+            sb.AppendLine($"            obj.{arrayName}[{indexVar}] = data.ReadString();");
+        }
+        else if (elementInfo.HasElementGenerateSerializerAttribute)
+        {
+            sb.AppendLine($"            obj.{arrayName}[{indexVar}] = {TypeHelper.GetSimpleTypeName(elementInfo.ElementTypeName)}.Deserialize(data, out var itemBytesRead);");
+            sb.AppendLine($"            data = data.Slice(itemBytesRead);");
+        }
+    }
+
+    private static void GenerateListElementDeserialization(StringBuilder sb, ListTypeArgumentInfo elementInfo, string collectionTarget)
+    {
+        if (elementInfo.IsUnmanagedType)
+        {
+            var typeName = GetMethodFriendlyTypeName(elementInfo.TypeName);
+            sb.AppendLine($"            {collectionTarget}.Add(data.Read{typeName}());");
+        }
+        else if (elementInfo.IsStringType)
+        {
+            sb.AppendLine($"            {collectionTarget}.Add(data.ReadString());");
+        }
+        else if (elementInfo.HasGenerateSerializerAttribute)
+        {
+            sb.AppendLine($"            {collectionTarget}.Add({TypeHelper.GetSimpleTypeName(elementInfo.TypeName)}.Deserialize(data, out var itemBytesRead));");
+            sb.AppendLine($"            data = data.Slice(itemBytesRead);");
+        }
+    }
+
+    private static void GenerateCollectionElementDeserialization(StringBuilder sb, CollectionTypeInfo elementInfo, string collectionTarget)
+    {
+        var addMethod = GetCollectionAddMethod(elementInfo.CollectionTypeName);
+        
+        if (elementInfo.IsElementUnmanagedType)
+        {
+            var typeName = GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
+            sb.AppendLine($"            {collectionTarget}.{addMethod}(data.Read{typeName}());");
+        }
+        else if (elementInfo.IsElementStringType)
+        {
+            sb.AppendLine($"            {collectionTarget}.{addMethod}(data.ReadString());");
+        }
+        else if (elementInfo.HasElementGenerateSerializerAttribute)
+        {
+            sb.AppendLine($"            {collectionTarget}.{addMethod}({TypeHelper.GetSimpleTypeName(elementInfo.ElementTypeName)}.Deserialize(data, out var itemBytesRead));");
+            sb.AppendLine($"            data = data.Slice(itemBytesRead);");
+        }
+    }
+
+    private static string GetCollectionAddMethod(string collectionTypeName)
+    {
+        return collectionTypeName switch
+        {
+            "System.Collections.Generic.Queue<T>" => "Enqueue",
+            "System.Collections.Generic.Stack<T>" => "Push",
+            "System.Collections.Generic.LinkedList<T>" => "AddLast",
+            _ => "Add"
+        };
+    }
+
+    private static bool SupportsCapacityConstructor(string collectionTypeName)
+    {
+        return collectionTypeName switch
+        {
+            "System.Collections.Generic.List" => true,
+            "System.Collections.Generic.HashSet" => true,
+            "System.Collections.Generic.Queue" => true,
+            "System.Collections.Generic.Stack" => true,
+            "System.Collections.Concurrent.ConcurrentBag" => false, // No capacity constructor
+            "System.Collections.Generic.LinkedList" => false, // No capacity constructor
+            _ => false
+        };
     }
 }

@@ -24,7 +24,7 @@ public static class SerializationGenerator
             }
 
             // Skip collections with SingleTypeId mode - they use the TypeIdProperty directly
-            if (member.IsList && member.CollectionInfo?.PolymorphicMode == PolymorphicMode.SingleTypeId)
+            if ((member.IsList || member.IsCollection) && member.CollectionInfo?.PolymorphicMode == PolymorphicMode.SingleTypeId)
             {
                 continue;
             }
@@ -63,7 +63,7 @@ public static class SerializationGenerator
 
     private static void GenerateMemberSerialization(StringBuilder sb, MemberToGenerate member)
     {
-        if (member.IsList)
+        if (member.IsList || member.IsCollection)
         {
             GenerateCollectionSerialization(sb, member);
         }
@@ -145,7 +145,9 @@ public static class SerializationGenerator
                     false,
                     null,
                     null,
-                    member.PolymorphicInfo
+                    member.PolymorphicInfo,
+                    false,
+                    null
                 );
 
                 GeneratePolymorphicItemSerialization(sb, itemMember, "item", itemBytesWrittenVar);
@@ -191,26 +193,31 @@ public static class SerializationGenerator
             }
         }
 
-        sb.AppendLine($"        for (int i = 0; i < obj.{member.Name}.Count; i++)");
-        sb.AppendLine("        {");
-
-        var typeArg = member.ListTypeArgument!.Value;
-        if (typeArg.IsUnmanagedType)
+        // Use foreach for all collection types, indexer access only for List and Array
+        if (member.CollectionTypeInfo?.IsArray == true || member.IsList)
         {
-            var typeName = GetMethodFriendlyTypeName(typeArg.TypeName);
-            sb.AppendLine($"            data.Write{typeName}(({typeName})obj.{member.Name}[i]);");
+            sb.AppendLine($"        for (int i = 0; i < obj.{member.Name}.Count; i++)");
+            sb.AppendLine("        {");
+            if (member.ListTypeArgument is not null)
+            {
+                GenerateListElementSerialization(sb, member.ListTypeArgument.Value, $"obj.{member.Name}[i]");
+            }
+            else if (member.CollectionTypeInfo is not null)
+            {
+                GenerateCollectionElementSerialization(sb, member.CollectionTypeInfo.Value, $"obj.{member.Name}[i]");
+            }
+            sb.AppendLine("        }");
         }
-        else if (typeArg.IsStringType)
+        else
         {
-            sb.AppendLine($"            data.WriteString(obj.{member.Name}[i]);");
+            sb.AppendLine($"        foreach (var item in obj.{member.Name})");
+            sb.AppendLine("        {");
+            if (member.CollectionTypeInfo is not null)
+            {
+                GenerateCollectionElementSerialization(sb, member.CollectionTypeInfo.Value, "item");
+            }
+            sb.AppendLine("        }");
         }
-        else if (typeArg.HasGenerateSerializerAttribute)
-        {
-            sb.AppendLine($"            var bytesWritten = {TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.Serialize(obj.{member.Name}[i], data);");
-            sb.AppendLine($"            data = data.Slice(bytesWritten);");
-        }
-
-        sb.AppendLine("        }");
     }
 
     private static void GeneratePolymorphicSerialization(StringBuilder sb, MemberToGenerate member)
@@ -294,5 +301,41 @@ public static class SerializationGenerator
         sb.AppendLine("                default:");
         sb.AppendLine($"                    throw new System.IO.InvalidDataException($\"Unknown type for {instanceName}: {{{instanceName}?.GetType().FullName}}\");");
         sb.AppendLine("            }");
+    }
+
+    private static void GenerateListElementSerialization(StringBuilder sb, ListTypeArgumentInfo elementInfo, string elementAccess)
+    {
+        if (elementInfo.IsUnmanagedType)
+        {
+            var typeName = GetMethodFriendlyTypeName(elementInfo.TypeName);
+            sb.AppendLine($"            data.Write{typeName}(({typeName}){elementAccess});");
+        }
+        else if (elementInfo.IsStringType)
+        {
+            sb.AppendLine($"            data.WriteString({elementAccess});");
+        }
+        else if (elementInfo.HasGenerateSerializerAttribute)
+        {
+            sb.AppendLine($"            var bytesWritten = {TypeHelper.GetSimpleTypeName(elementInfo.TypeName)}.Serialize({elementAccess}, data);");
+            sb.AppendLine($"            data = data.Slice(bytesWritten);");
+        }
+    }
+
+    private static void GenerateCollectionElementSerialization(StringBuilder sb, CollectionTypeInfo elementInfo, string elementAccess)
+    {
+        if (elementInfo.IsElementUnmanagedType)
+        {
+            var typeName = GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
+            sb.AppendLine($"            data.Write{typeName}(({typeName}){elementAccess});");
+        }
+        else if (elementInfo.IsElementStringType)
+        {
+            sb.AppendLine($"            data.WriteString({elementAccess});");
+        }
+        else if (elementInfo.HasElementGenerateSerializerAttribute)
+        {
+            sb.AppendLine($"            var bytesWritten = {TypeHelper.GetSimpleTypeName(elementInfo.ElementTypeName)}.Serialize({elementAccess}, data);");
+            sb.AppendLine($"            data = data.Slice(bytesWritten);");
+        }
     }
 }

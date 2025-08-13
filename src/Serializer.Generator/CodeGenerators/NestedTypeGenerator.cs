@@ -23,9 +23,6 @@ public static class NestedTypeGenerator
             sb.AppendLine($"    public partial {typeKeyword} {nestedType.Name} : ISerializable<{nestedType.Name}>");
             sb.AppendLine("    {");
 
-            // We can reuse the main generators by wrapping the nested type in a new TypeToGenerate,
-            // but for now, we'll use simplified, self-contained logic similar to the original.
-
             GenerateNestedGetPacketSize(sb, nestedType);
             sb.AppendLine();
             GenerateNestedDeserialize(sb, nestedType);
@@ -49,9 +46,8 @@ public static class NestedTypeGenerator
         sb.AppendLine("            var size = 0;");
         foreach (var member in nestedType.Members)
         {
-            if (member.IsList)
+            if (member.IsList || member.IsCollection)
             {
-                // Determine the count type to use
                 var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
                 var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
                 
@@ -70,6 +66,22 @@ public static class NestedTypeGenerator
                     else if (typeArg.HasGenerateSerializerAttribute)
                     {
                         sb.AppendLine($"            foreach(var item in obj.{member.Name}) {{ size += {TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item); }}");
+                    }
+                }
+                else if (member.CollectionTypeInfo is not null)
+                {
+                    var collectionInfo = member.CollectionTypeInfo.Value;
+                    if (collectionInfo.IsElementUnmanagedType)
+                    {
+                        sb.AppendLine($"            size += obj.{member.Name}.Count * sizeof({collectionInfo.ElementTypeName});");
+                    }
+                    else if (collectionInfo.IsElementStringType)
+                    {
+                        sb.AppendLine($"            foreach(var item in obj.{member.Name}) {{ size += StringEx.MeasureSize(item); }}");
+                    }
+                    else if (collectionInfo.HasElementGenerateSerializerAttribute)
+                    {
+                        sb.AppendLine($"            foreach(var item in obj.{member.Name}) {{ size += {TypeHelper.GetSimpleTypeName(collectionInfo.ElementTypeName)}.GetPacketSize(item); }}");
                     }
                 }
             }
@@ -100,34 +112,84 @@ public static class NestedTypeGenerator
         sb.AppendLine($"            var obj = new {nestedType.Name}();");
         foreach (var member in nestedType.Members)
         {
-            if (member.IsList)
+            if (member.IsList || member.IsCollection)
             {
-                // Determine the count type to use
                 var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
                 var countReadMethod = TypeHelper.GetReadMethodName(countType);
                 
                 sb.AppendLine($"            var {member.Name}Count = data.{countReadMethod}();");
                 if (member.ListTypeArgument is not null)
                 {
-                    sb.AppendLine($"            obj.{member.Name} = new System.Collections.Generic.List<{member.ListTypeArgument.Value.TypeName}>({member.Name}Count);");
-                    sb.AppendLine($"            for (int i = 0; i < {member.Name}Count; i++)");
-                    sb.AppendLine("            {");
+                    var elementTypeName = member.ListTypeArgument.Value.TypeName;
+                    sb.AppendLine($"            obj.{member.Name} = new System.Collections.Generic.List<{elementTypeName}>({member.Name}Count);");
+                }
+                else if (member.CollectionTypeInfo is not null)
+                {
+                    var elementTypeName = member.CollectionTypeInfo.Value.ElementTypeName;
+                    if (member.CollectionTypeInfo.Value.ConcreteTypeName != null)
+                    {
+                        var concreteTypeName = member.CollectionTypeInfo.Value.ConcreteTypeName;
+                        if (SupportsCapacityConstructor(concreteTypeName))
+                        {
+                            sb.AppendLine($"            var temp{member.Name} = new {concreteTypeName}<{elementTypeName}>({member.Name}Count);");
+                        }
+                        else
+                        {
+                            sb.AppendLine($"            var temp{member.Name} = new {concreteTypeName}<{elementTypeName}>();");
+                        }
+                    }
+                    else
+                    {
+                        sb.AppendLine($"            obj.{member.Name} = new System.Collections.Generic.List<{elementTypeName}>({member.Name}Count);");
+                    }
+                }
+                
+                sb.AppendLine($"            for (int i = 0; i < {member.Name}Count; i++)");
+                sb.AppendLine("            {");
+                var collectionTarget = member.CollectionTypeInfo?.ConcreteTypeName != null ? $"temp{member.Name}" : $"obj.{member.Name}";
+                
+                if (member.ListTypeArgument is not null)
+                {
                     var typeArg = member.ListTypeArgument.Value;
                     if (typeArg.IsUnmanagedType)
                     {
                         var typeName = GetMethodFriendlyTypeName(typeArg.TypeName);
-                        sb.AppendLine($"                obj.{member.Name}.Add(data.Read{typeName}());");
+                        sb.AppendLine($"                {collectionTarget}.Add(data.Read{typeName}());");
                     }
                     else if (typeArg.IsStringType)
                     {
-                        sb.AppendLine($"                obj.{member.Name}.Add(data.ReadString());");
+                        sb.AppendLine($"                {collectionTarget}.Add(data.ReadString());");
                     }
                     else if (typeArg.HasGenerateSerializerAttribute)
                     {
-                        sb.AppendLine($"                obj.{member.Name}.Add({TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.Deserialize(data, out var itemBytesRead));");
+                        sb.AppendLine($"                {collectionTarget}.Add({TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.Deserialize(data, out var itemBytesRead));");
                         sb.AppendLine($"                data = data.Slice(itemBytesRead);");
                     }
-                    sb.AppendLine("            }");
+                }
+                else if (member.CollectionTypeInfo is not null)
+                {
+                    var collectionInfo = member.CollectionTypeInfo.Value;
+                    var addMethod = GetCollectionAddMethod(collectionInfo.CollectionTypeName);
+                    if (collectionInfo.IsElementUnmanagedType)
+                    {
+                        var typeName = GetMethodFriendlyTypeName(collectionInfo.ElementTypeName);
+                        sb.AppendLine($"                {collectionTarget}.{addMethod}(data.Read{typeName}());");
+                    }
+                    else if (collectionInfo.IsElementStringType)
+                    {
+                        sb.AppendLine($"                {collectionTarget}.{addMethod}(data.ReadString());");
+                    }
+                    else if (collectionInfo.HasElementGenerateSerializerAttribute)
+                    {
+                        sb.AppendLine($"                {collectionTarget}.{addMethod}({TypeHelper.GetSimpleTypeName(collectionInfo.ElementTypeName)}.Deserialize(data, out var itemBytesRead));");
+                        sb.AppendLine($"                data = data.Slice(itemBytesRead);");
+                    }
+                }
+                sb.AppendLine("            }");
+                
+                if (member.CollectionTypeInfo?.ConcreteTypeName != null)
+                {
+                    sb.AppendLine($"            obj.{member.Name} = temp{member.Name};");
                 }
             }
             else if (member.HasGenerateSerializerAttribute)
@@ -158,9 +220,8 @@ public static class NestedTypeGenerator
         sb.AppendLine("            var originalData = data;");
         foreach (var member in nestedType.Members)
         {
-            if (member.IsList)
+            if (member.IsList || member.IsCollection)
             {
-                // Determine the count type to use
                 var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
                 var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
                 
@@ -169,21 +230,14 @@ public static class NestedTypeGenerator
                 {
                     sb.AppendLine($"            for (int i = 0; i < obj.{member.Name}.Count; i++)");
                     sb.AppendLine("            {");
-                    var typeArg = member.ListTypeArgument.Value;
-                    if (typeArg.IsUnmanagedType)
-                    {
-                        var typeName = GetMethodFriendlyTypeName(typeArg.TypeName);
-                        sb.AppendLine($"                data.Write{typeName}(obj.{member.Name}[i]);");
-                    }
-                    else if (typeArg.IsStringType)
-                    {
-                        sb.AppendLine($"                data.WriteString(obj.{member.Name}[i]);");
-                    }
-                    else if (typeArg.HasGenerateSerializerAttribute)
-                    {
-                        sb.AppendLine($"                var bytesWritten = {TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.Serialize(obj.{member.Name}[i], data);");
-                        sb.AppendLine($"                data = data.Slice(bytesWritten);");
-                    }
+                    GenerateNestedListElementSerialization(sb, member.ListTypeArgument.Value, $"obj.{member.Name}[i]");
+                    sb.AppendLine("            }");
+                }
+                else if (member.CollectionTypeInfo is not null)
+                {
+                    sb.AppendLine($"            foreach (var item in obj.{member.Name})");
+                    sb.AppendLine("            {");
+                    GenerateNestedCollectionElementSerialization(sb, member.CollectionTypeInfo.Value, "item");
                     sb.AppendLine("            }");
                 }
             }
@@ -224,4 +278,64 @@ public static class NestedTypeGenerator
         };
     }
 
+    private static void GenerateNestedListElementSerialization(StringBuilder sb, ListTypeArgumentInfo elementInfo, string elementAccess)
+    {
+        if (elementInfo.IsUnmanagedType)
+        {
+            var typeName = GetMethodFriendlyTypeName(elementInfo.TypeName);
+            sb.AppendLine($"                data.Write{typeName}({elementAccess});");
+        }
+        else if (elementInfo.IsStringType)
+        {
+            sb.AppendLine($"                data.WriteString({elementAccess});");
+        }
+        else if (elementInfo.HasGenerateSerializerAttribute)
+        {
+            sb.AppendLine($"                var bytesWritten = {TypeHelper.GetSimpleTypeName(elementInfo.TypeName)}.Serialize({elementAccess}, data);");
+            sb.AppendLine($"                data = data.Slice(bytesWritten);");
+        }
+    }
+
+    private static void GenerateNestedCollectionElementSerialization(StringBuilder sb, CollectionTypeInfo elementInfo, string elementAccess)
+    {
+        if (elementInfo.IsElementUnmanagedType)
+        {
+            var typeName = GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
+            sb.AppendLine($"                data.Write{typeName}({elementAccess});");
+        }
+        else if (elementInfo.IsElementStringType)
+        {
+            sb.AppendLine($"                data.WriteString({elementAccess});");
+        }
+        else if (elementInfo.HasElementGenerateSerializerAttribute)
+        {
+            sb.AppendLine($"                var bytesWritten = {TypeHelper.GetSimpleTypeName(elementInfo.ElementTypeName)}.Serialize({elementAccess}, data);");
+            sb.AppendLine($"                data = data.Slice(bytesWritten);");
+        }
+    }
+
+    private static string GetCollectionAddMethod(string collectionTypeName)
+    {
+        return collectionTypeName switch
+        {
+            "System.Collections.Generic.Queue<T>" => "Enqueue",
+            "System.Collections.Generic.Stack<T>" => "Push",
+            "System.Collections.Generic.LinkedList<T>" => "AddLast",
+            _ => "Add"
+        };
+    }
+
+    private static bool SupportsCapacityConstructor(string collectionTypeName)
+    {
+        return collectionTypeName switch
+        {
+            "System.Collections.Generic.List" => true,
+            "System.Collections.Generic.HashSet" => true,
+            "System.Collections.Generic.Queue" => true,
+            "System.Collections.Generic.Stack" => true,
+            "System.Collections.Concurrent.ConcurrentBag" => false, // No capacity constructor
+            "System.Collections.Generic.LinkedList" => false, // No capacity constructor
+            _ => false
+        };
+    }
 }

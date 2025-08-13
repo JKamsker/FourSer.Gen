@@ -17,7 +17,7 @@ public static class PacketSizeGenerator
 
         foreach (var member in typeToGenerate.Members)
         {
-            if (member.IsList)
+            if (member.IsList || member.IsCollection)
             {
                 GenerateCollectionSizeCalculation(sb, member);
             }
@@ -93,13 +93,16 @@ public static class PacketSizeGenerator
                 false,
                 null,
                 null,
-                member.PolymorphicInfo
+                member.PolymorphicInfo,
+                false,
+                null
             );
             GeneratePolymorphicSizeCalculation(sb, itemMember, "item");
             sb.AppendLine("        }");
             return;
         }
 
+        // Handle both List<T> and other collection types
         if (member.ListTypeArgument is not null)
         {
             var typeArg = member.ListTypeArgument.Value;
@@ -118,7 +121,25 @@ public static class PacketSizeGenerator
                 sb.AppendLine($"            size += {TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item);");
                 sb.AppendLine("        }");
             }
-        
+        }
+        else if (member.CollectionTypeInfo is not null)
+        {
+            var collectionInfo = member.CollectionTypeInfo.Value;
+            if (collectionInfo.IsElementUnmanagedType)
+            {
+                sb.AppendLine($"        size += obj.{member.Name}.Count * sizeof({collectionInfo.ElementTypeName});");
+            }
+            else if (collectionInfo.IsElementStringType)
+            {
+                sb.AppendLine($"        foreach(var item in obj.{member.Name}) {{ size += StringEx.MeasureSize(item); }}");
+            }
+            else if (collectionInfo.HasElementGenerateSerializerAttribute)
+            {
+                sb.AppendLine($"        foreach(var item in obj.{member.Name})");
+                sb.AppendLine("        {");
+                sb.AppendLine($"            size += {TypeHelper.GetSimpleTypeName(collectionInfo.ElementTypeName)}.GetPacketSize(item);");
+                sb.AppendLine("        }");
+            }
         }
     }
 

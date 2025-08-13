@@ -292,19 +292,22 @@ public static class SpanWriterExtensions
     private static string AddDefaultUsings(string source)
     {
         var sb = new System.Text.StringBuilder(source);
-        if (!source.Contains("using Serializer.Contracts;", StringComparison.OrdinalIgnoreCase))
+        
+        var requiredUsings = new[]
         {
-            sb.Insert(0, "using Serializer.Contracts;\n");
-        }
+            "using System;",
+            "using System.Collections.Concurrent;",
+            "using System.Collections.Generic;",
+            "using Serializer.Consumer.Extensions;",
+            "using Serializer.Contracts;"
+        };
 
-        if (!source.Contains("using Serializer.Consumer.Extensions;", StringComparison.OrdinalIgnoreCase))
+        foreach (var usingStatement in requiredUsings)
         {
-            sb.Insert(0, "using Serializer.Consumer.Extensions;\n");
-        }
-
-        if (!source.Contains("using System.Collections.Generic;", StringComparison.OrdinalIgnoreCase))
-        {
-            sb.Insert(0, "using System.Collections.Generic;\n");
+            if (!source.Contains(usingStatement, StringComparison.OrdinalIgnoreCase))
+            {
+                sb.Insert(0, $"{usingStatement}\n");
+            }
         }
 
         if (source.Length != sb.Length)
