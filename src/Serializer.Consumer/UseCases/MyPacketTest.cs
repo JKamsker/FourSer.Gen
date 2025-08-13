@@ -6,6 +6,7 @@ namespace Serializer.Consumer.UseCases;
 public partial class MyPacket
 {
     public List<byte> Data { get; set; } = new();
+    public byte[]? Data1 { get; set; }
 }
 
 public class MyPacketTest
