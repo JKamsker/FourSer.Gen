@@ -179,8 +179,15 @@ internal static class TypeInfoProvider
     {
         var attribute = AttributeHelper.GetPolymorphicAttribute(member);
         var collectionAttribute = AttributeHelper.GetCollectionAttribute(member);
+        var options = AttributeHelper.GetPolymorphicOptions(member);
 
-        if (attribute is null && collectionAttribute is null)
+        // Only create PolymorphicInfo if there are actual polymorphic options or explicit polymorphic configuration
+        var hasPolymorphicOptions = options.Any();
+        var hasPolymorphicAttribute = attribute is not null;
+        var hasPolymorphicCollectionMode = collectionAttribute is not null && 
+            AttributeHelper.GetPolymorphicMode(collectionAttribute) != 0; // 0 = PolymorphicMode.None
+
+        if (!hasPolymorphicOptions && !hasPolymorphicAttribute && !hasPolymorphicCollectionMode)
         {
             return null;
         }
@@ -188,7 +195,6 @@ internal static class TypeInfoProvider
         var typeIdProperty = AttributeHelper.GetTypeIdProperty(attribute) ?? AttributeHelper.GetCollectionTypeIdProperty
             (collectionAttribute);
         var typeIdType = AttributeHelper.GetTypeIdType(attribute) ?? AttributeHelper.GetCollectionTypeIdType(collectionAttribute);
-        var options = AttributeHelper.GetPolymorphicOptions(member);
 
         var polymorphicOptions = options.Select
             (

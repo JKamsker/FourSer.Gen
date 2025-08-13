@@ -73,6 +73,19 @@ public static class DeserializationGenerator
         };
     }
 
+    private static bool ShouldUsePolymorphicSerialization(MemberToGenerate member)
+    {
+        // Only use polymorphic logic if explicitly configured
+        if (member.CollectionInfo?.PolymorphicMode != PolymorphicMode.None)
+            return true;
+            
+        // Or if SerializePolymorphic attribute is present with actual options
+        if (member.PolymorphicInfo?.Options.IsEmpty == false)
+            return true;
+            
+        return false;
+    }
+
     private static void GenerateCollectionDeserialization(StringBuilder sb, MemberToGenerate member)
     {
         // Determine the count type to use
@@ -82,7 +95,7 @@ public static class DeserializationGenerator
         sb.AppendLine($"        var {member.Name}Count = data.{countReadMethod}();");
         sb.AppendLine($"        obj.{member.Name} = new System.Collections.Generic.List<{member.ListTypeArgument!.Value.TypeName}>({member.Name}Count);");
 
-        if (member.CollectionInfo is not null && member.PolymorphicInfo is not null)
+        if (ShouldUsePolymorphicSerialization(member))
         {
             if (member.CollectionInfo.Value.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
             {

@@ -51,6 +51,19 @@ public static class PacketSizeGenerator
         sb.AppendLine("    }");
     }
 
+    private static bool ShouldUsePolymorphicSerialization(MemberToGenerate member)
+    {
+        // Only use polymorphic logic if explicitly configured
+        if (member.CollectionInfo?.PolymorphicMode != PolymorphicMode.None)
+            return true;
+            
+        // Or if SerializePolymorphic attribute is present with actual options
+        if (member.PolymorphicInfo?.Options.IsEmpty == false)
+            return true;
+            
+        return false;
+    }
+
     private static void GenerateCollectionSizeCalculation(StringBuilder sb, MemberToGenerate member)
     {
         // Determine the count type to use
@@ -59,7 +72,7 @@ public static class PacketSizeGenerator
         
         sb.AppendLine($"        size += {countSizeExpression}; // Count size for {member.Name}");
 
-        if (member.CollectionInfo is not null && member.PolymorphicInfo is not null && member.CollectionInfo.Value.PolymorphicMode != PolymorphicMode.None)
+        if (ShouldUsePolymorphicSerialization(member))
         {
             sb.AppendLine($"        foreach(var item in obj.{member.Name})");
             sb.AppendLine("        {");

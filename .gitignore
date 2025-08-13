@@ -342,3 +342,4 @@ healthchecksdb
 # /src/FourServerProxy.WorkerService/Recordings/LoginSteps/GlossyDumps
 
 src/Serializer.Consumer/Generated/
+*.received.txt
