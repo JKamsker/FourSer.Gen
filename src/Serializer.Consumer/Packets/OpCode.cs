@@ -1,0 +1,36 @@
+namespace Serializer.Consumer.Packets
+{
+    public enum OpCode
+    {
+        CS_AGREEMENT_REQ,
+        CS_CHANNELLIST_ACK,
+        CS_CHANNELLIST_REQ,
+        CS_CHARLIST_ACK,
+        CS_CHARLIST_REQ,
+        CS_CREATECHAR_ACK,
+        CS_CREATECHAR_REQ,
+        CS_DELCHAR_ACK,
+        CS_DELCHAR_REQ,
+        CS_GROUPLIST_ACK,
+        CS_GROUPLIST_REQ,
+        CS_HOTSEND_ACK,
+        CS_HOTSEND_REQ,
+        CS_LOGIN_ACK,
+        CS_LOGIN_REQ,
+        CS_LOGIN_REQ_JAPAN,
+        CS_START_ACK,
+        CS_START_REQ,
+        CS_TERMINATE_REQ,
+        CS_TESTLOGIN_REQ,
+        CS_TESTVERSION_ACK,
+        CS_TESTVERSION_REQ,
+        CS_UNIQUE_HWID_ACK,
+        CS_UNIQUE_HWID_REQ,
+        CT_CTRLSVR_REQ,
+        CT_EVENTMSG_REQ,
+        CT_EVENTUPDATE_REQ,
+        CT_SERVICEDATACLEAR_ACK,
+        CT_SERVICEMONITOR_ACK,
+        CT_SERVICEMONITOR_REQ,
+    }
+}
