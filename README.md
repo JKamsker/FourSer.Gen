@@ -82,18 +82,34 @@ public partial class MyPacket
 }
 ```
 
-### Custom Count Types
+### Custom Count Types and Fixed-Size Collections
+
+You can control how collection counts are serialized.
+
+#### Variable-Size Collections
+For collections that can have a variable number of items, you can specify the data type of the count prefix using `CountType`. By default, `int` (4 bytes) is used.
 
 ```csharp
 [GenerateSerializer]
 public partial class MyPacket
 {
-    // Use ushort (2 bytes) for count
+    // Use ushort (2 bytes) for the count prefix.
     [SerializeCollection(CountType = typeof(ushort))]
     public List<int> Numbers { get; set; } = new();
+}
+```
 
-    // Use custom bit size for count
-    [SerializeCollection(CountSize = 2)] // 2 bytes = 16 bits
+#### Fixed-Size Collections
+For collections with a fixed number of items, you can use `CountSize`. This tells the serializer to always read or write a specific number of elements, and **no count prefix is stored** in the binary data. This is useful for fixed-size arrays in network protocols.
+
+```csharp
+[GenerateSerializer]
+public partial class MyPacket
+{
+    // Always serialize exactly 10 names. No count is written to the stream.
+    // If the list has fewer than 10 items, the serializer will throw an exception.
+    // If it has more, only the first 10 will be serialized.
+    [SerializeCollection(CountSize = 10)]
     public List<string> Names { get; set; } = new();
 }
 ```
@@ -328,8 +344,23 @@ In this mode:
 
 ### Collections
 
-- `List<T>` where T is any supported type
-- Arrays (planned)
+The generator supports a wide range of collection types. `T` can be any supported primitive, custom struct/class, or polymorphic type.
+
+- `List<T>`
+- `T[]` (Arrays)
+- `ICollection<T>`
+- `IEnumerable<T>`
+- `IList<T>`
+- `IReadOnlyCollection<T>`
+- `IReadOnlyList<T>`
+- `System.Collections.ObjectModel.Collection<T>`
+- `System.Collections.ObjectModel.ObservableCollection<T>`
+- `System.Collections.Concurrent.ConcurrentBag<T>`
+- `HashSet<T>`
+- `Queue<T>`
+- `Stack<T>`
+- `LinkedList<T>`
+- `SortedSet<T>`
 
 ### Custom Types
 
