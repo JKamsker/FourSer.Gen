@@ -37,4 +37,10 @@
     <EmbeddedResource Include="Resources\**\*.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FourSer.Analyzers\FourSer.Analyzers\FourSer.Analyzers\FourSer.Analyzers.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
 </Project>
