@@ -189,7 +189,7 @@ internal static class TypeInfoProvider
 
         var originalDefinition = namedTypeSymbol.OriginalDefinition.ToDisplayString();
         var genericElementType = namedTypeSymbol.TypeArguments[0];
-        
+
         string? concreteTypeName = null;
         bool isCollection = false;
 

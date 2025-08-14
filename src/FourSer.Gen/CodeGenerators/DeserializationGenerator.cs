@@ -1,4 +1,5 @@
 using System.Text;
+using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 
@@ -49,51 +50,23 @@ public static class DeserializationGenerator
         }
         else if (member.IsUnmanagedType)
         {
-            var typeName = GetMethodFriendlyTypeName(member.TypeName);
+            var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
             var readMethod = $"Read{typeName}";
             sb.AppendLine($"        obj.{member.Name} = data.{readMethod}();");
         }
     }
 
-    private static string GetMethodFriendlyTypeName(string typeName)
-    {
-        return typeName switch
-        {
-            "int" => "Int32",
-            "uint" => "UInt32",
-            "short" => "Int16",
-            "ushort" => "UInt16",
-            "long" => "Int64",
-            "ulong" => "UInt64",
-            "byte" => "Byte",
-            "float" => "Single",
-            "bool" => "Boolean",
-            "double" => "Double",
-            _ => TypeHelper.GetMethodFriendlyTypeName(typeName)
-        };
-    }
-
-    private static bool ShouldUsePolymorphicSerialization(MemberToGenerate member)
-    {
-        // Only use polymorphic logic if explicitly configured
-        if (member.CollectionInfo?.PolymorphicMode != PolymorphicMode.None)
-            return true;
-            
-        // Or if SerializePolymorphic attribute is present with actual options
-        if (member.PolymorphicInfo?.Options.IsEmpty == false)
-            return true;
-            
-        return false;
-    }
-
     private static void GenerateCollectionDeserialization(StringBuilder sb, MemberToGenerate member)
     {
+        if (member.CollectionInfo is null) return;
+
         // Determine the count type to use
         var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
         var countReadMethod = TypeHelper.GetReadMethodName(countType);
-        
-        sb.AppendLine($"        var {member.Name}Count = data.{countReadMethod}();");
-        
+        var countVar = $"{member.Name}Count";
+
+        sb.AppendLine($"        var {countVar} = data.{countReadMethod}();");
+
         var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
         var isByteCollection = TypeHelper.IsByteCollection(elementTypeName);
 
@@ -103,50 +76,30 @@ public static class DeserializationGenerator
             if (member.CollectionTypeInfo?.IsArray == true)
             {
                 // If the target is already a byte array, read directly into it.
-                sb.AppendLine($"        obj.{member.Name} = new byte[{member.Name}Count];");
+                sb.AppendLine($"        obj.{member.Name} = new byte[{countVar}];");
                 sb.AppendLine($"        data.ReadBytes(obj.{member.Name});");
             }
             else if (member.CollectionTypeInfo?.CollectionTypeName == "System.Collections.Generic.List<T>")
             {
-                sb.AppendLine($"        obj.{member.Name} = data.ReadBytes({member.Name}Count).ToList();");
+                sb.AppendLine($"        obj.{member.Name} = data.ReadBytes({countVar}).ToList();");
             }
             else
             {
                 // For any other collection type (IEnumerable<byte>, List<byte>, etc.),
                 // creating a byte[] is the most efficient concrete type.
-                sb.AppendLine($"        obj.{member.Name} = data.ReadBytes({member.Name}Count);");
+                sb.AppendLine($"        obj.{member.Name} = data.ReadBytes({countVar});");
             }
             return; // We're done with this member.
         }
 
         // For non-byte collections, we instantiate them upfront with capacity if possible.
-        if (member.CollectionTypeInfo?.IsArray == true)
-        {
-            sb.AppendLine($"        obj.{member.Name} = new {elementTypeName}[{member.Name}Count];");
-        }
-        else if (member.CollectionTypeInfo?.ConcreteTypeName != null)
-        {
-            var concreteTypeName = member.CollectionTypeInfo.Value.ConcreteTypeName;
-            // Temp variable needed for interface types
-            if (SupportsCapacityConstructor(concreteTypeName))
-            {
-                sb.AppendLine($"        var temp{member.Name} = new {concreteTypeName}<{elementTypeName}>({member.Name}Count);");
-            }
-            else
-            {
-                sb.AppendLine($"        var temp{member.Name} = new {concreteTypeName}<{elementTypeName}>();");
-            }
-        }
-        else
-        {
-            sb.AppendLine($"        obj.{member.Name} = new System.Collections.Generic.List<{elementTypeName}>({member.Name}Count);");
-        }
+        sb.AppendLine($"        {CollectionUtilities.GenerateCollectionInstantiation(member, countVar)}");
 
-        if (ShouldUsePolymorphicSerialization(member))
+        if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
             if (member.CollectionInfo.Value.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
             {
-                sb.AppendLine($"        for (int i = 0; i < {member.Name}Count; i++)");
+                sb.AppendLine($"        for (int i = 0; i < {countVar}; i++)");
                 sb.AppendLine("        {");
                 sb.AppendLine($"            {member.ListTypeArgument!.Value.TypeName} item;");
                 var itemMember = new MemberToGenerate(
@@ -187,10 +140,10 @@ public static class DeserializationGenerator
                     {
                         key = $"{info.TypeIdType}.{key}";
                     }
-                    
+
                     sb.AppendLine($"            case {key}:");
                     sb.AppendLine("            {");
-                    sb.AppendLine($"                for (int i = 0; i < {member.Name}Count; i++)");
+                    sb.AppendLine($"                for (int i = 0; i < {countVar}; i++)");
                     sb.AppendLine("                {");
                     sb.AppendLine($"                    var item = {TypeHelper.GetSimpleTypeName(option.Type)}.Deserialize(data, out var itemBytesRead);");
                     sb.AppendLine($"                    obj.{member.Name}.Add(item);");
@@ -206,12 +159,12 @@ public static class DeserializationGenerator
                 return;
             }
         }
-        
-        sb.AppendLine($"        for (int i = 0; i < {member.Name}Count; i++)");
+
+        sb.AppendLine($"        for (int i = 0; i < {countVar}; i++)");
         sb.AppendLine("        {");
 
         var collectionTarget = member.CollectionTypeInfo?.ConcreteTypeName != null ? $"temp{member.Name}" : $"obj.{member.Name}";
-        
+
         if (member.CollectionTypeInfo?.IsArray == true)
         {
             GenerateArrayElementDeserialization(sb, member.CollectionTypeInfo.Value, member.Name, "i");
@@ -226,57 +179,39 @@ public static class DeserializationGenerator
         }
 
         sb.AppendLine("        }");
-        
+
         // Assign temporary collection to the actual property if needed
-        if (member.CollectionTypeInfo?.ConcreteTypeName != null)
+        var assignment = CollectionUtilities.GenerateCollectionAssignment(member, $"temp{member.Name}");
+        if (!string.IsNullOrEmpty(assignment))
         {
-            sb.AppendLine($"        obj.{member.Name} = temp{member.Name};");
+            sb.AppendLine($"        {assignment}");
         }
     }
 
     private static void GeneratePolymorphicDeserialization(StringBuilder sb, MemberToGenerate member)
     {
         var info = member.PolymorphicInfo!.Value;
-        var typeIdProperty = info.TypeIdProperty;
         var bytesReadVar = $"{member.Name}BytesRead";
 
         sb.AppendLine($"        int {bytesReadVar};");
         sb.AppendLine($"        obj.{member.Name} = default;");
 
-        string typeIdVar = $"obj.{typeIdProperty}";
-        if (string.IsNullOrEmpty(typeIdProperty))
-        {
-            var typeIdTypeName = GetMethodFriendlyTypeName(info.EnumUnderlyingType ?? info.TypeIdType);
-            sb.AppendLine($"        var typeId = data.Read{typeIdTypeName}();");
-            typeIdVar = "typeId";
-        }
-        
-        sb.AppendLine($"        switch (({info.TypeIdType}){typeIdVar})");
-        sb.AppendLine("        {");
+        var switchVar = PolymorphicUtilities.GenerateTypeIdVariable(sb, info, info.TypeIdProperty, isDeserialization: true);
 
-        foreach (var option in info.Options)
-        {
-            var key = option.Key.ToString();
-            if (info.EnumUnderlyingType is not null)
+        PolymorphicUtilities.GeneratePolymorphicSwitch(sb, info, switchVar,
+            caseHandler: (option, key) =>
             {
-                key = $"({info.TypeIdType}){key}";
-            }
-            else if (info.TypeIdType.EndsWith("Enum"))
+                sb.AppendLine($"                obj.{member.Name} = {TypeHelper.GetSimpleTypeName(option.Type)}.Deserialize(data, out {bytesReadVar});");
+                sb.AppendLine($"                data = data.Slice({bytesReadVar});");
+                sb.AppendLine("                break;");
+            },
+            defaultCaseHandler: () =>
             {
-                key = $"{info.TypeIdType}.{key}";
-            }
-
-
-            sb.AppendLine($"            case {key}:");
-            sb.AppendLine($"                obj.{member.Name} = {TypeHelper.GetSimpleTypeName(option.Type)}.Deserialize(data, out {bytesReadVar});");
-            sb.AppendLine($"                data = data.Slice({bytesReadVar});");
-            sb.AppendLine("                break;");
-        }
-
-        sb.AppendLine("            default:");
-        sb.AppendLine($"                throw new System.IO.InvalidDataException($\"Unknown type id for {member.Name}: {{{typeIdVar}}}\");");
-        sb.AppendLine("        }");
+                sb.AppendLine($"                throw new System.IO.InvalidDataException($\"Unknown type id for {member.Name}: {{{switchVar}}}\");");
+            },
+            indent: "        ");
     }
+
     private static void GeneratePolymorphicItemDeserialization(StringBuilder sb, MemberToGenerate member, string assignmentTarget)
     {
         var info = member.PolymorphicInfo!.Value;
@@ -284,41 +219,27 @@ public static class DeserializationGenerator
 
         sb.AppendLine($"            int {bytesReadVar};");
 
-        var typeIdTypeName = GetMethodFriendlyTypeName(info.EnumUnderlyingType ?? info.TypeIdType);
-        sb.AppendLine($"            var typeId = data.Read{typeIdTypeName}();");
-        var typeIdVar = "typeId";
+        var switchVar = PolymorphicUtilities.GenerateTypeIdVariable(sb, info, null, isDeserialization: true, indent: "            ");
 
-        sb.AppendLine($"            switch (({info.TypeIdType}){typeIdVar})");
-        sb.AppendLine("            {");
-
-        foreach (var option in info.Options)
-        {
-            var key = option.Key.ToString();
-            if (info.EnumUnderlyingType is not null)
+        PolymorphicUtilities.GeneratePolymorphicSwitch(sb, info, switchVar,
+            caseHandler: (option, key) =>
             {
-                key = $"({info.TypeIdType}){key}";
-            }
-            else if (info.TypeIdType.EndsWith("Enum"))
+                sb.AppendLine($"                    {assignmentTarget} = {TypeHelper.GetSimpleTypeName(option.Type)}.Deserialize(data, out {bytesReadVar});");
+                sb.AppendLine($"                    data = data.Slice({bytesReadVar});");
+                sb.AppendLine("                    break;");
+            },
+            defaultCaseHandler: () =>
             {
-                key = $"{info.TypeIdType}.{key}";
-            }
-
-            sb.AppendLine($"                case {key}:");
-            sb.AppendLine($"                    {assignmentTarget} = {TypeHelper.GetSimpleTypeName(option.Type)}.Deserialize(data, out {bytesReadVar});");
-            sb.AppendLine($"                    data = data.Slice({bytesReadVar});");
-            sb.AppendLine("                    break;");
-        }
-
-        sb.AppendLine("                default:");
-        sb.AppendLine($"                    throw new System.IO.InvalidDataException($\"Unknown type id for {member.Name}: {{{typeIdVar}}}\");");
-        sb.AppendLine("            }");
+                sb.AppendLine($"                    throw new System.IO.InvalidDataException($\"Unknown type id for {member.Name}: {{{switchVar}}}\");");
+            },
+            indent: "            ");
     }
 
     private static void GenerateArrayElementDeserialization(StringBuilder sb, CollectionTypeInfo elementInfo, string arrayName, string indexVar)
     {
         if (elementInfo.IsElementUnmanagedType)
         {
-            var typeName = GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
+            var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
             sb.AppendLine($"            obj.{arrayName}[{indexVar}] = data.Read{typeName}();");
         }
         else if (elementInfo.IsElementStringType)
@@ -341,7 +262,7 @@ public static class DeserializationGenerator
         }
         else if (elementInfo.IsUnmanagedType)
         {
-            var typeName = GetMethodFriendlyTypeName(elementInfo.TypeName);
+            var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.TypeName);
             sb.AppendLine($"            {collectionTarget}.Add(data.Read{typeName}());");
         }
         else if (elementInfo.IsStringType)
@@ -352,11 +273,11 @@ public static class DeserializationGenerator
 
     private static void GenerateCollectionElementDeserialization(StringBuilder sb, CollectionTypeInfo elementInfo, string collectionTarget)
     {
-        var addMethod = GetCollectionAddMethod(elementInfo.CollectionTypeName);
-        
+        var addMethod = CollectionUtilities.GetCollectionAddMethod(elementInfo.CollectionTypeName);
+
         if (elementInfo.IsElementUnmanagedType)
         {
-            var typeName = GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
+            var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
             sb.AppendLine($"            {collectionTarget}.{addMethod}(data.Read{typeName}());");
         }
         else if (elementInfo.IsElementStringType)
@@ -368,54 +289,5 @@ public static class DeserializationGenerator
             sb.AppendLine($"            {collectionTarget}.{addMethod}({TypeHelper.GetSimpleTypeName(elementInfo.ElementTypeName)}.Deserialize(data, out var itemBytesRead));");
             sb.AppendLine($"            data = data.Slice(itemBytesRead);");
         }
-    }
-
-    private static string GetCollectionAddMethod(string collectionTypeName)
-    {
-        return collectionTypeName switch
-        {
-            "System.Collections.Generic.Queue<T>" => "Enqueue",
-            "System.Collections.Generic.Stack<T>" => "Push",
-            "System.Collections.Generic.LinkedList<T>" => "AddLast",
-            _ => "Add"
-        };
-    }
-
-    private static bool SupportsCapacityConstructor(string collectionTypeName)
-    {
-        return collectionTypeName switch
-        {
-            "System.Collections.Generic.List" => true,
-            "System.Collections.Generic.HashSet" => true,
-            "System.Collections.Generic.SortedSet" => false,
-            "System.Collections.Generic.Queue" => true,
-            "System.Collections.Generic.Stack" => true,
-            "System.Collections.ObjectModel.Collection" => false, // No capacity constructor
-            "System.Collections.ObjectModel.ObservableCollection" => false, // No capacity constructor
-            "System.Collections.Concurrent.ConcurrentBag" => false, // No capacity constructor
-            "System.Collections.Generic.LinkedList" => false, // No capacity constructor
-            _ => false
-        };
-    }
-
-    private static string GetCountExpression(MemberToGenerate member, string memberName)
-    {
-        // Arrays use .Length property
-        if (member.CollectionTypeInfo?.IsArray == true)
-        {
-            return $"obj.{memberName}.Length";
-        }
-        
-        // IEnumerable and interface types that need Count() method
-        if (member.CollectionTypeInfo?.CollectionTypeName?.Contains("IEnumerable") == true ||
-            member.CollectionTypeInfo?.CollectionTypeName?.Contains("ICollection") == true ||
-            member.CollectionTypeInfo?.CollectionTypeName?.Contains("IList") == true)
-        {
-            return $"obj.{memberName}.Count()";
-        }
-        
-        // Most concrete collection types use .Count property
-        // List<T>, HashSet<T>, Queue<T>, Stack<T>, ConcurrentBag<T>, LinkedList<T>, Collection<T>, etc.
-        return $"obj.{memberName}.Count";
     }
 }

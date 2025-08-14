@@ -1,4 +1,5 @@
 using System.Text;
+using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 
@@ -82,53 +83,24 @@ public static class SerializationGenerator
         }
         else if (member.IsUnmanagedType)
         {
-            var typeName = GetMethodFriendlyTypeName(member.TypeName);
+            var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
             var writeMethod = $"Write{typeName}";
             sb.AppendLine($"        data.{writeMethod}(({typeName})obj.{member.Name});");
         }
     }
 
-    private static string GetMethodFriendlyTypeName(string typeName)
-    {
-        return typeName switch
-        {
-            "int" => "Int32",
-            "uint" => "UInt32",
-            "short" => "Int16",
-            "ushort" => "UInt16",
-            "long" => "Int64",
-            "ulong" => "UInt64",
-            "byte" => "Byte",
-            "float" => "Single",
-            "bool" => "Boolean",
-            "double" => "Double",
-            _ => TypeHelper.GetMethodFriendlyTypeName(typeName)
-        };
-    }
-
-    private static bool ShouldUsePolymorphicSerialization(MemberToGenerate member)
-    {
-        // Only use polymorphic logic if explicitly configured
-        if (member.CollectionInfo?.PolymorphicMode != PolymorphicMode.None)
-            return true;
-            
-        // Or if SerializePolymorphic attribute is present with actual options
-        if (member.PolymorphicInfo?.Options.IsEmpty == false)
-            return true;
-            
-        return false;
-    }
-
     private static void GenerateCollectionSerialization(StringBuilder sb, MemberToGenerate member)
     {
+        if (member.CollectionInfo is null) return;
+
         // Determine the count type to use
         var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
         var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
-        
-        var countExpression = GetCountExpression(member, member.Name);
+
+        var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
         sb.AppendLine($"        data.{countWriteMethod}(({countType}){countExpression});");
 
-        if (ShouldUsePolymorphicSerialization(member))
+        if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
             if (member.CollectionInfo.Value.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
             {
@@ -175,7 +147,7 @@ public static class SerializationGenerator
                     {
                         key = $"{info.TypeIdType}.{key}";
                     }
-                    
+
                     sb.AppendLine($"            case {key}:");
                     sb.AppendLine("            {");
                     sb.AppendLine($"                foreach(var item in obj.{member.Name})");
@@ -208,7 +180,7 @@ public static class SerializationGenerator
             // Use foreach for all collection types, indexer access only for List and Array
             if (member.CollectionTypeInfo?.IsArray == true || member.IsList)
             {
-                var loopCountExpression = GetCountExpression(member, member.Name);
+                var loopCountExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
                 sb.AppendLine($"        for (int i = 0; i < {loopCountExpression}; i++)");
                 sb.AppendLine("        {");
                 if (member.ListTypeArgument is not null)
@@ -250,19 +222,7 @@ public static class SerializationGenerator
 
             if (string.IsNullOrEmpty(info.TypeIdProperty))
             {
-                var key = option.Key.ToString();
-                if (info.EnumUnderlyingType is not null)
-                {
-                    key = $"({info.TypeIdType}){key}";
-                }
-                else if (info.TypeIdType.EndsWith("Enum"))
-                {
-                    key = $"{info.TypeIdType}.{key}";
-                }
-                
-                var underlyingType = info.EnumUnderlyingType ?? info.TypeIdType;
-                var typeIdTypeName = GetMethodFriendlyTypeName(underlyingType);
-                sb.AppendLine($"                data.Write{typeIdTypeName}(({underlyingType}){key});");
+                sb.AppendLine(PolymorphicUtilities.GenerateWriteTypeIdCode(option, info));
             }
 
             sb.AppendLine($"                {bytesWrittenVar} = {typeName}.Serialize(typedInstance, data);");
@@ -291,18 +251,7 @@ public static class SerializationGenerator
 
             if (string.IsNullOrEmpty(info.TypeIdProperty))
             {
-                var key = option.Key.ToString();
-                if (info.EnumUnderlyingType is not null)
-                {
-                    key = $"({info.TypeIdType}){key}";
-                }
-                else if (info.TypeIdType.EndsWith("Enum"))
-                {
-                    key = $"{info.TypeIdType}.{key}";
-                }
-                var underlyingType = info.EnumUnderlyingType ?? info.TypeIdType;
-                var typeIdTypeName = GetMethodFriendlyTypeName(underlyingType);
-                sb.AppendLine($"                    data.Write{typeIdTypeName}(({underlyingType}){key});");
+                sb.AppendLine(PolymorphicUtilities.GenerateWriteTypeIdCode(option, info, "                    "));
             }
 
             sb.AppendLine($"                    {bytesWrittenVar} = {typeName}.Serialize(typedInstance, data);");
@@ -326,7 +275,7 @@ public static class SerializationGenerator
         }
         else if (elementInfo.IsUnmanagedType)
         {
-            var typeName = GetMethodFriendlyTypeName(elementInfo.TypeName);
+            var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.TypeName);
             sb.AppendLine($"            data.Write{typeName}(({typeName}){elementAccess});");
         }
         else if (elementInfo.IsStringType)
@@ -339,7 +288,7 @@ public static class SerializationGenerator
     {
         if (elementInfo.IsElementUnmanagedType)
         {
-            var typeName = GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
+            var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
             sb.AppendLine($"            data.Write{typeName}(({typeName}){elementAccess});");
         }
         else if (elementInfo.IsElementStringType)
@@ -351,26 +300,5 @@ public static class SerializationGenerator
             sb.AppendLine($"            var bytesWritten = {TypeHelper.GetSimpleTypeName(elementInfo.ElementTypeName)}.Serialize({elementAccess}, data);");
             sb.AppendLine($"            data = data.Slice(bytesWritten);");
         }
-    }
-
-    private static string GetCountExpression(MemberToGenerate member, string memberName)
-    {
-        // Arrays use .Length property
-        if (member.CollectionTypeInfo?.IsArray == true)
-        {
-            return $"obj.{memberName}.Length";
-        }
-        
-        // IEnumerable and interface types that need Count() method
-        if (member.CollectionTypeInfo?.CollectionTypeName?.Contains("IEnumerable") == true ||
-            member.CollectionTypeInfo?.CollectionTypeName?.Contains("ICollection") == true ||
-            member.CollectionTypeInfo?.CollectionTypeName?.Contains("IList") == true)
-        {
-            return $"obj.{memberName}.Count()";
-        }
-        
-        // Most concrete collection types use .Count property
-        // List<T>, HashSet<T>, Queue<T>, Stack<T>, ConcurrentBag<T>, LinkedList<T>, Collection<T>, etc.
-        return $"obj.{memberName}.Count";
     }
 }

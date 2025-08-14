@@ -1,4 +1,5 @@
 using System.Text;
+using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 
@@ -26,10 +27,7 @@ public static class PacketSizeGenerator
                 var info = member.PolymorphicInfo.Value;
                 if (string.IsNullOrEmpty(info.TypeIdProperty))
                 {
-                    var typeIdSize = info.EnumUnderlyingType is not null
-                        ? $"sizeof({info.EnumUnderlyingType})"
-                        : $"sizeof({info.TypeIdType})";
-                    sb.AppendLine($"        size += {typeIdSize};");
+                    sb.AppendLine($"        size += {PolymorphicUtilities.GenerateTypeIdSizeExpression(info)};");
                 }
                 GeneratePolymorphicSizeCalculation(sb, member);
             }
@@ -51,38 +49,24 @@ public static class PacketSizeGenerator
         sb.AppendLine("    }");
     }
 
-    private static bool ShouldUsePolymorphicSerialization(MemberToGenerate member)
-    {
-        // Only use polymorphic logic if explicitly configured
-        if (member.CollectionInfo?.PolymorphicMode != PolymorphicMode.None)
-            return true;
-            
-        // Or if SerializePolymorphic attribute is present with actual options
-        if (member.PolymorphicInfo?.Options.IsEmpty == false)
-            return true;
-            
-        return false;
-    }
-
     private static void GenerateCollectionSizeCalculation(StringBuilder sb, MemberToGenerate member)
     {
+        if (member.CollectionInfo is null) return;
+
         // Determine the count type to use
         var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
         var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
-        
+
         sb.AppendLine($"        size += {countSizeExpression}; // Count size for {member.Name}");
 
-        if (ShouldUsePolymorphicSerialization(member))
+        if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
             sb.AppendLine($"        foreach(var item in obj.{member.Name})");
             sb.AppendLine("        {");
             var info = member.PolymorphicInfo.Value;
             if (string.IsNullOrEmpty(info.TypeIdProperty))
             {
-                var typeIdSize = info.EnumUnderlyingType is not null
-                    ? $"sizeof({info.EnumUnderlyingType})"
-                    : $"sizeof({info.TypeIdType})";
-                sb.AppendLine($"            size += {typeIdSize};");
+                sb.AppendLine($"            size += {PolymorphicUtilities.GenerateTypeIdSizeExpression(info)};");
             }
             var itemMember = new MemberToGenerate(
                 "item",
@@ -115,7 +99,7 @@ public static class PacketSizeGenerator
             }
             else if (typeArg.IsUnmanagedType)
             {
-                var countExpression = GetCountExpression(member, member.Name);
+                var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
                 sb.AppendLine($"        size += {countExpression} * sizeof({typeArg.TypeName});");
             }
             else if (typeArg.IsStringType)
@@ -128,7 +112,7 @@ public static class PacketSizeGenerator
             var collectionInfo = member.CollectionTypeInfo.Value;
             if (collectionInfo.IsElementUnmanagedType)
             {
-                var countExpression = GetCountExpression(member, member.Name);
+                var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
                 sb.AppendLine($"        size += {countExpression} * sizeof({collectionInfo.ElementTypeName});");
             }
             else if (collectionInfo.IsElementStringType)
@@ -153,7 +137,7 @@ public static class PacketSizeGenerator
         }
 
         var info = member.PolymorphicInfo!.Value;
-        
+
         sb.AppendLine($"        switch ({instanceName})");
         sb.AppendLine("        {");
 
@@ -164,31 +148,10 @@ public static class PacketSizeGenerator
             sb.AppendLine($"                size += {typeName}.GetPacketSize(typedInstance);");
             sb.AppendLine("                break;");
         }
-        
+
         sb.AppendLine("            case null: break;");
         sb.AppendLine("            default:");
         sb.AppendLine($"                throw new System.IO.InvalidDataException($\"Unknown type for {member.Name}: {{{instanceName}?.GetType().FullName}}\");");
         sb.AppendLine("        }");
-    }
-
-    private static string GetCountExpression(MemberToGenerate member, string memberName)
-    {
-        // Arrays use .Length property
-        if (member.CollectionTypeInfo?.IsArray == true)
-        {
-            return $"obj.{memberName}.Length";
-        }
-        
-        // IEnumerable and interface types that need Count() method
-        if (member.CollectionTypeInfo?.CollectionTypeName?.Contains("IEnumerable") == true ||
-            member.CollectionTypeInfo?.CollectionTypeName?.Contains("ICollection") == true ||
-            member.CollectionTypeInfo?.CollectionTypeName?.Contains("IList") == true)
-        {
-            return $"obj.{memberName}.Count()";
-        }
-        
-        // Most concrete collection types use .Count property
-        // List<T>, HashSet<T>, Queue<T>, Stack<T>, ConcurrentBag<T>, LinkedList<T>, Collection<T>, etc.
-        return $"obj.{memberName}.Count";
     }
 }
