@@ -7,17 +7,17 @@ using System.Runtime.InteropServices;
 
 namespace FourSer.Gen.Helpers;
 
-internal static class SpanWriterExtensions
+internal static class SpanWriterHelpers
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteByte(this ref Span<byte> input, byte value)
+    public static void WriteByte(ref Span<byte> input, byte value)
     {
         var original = Advance<byte>(ref input);
         original[0] = value;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteSByte(this ref Span<byte> input, sbyte value)
+    public static void WriteSByte(ref Span<byte> input, sbyte value)
     {
         var original = Advance<sbyte>(ref input);
         original[0] = (byte)value;
@@ -29,7 +29,7 @@ internal static class SpanWriterExtensions
     /// <param name="input"></param>
     /// <param name="value"></param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteUInt32(this ref Span<byte> input, uint value)
+    public static void WriteUInt32(ref Span<byte> input, uint value)
     {
         var original = Advance<uint>(ref input);
         original[0] = (byte)value;
@@ -44,10 +44,10 @@ internal static class SpanWriterExtensions
     /// <param name="input"></param>
     /// <param name="value"></param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void WriteSingle(this ref Span<byte> input, float value) => input.WriteUInt32(*(uint*)&value);
+    public static unsafe void WriteSingle(ref Span<byte> input, float value) => WriteUInt32(ref input, *(uint*)&value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void WriteDouble(this ref Span<byte> input, double value) => input.WriteUInt64(*(ulong*)&value);
+    public static unsafe void WriteDouble(ref Span<byte> input, double value) => WriteUInt64(ref input, *(ulong*)&value);
 
     /// <summary>
     /// Copied from <see cref="BinaryWriter.Write(ushort)"/>
@@ -55,7 +55,7 @@ internal static class SpanWriterExtensions
     /// <param name="input"></param>
     /// <param name="value"></param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteUInt16(this ref Span<byte> input, ushort value)
+    public static void WriteUInt16(ref Span<byte> input, ushort value)
     {
         var original = Advance<ushort>(ref input);
         original[0] = (byte)value;
@@ -63,7 +63,7 @@ internal static class SpanWriterExtensions
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteInt16(this ref Span<byte> input, short value)
+    public static void WriteInt16(ref Span<byte> input, short value)
     {
         var original = Advance<short>(ref input);
         original[0] = (byte)value;
@@ -76,7 +76,7 @@ internal static class SpanWriterExtensions
     /// <param name="input"></param>
     /// <param name="value"></param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteUInt64(this ref Span<byte> input, ulong value)
+    public static void WriteUInt64(ref Span<byte> input, ulong value)
     {
         var original = Advance<ulong>(ref input);
         original[0] = (byte)value;
@@ -95,7 +95,7 @@ internal static class SpanWriterExtensions
     /// <param name="input"></param>
     /// <param name="value"></param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteInt64(this ref Span<byte> input, long value)
+    public static void WriteInt64(ref Span<byte> input, long value)
     {
         var original = Advance<long>(ref input);
         original[0] = (byte)value;
@@ -109,7 +109,7 @@ internal static class SpanWriterExtensions
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteBoolean(this ref Span<byte> input, bool value)
+    public static void WriteBoolean(ref Span<byte> input, bool value)
     {
         var original = Advance<byte>(ref input);
         original[0] = (byte)(value ? 1 : 0);
@@ -121,7 +121,7 @@ internal static class SpanWriterExtensions
     /// <param name="input"></param>
     /// <param name="value"></param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteInt32(this ref Span<byte> input, int value)
+    public static void WriteInt32(ref Span<byte> input, int value)
     {
         var original = Advance<int>(ref input);
         original[0] = (byte)value;

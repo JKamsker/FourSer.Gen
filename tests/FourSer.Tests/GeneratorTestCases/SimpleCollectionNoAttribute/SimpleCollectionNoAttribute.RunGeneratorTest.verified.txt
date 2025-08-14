@@ -26,8 +26,8 @@ public partial class MyPacket : ISerializable<MyPacket>
         bytesRead = 0;
         var originalData = data;
         var obj = new MyPacket();
-        var DataCount = data.ReadInt32();
-        obj.Data = data.ReadBytes(DataCount).ToList();
+        var DataCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        obj.Data = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBytes(ref data, DataCount).ToList();
         bytesRead = originalData.Length - data.Length;
         return obj;
     }
@@ -35,8 +35,8 @@ public partial class MyPacket : ISerializable<MyPacket>
     public static int Serialize(MyPacket obj, System.Span<byte> data)
     {
         var originalData = data;
-        data.WriteInt32((int)obj.Data.Count);
-        data.WriteBytes(obj.Data);
+        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Data.Count);
+        FourSer.Gen.Helpers.SpanWriterHelpers.WriteBytes(ref data, obj.Data);
         return originalData.Length - data.Length;
     }
 }
