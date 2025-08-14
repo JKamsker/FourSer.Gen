@@ -58,111 +58,111 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         bytesRead = 0;
         var originalData = data;
         var obj = new EnumerationTypesPacket();
-        var NumbersCount = data.ReadInt32();
+        var NumbersCount = RoSpanReaderHelpers.ReadInt32(ref data);
         obj.Numbers = new System.Collections.Generic.List<int>(NumbersCount);
         for (int i = 0; i < NumbersCount; i++)
         {
-            obj.Numbers.Add(data.ReadInt32());
+            obj.Numbers.Add(RoSpanReaderHelpers.ReadInt32(ref data));
         }
-        var NamesCount = data.ReadInt32();
+        var NamesCount = RoSpanReaderHelpers.ReadInt32(ref data);
         var tempNames = new System.Collections.Generic.List<string>(NamesCount);
         for (int i = 0; i < NamesCount; i++)
         {
-            tempNames.Add(data.ReadString());
+            tempNames.Add(RoSpanReaderHelpers.ReadString(ref data));
         }
         obj.Names = tempNames;
-        var DataCount = data.ReadInt32();
-        obj.Data = data.ReadBytes(DataCount);
-        var Data1Count = data.ReadInt32();
-        obj.Data1 = data.ReadBytes(Data1Count).ToList();
-        var ValuesCount = data.ReadInt32();
+        var DataCount = RoSpanReaderHelpers.ReadInt32(ref data);
+        obj.Data = RoSpanReaderHelpers.ReadBytes(ref data, DataCount);
+        var Data1Count = RoSpanReaderHelpers.ReadInt32(ref data);
+        obj.Data1 = RoSpanReaderHelpers.ReadBytes(ref data, Data1Count).ToList();
+        var ValuesCount = RoSpanReaderHelpers.ReadInt32(ref data);
         var tempValues = new System.Collections.Concurrent.ConcurrentBag<float>();
         for (int i = 0; i < ValuesCount; i++)
         {
-            tempValues.Add(data.ReadSingle());
+            tempValues.Add(RoSpanReaderHelpers.ReadSingle(ref data));
         }
         obj.Values = tempValues;
-        var UniqueIdsCount = data.ReadInt32();
+        var UniqueIdsCount = RoSpanReaderHelpers.ReadInt32(ref data);
         var tempUniqueIds = new System.Collections.Generic.HashSet<long>(UniqueIdsCount);
         for (int i = 0; i < UniqueIdsCount; i++)
         {
-            tempUniqueIds.Add(data.ReadInt64());
+            tempUniqueIds.Add(RoSpanReaderHelpers.ReadInt64(ref data));
         }
         obj.UniqueIds = tempUniqueIds;
-        var ProcessingQueueCount = data.ReadInt32();
+        var ProcessingQueueCount = RoSpanReaderHelpers.ReadInt32(ref data);
         var tempProcessingQueue = new System.Collections.Generic.Queue<ushort>(ProcessingQueueCount);
         for (int i = 0; i < ProcessingQueueCount; i++)
         {
-            tempProcessingQueue.Enqueue(data.ReadUInt16());
+            tempProcessingQueue.Enqueue(RoSpanReaderHelpers.ReadUInt16(ref data));
         }
         obj.ProcessingQueue = tempProcessingQueue;
-        var ProcessingStackCount = data.ReadInt32();
+        var ProcessingStackCount = RoSpanReaderHelpers.ReadInt32(ref data);
         var tempProcessingStack = new System.Collections.Generic.Stack<uint>(ProcessingStackCount);
         for (int i = 0; i < ProcessingStackCount; i++)
         {
-            tempProcessingStack.Push(data.ReadUInt32());
+            tempProcessingStack.Push(RoSpanReaderHelpers.ReadUInt32(ref data));
         }
         obj.ProcessingStack = tempProcessingStack;
-        var ArrayDataCount = data.ReadInt32();
+        var ArrayDataCount = RoSpanReaderHelpers.ReadInt32(ref data);
         obj.ArrayData = new int[ArrayDataCount];
         for (int i = 0; i < ArrayDataCount; i++)
         {
-            obj.ArrayData[i] = data.ReadInt32();
+            obj.ArrayData[i] = RoSpanReaderHelpers.ReadInt32(ref data);
         }
-        var MeasurementsCount = data.ReadInt32();
+        var MeasurementsCount = RoSpanReaderHelpers.ReadInt32(ref data);
         var tempMeasurements = new System.Collections.Generic.List<double>(MeasurementsCount);
         for (int i = 0; i < MeasurementsCount; i++)
         {
-            tempMeasurements.Add(data.ReadDouble());
+            tempMeasurements.Add(RoSpanReaderHelpers.ReadDouble(ref data));
         }
         obj.Measurements = tempMeasurements;
-        var FlagsCount = data.ReadInt32();
+        var FlagsCount = RoSpanReaderHelpers.ReadInt32(ref data);
         var tempFlags = new System.Collections.ObjectModel.Collection<bool>();
         for (int i = 0; i < FlagsCount; i++)
         {
-            tempFlags.Add(data.ReadBoolean());
+            tempFlags.Add(RoSpanReaderHelpers.ReadBoolean(ref data));
         }
         obj.Flags = tempFlags;
-        var ObservableDataCount = data.ReadInt32();
+        var ObservableDataCount = RoSpanReaderHelpers.ReadInt32(ref data);
         var tempObservableData = new System.Collections.ObjectModel.ObservableCollection<short>();
         for (int i = 0; i < ObservableDataCount; i++)
         {
-            tempObservableData.Add(data.ReadInt16());
+            tempObservableData.Add(RoSpanReaderHelpers.ReadInt16(ref data));
         }
         obj.ObservableData = tempObservableData;
-        var CharactersCount = data.ReadInt32();
+        var CharactersCount = RoSpanReaderHelpers.ReadInt32(ref data);
         var tempCharacters = new System.Collections.Generic.LinkedList<ushort>();
         for (int i = 0; i < CharactersCount; i++)
         {
-            tempCharacters.AddLast(data.ReadUInt16());
+            tempCharacters.AddLast(RoSpanReaderHelpers.ReadUInt16(ref data));
         }
         obj.Characters = tempCharacters;
-        var SortedValuesCount = data.ReadInt32();
+        var SortedValuesCount = RoSpanReaderHelpers.ReadInt32(ref data);
         var tempSortedValues = new System.Collections.Generic.SortedSet<long>();
         for (int i = 0; i < SortedValuesCount; i++)
         {
-            tempSortedValues.Add(data.ReadInt64());
+            tempSortedValues.Add(RoSpanReaderHelpers.ReadInt64(ref data));
         }
         obj.SortedValues = tempSortedValues;
-        var SmallSetCount = data.ReadByte();
+        var SmallSetCount = RoSpanReaderHelpers.ReadByte(ref data);
         var tempSmallSet = new System.Collections.Generic.HashSet<string>(SmallSetCount);
         for (int i = 0; i < SmallSetCount; i++)
         {
-            tempSmallSet.Add(data.ReadString());
+            tempSmallSet.Add(RoSpanReaderHelpers.ReadString(ref data));
         }
         obj.SmallSet = tempSmallSet;
-        var MediumQueueCount = data.ReadUInt16();
+        var MediumQueueCount = RoSpanReaderHelpers.ReadUInt16(ref data);
         var tempMediumQueue = new System.Collections.Generic.Queue<int>(MediumQueueCount);
         for (int i = 0; i < MediumQueueCount; i++)
         {
-            tempMediumQueue.Enqueue(data.ReadInt32());
+            tempMediumQueue.Enqueue(RoSpanReaderHelpers.ReadInt32(ref data));
         }
         obj.MediumQueue = tempMediumQueue;
-        var LargeBagCount = data.ReadInt32();
+        var LargeBagCount = RoSpanReaderHelpers.ReadInt32(ref data);
         var tempLargeBag = new System.Collections.Concurrent.ConcurrentBag<long>();
         for (int i = 0; i < LargeBagCount; i++)
         {
-            tempLargeBag.Add(data.ReadInt64());
+            tempLargeBag.Add(RoSpanReaderHelpers.ReadInt64(ref data));
         }
         obj.LargeBag = tempLargeBag;
         bytesRead = originalData.Length - data.Length;
@@ -172,84 +172,84 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
     public static int Serialize(EnumerationTypesPacket obj, System.Span<byte> data)
     {
         var originalData = data;
-        data.WriteInt32((int)obj.Numbers.Count);
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.Numbers.Count);
         for (int i = 0; i < obj.Numbers.Count; i++)
         {
-            data.WriteInt32((Int32)obj.Numbers[i]);
+            SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Numbers[i]);
         }
-        data.WriteInt32((int)obj.Names.Count());
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.Names.Count());
         foreach (var item in obj.Names)
         {
-            data.WriteString(item);
+            SpanWriterHelpers.WriteString(ref data, item);
         }
-        data.WriteInt32((int)obj.Data.Count());
-        data.WriteBytes(obj.Data);
-        data.WriteInt32((int)obj.Data1.Count);
-        data.WriteBytes(obj.Data1);
-        data.WriteInt32((int)obj.Values.Count);
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.Data.Count());
+        SpanWriterHelpers.WriteBytes(ref data, obj.Data);
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.Data1.Count);
+        SpanWriterHelpers.WriteBytes(ref data, obj.Data1);
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.Values.Count);
         foreach (var item in obj.Values)
         {
-            data.WriteSingle((Single)item);
+            SpanWriterHelpers.WriteSingle(ref data, (Single)item);
         }
-        data.WriteInt32((int)obj.UniqueIds.Count);
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.UniqueIds.Count);
         foreach (var item in obj.UniqueIds)
         {
-            data.WriteInt64((Int64)item);
+            SpanWriterHelpers.WriteInt64(ref data, (Int64)item);
         }
-        data.WriteInt32((int)obj.ProcessingQueue.Count);
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.ProcessingQueue.Count);
         foreach (var item in obj.ProcessingQueue)
         {
-            data.WriteUInt16((UInt16)item);
+            SpanWriterHelpers.WriteUInt16(ref data, (UInt16)item);
         }
-        data.WriteInt32((int)obj.ProcessingStack.Count);
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.ProcessingStack.Count);
         foreach (var item in obj.ProcessingStack)
         {
-            data.WriteUInt32((UInt32)item);
+            SpanWriterHelpers.WriteUInt32(ref data, (UInt32)item);
         }
-        data.WriteInt32((int)obj.ArrayData.Length);
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.ArrayData.Length);
         for (int i = 0; i < obj.ArrayData.Length; i++)
         {
-            data.WriteInt32((Int32)obj.ArrayData[i]);
+            SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.ArrayData[i]);
         }
-        data.WriteInt32((int)obj.Measurements.Count());
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.Measurements.Count());
         foreach (var item in obj.Measurements)
         {
-            data.WriteDouble((Double)item);
+            SpanWriterHelpers.WriteDouble(ref data, (Double)item);
         }
-        data.WriteInt32((int)obj.Flags.Count);
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.Flags.Count);
         foreach (var item in obj.Flags)
         {
-            data.WriteBoolean((Boolean)item);
+            SpanWriterHelpers.WriteBoolean(ref data, (Boolean)item);
         }
-        data.WriteInt32((int)obj.ObservableData.Count);
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.ObservableData.Count);
         foreach (var item in obj.ObservableData)
         {
-            data.WriteInt16((Int16)item);
+            SpanWriterHelpers.WriteInt16(ref data, (Int16)item);
         }
-        data.WriteInt32((int)obj.Characters.Count);
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.Characters.Count);
         foreach (var item in obj.Characters)
         {
-            data.WriteUInt16((UInt16)item);
+            SpanWriterHelpers.WriteUInt16(ref data, (UInt16)item);
         }
-        data.WriteInt32((int)obj.SortedValues.Count);
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.SortedValues.Count);
         foreach (var item in obj.SortedValues)
         {
-            data.WriteInt64((Int64)item);
+            SpanWriterHelpers.WriteInt64(ref data, (Int64)item);
         }
-        data.WriteByte((byte)obj.SmallSet.Count);
+        SpanWriterHelpers.WriteByte(ref data, (byte)obj.SmallSet.Count);
         foreach (var item in obj.SmallSet)
         {
-            data.WriteString(item);
+            SpanWriterHelpers.WriteString(ref data, item);
         }
-        data.WriteUInt16((ushort)obj.MediumQueue.Count);
+        SpanWriterHelpers.WriteUInt16(ref data, (ushort)obj.MediumQueue.Count);
         foreach (var item in obj.MediumQueue)
         {
-            data.WriteInt32((Int32)item);
+            SpanWriterHelpers.WriteInt32(ref data, (Int32)item);
         }
-        data.WriteInt32((int)obj.LargeBag.Count);
+        SpanWriterHelpers.WriteInt32(ref data, (int)obj.LargeBag.Count);
         foreach (var item in obj.LargeBag)
         {
-            data.WriteInt64((Int64)item);
+            SpanWriterHelpers.WriteInt64(ref data, (Int64)item);
         }
         return originalData.Length - data.Length;
     }

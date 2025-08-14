@@ -28,7 +28,7 @@ namespace FourSer.Gen.CodeGenerators.Core
             var key = FormatTypeIdKey(option.Key, info);
             var underlyingType = info.EnumUnderlyingType ?? info.TypeIdType;
             var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(underlyingType);
-            return $"{indent}data.Write{typeIdTypeName}(({underlyingType}){key});";
+            return $"{indent}SpanWriterHelpers.Write{typeIdTypeName}(ref data, ({underlyingType}){key});";
         }
 
         public static string GenerateTypeIdSizeExpression(PolymorphicInfo info)
@@ -51,7 +51,7 @@ namespace FourSer.Gen.CodeGenerators.Core
             if (isDeserialization)
             {
                 var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(info.EnumUnderlyingType ?? info.TypeIdType);
-                sb.AppendLine($"{indent}var typeId = data.Read{typeIdTypeName}();");
+                sb.AppendLine($"{indent}var typeId = RoSpanReaderHelpers.Read{typeIdTypeName}(ref data);");
                 return "typeId";
             }
 

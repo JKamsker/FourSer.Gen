@@ -46,13 +46,13 @@ public static class DeserializationGenerator
         }
         else if (member.IsStringType)
         {
-            sb.AppendLine($"        obj.{member.Name} = data.ReadString();");
+            sb.AppendLine($"        obj.{member.Name} = RoSpanReaderHelpers.ReadString(ref data);");
         }
         else if (member.IsUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
             var readMethod = $"Read{typeName}";
-            sb.AppendLine($"        obj.{member.Name} = data.{readMethod}();");
+            sb.AppendLine($"        obj.{member.Name} = RoSpanReaderHelpers.{readMethod}(ref data);");
         }
     }
 
@@ -65,7 +65,7 @@ public static class DeserializationGenerator
         var countReadMethod = TypeHelper.GetReadMethodName(countType);
         var countVar = $"{member.Name}Count";
 
-        sb.AppendLine($"        var {countVar} = data.{countReadMethod}();");
+        sb.AppendLine($"        var {countVar} = RoSpanReaderHelpers.{countReadMethod}(ref data);");
 
         var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
         var isByteCollection = TypeHelper.IsByteCollection(elementTypeName);
@@ -77,17 +77,17 @@ public static class DeserializationGenerator
             {
                 // If the target is already a byte array, read directly into it.
                 sb.AppendLine($"        obj.{member.Name} = new byte[{countVar}];");
-                sb.AppendLine($"        data.ReadBytes(obj.{member.Name});");
+                sb.AppendLine($"        RoSpanReaderHelpers.ReadBytes(ref data, obj.{member.Name});");
             }
             else if (member.CollectionTypeInfo?.CollectionTypeName == "System.Collections.Generic.List<T>")
             {
-                sb.AppendLine($"        obj.{member.Name} = data.ReadBytes({countVar}).ToList();");
+                sb.AppendLine($"        obj.{member.Name} = RoSpanReaderHelpers.ReadBytes(ref data, {countVar}).ToList();");
             }
             else
             {
                 // For any other collection type (IEnumerable<byte>, List<byte>, etc.),
                 // creating a byte[] is the most efficient concrete type.
-                sb.AppendLine($"        obj.{member.Name} = data.ReadBytes({countVar});");
+                sb.AppendLine($"        obj.{member.Name} = RoSpanReaderHelpers.ReadBytes(ref data, {countVar});");
             }
             return; // We're done with this member.
         }
@@ -240,11 +240,11 @@ public static class DeserializationGenerator
         if (elementInfo.IsElementUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
-            sb.AppendLine($"            obj.{arrayName}[{indexVar}] = data.Read{typeName}();");
+            sb.AppendLine($"            obj.{arrayName}[{indexVar}] = RoSpanReaderHelpers.Read{typeName}(ref data);");
         }
         else if (elementInfo.IsElementStringType)
         {
-            sb.AppendLine($"            obj.{arrayName}[{indexVar}] = data.ReadString();");
+            sb.AppendLine($"            obj.{arrayName}[{indexVar}] = RoSpanReaderHelpers.ReadString(ref data);");
         }
         else if (elementInfo.HasElementGenerateSerializerAttribute)
         {
@@ -263,11 +263,11 @@ public static class DeserializationGenerator
         else if (elementInfo.IsUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.TypeName);
-            sb.AppendLine($"            {collectionTarget}.Add(data.Read{typeName}());");
+            sb.AppendLine($"            {collectionTarget}.Add(RoSpanReaderHelpers.Read{typeName}(ref data));");
         }
         else if (elementInfo.IsStringType)
         {
-            sb.AppendLine($"            {collectionTarget}.Add(data.ReadString());");
+            sb.AppendLine($"            {collectionTarget}.Add(RoSpanReaderHelpers.ReadString(ref data));");
         }
     }
 
@@ -278,11 +278,11 @@ public static class DeserializationGenerator
         if (elementInfo.IsElementUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
-            sb.AppendLine($"            {collectionTarget}.{addMethod}(data.Read{typeName}());");
+            sb.AppendLine($"            {collectionTarget}.{addMethod}(RoSpanReaderHelpers.Read{typeName}(ref data));");
         }
         else if (elementInfo.IsElementStringType)
         {
-            sb.AppendLine($"            {collectionTarget}.{addMethod}(data.ReadString());");
+            sb.AppendLine($"            {collectionTarget}.{addMethod}(RoSpanReaderHelpers.ReadString(ref data));");
         }
         else if (elementInfo.HasElementGenerateSerializerAttribute)
         {
