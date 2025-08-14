@@ -9,7 +9,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds;
 
 public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndividualTest>
 {
@@ -42,10 +42,10 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         var originalData = data;
         var obj = new PolymorphicIndividualTest();
         var AnimalsCount = data.ReadByte();
-        obj.Animals = new System.Collections.Generic.List<TestNamespace.Animal>(AnimalsCount);
+        obj.Animals = new System.Collections.Generic.List<Serializer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal>(AnimalsCount);
         for (int i = 0; i < AnimalsCount; i++)
         {
-            TestNamespace.Animal item;
+            Serializer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal item;
             int itemBytesRead;
             var typeId = data.ReadByte();
             switch ((byte)typeId)
@@ -108,7 +108,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds;
 
 public partial class Cat : ISerializable<Cat>
 {
@@ -152,7 +152,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds;
 
 public partial class Dog : ISerializable<Dog>
 {
@@ -196,7 +196,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds;
 
 public partial class Animal : ISerializable<Animal>
 {

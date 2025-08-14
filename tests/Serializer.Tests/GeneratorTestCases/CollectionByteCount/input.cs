@@ -1,4 +1,4 @@
-﻿namespace TestNamespace;
+﻿namespace Serializer.Tests.GeneratorTestCases.CollectionByteCount;
 
 [GenerateSerializer]
 public partial class IndividualTypeIdsTest

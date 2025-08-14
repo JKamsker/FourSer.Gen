@@ -9,7 +9,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.CollectionULongCount;
 
 public partial class ULongCountTest : ISerializable<ULongCountTest>
 {
@@ -30,7 +30,7 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
         var originalData = data;
         var obj = new ULongCountTest();
         var CatsCount = data.ReadUInt64();
-        obj.Cats = new System.Collections.Generic.List<TestNamespace.Cat>(CatsCount);
+        obj.Cats = new System.Collections.Generic.List<Serializer.Tests.GeneratorTestCases.CollectionULongCount.Cat>(CatsCount);
         for (int i = 0; i < CatsCount; i++)
         {
             obj.Cats.Add(Cat.Deserialize(data, out var itemBytesRead));
@@ -65,7 +65,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.CollectionULongCount;
 
 public partial class Cat : ISerializable<Cat>
 {

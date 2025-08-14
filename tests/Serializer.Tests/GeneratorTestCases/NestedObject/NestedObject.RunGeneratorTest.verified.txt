@@ -9,7 +9,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.NestedObject;
 
 public partial class ContainerPacket : ISerializable<ContainerPacket>
 {
@@ -55,7 +55,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.NestedObject;
 
 public partial class NestedData : ISerializable<NestedData>
 {

@@ -1,4 +1,4 @@
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.CollectionUIntCount;
 
 [GenerateSerializer]
 public partial class UIntCountTest

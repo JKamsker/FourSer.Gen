@@ -9,7 +9,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.Collection;
 
 public partial class CollectionPacket : ISerializable<CollectionPacket>
 {

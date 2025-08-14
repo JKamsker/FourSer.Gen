@@ -9,7 +9,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.SimpleConcreteCollection;
 
 public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcreteCollectionTest>
 {
@@ -30,7 +30,7 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
         var originalData = data;
         var obj = new SimpleConcreteCollectionTest();
         var CatsCount = data.ReadInt32();
-        obj.Cats = new System.Collections.Generic.List<TestNamespace.Cat>(CatsCount);
+        obj.Cats = new System.Collections.Generic.List<Serializer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat>(CatsCount);
         for (int i = 0; i < CatsCount; i++)
         {
             obj.Cats.Add(Cat.Deserialize(data, out var itemBytesRead));
@@ -65,7 +65,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.SimpleConcreteCollection;
 
 public partial class Cat : ISerializable<Cat>
 {

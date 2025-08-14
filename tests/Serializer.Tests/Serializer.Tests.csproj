@@ -38,7 +38,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Remove="GeneratorTestCases\**\*.cs" />
+<!--      <Compile Remove="GeneratorTestCases\**\*.cs" />-->
       <EmbeddedResource Include="GeneratorTestCases\**\*.cs" />
     </ItemGroup>
 

@@ -1,8 +1,4 @@
-using Serializer.Contracts;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.EnumerationTypes;
 
 [GenerateSerializer]
 public partial class EnumerationTypesPacket

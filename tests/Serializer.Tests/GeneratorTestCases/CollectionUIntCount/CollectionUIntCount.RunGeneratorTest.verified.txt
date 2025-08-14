@@ -9,7 +9,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.CollectionUIntCount;
 
 public partial class UIntCountTest : ISerializable<UIntCountTest>
 {
@@ -30,7 +30,7 @@ public partial class UIntCountTest : ISerializable<UIntCountTest>
         var originalData = data;
         var obj = new UIntCountTest();
         var CatsCount = data.ReadUInt32();
-        obj.Cats = new System.Collections.Generic.List<TestNamespace.Cat>(CatsCount);
+        obj.Cats = new System.Collections.Generic.List<Serializer.Tests.GeneratorTestCases.CollectionUIntCount.Cat>(CatsCount);
         for (int i = 0; i < CatsCount; i++)
         {
             obj.Cats.Add(Cat.Deserialize(data, out var itemBytesRead));
@@ -65,7 +65,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.CollectionUIntCount;
 
 public partial class Cat : ISerializable<Cat>
 {

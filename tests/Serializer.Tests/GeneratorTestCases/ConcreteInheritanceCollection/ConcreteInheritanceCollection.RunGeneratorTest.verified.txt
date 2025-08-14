@@ -9,7 +9,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.ConcreteInheritanceCollection;
 
 public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritanceTest>
 {
@@ -30,7 +30,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
         var originalData = data;
         var obj = new ConcreteInheritanceTest();
         var DogsCount = data.ReadInt32();
-        obj.Dogs = new System.Collections.Generic.List<TestNamespace.Dog>(DogsCount);
+        obj.Dogs = new System.Collections.Generic.List<Serializer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(DogsCount);
         for (int i = 0; i < DogsCount; i++)
         {
             obj.Dogs.Add(Dog.Deserialize(data, out var itemBytesRead));
@@ -65,7 +65,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.ConcreteInheritanceCollection;
 
 public partial class Dog : ISerializable<Dog>
 {
@@ -112,7 +112,7 @@ using Serializer.Contracts;
 using System.IO;
 using Serializer.Generator.Helpers;
 
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.ConcreteInheritanceCollection;
 
 public partial class Pet : ISerializable<Pet>
 {

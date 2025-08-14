@@ -1,4 +1,4 @@
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.CollectionUShortCount;
 
 [GenerateSerializer]
 public partial class UShortCountTest

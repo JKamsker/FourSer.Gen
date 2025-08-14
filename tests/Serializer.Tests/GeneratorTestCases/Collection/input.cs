@@ -1,4 +1,4 @@
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.Collection;
 
 [GenerateSerializer]
 public partial class CollectionPacket

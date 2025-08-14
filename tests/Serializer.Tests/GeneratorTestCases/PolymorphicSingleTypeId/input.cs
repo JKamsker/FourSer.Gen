@@ -1,7 +1,4 @@
-using Serializer.Contracts;
-using Serializer.Consumer.Extensions;
-
-namespace TestNamespace;
+namespace Serializer.Tests.GeneratorTestCases.PolymorphicSingleTypeId;
 
 [GenerateSerializer]
 public partial class PolymorphicSingleTest

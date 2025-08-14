@@ -1,6 +1,3 @@
-using Serializer.Contracts;
-using System.Collections.Generic;
-
 namespace Serializer.Tests.GeneratorTestCases.ListOfStructs
 {
     [GenerateSerializer]
