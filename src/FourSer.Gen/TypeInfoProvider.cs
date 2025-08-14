@@ -93,7 +93,6 @@ internal static class TypeInfoProvider
                         var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(memberTypeSymbol);
 
                         var polymorphicInfo = GetPolymorphicInfo(m);
-                        var friendlyTypeName = GetMethodFriendlyTypeName(memberTypeSymbol.ToDisplayString(s_typeNameFormat));
 
                         return new MemberToGenerate
                         (
@@ -112,9 +111,7 @@ internal static class TypeInfoProvider
                             GetCollectionInfo(m),
                             polymorphicInfo,
                             isCollection,
-                            collectionTypeInfo,
-                            memberTypeSymbol.IsUnmanagedType ? $"Write{friendlyTypeName}" : null,
-                            memberTypeSymbol.IsUnmanagedType ? $"Read{friendlyTypeName}" : null
+                            collectionTypeInfo
                         );
                     }
                 )
@@ -125,27 +122,6 @@ internal static class TypeInfoProvider
         }
 
         return new EquatableArray<MemberToGenerate>(members.ToImmutableArray());
-    }
-
-    private static string GetMethodFriendlyTypeName(string typeName)
-    {
-        return typeName switch
-        {
-            "int" => "Int32",
-            "uint" => "UInt32",
-            "short" => "Int16",
-            "ushort" => "UInt16",
-            "long" => "Int64",
-            "ulong" => "UInt64",
-            "byte" => "Byte",
-            "sbyte" => "SByte",
-            "float" => "Single",
-            "bool" => "Boolean",
-            "double" => "Double",
-            "char" => "Char",
-            "string" => "String",
-            _ => TypeHelper.GetMethodFriendlyTypeName(typeName)
-        };
     }
 
     private static EquatableArray<TypeToGenerate> GetNestedTypes(INamedTypeSymbol parentType)
@@ -184,84 +160,99 @@ internal static class TypeInfoProvider
 
     private static (bool IsCollection, CollectionTypeInfo? CollectionTypeInfo) GetCollectionTypeInfo(ITypeSymbol typeSymbol)
     {
-        string elementTypeName;
-        bool isArray = false;
-        string countAccessExpression;
-        string concreteTypeInstantiation;
-        string addMethodName;
-        string originalDefinition;
-
+        // Handle arrays first (arrays are not INamedTypeSymbol)
         if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
         {
-            isArray = true;
             var elementType = arrayTypeSymbol.ElementType;
-            elementTypeName = elementType.ToDisplayString(s_typeNameFormat);
-            countAccessExpression = "Length";
-            concreteTypeInstantiation = $"new {elementTypeName}[count]";
-            addMethodName = ""; // Not applicable for arrays, assignment is by index
-            originalDefinition = typeSymbol.ToDisplayString(s_typeNameFormat);
+            return (true, new CollectionTypeInfo
+            (
+                typeSymbol.ToDisplayString(s_typeNameFormat),
+                elementType.ToDisplayString(s_typeNameFormat),
+                elementType.IsUnmanagedType,
+                elementType.SpecialType == SpecialType.System_String,
+                elementType.GetAttributes().Any(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute"),
+                true,
+                null
+            ));
         }
-        else if (typeSymbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.IsGenericType && namedTypeSymbol.TypeArguments.Length == 1)
-        {
-            var elementType = namedTypeSymbol.TypeArguments[0];
-            elementTypeName = elementType.ToDisplayString(s_typeNameFormat);
-            originalDefinition = namedTypeSymbol.OriginalDefinition.ToDisplayString();
 
-            switch (originalDefinition)
-            {
-                case "System.Collections.Generic.List<T>":
-                case "System.Collections.Generic.IList<T>":
-                case "System.Collections.Generic.ICollection<T>":
-                    countAccessExpression = "Count";
-                    concreteTypeInstantiation = $"new global::System.Collections.Generic.List<{elementTypeName}>()";
-                    addMethodName = "Add";
-                    break;
-                case "System.Collections.Generic.Queue<T>":
-                    countAccessExpression = "Count";
-                    concreteTypeInstantiation = $"new global::System.Collections.Generic.Queue<{elementTypeName}>()";
-                    addMethodName = "Enqueue";
-                    break;
-                case "System.Collections.Generic.Stack<T>":
-                    countAccessExpression = "Count";
-                    concreteTypeInstantiation = $"new global::System.Collections.Generic.Stack<{elementTypeName}>()";
-                    addMethodName = "Push";
-                    break;
-                case "System.Collections.Generic.HashSet<T>":
-                    countAccessExpression = "Count";
-                    concreteTypeInstantiation = $"new global::System.Collections.Generic.HashSet<{elementTypeName}>()";
-                    addMethodName = "Add";
-                    break;
-                case "System.Collections.Generic.LinkedList<T>":
-                    countAccessExpression = "Count";
-                    concreteTypeInstantiation = $"new global::System.Collections.Generic.LinkedList<{elementTypeName}>()";
-                    addMethodName = "AddLast";
-                    break;
-                case "System.Collections.Concurrent.ConcurrentBag<T>":
-                    countAccessExpression = "Count";
-                    concreteTypeInstantiation = $"new global::System.Collections.Concurrent.ConcurrentBag<{elementTypeName}>()";
-                    addMethodName = "Add";
-                    break;
-                default:
-                    return (false, null);
-            }
-        }
-        else
+        if (typeSymbol is not INamedTypeSymbol namedTypeSymbol)
         {
             return (false, null);
         }
 
-        var genericElementType = (typeSymbol as IArrayTypeSymbol)?.ElementType ?? ((INamedTypeSymbol)typeSymbol).TypeArguments[0];
+        // Check if it's a generic collection type
+        if (!namedTypeSymbol.IsGenericType || namedTypeSymbol.TypeArguments.Length != 1)
+        {
+            return (false, null);
+        }
 
-        return (true, new CollectionTypeInfo(
+        var originalDefinition = namedTypeSymbol.OriginalDefinition.ToDisplayString();
+        var genericElementType = namedTypeSymbol.TypeArguments[0];
+
+        string? concreteTypeName = null;
+        bool isCollection = false;
+
+        switch (originalDefinition)
+        {
+            case "System.Collections.Generic.List<T>":
+                isCollection = true;
+                concreteTypeName = null; // List<T> is already concrete, no temp variable needed
+                break;
+            case "System.Collections.Generic.IList<T>":
+            case "System.Collections.Generic.ICollection<T>":
+            case "System.Collections.Generic.IEnumerable<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Generic.List"; // Interfaces map to List<T>
+                break;
+            case "System.Collections.ObjectModel.Collection<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.ObjectModel.Collection";
+                break;
+            case "System.Collections.ObjectModel.ObservableCollection<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.ObjectModel.ObservableCollection";
+                break;
+            case "System.Collections.Generic.HashSet<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Generic.HashSet";
+                break;
+            case "System.Collections.Generic.SortedSet<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Generic.SortedSet";
+                break;
+            case "System.Collections.Generic.Queue<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Generic.Queue";
+                break;
+            case "System.Collections.Generic.Stack<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Generic.Stack";
+                break;
+            case "System.Collections.Generic.LinkedList<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Generic.LinkedList";
+                break;
+            case "System.Collections.Concurrent.ConcurrentBag<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Concurrent.ConcurrentBag";
+                break;
+        }
+
+        if (!isCollection)
+        {
+            return (false, null);
+        }
+
+        return (true, new CollectionTypeInfo
+        (
             originalDefinition,
-            elementTypeName,
+            genericElementType.ToDisplayString(s_typeNameFormat),
             genericElementType.IsUnmanagedType,
             genericElementType.SpecialType == SpecialType.System_String,
             genericElementType.GetAttributes().Any(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute"),
-            isArray,
-            countAccessExpression,
-            concreteTypeInstantiation,
-            addMethodName
+            false,
+            concreteTypeName
         ));
     }
 

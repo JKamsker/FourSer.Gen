@@ -33,8 +33,6 @@ public readonly record struct TypeToGenerate(
 /// <param name="CollectionInfo">Information about the collection attribute, if present.</param>
 /// <param name="IsCollection">Whether the member's type is any supported collection type.</param>
 /// <param name="CollectionTypeInfo">Information about the collection type, if applicable.</param>
-/// <param name="WriteMethodName">The name of the method to write the member to a span.</param>
-/// <param name="ReadMethodName">The name of the method to read the member from a span.</param>
 public readonly record struct MemberToGenerate(
     string Name,
     string TypeName,
@@ -46,9 +44,7 @@ public readonly record struct MemberToGenerate(
     CollectionInfo? CollectionInfo,
     PolymorphicInfo? PolymorphicInfo,
     bool IsCollection,
-    CollectionTypeInfo? CollectionTypeInfo,
-    string? WriteMethodName,
-    string? ReadMethodName) : IEquatable<MemberToGenerate>;
+    CollectionTypeInfo? CollectionTypeInfo) : IEquatable<MemberToGenerate>;
 
 /// <summary>
 /// A model describing the type argument of a List&lt;T&gt;.
@@ -72,9 +68,7 @@ public readonly record struct ListTypeArgumentInfo(
 /// <param name="IsElementStringType">Whether the element type is a string.</param>
 /// <param name="HasElementGenerateSerializerAttribute">Whether the element type has the [GenerateSerializer] attribute.</param>
 /// <param name="IsArray">Whether this is an array type.</param>
-/// <param name="CountAccessExpression">The expression to access the count of the collection (e.g., "Count" or "Length").</param>
-/// <param name="ConcreteTypeInstantiation">The code to instantiate the collection (e.g., "new List<int>()").</param>
-/// <param name="AddMethodName">The name of the method to add an item to the collection (e.g., "Add", "Enqueue").</param>
+/// <param name="ConcreteTypeName">The concrete type to instantiate for interfaces (e.g., "List<T>" for "ICollection<T>").</param>
 public readonly record struct CollectionTypeInfo(
     string CollectionTypeName,
     string ElementTypeName,
@@ -82,9 +76,7 @@ public readonly record struct CollectionTypeInfo(
     bool IsElementStringType,
     bool HasElementGenerateSerializerAttribute,
     bool IsArray,
-    string CountAccessExpression,
-    string ConcreteTypeInstantiation,
-    string AddMethodName) : IEquatable<CollectionTypeInfo>;
+    string? ConcreteTypeName) : IEquatable<CollectionTypeInfo>;
 
 /// <summary>
 /// A model describing the [Collection] attribute on a member.
