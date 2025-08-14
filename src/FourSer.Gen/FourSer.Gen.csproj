@@ -8,7 +8,6 @@
 
     <!-- Properties for NuGet package -->
     <PackageId>FourSer.Gen</PackageId>
-    <Version>0.0.1</Version>
     <Authors>JKamsker</Authors>
     <Description>A source generator for serialization.</Description>
     <PackageTags>source-generator, csharp</PackageTags>
