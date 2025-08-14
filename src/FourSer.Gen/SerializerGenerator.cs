@@ -35,12 +35,16 @@ public class SerializerGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, TypeToGenerate typeToGenerate)
     {
-        // // In a real implementation, you would handle diagnostics here
-        // // For example: context.ReportDiagnostic(diagnostic);
-        // var source = SourceGenerator.GenerateSource(typeToGenerate);
         var sb = new StringBuilder();
-
         GenerateFileHeader(sb, typeToGenerate);
+
+        GenerateType(sb, typeToGenerate);
+
+        context.AddSource($"{typeToGenerate.Name}.g.cs", sb.ToString());
+    }
+
+    private static void GenerateType(StringBuilder sb, TypeToGenerate typeToGenerate)
+    {
         GenerateClassDeclaration(sb, typeToGenerate);
 
         PacketSizeGenerator.GenerateGetPacketSize(sb, typeToGenerate);
@@ -53,12 +57,13 @@ public class SerializerGenerator : IIncrementalGenerator
 
         if (!typeToGenerate.NestedTypes.IsEmpty)
         {
-            NestedTypeGenerator.GenerateNestedTypes(sb, typeToGenerate.NestedTypes);
+            foreach (var nestedType in typeToGenerate.NestedTypes)
+            {
+                GenerateType(sb, nestedType);
+            }
         }
 
         sb.AppendLine("}");
-
-        context.AddSource($"{typeToGenerate.Name}.g.cs", sb.ToString());
     }
 
     private static void GenerateFileHeader(StringBuilder sb, TypeToGenerate typeToGenerate)
