@@ -26,3 +26,4 @@ public static class DeserializationGenerator
         sb.AppendLine("        return obj;");
         sb.AppendLine("    }");
 }
+}

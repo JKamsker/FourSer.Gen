@@ -59,3 +59,4 @@ public static class SerializationGenerator
         sb.AppendLine("        return originalData.Length - data.Length;");
         sb.AppendLine("    }");
 }
+}

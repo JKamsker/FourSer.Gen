@@ -22,3 +22,4 @@ public static class PacketSizeGenerator
         sb.AppendLine("        return size;");
         sb.AppendLine("    }");
 }
+}
