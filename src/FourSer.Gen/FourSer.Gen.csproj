@@ -7,9 +7,9 @@
     <Nullable>enable</Nullable>
 
     <!-- Properties for NuGet package -->
-    <PackageId>DaanDeSmedt.Serializer</PackageId>
-    <Version>1.0.0</Version>
-    <Authors>Jules</Authors>
+    <PackageId>FourSer.Gen</PackageId>
+    <Version>0.0.1</Version>
+    <Authors>JKamsker</Authors>
     <Description>A source generator for serialization.</Description>
     <PackageTags>source-generator, csharp</PackageTags>
 
