@@ -21,7 +21,7 @@ internal class StringEx
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe string ReadString(ref ReadOnlySpan<byte> input)
     {
-        var length = RoSpanReaderHelpers.ReadInt32(ref input);
+        var length = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref input);
         var strSpan = input.Slice(0, length);
         input = input.Slice(length);
 
@@ -39,7 +39,7 @@ internal class StringEx
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe string ReadString(ref Span<byte> input)
     {
-        var length = SpanReaderHelpers.ReadInt32(ref input);
+        var length = FourSer.Gen.Helpers.SpanReaderHelpers.ReadInt32(ref input);
         var strSpan = input.Slice(0, length);
         input = input.Slice(length);
 
@@ -59,12 +59,12 @@ internal class StringEx
     {
         if (string.IsNullOrEmpty(value))
         {
-            SpanWriterHelpers.WriteInt32(ref input, 0);
+            FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref input, 0);
             return;
         }
 
         var byteCount = Utf8Encoding.GetByteCount(value);
-        SpanWriterHelpers.WriteInt32(ref input, byteCount);
+        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref input, byteCount);
         var destination = input.Slice(0, byteCount);
         input = input.Slice(byteCount);
 

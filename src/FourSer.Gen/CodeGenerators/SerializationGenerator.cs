@@ -79,13 +79,13 @@ public static class SerializationGenerator
         }
         else if (member.IsStringType)
         {
-            sb.AppendLine($"        SpanWriterHelpers.WriteString(ref data, obj.{member.Name});");
+            sb.AppendLine($"        FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.{member.Name});");
         }
         else if (member.IsUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
             var writeMethod = $"Write{typeName}";
-            sb.AppendLine($"        SpanWriterHelpers.{writeMethod}(ref data, ({typeName})obj.{member.Name});");
+            sb.AppendLine($"        FourSer.Gen.Helpers.SpanWriterHelpers.{writeMethod}(ref data, ({typeName})obj.{member.Name});");
         }
     }
 
@@ -98,7 +98,7 @@ public static class SerializationGenerator
         var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
 
         var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
-        sb.AppendLine($"        SpanWriterHelpers.{countWriteMethod}(ref data, ({countType}){countExpression});");
+        sb.AppendLine($"        FourSer.Gen.Helpers.SpanWriterHelpers.{countWriteMethod}(ref data, ({countType}){countExpression});");
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
@@ -173,7 +173,7 @@ public static class SerializationGenerator
         if (isByteCollection)
         {
             // We have an extension method for this now
-            sb.AppendLine($"        SpanWriterHelpers.WriteBytes(ref data, obj.{member.Name});");
+            sb.AppendLine($"        FourSer.Gen.Helpers.SpanWriterHelpers.WriteBytes(ref data, obj.{member.Name});");
         }
         else
         {
@@ -276,11 +276,11 @@ public static class SerializationGenerator
         else if (elementInfo.IsUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.TypeName);
-            sb.AppendLine($"            SpanWriterHelpers.Write{typeName}(ref data, ({typeName}){elementAccess});");
+            sb.AppendLine($"            FourSer.Gen.Helpers.SpanWriterHelpers.Write{typeName}(ref data, ({typeName}){elementAccess});");
         }
         else if (elementInfo.IsStringType)
         {
-            sb.AppendLine($"            SpanWriterHelpers.WriteString(ref data, {elementAccess});");
+            sb.AppendLine($"            FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, {elementAccess});");
         }
     }
 
@@ -289,11 +289,11 @@ public static class SerializationGenerator
         if (elementInfo.IsElementUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
-            sb.AppendLine($"            SpanWriterHelpers.Write{typeName}(ref data, ({typeName}){elementAccess});");
+            sb.AppendLine($"            FourSer.Gen.Helpers.SpanWriterHelpers.Write{typeName}(ref data, ({typeName}){elementAccess});");
         }
         else if (elementInfo.IsElementStringType)
         {
-            sb.AppendLine($"            SpanWriterHelpers.WriteString(ref data, {elementAccess});");
+            sb.AppendLine($"            FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, {elementAccess});");
         }
         else if (elementInfo.HasElementGenerateSerializerAttribute)
         {

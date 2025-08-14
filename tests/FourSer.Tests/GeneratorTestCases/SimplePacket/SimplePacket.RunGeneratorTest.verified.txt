@@ -27,9 +27,9 @@ public partial class LoginPacket : ISerializable<LoginPacket>
         bytesRead = 0;
         var originalData = data;
         var obj = new LoginPacket();
-        obj.Result = RoSpanReaderHelpers.ReadByte(ref data);
-        obj.UserID = RoSpanReaderHelpers.ReadUInt32(ref data);
-        obj.Username = RoSpanReaderHelpers.ReadString(ref data);
+        obj.Result = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref data);
+        obj.UserID = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt32(ref data);
+        obj.Username = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data);
         bytesRead = originalData.Length - data.Length;
         return obj;
     }
@@ -37,9 +37,9 @@ public partial class LoginPacket : ISerializable<LoginPacket>
     public static int Serialize(LoginPacket obj, System.Span<byte> data)
     {
         var originalData = data;
-        SpanWriterHelpers.WriteByte(ref data, (Byte)obj.Result);
-        SpanWriterHelpers.WriteUInt32(ref data, (UInt32)obj.UserID);
-        SpanWriterHelpers.WriteString(ref data, obj.Username);
+        FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (Byte)obj.Result);
+        FourSer.Gen.Helpers.SpanWriterHelpers.WriteUInt32(ref data, (UInt32)obj.UserID);
+        FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.Username);
         return originalData.Length - data.Length;
     }
 }

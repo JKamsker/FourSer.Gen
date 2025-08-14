@@ -29,7 +29,7 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
         bytesRead = 0;
         var originalData = data;
         var obj = new ULongCountTest();
-        var CatsCount = RoSpanReaderHelpers.ReadUInt64(ref data);
+        var CatsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt64(ref data);
         obj.Cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat>(CatsCount);
         for (int i = 0; i < CatsCount; i++)
         {
@@ -43,7 +43,7 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
     public static int Serialize(ULongCountTest obj, System.Span<byte> data)
     {
         var originalData = data;
-        SpanWriterHelpers.WriteUInt64(ref data, (ulong)obj.Cats.Count);
+        FourSer.Gen.Helpers.SpanWriterHelpers.WriteUInt64(ref data, (ulong)obj.Cats.Count);
         for (int i = 0; i < obj.Cats.Count; i++)
         {
             var bytesWritten = Cat.Serialize(obj.Cats[i], data);
@@ -82,8 +82,8 @@ public partial class Cat : ISerializable<Cat>
         bytesRead = 0;
         var originalData = data;
         var obj = new Cat();
-        obj.Id = RoSpanReaderHelpers.ReadInt32(ref data);
-        obj.Name = RoSpanReaderHelpers.ReadString(ref data);
+        obj.Id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        obj.Name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data);
         bytesRead = originalData.Length - data.Length;
         return obj;
     }
@@ -91,8 +91,8 @@ public partial class Cat : ISerializable<Cat>
     public static int Serialize(Cat obj, System.Span<byte> data)
     {
         var originalData = data;
-        SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Id);
-        SpanWriterHelpers.WriteString(ref data, obj.Name);
+        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Id);
+        FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.Name);
         return originalData.Length - data.Length;
     }
 }
