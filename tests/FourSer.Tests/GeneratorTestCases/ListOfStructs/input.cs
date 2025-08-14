@@ -1,0 +1,15 @@
+namespace FourSer.Tests.GeneratorTestCases.ListOfStructs
+{
+    [GenerateSerializer]
+    public partial struct MyStruct
+    {
+        public int A;
+    }
+
+    [GenerateSerializer]
+    public partial class PacketWithListOfStructs
+    {
+        [SerializeCollection]
+        public List<MyStruct> Structs { get; set; } = new();
+    }
+}

@@ -1,4 +1,4 @@
-using Serializer.Contracts;
+using FourSer.Contracts;
 
 namespace Serializer.Package.Tests;
 

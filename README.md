@@ -21,7 +21,7 @@ This project provides a compile-time source generator that creates efficient bin
 ### 1. Add the GenerateSerializer attribute
 
 ```csharp
-using Serializer.Contracts;
+using FourSer.Contracts;
 
 [GenerateSerializer]
 public partial class LoginPacket
@@ -340,14 +340,14 @@ In this mode:
 
 ```
 src/
-├── Serializer.Contracts/          # Attributes and interfaces
+├── FourSer.Contracts/          # Attributes and interfaces
 │   ├── ISerializable.cs           # Main serialization interface
 │   ├── GenerateSerializerAttribute.cs
 │   └── SerializeCollectionAttribute.cs
-├── Serializer.Generator/          # Source generator implementation
+├── FourSer.Gen/          # Source generator implementation
 │   ├── SerializerGenerator.cs     # Main generator logic
 │   └── ClassToGenerate.cs         # Data model for generation
-└── Serializer.Consumer/           # Example usage and tests
+└── FourSer.Consumer/           # Example usage and tests
     ├── UseCases/                  # Example packet definitions
     ├── Extensions/                # Span read/write extensions
     └── Program.cs                 # Test runner
@@ -413,7 +413,7 @@ dotnet build
 ## Running Tests
 
 ```bash
-dotnet run --project src/Serializer.Consumer
+dotnet run --project src/FourSer.Consumer
 ```
 
 ## Contributing
@@ -421,8 +421,8 @@ dotnet run --project src/Serializer.Consumer
 This project uses source generators to provide compile-time serialization code generation. When adding new features:
 
 1. Update the generator logic in `SerializerGenerator.cs`
-2. Add corresponding attributes in `Serializer.Contracts`
-3. Create test cases in `Serializer.Consumer/UseCases`
+2. Add corresponding attributes in `FourSer.Contracts`
+3. Create test cases in `FourSer.Consumer/UseCases`
 4. Run the test suite to verify functionality
 
 ## License

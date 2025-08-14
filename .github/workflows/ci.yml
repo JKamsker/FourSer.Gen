@@ -29,7 +29,7 @@ jobs:
       run: dotnet test --no-build -c Release --verbosity normal
 
     - name: Pack
-      run: dotnet pack src/Serializer.Generator/Serializer.Generator.csproj --no-build -c Release -o out
+      run: dotnet pack src/FourSer.Gen/FourSer.Gen.csproj --no-build -c Release -o out
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4

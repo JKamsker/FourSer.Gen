@@ -5,19 +5,20 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serializer.Generator", "src\Serializer.Generator\Serializer.Generator.csproj", "{9FC5E53A-2A2E-4EA7-90E2-F18980D071EF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FourSer.Gen", "src\FourSer.Gen\FourSer.Gen.csproj", "{9FC5E53A-2A2E-4EA7-90E2-F18980D071EF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serializer.Contracts", "src\Serializer.Contracts\Serializer.Contracts.csproj", "{05BCCB72-BF16-49D8-AD2D-5BECF35090BA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FourSer.Contracts", "src\FourSer.Contracts\FourSer.Contracts.csproj", "{05BCCB72-BF16-49D8-AD2D-5BECF35090BA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serializer.Consumer", "src\Serializer.Consumer\Serializer.Consumer.csproj", "{4E7D8405-48E3-4AD1-9F36-F63C36FC682D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FourSer.Consumer", "src\FourSer.Consumer\FourSer.Consumer.csproj", "{4E7D8405-48E3-4AD1-9F36-F63C36FC682D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serializer.Tests", "tests\Serializer.Tests\Serializer.Tests.csproj", "{21C57AAC-2D3F-4941-880C-EFF2BB9AD7EF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FourSer.Tests", "tests\FourSer.Tests\FourSer.Tests.csproj", "{21C57AAC-2D3F-4941-880C-EFF2BB9AD7EF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{A2EA4DA4-2C68-4F4E-BFAC-5FC5D239DC14}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
+		.github\workflows\ci.yml = .github\workflows\ci.yml
 	EndProjectSection
 EndProject
 Global

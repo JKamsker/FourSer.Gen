@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+
+    <!-- Properties for NuGet package -->
+    <PackageId>DaanDeSmedt.Serializer</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Jules</Authors>
+    <Description>A source generator for serialization.</Description>
+    <PackageTags>source-generator, csharp</PackageTags>
+
+    <!-- Roslyn component properties -->
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Pack the generator dll in the analyzers folder -->
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+
+    <!-- Pack the contracts dll in the lib folder -->
+    <None Include="..\FourSer.Contracts\bin\$(Configuration)\net9.0\FourSer.Contracts.dll" Pack="true" PackagePath="lib\net9.0\" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- These are also embedded to be injected into the consumer's compilation -->
+    <Compile Remove="Resources\**\*.cs" />
+    <EmbeddedResource Include="Resources\**\*.cs" />
+  </ItemGroup>
+
+</Project>

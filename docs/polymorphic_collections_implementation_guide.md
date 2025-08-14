@@ -34,17 +34,17 @@ The implementation will support two distinct modes for handling type information
 
 ## 2. Task Breakdown
 
-### Phase 1: Update `Serializer.Contracts`
+### Phase 1: Update `FourSer.Contracts`
 
 The first step is to update the contracts assembly with the necessary API changes.
 
 #### **Task 1.1: Create `PolymorphicMode` Enum**
 
-Create a new file `PolymorphicMode.cs` in the `Serializer.Contracts` project.
+Create a new file `PolymorphicMode.cs` in the `FourSer.Contracts` project.
 
-**File:** `src/Serializer.Contracts/PolymorphicMode.cs`
+**File:** `src/FourSer.Contracts/PolymorphicMode.cs`
 ```csharp
-namespace Serializer.Contracts;
+namespace FourSer.Contracts;
 
 /// <summary>
 /// Specifies the serialization mode for a polymorphic collection.
@@ -71,7 +71,7 @@ public enum PolymorphicMode
 
 Modify the existing `SerializeCollectionAttribute.cs` to include properties for controlling polymorphic serialization.
 
-**File:** `src/Serializer.Contracts/SerializeCollectionAttribute.cs`
+**File:** `src/FourSer.Contracts/SerializeCollectionAttribute.cs`
 ```csharp
 // ... existing using statements ...
 
@@ -103,7 +103,7 @@ public class SerializeCollectionAttribute : Attribute
 
 ---
 
-### Phase 2: Update `Serializer.Generator`
+### Phase 2: Update `FourSer.Gen`
 
 With the contracts updated, the source generator must be taught how to interpret and act on these new properties.
 
@@ -111,7 +111,7 @@ With the contracts updated, the source generator must be taught how to interpret
 
 Add helper methods to extract the new polymorphic properties from an `AttributeData` object corresponding to `SerializeCollectionAttribute`.
 
-**File:** `src/Serializer.Generator/AttributeHelper.cs`
+**File:** `src/FourSer.Gen/AttributeHelper.cs`
 ```csharp
 // ... existing code ...
 public static class AttributeHelper
@@ -194,7 +194,7 @@ In `SerializerGenerator.cs` or `TypeAnalyzer.cs`, add diagnostics to prevent mis
 
 #### **Task 3.1: Create Test Use Cases**
 
-In `Serializer.Consumer/UseCases`, add new test files to validate the implementation.
+In `FourSer.Consumer/UseCases`, add new test files to validate the implementation.
 - **`IndividualTypeIdsTest.cs`**: A test with a heterogeneous list (e.g., `List<Animal>`).
 - **`SingleTypeIdTest.cs`**: A test with a homogeneous list and a `TypeIdProperty`.
 
