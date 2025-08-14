@@ -1,0 +1,44 @@
+name: .NET CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore -c Release
+
+    - name: Test
+      run: dotnet test --no-build -c Release --verbosity normal
+
+    - name: Pack
+      run: dotnet pack src/Serializer.Generator/Serializer.Generator.csproj --no-build -c Release -o out
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-package
+        path: out/
+
+    - name: Build Package Test Project
+      run: dotnet build tests/Serializer.Package.Tests/Serializer.Package.Tests.sln -c Release
+
+    - name: Run Package Test Project
+      run: dotnet run --project tests/Serializer.Package.Tests/Serializer.Package.Tests.csproj --no-build -c Release
