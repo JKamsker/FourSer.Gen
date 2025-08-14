@@ -35,9 +35,7 @@ jobs:
       run: dotnet test --no-build -c Release --verbosity normal
 
     - name: Pack
-      run: |
-        dotnet pack src/FourSer.Gen/FourSer.Gen.csproj --no-build -c Release -o out /p:Version="${{ env.VERSION }}"
-        dotnet pack src/FourSer.Analyzers/FourSer.Analyzers/FourSer.Analyzers/FourSer.Analyzers.csproj --no-build -c Release -o out /p:Version="${{ env.VERSION }}"
+      run: dotnet pack src/FourSer.Gen/FourSer.Gen.csproj --no-build -c Release -o out /p:Version="${{ env.VERSION }}"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
