@@ -36,7 +36,7 @@ using FourSer.Contracts;
 [GenerateSerializer]
 public partial class MyData
 {
-    public {|FS0002:IncompatibleType|} MyProperty { get; set; }
+    public IncompatibleType {|FS0002:MyProperty|} { get; set; }
 }
 
 public class IncompatibleType { }
