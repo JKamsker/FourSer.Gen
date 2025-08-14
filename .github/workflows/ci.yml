@@ -41,4 +41,4 @@ jobs:
       run: dotnet build tests/Serializer.Package.Tests/Serializer.Package.Tests.sln -c Release
 
     - name: Run Package Test Project
-      run: dotnet run --project tests/Serializer.Package.Tests/Serializer.Package.Tests.csproj --no-build
+      run: dotnet run --project tests/Serializer.Package.Tests/Serializer.Package.Tests.csproj --no-build -c Release
