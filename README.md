@@ -1,3 +1,9 @@
+[![Build Status](https://github.com/JKamsker/GeminiSerializer.SG/actions/workflows/ci.yml/badge.svg)](https://github.com/JKamsker/GeminiSerializer.SG/actions/workflows/ci.yml)
+[![NuGet Version](https://img.shields.io/nuget/v/FourSer.Gen.svg)](https://www.nuget.org/packages/FourSer.Gen)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/FourSer.Gen.svg)](https://www.nuget.org/packages/FourSer.Gen)
+[![GitHub issues](https://img.shields.io/github/issues/JKamsker/GeminiSerializer.SG)](https://github.com/JKamsker/GeminiSerializer.SG/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/JKamsker/GeminiSerializer.SG)](https://github.com/JKamsker/GeminiSerializer.SG/pulls)
+
 # Serializer SourceGen
 
 A high-performance .NET 9 source generator that automatically creates serialization and deserialization code for binary data structures using attributes and conventions.
