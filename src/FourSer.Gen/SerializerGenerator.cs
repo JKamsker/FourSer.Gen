@@ -37,9 +37,6 @@ public class SerializerGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, TypeToGenerate typeToGenerate)
     {
-        // // In a real implementation, you would handle diagnostics here
-        // // For example: context.ReportDiagnostic(diagnostic);
-        // var source = SourceGenerator.GenerateSource(typeToGenerate);
         var sb = new StringBuilder();
 
         GenerateFileHeader(sb, typeToGenerate);
@@ -50,8 +47,17 @@ public class SerializerGenerator : IIncrementalGenerator
 
         if (typeToGenerate.Constructor is { ShouldGenerate: true } ctor)
         {
-            GenerateConstructor(sb, typeToGenerate, ctor);
-            sb.AppendLine();
+            if (!ctor.Parameters.IsEmpty)
+            {
+                GenerateConstructor(sb, typeToGenerate, ctor);
+                sb.AppendLine();
+            }
+
+            if (!ctor.HasPublicParameterlessConstructor)
+            {
+                GenerateParameterlessConstructor(sb, typeToGenerate);
+                sb.AppendLine();
+            }
         }
 
         DeserializationGenerator.GenerateDeserialize(sb, typeToGenerate);
@@ -93,7 +99,7 @@ public class SerializerGenerator : IIncrementalGenerator
         sb.AppendLine("{");
     }
 
-    private static void GenerateConstructor(StringBuilder sb, TypeToGenerate typeToGenerate, Models.ConstructorInfo ctor)
+    internal static void GenerateConstructor(StringBuilder sb, TypeToGenerate typeToGenerate, Models.ConstructorInfo ctor)
     {
         var parameters = string.Join(", ", ctor.Parameters.Select(p => $"{p.TypeName} {StringExtensions.ToCamelCase(p.Name)}"));
         sb.AppendLine($"    private {typeToGenerate.Name}({parameters})");
@@ -104,6 +110,22 @@ public class SerializerGenerator : IIncrementalGenerator
             sb.AppendLine($"        this.{parameter.Name} = {StringExtensions.ToCamelCase(parameter.Name)};");
         }
 
+        sb.AppendLine("    }");
+    }
+
+    internal static void GenerateParameterlessConstructor(StringBuilder sb, TypeToGenerate typeToGenerate)
+    {
+        if (typeToGenerate.IsValueType) return;
+
+        sb.AppendLine($"    public {typeToGenerate.Name}()");
+        sb.AppendLine("    {");
+
+        foreach (var member in typeToGenerate.Members)
+        {
+            if (member.IsReadOnly) continue;
+
+            sb.AppendLine($"        this.{member.Name} = default;");
+        }
         sb.AppendLine("    }");
     }
 
