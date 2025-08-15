@@ -22,15 +22,28 @@ public partial class LoginPacket : ISerializable<LoginPacket>
         return size;
     }
 
-    public static LoginPacket Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
+    private LoginPacket(byte result, uint userID, string username)
     {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new LoginPacket();
-        obj.Result = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref data);
-        obj.UserID = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt32(ref data);
-        obj.Username = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data);
-        bytesRead = originalData.Length - data.Length;
+        this.Result = result;
+        this.UserID = userID;
+        this.Username = username;
+    }
+
+    public LoginPacket()
+    {
+        this.Result = default;
+        this.UserID = default;
+        this.Username = default;
+    }
+
+    public static LoginPacket Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    {
+        var originalBuffer = buffer;
+        var result = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref buffer);
+        var userID = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt32(ref buffer);
+        var username = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
+        var obj = new LoginPacket(result, userID, username);
+        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }
 

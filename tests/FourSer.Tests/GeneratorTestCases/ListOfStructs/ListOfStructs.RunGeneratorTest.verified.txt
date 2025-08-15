@@ -20,13 +20,18 @@ public partial struct MyStruct : ISerializable<MyStruct>
         return size;
     }
 
-    public static MyStruct Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
+    private MyStruct(int a)
     {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new MyStruct();
-        obj.A = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        bytesRead = originalData.Length - data.Length;
+        this.A = a;
+    }
+
+
+    public static MyStruct Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    {
+        var originalBuffer = buffer;
+        var a = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var obj = new MyStruct(a);
+        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }
 
@@ -65,19 +70,28 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         return size;
     }
 
-    public static PacketWithListOfStructs Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
+    private PacketWithListOfStructs(System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct> structs)
     {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new PacketWithListOfStructs();
-        var StructsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        obj.Structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(StructsCount);
-        for (int i = 0; i < StructsCount; i++)
+        this.Structs = structs;
+    }
+
+    public PacketWithListOfStructs()
+    {
+        this.Structs = default;
+    }
+
+    public static PacketWithListOfStructs Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    {
+        var originalBuffer = buffer;
+        var structsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>((int)structsCount);
+        for (int i = 0; i < (int)structsCount; i++)
         {
-            obj.Structs.Add(MyStruct.Deserialize(data, out var itemBytesRead));
-            data = data.Slice(itemBytesRead);
+            structs.Add(MyStruct.Deserialize(buffer, out var itemBytesRead));
+            buffer = buffer.Slice(itemBytesRead);
         }
-        bytesRead = originalData.Length - data.Length;
+        var obj = new PacketWithListOfStructs(structs);
+        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }
 
