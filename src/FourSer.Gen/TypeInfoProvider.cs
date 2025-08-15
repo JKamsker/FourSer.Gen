@@ -27,8 +27,6 @@ internal static class TypeInfoProvider
             return null;
         }
 
-        // We only generate for top-level types. Nested types are generated as part of their container.
-        // This preserves the original logic's behavior.
         if (typeSymbol.ContainingType != null)
         {
             return null;
@@ -56,32 +54,71 @@ internal static class TypeInfoProvider
     private static ConstructorInfo? GetConstructorInfo(INamedTypeSymbol typeSymbol,
         EquatableArray<MemberToGenerate> members)
     {
-        var constructors = typeSymbol.Constructors
+        bool shouldGenerate = members.Any(m => m.IsReadOnly);
+        var publicConstructors = typeSymbol.Constructors
             .Where(c => c.DeclaredAccessibility == Accessibility.Public && !c.IsImplicitlyDeclared)
             .ToList();
 
-        if (constructors.Any())
-        {
-            var bestConstructor = constructors
-                .FirstOrDefault(c => c.Parameters.Length == members.Count() && c.Parameters.All(p =>
-                    members.Any(m => string.Equals(m.Name, p.Name, StringComparison.OrdinalIgnoreCase) &&
-                                     m.TypeName == p.Type.ToDisplayString(s_typeNameFormat))));
+        bool hasPublicParameterlessCtor = publicConstructors.Any(c => c.Parameters.Length == 0);
 
-            if (bestConstructor is not null)
+        if (!shouldGenerate)
+        {
+            if (publicConstructors.Any())
             {
-                var parameters = bestConstructor.Parameters
-                    .Select(p => new ParameterInfo(p.Name, p.Type.ToDisplayString(s_typeNameFormat)))
-                    .ToImmutableArray();
-                return new ConstructorInfo(new EquatableArray<ParameterInfo>(parameters), false);
+                var bestConstructor = publicConstructors
+                    .FirstOrDefault(c => c.Parameters.Length == members.Count() && c.Parameters.All(p =>
+                        members.Any(m => string.Equals(m.Name, p.Name, StringComparison.OrdinalIgnoreCase) &&
+                                         m.TypeName == p.Type.ToDisplayString(s_typeNameFormat))));
+
+                if (bestConstructor is not null)
+                {
+                    var parameters = bestConstructor.Parameters
+                        .Select(p => new ParameterInfo(p.Name, p.Type.ToDisplayString(s_typeNameFormat)))
+                        .ToImmutableArray();
+                    return new ConstructorInfo(new EquatableArray<ParameterInfo>(parameters), false, hasPublicParameterlessCtor);
+                }
             }
         }
 
-        // If no suitable public constructor is found, we generate one.
         var generatedParameters = members
             .Select(m => new ParameterInfo(m.Name, m.TypeName))
             .ToImmutableArray();
 
-        return new ConstructorInfo(new EquatableArray<ParameterInfo>(generatedParameters), true);
+        return new ConstructorInfo(new EquatableArray<ParameterInfo>(generatedParameters), true, hasPublicParameterlessCtor);
+    }
+
+    private static bool IsSerializableMember(ISymbol member)
+    {
+        if (member.IsImplicitlyDeclared || member.IsStatic)
+        {
+            return false;
+        }
+
+        if (member is IPropertySymbol p)
+        {
+            if (p.IsIndexer || p.DeclaredAccessibility != Accessibility.Public)
+            {
+                return false;
+            }
+
+            // Properties with a setter are serializable.
+            if (p.SetMethod is not null)
+            {
+                return true;
+            }
+
+            // Read-only properties are serializable if they are auto-properties (have a backing field).
+            return p.ContainingType.GetMembers()
+                .OfType<IFieldSymbol>()
+                .Any(f => SymbolEqualityComparer.Default.Equals(f.AssociatedSymbol, p));
+        }
+
+        if (member is IFieldSymbol f)
+        {
+            return f.DeclaredAccessibility == Accessibility.Public;
+        }
+
+        return false;
     }
 
     private static EquatableArray<MemberToGenerate> GetSerializableMembers(INamedTypeSymbol typeSymbol)
@@ -92,12 +129,7 @@ internal static class TypeInfoProvider
         while (currentType != null && currentType.SpecialType != SpecialType.System_Object)
         {
             var typeMembers = currentType.GetMembers()
-                .Where
-                (
-                    m => !m.IsImplicitlyDeclared &&
-                         (m is IPropertySymbol { SetMethod: not null } ||
-                          m is IFieldSymbol { IsReadOnly: false, DeclaredAccessibility: Accessibility.Public })
-                )
+                .Where(IsSerializableMember)
                 .OrderBy(m => m.Locations.First().SourceSpan.Start)
                 .Select
                 (
@@ -128,6 +160,16 @@ internal static class TypeInfoProvider
 
                         var polymorphicInfo = GetPolymorphicInfo(m);
 
+                        bool isReadOnly = false;
+                        if (m is IPropertySymbol prop)
+                        {
+                            isReadOnly = prop.SetMethod is null;
+                        }
+                        else if (m is IFieldSymbol field)
+                        {
+                            isReadOnly = field.IsReadOnly;
+                        }
+
                         return new MemberToGenerate
                         (
                             m.Name,
@@ -145,7 +187,8 @@ internal static class TypeInfoProvider
                             GetCollectionInfo(m),
                             polymorphicInfo,
                             isCollection,
-                            collectionTypeInfo
+                            collectionTypeInfo,
+                            isReadOnly
                         );
                     }
                 )
@@ -197,7 +240,6 @@ internal static class TypeInfoProvider
 
     private static (bool IsCollection, CollectionTypeInfo? CollectionTypeInfo) GetCollectionTypeInfo(ITypeSymbol typeSymbol)
     {
-        // Handle arrays first (arrays are not INamedTypeSymbol)
         if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
         {
             var elementType = arrayTypeSymbol.ElementType;
@@ -218,7 +260,6 @@ internal static class TypeInfoProvider
             return (false, null);
         }
 
-        // Check if it's a generic collection type
         if (!namedTypeSymbol.IsGenericType || namedTypeSymbol.TypeArguments.Length != 1)
         {
             return (false, null);
@@ -234,13 +275,13 @@ internal static class TypeInfoProvider
         {
             case "System.Collections.Generic.List<T>":
                 isCollection = true;
-                concreteTypeName = null; // List<T> is already concrete, no temp variable needed
+                concreteTypeName = null;
                 break;
             case "System.Collections.Generic.IList<T>":
             case "System.Collections.Generic.ICollection<T>":
             case "System.Collections.Generic.IEnumerable<T>":
                 isCollection = true;
-                concreteTypeName = "System.Collections.Generic.List"; // Interfaces map to List<T>
+                concreteTypeName = "System.Collections.Generic.List";
                 break;
             case "System.Collections.ObjectModel.Collection<T>":
                 isCollection = true;
@@ -297,23 +338,20 @@ internal static class TypeInfoProvider
     {
         var attribute = AttributeHelper.GetCollectionAttribute(member);
         
-        // Check if this member is any supported collection type
         var memberTypeSymbol = member is IPropertySymbol p ? p.Type : ((IFieldSymbol)member).Type;
         var (isCollection, _) = GetCollectionTypeInfo(memberTypeSymbol);
         
-        // If it's a collection but has no attribute, provide default collection info
         if (attribute is null)
         {
             if (isCollection)
             {
-                // Return default CollectionInfo with no special configuration
                 return new CollectionInfo
                 (
                     PolymorphicMode.None,
-                    null, // TypeIdProperty
-                    null, // CountType (will use default)
-                    null, // CountSize (will use default)
-                    null  // CountSizeReference
+                    null,
+                    null,
+                    null,
+                    null
                 );
             }
             return null;
@@ -341,11 +379,10 @@ internal static class TypeInfoProvider
         var collectionAttribute = AttributeHelper.GetCollectionAttribute(member);
         var options = AttributeHelper.GetPolymorphicOptions(member);
 
-        // Only create PolymorphicInfo if there are actual polymorphic options or explicit polymorphic configuration
         var hasPolymorphicOptions = options.Any();
         var hasPolymorphicAttribute = attribute is not null;
         var hasPolymorphicCollectionMode = collectionAttribute is not null && 
-            AttributeHelper.GetPolymorphicMode(collectionAttribute) != 0; // 0 = PolymorphicMode.None
+            AttributeHelper.GetPolymorphicMode(collectionAttribute) != 0;
 
         if (!hasPolymorphicOptions && !hasPolymorphicAttribute && !hasPolymorphicCollectionMode)
         {

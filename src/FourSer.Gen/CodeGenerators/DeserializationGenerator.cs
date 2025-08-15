@@ -4,6 +4,7 @@ using System.Text;
 using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
+using System;
 
 namespace FourSer.Gen.CodeGenerators;
 
@@ -25,9 +26,29 @@ public static class DeserializationGenerator
             GenerateMemberDeserialization(sb, member, true);
         }
 
-        // Construct the object using the constructor
-        var ctorArgs = string.Join(", ", typeToGenerate.Members.Select(m => StringExtensions.ToCamelCase(m.Name)));
-        sb.AppendLine($"        var obj = new {typeToGenerate.Name}({ctorArgs});");
+        if (typeToGenerate.Constructor is { } ctor)
+        {
+            var ctorArgs = string.Join(", ", ctor.Parameters.Select(p => StringExtensions.ToCamelCase(p.Name)));
+            sb.AppendLine($"        var obj = new {typeToGenerate.Name}({ctorArgs});");
+
+            var membersInCtor = new HashSet<string>(ctor.Parameters.Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
+            var membersNotInCtor = typeToGenerate.Members.Where(m => !membersInCtor.Contains(m.Name));
+
+            foreach (var member in membersNotInCtor)
+            {
+                var camelCaseName = StringExtensions.ToCamelCase(member.Name);
+                sb.AppendLine($"        obj.{member.Name} = {camelCaseName};");
+            }
+        }
+        else // Fallback for when there is no constructor info. Should not happen.
+        {
+            sb.AppendLine($"        var obj = new {typeToGenerate.Name}();");
+            foreach (var member in typeToGenerate.Members)
+            {
+                var camelCaseName = StringExtensions.ToCamelCase(member.Name);
+                sb.AppendLine($"        obj.{member.Name} = {camelCaseName};");
+            }
+        }
 
         sb.AppendLine("        bytesRead = originalBuffer.Length - buffer.Length;");
         sb.AppendLine("        return obj;");
@@ -120,7 +141,7 @@ public static class DeserializationGenerator
                     member.ListTypeArgument.Value.IsUnmanagedType,
                     member.ListTypeArgument.Value.IsStringType,
                     member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
-                    false, null, null, member.PolymorphicInfo, false, null
+                    false, null, null, member.PolymorphicInfo, false, null, false
                 );
                 GeneratePolymorphicItemDeserialization(sb, itemMember, "item");
                 sb.AppendLine($"            {memberName}.Add(item);");

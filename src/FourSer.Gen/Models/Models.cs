@@ -37,7 +37,8 @@ public readonly record struct ParameterInfo(
 /// <param name="ShouldGenerate">Whether the constructor should be generated.</param>
 public readonly record struct ConstructorInfo(
     EquatableArray<ParameterInfo> Parameters,
-    bool ShouldGenerate) : IEquatable<ConstructorInfo>;
+    bool ShouldGenerate,
+    bool HasPublicParameterlessConstructor) : IEquatable<ConstructorInfo>;
 
 /// <summary>
 /// A model describing a member (property or field) to be serialized.
@@ -63,7 +64,8 @@ public readonly record struct MemberToGenerate(
     CollectionInfo? CollectionInfo,
     PolymorphicInfo? PolymorphicInfo,
     bool IsCollection,
-    CollectionTypeInfo? CollectionTypeInfo) : IEquatable<MemberToGenerate>;
+    CollectionTypeInfo? CollectionTypeInfo,
+    bool IsReadOnly) : IEquatable<MemberToGenerate>;
 
 /// <summary>
 /// A model describing the type argument of a List&lt;T&gt;.
