@@ -86,12 +86,14 @@ public readonly record struct CollectionTypeInfo(
 /// <param name="CountType">The type to use for the collection count (e.g., "byte", "ushort", "int").</param>
 /// <param name="CountSize">The size in bytes for the collection count.</param>
 /// <param name="CountSizeReference">The name of a property/field that contains the count.</param>
+/// <param name="Unlimited">Whether the collection is unlimited in size.</param>
 public readonly record struct CollectionInfo(
     PolymorphicMode PolymorphicMode,
     string? TypeIdProperty,
     string? CountType,
     int? CountSize,
-    string? CountSizeReference) : IEquatable<CollectionInfo>;
+    string? CountSizeReference,
+    bool Unlimited = false) : IEquatable<CollectionInfo>;
 
 /// <summary>
 /// A model describing a polymorphic option.

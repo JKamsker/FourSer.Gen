@@ -58,7 +58,9 @@ public class SerializerGenerator : IIncrementalGenerator
 
         sb.AppendLine("}");
 
-        context.AddSource($"{typeToGenerate.Name}.g.cs", sb.ToString());
+        // Namespaces can contain '.', which is not allowed in file names.
+        var hintName = $"{typeToGenerate.Namespace}.{typeToGenerate.Name}".Replace('.', '_');
+        context.AddSource($"{hintName}.g.cs", sb.ToString());
     }
 
     private static void GenerateFileHeader(StringBuilder sb, TypeToGenerate typeToGenerate)

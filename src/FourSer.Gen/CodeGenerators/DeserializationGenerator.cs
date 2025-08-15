@@ -60,6 +60,12 @@ public static class DeserializationGenerator
     {
         if (member.CollectionInfo is null) return;
 
+        if (member.CollectionInfo.Value.Unlimited)
+        {
+            GenerateUnlimitedCollectionDeserialization(sb, member);
+            return;
+        }
+
         // Determine the count type to use
         var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
         var countReadMethod = TypeHelper.GetReadMethodName(countType);
@@ -93,13 +99,16 @@ public static class DeserializationGenerator
         }
 
         // For non-byte collections, we instantiate them upfront with capacity if possible.
-        sb.AppendLine($"        {CollectionUtilities.GenerateCollectionInstantiation(member, countVar)}");
+        var capacityVar = countType is "uint" or "ulong" ? $"(int){countVar}" : countVar;
+        sb.AppendLine($"        {CollectionUtilities.GenerateCollectionInstantiation(member, capacityVar)}");
+
+        var loopLimitVar = countType is "ulong" ? $"(int){countVar}" : countVar;
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
             if (member.CollectionInfo.Value.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
             {
-                sb.AppendLine($"        for (int i = 0; i < {countVar}; i++)");
+                sb.AppendLine($"        for (int i = 0; i < {loopLimitVar}; i++)");
                 sb.AppendLine("        {");
                 sb.AppendLine($"            {member.ListTypeArgument!.Value.TypeName} item;");
                 var itemMember = new MemberToGenerate(
@@ -143,7 +152,7 @@ public static class DeserializationGenerator
 
                     sb.AppendLine($"            case {key}:");
                     sb.AppendLine("            {");
-                    sb.AppendLine($"                for (int i = 0; i < {countVar}; i++)");
+                    sb.AppendLine($"                for (int i = 0; i < {loopLimitVar}; i++)");
                     sb.AppendLine("                {");
                     sb.AppendLine($"                    var item = {TypeHelper.GetSimpleTypeName(option.Type)}.Deserialize(data, out var itemBytesRead);");
                     sb.AppendLine($"                    obj.{member.Name}.Add(item);");
@@ -160,7 +169,7 @@ public static class DeserializationGenerator
             }
         }
 
-        sb.AppendLine($"        for (int i = 0; i < {countVar}; i++)");
+        sb.AppendLine($"        for (int i = 0; i < {loopLimitVar}; i++)");
         sb.AppendLine("        {");
 
         var collectionTarget = member.CollectionTypeInfo?.ConcreteTypeName != null ? $"temp{member.Name}" : $"obj.{member.Name}";
@@ -185,6 +194,36 @@ public static class DeserializationGenerator
         if (!string.IsNullOrEmpty(assignment))
         {
             sb.AppendLine($"        {assignment}");
+        }
+    }
+
+    private static void GenerateUnlimitedCollectionDeserialization(StringBuilder sb, MemberToGenerate member)
+    {
+        var elementType = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
+        var tempCollectionVar = $"temp{member.Name}";
+
+        sb.AppendLine($"        var {tempCollectionVar} = new System.Collections.Generic.List<{elementType}>();");
+
+        sb.AppendLine("        while (data.Length > 0)");
+        sb.AppendLine("        {");
+
+        var listTypeInfo = member.ListTypeArgument ?? new ListTypeArgumentInfo(
+            elementType,
+            member.CollectionTypeInfo.Value.IsElementUnmanagedType,
+            member.CollectionTypeInfo.Value.IsElementStringType,
+            member.CollectionTypeInfo.Value.HasElementGenerateSerializerAttribute
+        );
+        GenerateListElementDeserialization(sb, listTypeInfo, tempCollectionVar);
+
+        sb.AppendLine("        }");
+
+        if (member.CollectionTypeInfo?.IsArray == true)
+        {
+            sb.AppendLine($"        obj.{member.Name} = {tempCollectionVar}.ToArray();");
+        }
+        else
+        {
+            sb.AppendLine($"        obj.{member.Name} = {tempCollectionVar};");
         }
     }
 
