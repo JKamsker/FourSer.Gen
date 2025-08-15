@@ -26,10 +26,10 @@ public partial class MyPacket : ISerializable<MyPacket>
         bytesRead = 0;
         var originalData = data;
         var obj = new MyPacket();
-        var DataCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        obj.Data = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBytes(ref data, DataCount).ToList();
-        bytesRead = originalData.Length - data.Length;
+        var dataCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        obj.Data = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBytes(ref data, dataCount).ToList();
         return obj;
+        bytesRead = originalData.Length - data.Length;
     }
 
     public static int Serialize(MyPacket obj, System.Span<byte> data)

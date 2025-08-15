@@ -29,8 +29,8 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
         obj.Id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
         obj.Data = NestedData.Deserialize(data, out var nestedBytesRead);
         data = data.Slice(nestedBytesRead);
-        bytesRead = originalData.Length - data.Length;
         return obj;
+        bytesRead = originalData.Length - data.Length;
     }
 
     public static int Serialize(ContainerPacket obj, System.Span<byte> data)
@@ -74,8 +74,8 @@ public partial class NestedData : ISerializable<NestedData>
         var obj = new NestedData();
         obj.Name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data);
         obj.Value = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadSingle(ref data);
-        bytesRead = originalData.Length - data.Length;
         return obj;
+        bytesRead = originalData.Length - data.Length;
     }
 
     public static int Serialize(NestedData obj, System.Span<byte> data)

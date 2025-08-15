@@ -1,3 +1,4 @@
+using System;
 using Microsoft.CodeAnalysis;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
@@ -35,6 +36,7 @@ internal static class TypeInfoProvider
 
         var serializableMembers = GetSerializableMembers(typeSymbol);
         var nestedTypes = GetNestedTypes(typeSymbol);
+        var constructorInfo = GetConstructorInfo(typeSymbol, serializableMembers);
 
         var hasSerializableBaseType = typeSymbol.BaseType?.GetAttributes()
             .Any(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute") ?? false;
@@ -46,8 +48,35 @@ internal static class TypeInfoProvider
             typeSymbol.IsValueType,
             serializableMembers,
             nestedTypes,
-            hasSerializableBaseType
+            hasSerializableBaseType,
+            constructorInfo
         );
+    }
+
+    private static ConstructorInfo? GetConstructorInfo(INamedTypeSymbol typeSymbol,
+        EquatableArray<MemberToGenerate> members)
+    {
+        var constructors = typeSymbol.Constructors
+            .Where(c => c.DeclaredAccessibility == Accessibility.Public && !c.IsImplicitlyDeclared)
+            .ToList();
+
+        if (constructors.Count == 0)
+        {
+            return null;
+        }
+
+        var bestConstructor = constructors
+            .OrderByDescending(c => c.Parameters.Length)
+            .FirstOrDefault(c => c.Parameters.All(p =>
+                members.Any(m => string.Equals(m.Name, p.Name, StringComparison.OrdinalIgnoreCase))));
+
+        if (bestConstructor is null)
+        {
+            return null;
+        }
+
+        var parameters = bestConstructor.Parameters.Select(p => new ParameterInfo(p.Name, p.Type.ToDisplayString(s_typeNameFormat))).ToImmutableArray();
+        return new ConstructorInfo(new EquatableArray<ParameterInfo>(parameters));
     }
 
     private static EquatableArray<MemberToGenerate> GetSerializableMembers(INamedTypeSymbol typeSymbol)
@@ -136,6 +165,7 @@ internal static class TypeInfoProvider
             {
                 var nestedMembers = GetSerializableMembers(nestedTypeSymbol);
                 var deeperNestedTypes = GetNestedTypes(nestedTypeSymbol);
+                var constructorInfo = GetConstructorInfo(nestedTypeSymbol, nestedMembers);
 
                 var hasSerializableBaseType = nestedTypeSymbol.BaseType?.GetAttributes()
                     .Any(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute") ?? false;
@@ -149,7 +179,8 @@ internal static class TypeInfoProvider
                         nestedTypeSymbol.IsValueType,
                         nestedMembers,
                         deeperNestedTypes,
-                        hasSerializableBaseType
+                        hasSerializableBaseType,
+                        constructorInfo
                     )
                 );
             }

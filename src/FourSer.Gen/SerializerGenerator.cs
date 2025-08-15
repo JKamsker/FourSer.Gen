@@ -58,7 +58,7 @@ public class SerializerGenerator : IIncrementalGenerator
 
         sb.AppendLine("}");
 
-        context.AddSource($"{typeToGenerate.Name}.g.cs", sb.ToString());
+        context.AddSource($"{typeToGenerate.Namespace}.{typeToGenerate.Name}.g.cs", sb.ToString());
     }
 
     private static void GenerateFileHeader(StringBuilder sb, TypeToGenerate typeToGenerate)

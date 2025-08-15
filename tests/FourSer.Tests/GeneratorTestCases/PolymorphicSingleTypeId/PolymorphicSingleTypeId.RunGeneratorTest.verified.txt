@@ -42,13 +42,13 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
         var originalData = data;
         var obj = new PolymorphicSingleTest();
         obj.AnimalTypeId = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref data);
-        var AnimalsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt16(ref data);
-        obj.Animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Animal>(AnimalsCount);
+        var animalsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt16(ref data);
+        obj.Animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Animal>((int)animalsCount);
         switch (obj.AnimalTypeId)
         {
             case 1:
             {
-                for (int i = 0; i < AnimalsCount; i++)
+                for (int i = 0; i < (int)animalsCount; i++)
                 {
                     var item = Cat.Deserialize(data, out var itemBytesRead);
                     obj.Animals.Add(item);
@@ -58,7 +58,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             }
             case 2:
             {
-                for (int i = 0; i < AnimalsCount; i++)
+                for (int i = 0; i < (int)animalsCount; i++)
                 {
                     var item = Dog.Deserialize(data, out var itemBytesRead);
                     obj.Animals.Add(item);
@@ -69,8 +69,8 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for Animals: {obj.AnimalTypeId}");
         }
-        bytesRead = originalData.Length - data.Length;
         return obj;
+        bytesRead = originalData.Length - data.Length;
     }
 
     public static int Serialize(PolymorphicSingleTest obj, System.Span<byte> data)
@@ -136,8 +136,8 @@ public partial class Cat : ISerializable<Cat>
         var obj = new Cat();
         obj.Id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
         obj.Name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data);
-        bytesRead = originalData.Length - data.Length;
         return obj;
+        bytesRead = originalData.Length - data.Length;
     }
 
     public static int Serialize(Cat obj, System.Span<byte> data)
@@ -180,8 +180,8 @@ public partial class Dog : ISerializable<Dog>
         var obj = new Dog();
         obj.Id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
         obj.Breed = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data);
-        bytesRead = originalData.Length - data.Length;
         return obj;
+        bytesRead = originalData.Length - data.Length;
     }
 
     public static int Serialize(Dog obj, System.Span<byte> data)
@@ -222,8 +222,8 @@ public partial class Animal : ISerializable<Animal>
         var originalData = data;
         var obj = new Animal();
         obj.Id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        bytesRead = originalData.Length - data.Length;
         return obj;
+        bytesRead = originalData.Length - data.Length;
     }
 
     public static int Serialize(Animal obj, System.Span<byte> data)

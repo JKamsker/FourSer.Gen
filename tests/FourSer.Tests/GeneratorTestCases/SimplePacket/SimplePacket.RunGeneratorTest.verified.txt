@@ -30,8 +30,8 @@ public partial class LoginPacket : ISerializable<LoginPacket>
         obj.Result = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref data);
         obj.UserID = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt32(ref data);
         obj.Username = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data);
-        bytesRead = originalData.Length - data.Length;
         return obj;
+        bytesRead = originalData.Length - data.Length;
     }
 
     public static int Serialize(LoginPacket obj, System.Span<byte> data)
