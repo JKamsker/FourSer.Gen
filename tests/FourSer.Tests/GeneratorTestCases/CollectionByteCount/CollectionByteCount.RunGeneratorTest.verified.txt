@@ -29,15 +29,15 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
         bytesRead = 0;
         var originalData = data;
         var obj = new IndividualTypeIdsTest();
-        var catsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref data);
-        obj.Cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat>((int)catsCount);
-        for (int i = 0; i < (int)catsCount; i++)
+        var CatsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref data);
+        obj.Cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat>(CatsCount);
+        for (int i = 0; i < CatsCount; i++)
         {
             obj.Cats.Add(Cat.Deserialize(data, out var itemBytesRead));
             data = data.Slice(itemBytesRead);
         }
-        return obj;
         bytesRead = originalData.Length - data.Length;
+        return obj;
     }
 
     public static int Serialize(IndividualTypeIdsTest obj, System.Span<byte> data)
@@ -84,8 +84,8 @@ public partial class Cat : ISerializable<Cat>
         var obj = new Cat();
         obj.Id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
         obj.Name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data);
-        return obj;
         bytesRead = originalData.Length - data.Length;
+        return obj;
     }
 
     public static int Serialize(Cat obj, System.Span<byte> data)

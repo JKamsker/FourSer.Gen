@@ -6,6 +6,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using FourSer.Gen.CodeGenerators;
+using FourSer.Gen.Helpers;
+using System.Collections.Immutable;
 
 namespace FourSer.Gen;
 
@@ -46,6 +48,12 @@ public class SerializerGenerator : IIncrementalGenerator
         PacketSizeGenerator.GenerateGetPacketSize(sb, typeToGenerate);
         sb.AppendLine();
 
+        if (typeToGenerate.Constructor is { ShouldGenerate: true } ctor)
+        {
+            GenerateConstructor(sb, typeToGenerate, ctor);
+            sb.AppendLine();
+        }
+
         DeserializationGenerator.GenerateDeserialize(sb, typeToGenerate);
         sb.AppendLine();
 
@@ -83,6 +91,20 @@ public class SerializerGenerator : IIncrementalGenerator
         var typeKeyword = typeToGenerate.IsValueType ? "struct" : "class";
         sb.AppendLine($"public partial {typeKeyword} {typeToGenerate.Name} : ISerializable<{typeToGenerate.Name}>");
         sb.AppendLine("{");
+    }
+
+    private static void GenerateConstructor(StringBuilder sb, TypeToGenerate typeToGenerate, Models.ConstructorInfo ctor)
+    {
+        var parameters = string.Join(", ", ctor.Parameters.Select(p => $"{p.TypeName} {StringExtensions.ToCamelCase(p.Name)}"));
+        sb.AppendLine($"    private {typeToGenerate.Name}({parameters})");
+        sb.AppendLine("    {");
+
+        foreach (var parameter in ctor.Parameters)
+        {
+            sb.AppendLine($"        this.{parameter.Name} = {StringExtensions.ToCamelCase(parameter.Name)};");
+        }
+
+        sb.AppendLine("    }");
     }
 
     private static void AddHelpers(IncrementalGeneratorPostInitializationContext context)

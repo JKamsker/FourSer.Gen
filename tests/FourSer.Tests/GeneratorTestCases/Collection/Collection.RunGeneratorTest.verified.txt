@@ -26,14 +26,14 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         bytesRead = 0;
         var originalData = data;
         var obj = new CollectionPacket();
-        var numbersCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        obj.Numbers = new System.Collections.Generic.List<int>((int)numbersCount);
-        for (int i = 0; i < (int)numbersCount; i++)
+        var NumbersCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        obj.Numbers = new System.Collections.Generic.List<int>(NumbersCount);
+        for (int i = 0; i < NumbersCount; i++)
         {
             obj.Numbers.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data));
         }
-        return obj;
         bytesRead = originalData.Length - data.Length;
+        return obj;
     }
 
     public static int Serialize(CollectionPacket obj, System.Span<byte> data)

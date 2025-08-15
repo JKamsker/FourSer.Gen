@@ -34,8 +34,10 @@ public readonly record struct ParameterInfo(
 /// A model describing a constructor.
 /// </summary>
 /// <param name="Parameters">The list of parameters for the constructor.</param>
+/// <param name="ShouldGenerate">Whether the constructor should be generated.</param>
 public readonly record struct ConstructorInfo(
-    EquatableArray<ParameterInfo> Parameters) : IEquatable<ConstructorInfo>;
+    EquatableArray<ParameterInfo> Parameters,
+    bool ShouldGenerate) : IEquatable<ConstructorInfo>;
 
 /// <summary>
 /// A model describing a member (property or field) to be serialized.

@@ -26,8 +26,8 @@ public partial struct MyStruct : ISerializable<MyStruct>
         var originalData = data;
         var obj = new MyStruct();
         obj.A = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        return obj;
         bytesRead = originalData.Length - data.Length;
+        return obj;
     }
 
     public static int Serialize(MyStruct obj, System.Span<byte> data)
@@ -70,15 +70,15 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         bytesRead = 0;
         var originalData = data;
         var obj = new PacketWithListOfStructs();
-        var structsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        obj.Structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>((int)structsCount);
-        for (int i = 0; i < (int)structsCount; i++)
+        var StructsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        obj.Structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(StructsCount);
+        for (int i = 0; i < StructsCount; i++)
         {
             obj.Structs.Add(MyStruct.Deserialize(data, out var itemBytesRead));
             data = data.Slice(itemBytesRead);
         }
-        return obj;
         bytesRead = originalData.Length - data.Length;
+        return obj;
     }
 
     public static int Serialize(PacketWithListOfStructs obj, System.Span<byte> data)
