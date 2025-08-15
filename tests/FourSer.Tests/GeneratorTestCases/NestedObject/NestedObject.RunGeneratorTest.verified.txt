@@ -21,15 +21,26 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
         return size;
     }
 
-    public static ContainerPacket Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
+    private ContainerPacket(int id, FourSer.Tests.GeneratorTestCases.NestedObject.NestedData @data)
     {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new ContainerPacket();
-        obj.Id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        obj.Data = NestedData.Deserialize(data, out var nestedBytesRead);
-        data = data.Slice(nestedBytesRead);
-        bytesRead = originalData.Length - data.Length;
+        this.Id = id;
+        this.Data = @data;
+    }
+
+    public ContainerPacket()
+    {
+        this.Id = default;
+        this.Data = default;
+    }
+
+    public static ContainerPacket Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    {
+        var originalBuffer = buffer;
+        var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var @data = NestedData.Deserialize(buffer, out var nestedBytesRead);
+        buffer = buffer.Slice(nestedBytesRead);
+        var obj = new ContainerPacket(id, @data);
+        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }
 
@@ -67,14 +78,25 @@ public partial class NestedData : ISerializable<NestedData>
         return size;
     }
 
-    public static NestedData Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
+    private NestedData(string name, float value)
     {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new NestedData();
-        obj.Name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data);
-        obj.Value = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadSingle(ref data);
-        bytesRead = originalData.Length - data.Length;
+        this.Name = name;
+        this.Value = value;
+    }
+
+    public NestedData()
+    {
+        this.Name = default;
+        this.Value = default;
+    }
+
+    public static NestedData Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    {
+        var originalBuffer = buffer;
+        var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
+        var value = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadSingle(ref buffer);
+        var obj = new NestedData(name, value);
+        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }
 

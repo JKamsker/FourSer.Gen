@@ -24,19 +24,28 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
         return size;
     }
 
-    public static SimpleConcreteCollectionTest Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
+    private SimpleConcreteCollectionTest(System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat> cats)
     {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new SimpleConcreteCollectionTest();
-        var CatsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        obj.Cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat>(CatsCount);
-        for (int i = 0; i < CatsCount; i++)
+        this.Cats = cats;
+    }
+
+    public SimpleConcreteCollectionTest()
+    {
+        this.Cats = default;
+    }
+
+    public static SimpleConcreteCollectionTest Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    {
+        var originalBuffer = buffer;
+        var catsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat>((int)catsCount);
+        for (int i = 0; i < (int)catsCount; i++)
         {
-            obj.Cats.Add(Cat.Deserialize(data, out var itemBytesRead));
-            data = data.Slice(itemBytesRead);
+            cats.Add(Cat.Deserialize(buffer, out var itemBytesRead));
+            buffer = buffer.Slice(itemBytesRead);
         }
-        bytesRead = originalData.Length - data.Length;
+        var obj = new SimpleConcreteCollectionTest(cats);
+        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }
 
@@ -77,14 +86,25 @@ public partial class Cat : ISerializable<Cat>
         return size;
     }
 
-    public static Cat Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
+    private Cat(int id, string name)
     {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new Cat();
-        obj.Id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        obj.Name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data);
-        bytesRead = originalData.Length - data.Length;
+        this.Id = id;
+        this.Name = name;
+    }
+
+    public Cat()
+    {
+        this.Id = default;
+        this.Name = default;
+    }
+
+    public static Cat Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    {
+        var originalBuffer = buffer;
+        var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
+        var obj = new Cat(id, name);
+        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }
 

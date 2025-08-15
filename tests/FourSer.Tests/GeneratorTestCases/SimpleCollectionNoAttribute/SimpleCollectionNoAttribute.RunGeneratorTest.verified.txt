@@ -21,14 +21,23 @@ public partial class MyPacket : ISerializable<MyPacket>
         return size;
     }
 
-    public static MyPacket Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
+    private MyPacket(System.Collections.Generic.List<byte> @data)
     {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new MyPacket();
-        var DataCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        obj.Data = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBytes(ref data, DataCount).ToList();
-        bytesRead = originalData.Length - data.Length;
+        this.Data = @data;
+    }
+
+    public MyPacket()
+    {
+        this.Data = default;
+    }
+
+    public static MyPacket Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    {
+        var originalBuffer = buffer;
+        var @dataCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var @data = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBytes(ref buffer, (int)@dataCount).ToList();
+        var obj = new MyPacket(@data);
+        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }
 
