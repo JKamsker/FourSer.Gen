@@ -362,6 +362,7 @@ internal static class TypeInfoProvider
         var countType = AttributeHelper.GetCountType(attribute)?.ToDisplayString(s_typeNameFormat);
         var countSize = AttributeHelper.GetCountSize(attribute);
         var countSizeReference = AttributeHelper.GetCountSizeReference(attribute);
+        var unlimited = AttributeHelper.GetUnlimited(attribute);
 
         return new CollectionInfo
         (
@@ -369,7 +370,8 @@ internal static class TypeInfoProvider
             typeIdProperty,
             countType,
             countSize,
-            countSizeReference
+            countSizeReference,
+            unlimited
         );
     }
 
