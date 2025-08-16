@@ -21,10 +21,10 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
         return size;
     }
 
-    private ContainerPacket(int id, FourSer.Tests.GeneratorTestCases.NestedObject.NestedData @data)
+    private ContainerPacket(int id, FourSer.Tests.GeneratorTestCases.NestedObject.NestedData data)
     {
         this.Id = id;
-        this.Data = @data;
+        this.Data = data;
     }
 
     public ContainerPacket()
@@ -37,9 +37,9 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
     {
         var originalBuffer = buffer;
         var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
-        var @data = NestedData.Deserialize(buffer, out var nestedBytesRead);
+        var data = NestedData.Deserialize(buffer, out var nestedBytesRead);
         buffer = buffer.Slice(nestedBytesRead);
-        var obj = new ContainerPacket(id, @data);
+        var obj = new ContainerPacket(id, data);
         bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }

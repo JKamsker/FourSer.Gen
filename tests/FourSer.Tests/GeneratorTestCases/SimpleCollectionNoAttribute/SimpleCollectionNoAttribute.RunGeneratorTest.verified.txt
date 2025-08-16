@@ -21,9 +21,9 @@ public partial class MyPacket : ISerializable<MyPacket>
         return size;
     }
 
-    private MyPacket(System.Collections.Generic.List<byte> @data)
+    private MyPacket(System.Collections.Generic.List<byte> data)
     {
-        this.Data = @data;
+        this.Data = data;
     }
 
     public MyPacket()
@@ -34,9 +34,9 @@ public partial class MyPacket : ISerializable<MyPacket>
     public static MyPacket Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
     {
         var originalBuffer = buffer;
-        var @dataCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
-        var @data = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBytes(ref buffer, (int)@dataCount).ToList();
-        var obj = new MyPacket(@data);
+        var dataCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var data = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBytes(ref buffer, (int)dataCount).ToList();
+        var obj = new MyPacket(data);
         bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }
