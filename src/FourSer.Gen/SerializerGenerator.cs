@@ -70,7 +70,7 @@ public class SerializerGenerator : IIncrementalGenerator
             NestedTypeGenerator.GenerateNestedTypes(sb, typeToGenerate.NestedTypes);
         }
 
-        sb.AppendLine("}");
+        sb.Append('}').AppendLine();
 
         // Namespaces can contain '.', which is not allowed in file names.
         var hintName = $"{typeToGenerate.Namespace}.{typeToGenerate.Name}".Replace('.', '_');
@@ -98,7 +98,7 @@ public class SerializerGenerator : IIncrementalGenerator
     {
         var typeKeyword = typeToGenerate.IsValueType ? "struct" : "class";
         sb.AppendLine($"public partial {typeKeyword} {typeToGenerate.Name} : ISerializable<{typeToGenerate.Name}>");
-        sb.AppendLine("{");
+        sb.Append('{').AppendLine();
     }
 
     internal static void GenerateConstructor(StringBuilder sb, TypeToGenerate typeToGenerate, Models.ConstructorInfo ctor)
@@ -113,7 +113,7 @@ public class SerializerGenerator : IIncrementalGenerator
                 sb.Append(", ");
             }
             sb.Append(p.TypeName);
-            sb.Append(" ");
+            sb.Append(' ');
             sb.Append(StringExtensions.ToCamelCase(p.Name));
             first = false;
         }
