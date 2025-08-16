@@ -4,7 +4,6 @@ using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Threading;
 
 namespace FourSer.Gen;
@@ -54,109 +53,101 @@ internal static class TypeInfoProvider
         EquatableArray<MemberToGenerate> members)
     {
         var constructors = new List<IMethodSymbol>();
-        foreach (var c in typeSymbol.Constructors)
+        foreach (var constructor in typeSymbol.Constructors)
         {
-            if (!c.IsImplicitlyDeclared)
+            if (!constructor.IsImplicitlyDeclared)
             {
-                constructors.Add(c);
+                constructors.Add(constructor);
             }
         }
 
-        var hasParameterlessCtor = HasParameterlessConstructor(constructors);
-        var shouldGenerate = HasReadOnlyMembers(members);
-
-        if (!shouldGenerate)
+        bool hasParameterlessCtor = false;
+        foreach (var constructor in constructors)
         {
-            var publicConstructors = GetPublicConstructors(constructors);
+            if (constructor.Parameters.Length == 0)
+            {
+                hasParameterlessCtor = true;
+                break;
+            }
+        }
+
+        bool hasReadOnlyMembers = false;
+        foreach (var member in members)
+        {
+            if (member.IsReadOnly)
+            {
+                hasReadOnlyMembers = true;
+                break;
+            }
+        }
+
+        if (!hasReadOnlyMembers)
+        {
+            var publicConstructors = new List<IMethodSymbol>();
+            foreach (var constructor in constructors)
+            {
+                if (constructor.DeclaredAccessibility == Accessibility.Public)
+                {
+                    publicConstructors.Add(constructor);
+                }
+            }
 
             if (publicConstructors.Count > 0)
             {
                 var bestConstructor = FindBestConstructor(publicConstructors, members);
                 if (bestConstructor is not null)
                 {
-                    var parameters = ImmutableArray.CreateBuilder<ParameterInfo>();
+                    var parametersBuilder = ImmutableArray.CreateBuilder<ParameterInfo>(bestConstructor.Parameters.Length);
                     foreach (var p in bestConstructor.Parameters)
                     {
-                        parameters.Add(new ParameterInfo(p.Name, p.Type.ToDisplayString(s_typeNameFormat)));
+                        parametersBuilder.Add(new ParameterInfo(p.Name, p.Type.ToDisplayString(s_typeNameFormat)));
                     }
-                    return new ConstructorInfo(new EquatableArray<ParameterInfo>(parameters.ToImmutable()), false, hasParameterlessCtor);
+
+                    return new ConstructorInfo(new EquatableArray<ParameterInfo>(parametersBuilder.ToImmutable()), false,
+                        hasParameterlessCtor);
                 }
             }
         }
 
-        var generatedParametersBuilder = ImmutableArray.CreateBuilder<ParameterInfo>();
+        var generatedParametersBuilder = ImmutableArray.CreateBuilder<ParameterInfo>(members.Count);
         foreach (var m in members)
         {
             generatedParametersBuilder.Add(new ParameterInfo(m.Name, m.TypeName));
         }
 
-        return new ConstructorInfo(new EquatableArray<ParameterInfo>(generatedParametersBuilder.ToImmutable()), true, hasParameterlessCtor);
+        return new ConstructorInfo(new EquatableArray<ParameterInfo>(generatedParametersBuilder.ToImmutable()), true,
+            hasParameterlessCtor);
     }
 
-    private static bool HasParameterlessConstructor(List<IMethodSymbol> constructors)
+    private static IMethodSymbol? FindBestConstructor(List<IMethodSymbol> constructors,
+        EquatableArray<MemberToGenerate> members)
     {
+        if (members.Count == 0)
+        {
+            foreach (var constructor in constructors)
+            {
+                if (constructor.Parameters.Length == 0)
+                {
+                    return constructor;
+                }
+            }
+            return null;
+        }
+
+        var memberDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var member in members)
+        {
+            memberDict[member.Name] = member.TypeName;
+        }
+
         foreach (var c in constructors)
         {
-            if (c.Parameters.Length == 0)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static bool HasBackingField(IPropertySymbol p)
-    {
-        foreach (var innerMember in p.ContainingType.GetMembers())
-        {
-            if (innerMember is IFieldSymbol f && SymbolEqualityComparer.Default.Equals(f.AssociatedSymbol, p))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static bool HasReadOnlyMembers(EquatableArray<MemberToGenerate> members)
-    {
-        foreach (var m in members)
-        {
-            if (m.IsReadOnly)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static List<IMethodSymbol> GetPublicConstructors(List<IMethodSymbol> constructors)
-    {
-        var publicConstructors = new List<IMethodSymbol>();
-        foreach (var c in constructors)
-        {
-            if (c.DeclaredAccessibility == Accessibility.Public)
-            {
-                publicConstructors.Add(c);
-            }
-        }
-        return publicConstructors;
-    }
-
-    private static IMethodSymbol? FindBestConstructor(List<IMethodSymbol> constructors, EquatableArray<MemberToGenerate> members)
-    {
-        foreach (var c in constructors)
-        {
-            int membersCount = 0;
-            foreach (var _ in members)
-            {
-                membersCount++;
-            }
-            if (c.Parameters.Length != membersCount)
+            if (c.Parameters.Length != members.Count)
             {
                 continue;
             }
 
-            if (AllParametersMatch(c, members))
+            if (AllParametersMatch(c, memberDict))
             {
                 return c;
             }
@@ -165,22 +156,12 @@ internal static class TypeInfoProvider
         return null;
     }
 
-    private static bool AllParametersMatch(IMethodSymbol constructor, EquatableArray<MemberToGenerate> members)
+    private static bool AllParametersMatch(IMethodSymbol constructor, IReadOnlyDictionary<string, string> members)
     {
         foreach (var p in constructor.Parameters)
         {
-            bool parameterMatches = false;
-            foreach (var m in members)
-            {
-                if (string.Equals(m.Name, p.Name, StringComparison.OrdinalIgnoreCase) &&
-                    m.TypeName == p.Type.ToDisplayString(s_typeNameFormat))
-                {
-                    parameterMatches = true;
-                    break;
-                }
-            }
-
-            if (!parameterMatches)
+            if (!members.TryGetValue(p.Name, out var typeName) ||
+                typeName != p.Type.ToDisplayString(s_typeNameFormat))
             {
                 return false;
             }
@@ -189,36 +170,41 @@ internal static class TypeInfoProvider
         return true;
     }
 
-    private static bool IsSerializableMember(ISymbol member)
+    private static bool IsSerializableMember(ISymbol member, IReadOnlyCollection<ISymbol> propertiesWithBackingFields)
     {
         if (member.IsImplicitlyDeclared || member.IsStatic)
         {
             return false;
         }
 
-        if (member is IPropertySymbol p)
+        switch (member)
         {
-            if (p.IsIndexer || p.DeclaredAccessibility != Accessibility.Public)
+            case IPropertySymbol p:
             {
+                if (p.IsIndexer || p.DeclaredAccessibility != Accessibility.Public)
+                {
+                    return false;
+                }
+
+                if (p.SetMethod is not null)
+                {
+                    return true;
+                }
+
+                foreach (var symbol in propertiesWithBackingFields)
+                {
+                    if (SymbolEqualityComparer.Default.Equals(symbol, p))
+                    {
+                        return true;
+                    }
+                }
                 return false;
             }
-
-            // Properties with a setter are serializable.
-            if (p.SetMethod is not null)
-            {
-                return true;
-            }
-
-            // Read-only properties are serializable if they are auto-properties (have a backing field).
-            return HasBackingField(p);
+            case IFieldSymbol field:
+                return field.AssociatedSymbol is null && field.DeclaredAccessibility == Accessibility.Public;
+            default:
+                return false;
         }
-
-        if (member is IFieldSymbol field)
-        {
-            return field.DeclaredAccessibility == Accessibility.Public;
-        }
-
-        return false;
     }
 
     private static EquatableArray<MemberToGenerate> GetSerializableMembers(INamedTypeSymbol typeSymbol)
@@ -228,24 +214,36 @@ internal static class TypeInfoProvider
 
         while (currentType != null && currentType.SpecialType != SpecialType.System_Object)
         {
-            var typeMembersWithLocation = new List<(MemberToGenerate, Location)>();
-            foreach (var m in currentType.GetMembers())
+            var membersInType = currentType.GetMembers();
+
+            var propertiesWithBackingFieldsBuilder = ImmutableHashSet.CreateBuilder<ISymbol>(SymbolEqualityComparer.Default);
+            foreach (var member in membersInType)
             {
-                if (IsSerializableMember(m))
+                if (member is IFieldSymbol { AssociatedSymbol: not null } f)
+                {
+                    propertiesWithBackingFieldsBuilder.Add(f.AssociatedSymbol!);
+                }
+            }
+            var propertiesWithBackingFields = propertiesWithBackingFieldsBuilder.ToImmutable();
+
+            var typeMembersWithLocation = new List<(MemberToGenerate, Location)>();
+            foreach (var m in membersInType)
+            {
+                if (IsSerializableMember(m, propertiesWithBackingFields))
                 {
                     typeMembersWithLocation.Add(CreateMemberToGenerate(m));
                 }
             }
 
-            typeMembersWithLocation.Sort((m1, m2) => m1.Item2.SourceSpan.Start.CompareTo(m2.Item2.SourceSpan.Start));
+            typeMembersWithLocation.Sort((x, y) => x.Item2.SourceSpan.Start.CompareTo(y.Item2.SourceSpan.Start));
 
-            var typeMembers = new List<MemberToGenerate>();
-            foreach(var m in typeMembersWithLocation)
+            var sortedMembers = new List<MemberToGenerate>(typeMembersWithLocation.Count);
+            foreach (var m in typeMembersWithLocation)
             {
-                typeMembers.Add(m.Item1);
+                sortedMembers.Add(m.Item1);
             }
 
-            members.InsertRange(0, typeMembers);
+            members.InsertRange(0, sortedMembers);
             currentType = currentType.BaseType;
         }
 
@@ -304,7 +302,7 @@ internal static class TypeInfoProvider
             isReadOnly
         );
 
-        return (memberToGenerate, m.Locations.First());
+        return (memberToGenerate, m.Locations[0]);
     }
 
     private static EquatableArray<TypeToGenerate> GetNestedTypes(INamedTypeSymbol parentType)

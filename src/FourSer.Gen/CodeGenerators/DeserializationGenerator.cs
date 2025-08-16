@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.Helpers;
@@ -36,37 +35,7 @@ namespace FourSer.Gen.CodeGenerators
             var newKeyword = typeToGenerate.HasSerializableBaseType ? "new " : "";
             sb.AppendLine($"    public static {newKeyword}{typeToGenerate.Name} Deserialize(System.IO.Stream stream)");
             sb.AppendLine("    {");
-
-            foreach (var member in typeToGenerate.Members)
-            {
-                GenerateMemberDeserialization(sb, member, true, "stream", "StreamReaderHelpers");
-            }
-
-            if (typeToGenerate.Constructor is { } ctor)
-            {
-                var ctorArgs = string.Join(", ", ctor.Parameters.Select(p => StringExtensions.ToCamelCase(p.Name)));
-                sb.AppendLine($"        var obj = new {typeToGenerate.Name}({ctorArgs});");
-
-                var membersInCtor = new HashSet<string>(ctor.Parameters.Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
-                var membersNotInCtor = typeToGenerate.Members.Where(m => !membersInCtor.Contains(m.Name));
-
-                foreach (var member in membersNotInCtor)
-                {
-                    var camelCaseName = StringExtensions.ToCamelCase(member.Name);
-                    sb.AppendLine($"        obj.{member.Name} = {camelCaseName};");
-                }
-            }
-            else
-            {
-                sb.AppendLine($"        var obj = new {typeToGenerate.Name}();");
-                foreach (var member in typeToGenerate.Members)
-                {
-                    var camelCaseName = StringExtensions.ToCamelCase(member.Name);
-                    sb.AppendLine($"        obj.{member.Name} = {camelCaseName};");
-                }
-            }
-
-            sb.AppendLine("        return obj;");
+            GenerateDeserializeBody(sb, typeToGenerate, "stream", "StreamReaderHelpers");
             sb.AppendLine("    }");
         }
 
@@ -75,22 +44,43 @@ namespace FourSer.Gen.CodeGenerators
             var newKeyword = typeToGenerate.HasSerializableBaseType ? "new " : "";
             sb.AppendLine($"    public static {newKeyword}{typeToGenerate.Name} Deserialize(ref System.ReadOnlySpan<byte> buffer)");
             sb.AppendLine("    {");
+            GenerateDeserializeBody(sb, typeToGenerate, "buffer", "RoSpanReaderHelpers");
+            sb.AppendLine("    }");
+        }
 
+        private static void GenerateDeserializeBody(StringBuilder sb, TypeToGenerate typeToGenerate, string source,
+            string helper)
+        {
             foreach (var member in typeToGenerate.Members)
             {
-                GenerateMemberDeserialization(sb, member, true, "buffer", "RoSpanReaderHelpers");
+                GenerateMemberDeserialization(sb, member, true, source, helper);
             }
 
             if (typeToGenerate.Constructor is { } ctor)
             {
-                var ctorArgs = string.Join(", ", ctor.Parameters.Select(p => StringExtensions.ToCamelCase(p.Name)));
-                sb.AppendLine($"        var obj = new {typeToGenerate.Name}({ctorArgs});");
-
-                var membersInCtor = new HashSet<string>(ctor.Parameters.Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
-                var membersNotInCtor = typeToGenerate.Members.Where(m => !membersInCtor.Contains(m.Name));
-
-                foreach (var member in membersNotInCtor)
+                sb.Append($"        var obj = new {typeToGenerate.Name}(");
+                for (var i = 0; i < ctor.Parameters.Count; i++)
                 {
+                    var p = ctor.Parameters[i];
+                    sb.Append(StringExtensions.ToCamelCase(p.Name));
+                    if (i < ctor.Parameters.Count - 1)
+                    {
+                        sb.Append(", ");
+                    }
+                }
+
+                sb.AppendLine(");");
+
+                var membersInCtor = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var p in ctor.Parameters)
+                {
+                    membersInCtor.Add(p.Name);
+                }
+
+                foreach (var member in typeToGenerate.Members)
+                {
+                    if (membersInCtor.Contains(member.Name)) continue;
+
                     var camelCaseName = StringExtensions.ToCamelCase(member.Name);
                     sb.AppendLine($"        obj.{member.Name} = {camelCaseName};");
                 }
@@ -106,7 +96,6 @@ namespace FourSer.Gen.CodeGenerators
             }
 
             sb.AppendLine("        return obj;");
-            sb.AppendLine("    }");
         }
 
 
@@ -175,11 +164,12 @@ namespace FourSer.Gen.CodeGenerators
             {
                 if (member.CollectionTypeInfo?.IsArray == true)
                 {
-                sb.AppendLine($"        {target} = FourSer.Gen.Helpers.{helper}.ReadBytes({refOrEmpty}{source}, (int){countVar});");
+                    sb.AppendLine($"        {target} = FourSer.Gen.Helpers.{helper}.ReadBytes({refOrEmpty}{source}, (int){countVar});");
                 }
                 else if (member.CollectionTypeInfo?.CollectionTypeName == "System.Collections.Generic.List<T>")
                 {
-                    sb.AppendLine($"        {target} = FourSer.Gen.Helpers.{helper}.ReadBytes({refOrEmpty}{source}, (int){countVar}).ToList();");
+                    var bytes = $"FourSer.Gen.Helpers.{helper}.ReadBytes({refOrEmpty}{source}, (int){countVar})";
+                    sb.AppendLine($"        {target} = new System.Collections.Generic.List<byte>({bytes});");
                 }
                 else
                 {

@@ -22,49 +22,8 @@ public static class SerializationGenerator
         sb.AppendLine($"    public static int Serialize({typeToGenerate.Name} obj, System.Span<byte> data)");
         sb.AppendLine("    {");
         sb.AppendLine($"        var originalData = data;");
-
-        // Pre-pass to update TypeId properties
-        foreach (var member in typeToGenerate.Members)
-        {
-            if (member.PolymorphicInfo is not { } info || string.IsNullOrEmpty(info.TypeIdProperty))
-            {
-                continue;
-            }
-
-            // Skip collections with SingleTypeId mode - they use the TypeIdProperty directly
-            if ((member.IsList || member.IsCollection) && member.CollectionInfo?.PolymorphicMode == PolymorphicMode.SingleTypeId)
-            {
-                continue;
-            }
-
-            sb.AppendLine($"        switch (obj.{member.Name})");
-            sb.AppendLine("        {");
-            foreach (var option in info.Options)
-            {
-                var typeName = TypeHelper.GetSimpleTypeName(option.Type);
-                var key = option.Key.ToString();
-                if (info.EnumUnderlyingType is not null)
-                {
-                    key = $"({info.TypeIdType}){key}";
-                }
-                else if (info.TypeIdType.EndsWith("Enum"))
-                {
-                    key = $"{info.TypeIdType}.{key}";
-                }
-                sb.AppendLine($"            case {typeName}:");
-                sb.AppendLine($"                obj.{info.TypeIdProperty} = {key};");
-                sb.AppendLine("                break;");
-            }
-            sb.AppendLine("            case null:");
-            sb.AppendLine("                break;");
-            sb.AppendLine("        }");
-        }
-
-        foreach (var member in typeToGenerate.Members)
-        {
-            GenerateMemberSerialization(sb, member, "data", "SpanWriterHelpers");
-        }
-
+        GeneratePrePass(sb, typeToGenerate);
+        GenerateSerializeBody(sb, typeToGenerate, "data", "SpanWriterHelpers");
         sb.AppendLine("        return originalData.Length - data.Length;");
         sb.AppendLine("    }");
     }
@@ -73,8 +32,13 @@ public static class SerializationGenerator
     {
         sb.AppendLine($"    public static void Serialize({typeToGenerate.Name} obj, System.IO.Stream stream)");
         sb.AppendLine("    {");
+        GeneratePrePass(sb, typeToGenerate);
+        GenerateSerializeBody(sb, typeToGenerate, "stream", "StreamWriterHelpers");
+        sb.AppendLine("    }");
+    }
 
-        // Pre-pass to update TypeId properties
+    private static void GeneratePrePass(StringBuilder sb, TypeToGenerate typeToGenerate)
+    {
         foreach (var member in typeToGenerate.Members)
         {
             if (member.PolymorphicInfo is not { } info || string.IsNullOrEmpty(info.TypeIdProperty))
@@ -82,7 +46,8 @@ public static class SerializationGenerator
                 continue;
             }
 
-            if ((member.IsList || member.IsCollection) && member.CollectionInfo?.PolymorphicMode == PolymorphicMode.SingleTypeId)
+            if ((member.IsList || member.IsCollection) &&
+                member.CollectionInfo?.PolymorphicMode == PolymorphicMode.SingleTypeId)
             {
                 continue;
             }
@@ -101,20 +66,25 @@ public static class SerializationGenerator
                 {
                     key = $"{info.TypeIdType}.{key}";
                 }
+
                 sb.AppendLine($"            case {typeName}:");
                 sb.AppendLine($"                obj.{info.TypeIdProperty} = {key};");
                 sb.AppendLine("                break;");
             }
+
             sb.AppendLine("            case null:");
             sb.AppendLine("                break;");
             sb.AppendLine("        }");
         }
+    }
 
+    private static void GenerateSerializeBody(StringBuilder sb, TypeToGenerate typeToGenerate, string target,
+        string helper)
+    {
         foreach (var member in typeToGenerate.Members)
         {
-            GenerateMemberSerialization(sb, member, "stream", "StreamWriterHelpers");
+            GenerateMemberSerialization(sb, member, target, helper);
         }
-        sb.AppendLine("    }");
     }
 
     private static void GenerateMemberSerialization(StringBuilder sb, MemberToGenerate member, string target, string helper)
