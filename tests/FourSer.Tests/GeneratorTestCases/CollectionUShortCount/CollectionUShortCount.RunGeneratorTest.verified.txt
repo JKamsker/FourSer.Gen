@@ -24,7 +24,6 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         return size;
     }
 
-<<<<<<< HEAD
     private UShortCountTest(System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat> cats)
     {
         this.Cats = cats;
@@ -47,21 +46,6 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         }
         var obj = new UShortCountTest(cats);
         bytesRead = originalBuffer.Length - buffer.Length;
-=======
-    public static UShortCountTest Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
-    {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new UShortCountTest();
-        var CatsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt16(ref data);
-        obj.Cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat>(CatsCount);
-        for (int i = 0; i < CatsCount; i++)
-        {
-            obj.Cats.Add(Cat.Deserialize(data, out var itemBytesRead));
-            data = data.Slice(itemBytesRead);
-        }
-        bytesRead = originalData.Length - data.Length;
->>>>>>> main
         return obj;
     }
 
@@ -102,7 +86,6 @@ public partial class Cat : ISerializable<Cat>
         return size;
     }
 
-<<<<<<< HEAD
     private Cat(int id, string name)
     {
         this.Id = id;
@@ -122,16 +105,6 @@ public partial class Cat : ISerializable<Cat>
         var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
         var obj = new Cat(id, name);
         bytesRead = originalBuffer.Length - buffer.Length;
-=======
-    public static Cat Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
-    {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new Cat();
-        obj.Id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        obj.Name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data);
-        bytesRead = originalData.Length - data.Length;
->>>>>>> main
         return obj;
     }
 

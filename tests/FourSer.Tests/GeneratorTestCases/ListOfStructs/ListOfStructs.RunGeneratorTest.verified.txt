@@ -20,7 +20,6 @@ public partial struct MyStruct : ISerializable<MyStruct>
         return size;
     }
 
-<<<<<<< HEAD
     private MyStruct(int a)
     {
         this.A = a;
@@ -33,15 +32,6 @@ public partial struct MyStruct : ISerializable<MyStruct>
         var a = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var obj = new MyStruct(a);
         bytesRead = originalBuffer.Length - buffer.Length;
-=======
-    public static MyStruct Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
-    {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new MyStruct();
-        obj.A = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        bytesRead = originalData.Length - data.Length;
->>>>>>> main
         return obj;
     }
 
@@ -80,7 +70,6 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         return size;
     }
 
-<<<<<<< HEAD
     private PacketWithListOfStructs(System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct> structs)
     {
         this.Structs = structs;
@@ -103,21 +92,6 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         }
         var obj = new PacketWithListOfStructs(structs);
         bytesRead = originalBuffer.Length - buffer.Length;
-=======
-    public static PacketWithListOfStructs Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
-    {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new PacketWithListOfStructs();
-        var StructsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        obj.Structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(StructsCount);
-        for (int i = 0; i < StructsCount; i++)
-        {
-            obj.Structs.Add(MyStruct.Deserialize(data, out var itemBytesRead));
-            data = data.Slice(itemBytesRead);
-        }
-        bytesRead = originalData.Length - data.Length;
->>>>>>> main
         return obj;
     }
 

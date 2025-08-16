@@ -6,11 +6,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using FourSer.Gen.CodeGenerators;
-<<<<<<< HEAD
 using FourSer.Gen.Helpers;
 using System.Collections.Immutable;
-=======
->>>>>>> main
 
 namespace FourSer.Gen;
 
@@ -40,12 +37,6 @@ public class SerializerGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, TypeToGenerate typeToGenerate)
     {
-<<<<<<< HEAD
-=======
-        // // In a real implementation, you would handle diagnostics here
-        // // For example: context.ReportDiagnostic(diagnostic);
-        // var source = SourceGenerator.GenerateSource(typeToGenerate);
->>>>>>> main
         var sb = new StringBuilder();
 
         GenerateFileHeader(sb, typeToGenerate);
@@ -54,7 +45,6 @@ public class SerializerGenerator : IIncrementalGenerator
         PacketSizeGenerator.GenerateGetPacketSize(sb, typeToGenerate);
         sb.AppendLine();
 
-<<<<<<< HEAD
         if (typeToGenerate.Constructor is { ShouldGenerate: true } ctor)
         {
             if (!ctor.Parameters.IsEmpty)
@@ -70,8 +60,6 @@ public class SerializerGenerator : IIncrementalGenerator
             }
         }
 
-=======
->>>>>>> main
         DeserializationGenerator.GenerateDeserialize(sb, typeToGenerate);
         sb.AppendLine();
 
@@ -84,13 +72,9 @@ public class SerializerGenerator : IIncrementalGenerator
 
         sb.AppendLine("}");
 
-<<<<<<< HEAD
-        context.AddSource($"{typeToGenerate.Namespace}.{typeToGenerate.Name}.g.cs", sb.ToString());
-=======
         // Namespaces can contain '.', which is not allowed in file names.
         var hintName = $"{typeToGenerate.Namespace}.{typeToGenerate.Name}".Replace('.', '_');
         context.AddSource($"{hintName}.g.cs", sb.ToString());
->>>>>>> main
     }
 
     private static void GenerateFileHeader(StringBuilder sb, TypeToGenerate typeToGenerate)
@@ -117,7 +101,6 @@ public class SerializerGenerator : IIncrementalGenerator
         sb.AppendLine("{");
     }
 
-<<<<<<< HEAD
     internal static void GenerateConstructor(StringBuilder sb, TypeToGenerate typeToGenerate, Models.ConstructorInfo ctor)
     {
         var parameters = string.Join(", ", ctor.Parameters.Select(p => $"{p.TypeName} {StringExtensions.ToCamelCase(p.Name)}"));
@@ -148,8 +131,6 @@ public class SerializerGenerator : IIncrementalGenerator
         sb.AppendLine("    }");
     }
 
-=======
->>>>>>> main
     private static void AddHelpers(IncrementalGeneratorPostInitializationContext context)
     {
         var assembly = Assembly.GetExecutingAssembly();

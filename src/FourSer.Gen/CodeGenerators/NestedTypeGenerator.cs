@@ -25,7 +25,6 @@ public static class NestedTypeGenerator
             sb.AppendLine("    {");
 
             // Delegate to the primary generators
-<<<<<<< HEAD
             if (nestedType.Constructor is { ShouldGenerate: true } ctor)
             {
                 if (!ctor.Parameters.IsEmpty)
@@ -41,8 +40,6 @@ public static class NestedTypeGenerator
                 }
             }
 
-=======
->>>>>>> main
             PacketSizeGenerator.GenerateGetPacketSize(sb, nestedType);
             sb.AppendLine();
             DeserializationGenerator.GenerateDeserialize(sb, nestedType);

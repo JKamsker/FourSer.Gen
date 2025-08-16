@@ -93,14 +93,6 @@ public static class SerializationGenerator
     {
         if (member.CollectionInfo is null) return;
 
-<<<<<<< HEAD
-        // Determine the count type to use
-        var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
-        var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
-
-        var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
-        sb.AppendLine($"        FourSer.Gen.Helpers.SpanWriterHelpers.{countWriteMethod}(ref data, ({countType}){countExpression});");
-=======
         if (member.CollectionInfo is { Unlimited: false })
         {
             // Determine the count type to use
@@ -110,7 +102,6 @@ public static class SerializationGenerator
             var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
             sb.AppendLine($"        FourSer.Gen.Helpers.SpanWriterHelpers.{countWriteMethod}(ref data, ({countType}){countExpression});");
         }
->>>>>>> main
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
@@ -132,12 +123,8 @@ public static class SerializationGenerator
                     null,
                     member.PolymorphicInfo,
                     false,
-<<<<<<< HEAD
                     null,
                     false
-=======
-                    null
->>>>>>> main
                 );
 
                 GeneratePolymorphicItemSerialization(sb, itemMember, "item", itemBytesWrittenVar);

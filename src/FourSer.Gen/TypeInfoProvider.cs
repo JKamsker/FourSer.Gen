@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 using System;
-=======
->>>>>>> main
 using Microsoft.CodeAnalysis;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
@@ -30,11 +27,7 @@ internal static class TypeInfoProvider
             return null;
         }
 
-<<<<<<< HEAD
-=======
         // We only generate for top-level types. Nested types are generated as part of their container.
-        // This preserves the original logic's behavior.
->>>>>>> main
         if (typeSymbol.ContainingType != null)
         {
             return null;
@@ -42,10 +35,7 @@ internal static class TypeInfoProvider
 
         var serializableMembers = GetSerializableMembers(typeSymbol);
         var nestedTypes = GetNestedTypes(typeSymbol);
-<<<<<<< HEAD
         var constructorInfo = GetConstructorInfo(typeSymbol, serializableMembers);
-=======
->>>>>>> main
 
         var hasSerializableBaseType = typeSymbol.BaseType?.GetAttributes()
             .Any(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute") ?? false;
@@ -57,7 +47,6 @@ internal static class TypeInfoProvider
             typeSymbol.IsValueType,
             serializableMembers,
             nestedTypes,
-<<<<<<< HEAD
             hasSerializableBaseType,
             constructorInfo
         );
@@ -133,12 +122,6 @@ internal static class TypeInfoProvider
         return false;
     }
 
-=======
-            hasSerializableBaseType
-        );
-    }
-
->>>>>>> main
     private static EquatableArray<MemberToGenerate> GetSerializableMembers(INamedTypeSymbol typeSymbol)
     {
         var members = new List<MemberToGenerate>();
@@ -147,16 +130,7 @@ internal static class TypeInfoProvider
         while (currentType != null && currentType.SpecialType != SpecialType.System_Object)
         {
             var typeMembers = currentType.GetMembers()
-<<<<<<< HEAD
                 .Where(IsSerializableMember)
-=======
-                .Where
-                (
-                    m => !m.IsImplicitlyDeclared &&
-                         (m is IPropertySymbol { SetMethod: not null } ||
-                          m is IFieldSymbol { IsReadOnly: false, DeclaredAccessibility: Accessibility.Public })
-                )
->>>>>>> main
                 .OrderBy(m => m.Locations.First().SourceSpan.Start)
                 .Select
                 (
@@ -187,7 +161,6 @@ internal static class TypeInfoProvider
 
                         var polymorphicInfo = GetPolymorphicInfo(m);
 
-<<<<<<< HEAD
                         bool isReadOnly = false;
                         if (m is IPropertySymbol prop)
                         {
@@ -198,8 +171,6 @@ internal static class TypeInfoProvider
                             isReadOnly = field.IsReadOnly;
                         }
 
-=======
->>>>>>> main
                         return new MemberToGenerate
                         (
                             m.Name,
@@ -217,12 +188,8 @@ internal static class TypeInfoProvider
                             GetCollectionInfo(m),
                             polymorphicInfo,
                             isCollection,
-<<<<<<< HEAD
                             collectionTypeInfo,
                             isReadOnly
-=======
-                            collectionTypeInfo
->>>>>>> main
                         );
                     }
                 )
@@ -251,11 +218,8 @@ internal static class TypeInfoProvider
                 var hasSerializableBaseType = nestedTypeSymbol.BaseType?.GetAttributes()
                     .Any(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute") ?? false;
 
-<<<<<<< HEAD
                 var constructorInfo = GetConstructorInfo(nestedTypeSymbol, nestedMembers);
 
-=======
->>>>>>> main
                 nestedTypes.Add
                 (
                     new TypeToGenerate
@@ -265,12 +229,8 @@ internal static class TypeInfoProvider
                         nestedTypeSymbol.IsValueType,
                         nestedMembers,
                         deeperNestedTypes,
-<<<<<<< HEAD
                         hasSerializableBaseType,
                         constructorInfo
-=======
-                        hasSerializableBaseType
->>>>>>> main
                     )
                 );
             }
@@ -281,10 +241,7 @@ internal static class TypeInfoProvider
 
     private static (bool IsCollection, CollectionTypeInfo? CollectionTypeInfo) GetCollectionTypeInfo(ITypeSymbol typeSymbol)
     {
-<<<<<<< HEAD
-=======
         // Handle arrays first (arrays are not INamedTypeSymbol)
->>>>>>> main
         if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
         {
             var elementType = arrayTypeSymbol.ElementType;
@@ -305,10 +262,7 @@ internal static class TypeInfoProvider
             return (false, null);
         }
 
-<<<<<<< HEAD
-=======
         // Check if it's a generic collection type
->>>>>>> main
         if (!namedTypeSymbol.IsGenericType || namedTypeSymbol.TypeArguments.Length != 1)
         {
             return (false, null);
@@ -324,21 +278,13 @@ internal static class TypeInfoProvider
         {
             case "System.Collections.Generic.List<T>":
                 isCollection = true;
-<<<<<<< HEAD
-                concreteTypeName = null;
-=======
-                concreteTypeName = null; // List<T> is already concrete, no temp variable needed
->>>>>>> main
+                concreteTypeName = null; // List<T> is already concrete
                 break;
             case "System.Collections.Generic.IList<T>":
             case "System.Collections.Generic.ICollection<T>":
             case "System.Collections.Generic.IEnumerable<T>":
                 isCollection = true;
-<<<<<<< HEAD
-                concreteTypeName = "System.Collections.Generic.List";
-=======
                 concreteTypeName = "System.Collections.Generic.List"; // Interfaces map to List<T>
->>>>>>> main
                 break;
             case "System.Collections.ObjectModel.Collection<T>":
                 isCollection = true;
@@ -395,30 +341,13 @@ internal static class TypeInfoProvider
     {
         var attribute = AttributeHelper.GetCollectionAttribute(member);
         
-<<<<<<< HEAD
-        var memberTypeSymbol = member is IPropertySymbol p ? p.Type : ((IFieldSymbol)member).Type;
-        var (isCollection, _) = GetCollectionTypeInfo(memberTypeSymbol);
-
-=======
-        // Check if this member is any supported collection type
         var memberTypeSymbol = member is IPropertySymbol p ? p.Type : ((IFieldSymbol)member).Type;
         var (isCollection, _) = GetCollectionTypeInfo(memberTypeSymbol);
         
-        // If it's a collection but has no attribute, provide default collection info
->>>>>>> main
         if (attribute is null)
         {
             if (isCollection)
             {
-<<<<<<< HEAD
-                return new CollectionInfo
-                (
-                    PolymorphicMode.None,
-                    null,
-                    null,
-                    null,
-                    null
-=======
                 // Return default CollectionInfo with no special configuration
                 return new CollectionInfo
                 (
@@ -426,8 +355,8 @@ internal static class TypeInfoProvider
                     null, // TypeIdProperty
                     null, // CountType (will use default)
                     null, // CountSize (will use default)
-                    null  // CountSizeReference
->>>>>>> main
+                    null, // CountSizeReference
+                    false // Unlimited
                 );
             }
             return null;
@@ -438,10 +367,7 @@ internal static class TypeInfoProvider
         var countType = AttributeHelper.GetCountType(attribute)?.ToDisplayString(s_typeNameFormat);
         var countSize = AttributeHelper.GetCountSize(attribute);
         var countSizeReference = AttributeHelper.GetCountSizeReference(attribute);
-<<<<<<< HEAD
-=======
         var unlimited = AttributeHelper.GetUnlimited(attribute);
->>>>>>> main
 
         return new CollectionInfo
         (
@@ -449,12 +375,8 @@ internal static class TypeInfoProvider
             typeIdProperty,
             countType,
             countSize,
-<<<<<<< HEAD
-            countSizeReference
-=======
             countSizeReference,
             unlimited
->>>>>>> main
         );
     }
 
@@ -464,18 +386,11 @@ internal static class TypeInfoProvider
         var collectionAttribute = AttributeHelper.GetCollectionAttribute(member);
         var options = AttributeHelper.GetPolymorphicOptions(member);
 
-<<<<<<< HEAD
-        var hasPolymorphicOptions = options.Any();
-        var hasPolymorphicAttribute = attribute is not null;
-        var hasPolymorphicCollectionMode = collectionAttribute is not null && 
-            AttributeHelper.GetPolymorphicMode(collectionAttribute) != 0;
-=======
         // Only create PolymorphicInfo if there are actual polymorphic options or explicit polymorphic configuration
         var hasPolymorphicOptions = options.Any();
         var hasPolymorphicAttribute = attribute is not null;
         var hasPolymorphicCollectionMode = collectionAttribute is not null &&
             AttributeHelper.GetPolymorphicMode(collectionAttribute) != 0; // 0 = PolymorphicMode.None
->>>>>>> main
 
         if (!hasPolymorphicOptions && !hasPolymorphicAttribute && !hasPolymorphicCollectionMode)
         {
