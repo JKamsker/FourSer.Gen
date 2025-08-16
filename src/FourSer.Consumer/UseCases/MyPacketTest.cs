@@ -23,7 +23,7 @@ public class MyPacketTest
         var span = new Span<byte>(buffer);
         MyPacket.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = MyPacket.Deserialize(readOnlySpan, out _);
+        var deserialized = MyPacket.Deserialize(readOnlySpan);
 
         Assert.AreEqual(true, original.Data.SequenceEqual(deserialized.Data));
     }

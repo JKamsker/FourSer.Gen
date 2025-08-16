@@ -90,8 +90,7 @@ public static class PolymorphicImplicitTypeIdTest
         
         // Deserialize
         var readSpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = PolymorphicEntityImplicitTypeId.Deserialize(readSpan, out var bytesRead);
-        Console.WriteLine($"  Bytes read: {bytesRead}");
+        var deserialized = PolymorphicEntityImplicitTypeId.Deserialize(readSpan);
         
         // Verify
         Console.WriteLine($"  Original ID: {original.Id}, Deserialized ID: {deserialized.Id}");

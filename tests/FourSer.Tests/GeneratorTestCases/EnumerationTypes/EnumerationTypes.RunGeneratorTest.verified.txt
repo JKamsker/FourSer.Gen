@@ -95,9 +95,8 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         this.LargeBag = default;
     }
 
-    public static EnumerationTypesPacket Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static EnumerationTypesPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var numbersCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var numbers = new System.Collections.Generic.List<int>(numbersCount);
         for (int i = 0; i < numbersCount; i++)
@@ -193,8 +192,12 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             largeBag.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt64(ref buffer));
         }
         var obj = new EnumerationTypesPacket(numbers, names, data, data1, values, uniqueIds, processingQueue, processingStack, arrayData, measurements, flags, observableData, characters, sortedValues, smallSet, mediumQueue, largeBag);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static EnumerationTypesPacket Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(EnumerationTypesPacket obj, System.Span<byte> data)

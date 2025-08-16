@@ -36,7 +36,7 @@ public class TestWithListOfNestedReferenceTypesTest
         var span = new Span<byte>(buffer);
         TestWithListOfNestedReferenceTypes.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = TestWithListOfNestedReferenceTypes.Deserialize(readOnlySpan, out _);
+        var deserialized = TestWithListOfNestedReferenceTypes.Deserialize(readOnlySpan);
 
         Assert.AreEqual(original.MyList.Count, deserialized.MyList.Count);
         for (int i = 0; i < original.MyList.Count; i++)

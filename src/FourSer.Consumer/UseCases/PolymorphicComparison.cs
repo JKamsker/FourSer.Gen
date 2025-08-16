@@ -45,8 +45,8 @@ public static class PolymorphicComparison
         Console.WriteLine($"Packet sizes match: {explicitSize == implicitSize}");
         
         // Deserialize both
-        var explicitDeserialized = PolymorphicEntity.Deserialize(explicitBuffer, out var explicitBytesRead);
-        var implicitDeserialized = PolymorphicEntityImplicitTypeId.Deserialize(implicitBuffer, out var implicitBytesRead);
+        var explicitDeserialized = PolymorphicEntity.Deserialize(explicitBuffer);
+        var implicitDeserialized = PolymorphicEntityImplicitTypeId.Deserialize(implicitBuffer);
         
         Console.WriteLine($"Both deserialized successfully: {explicitDeserialized.Id == 100 && implicitDeserialized.Id == 100}");
         Console.WriteLine($"Both have correct types: {explicitDeserialized.Entity is PolymorphicEntity.EntityType1 && implicitDeserialized.Entity is PolymorphicEntityImplicitTypeId.EntityType1}");

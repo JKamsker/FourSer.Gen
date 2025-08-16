@@ -26,7 +26,7 @@ public class TestWithCountSizeReferenceTest
         var span = new Span<byte>(buffer);
         TestWithCountSizeReference.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = TestWithCountSizeReference.Deserialize(readOnlySpan, out _);
+        var deserialized = TestWithCountSizeReference.Deserialize(readOnlySpan);
 
         Assert.AreEqual(original.MyListCount, deserialized.MyListCount);
         Assert.AreEqual(true, original.MyList.SequenceEqual(deserialized.MyList));

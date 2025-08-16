@@ -35,7 +35,7 @@ public class BackwardCompatibilityTest
         var span = new Span<byte>(buffer);
         LoginAckPacket.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = LoginAckPacket.Deserialize(readOnlySpan, out _);
+        var deserialized = LoginAckPacket.Deserialize(readOnlySpan);
 
         // Verify all primitive types are correctly serialized/deserialized
         Assert.AreEqual(original.bResult, deserialized.bResult);
@@ -71,7 +71,7 @@ public class BackwardCompatibilityTest
         var span = new Span<byte>(buffer);
         LoginReqPacket.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = LoginReqPacket.Deserialize(readOnlySpan, out _);
+        var deserialized = LoginReqPacket.Deserialize(readOnlySpan);
 
         // Verify strings are correctly serialized/deserialized
         Assert.AreEqual(original.wVersion, deserialized.wVersion);
@@ -97,7 +97,7 @@ public class BackwardCompatibilityTest
         var span = new Span<byte>(buffer);
         MyPacket.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = MyPacket.Deserialize(readOnlySpan, out _);
+        var deserialized = MyPacket.Deserialize(readOnlySpan);
 
         // Verify unmanaged type collections work unchanged
         Assert.AreEqual(original.Data.Count, deserialized.Data.Count);
@@ -126,7 +126,7 @@ public class BackwardCompatibilityTest
         var span = new Span<byte>(buffer);
         TestWithListOfReferenceTypes.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = TestWithListOfReferenceTypes.Deserialize(readOnlySpan, out _);
+        var deserialized = TestWithListOfReferenceTypes.Deserialize(readOnlySpan);
 
         // Verify non-nested reference types in collections work unchanged
         Assert.AreEqual(original.MyList.Count, deserialized.MyList.Count);
@@ -154,7 +154,7 @@ public class BackwardCompatibilityTest
         var span1 = new Span<byte>(buffer1);
         TestWithCountType.Serialize(countTypeTest, span1);
         var readOnlySpan1 = new ReadOnlySpan<byte>(buffer1);
-        var deserialized1 = TestWithCountType.Deserialize(readOnlySpan1, out _);
+        var deserialized1 = TestWithCountType.Deserialize(readOnlySpan1);
 
         Assert.AreEqual(true, countTypeTest.MyList.SequenceEqual(deserialized1.MyList));
 
@@ -170,7 +170,7 @@ public class BackwardCompatibilityTest
         var span2 = new Span<byte>(buffer2);
         TestWithCountSizeReference.Serialize(countSizeRefTest, span2);
         var readOnlySpan2 = new ReadOnlySpan<byte>(buffer2);
-        var deserialized2 = TestWithCountSizeReference.Deserialize(readOnlySpan2, out _);
+        var deserialized2 = TestWithCountSizeReference.Deserialize(readOnlySpan2);
 
         Assert.AreEqual(countSizeRefTest.MyListCount, deserialized2.MyListCount);
         Assert.AreEqual(true, countSizeRefTest.MyList.SequenceEqual(deserialized2.MyList));
@@ -196,7 +196,7 @@ public class BackwardCompatibilityTest
         var span = new Span<byte>(buffer);
         MixedFieldsAndPropsPacket.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = MixedFieldsAndPropsPacket.Deserialize(readOnlySpan, out _);
+        var deserialized = MixedFieldsAndPropsPacket.Deserialize(readOnlySpan);
 
         // Verify mixed fields and properties work unchanged
         Assert.AreEqual(original.PropertyInt, deserialized.PropertyInt);
@@ -223,7 +223,7 @@ public class BackwardCompatibilityTest
         var span = new Span<byte>(buffer);
         ContainerPacket.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = ContainerPacket.Deserialize(readOnlySpan, out _);
+        var deserialized = ContainerPacket.Deserialize(readOnlySpan);
 
         // Verify nested objects work unchanged
         Assert.AreEqual(original.Name, deserialized.Name);
