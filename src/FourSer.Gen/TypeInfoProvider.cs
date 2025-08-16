@@ -36,8 +36,18 @@ internal static class TypeInfoProvider
         var nestedTypes = GetNestedTypes(typeSymbol);
         var constructorInfo = GetConstructorInfo(typeSymbol, serializableMembers);
 
-        var hasSerializableBaseType = typeSymbol.BaseType?.GetAttributes()
-            .Any(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute") ?? false;
+        bool hasSerializableBaseType = false;
+        if (typeSymbol.BaseType is not null)
+        {
+            foreach (var ad in typeSymbol.BaseType.GetAttributes())
+            {
+                if (ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute")
+                {
+                    hasSerializableBaseType = true;
+                    break;
+                }
+            }
+        }
 
         return new TypeToGenerate
         (
@@ -54,41 +64,108 @@ internal static class TypeInfoProvider
     private static ConstructorInfo? GetConstructorInfo(INamedTypeSymbol typeSymbol,
         EquatableArray<MemberToGenerate> members)
     {
-        var constructors = typeSymbol.Constructors
-            .Where(c => !c.IsImplicitlyDeclared)
-            .ToList();
+        var constructors = new List<IMethodSymbol>();
+        foreach (var c in typeSymbol.Constructors)
+        {
+            if (!c.IsImplicitlyDeclared)
+            {
+                constructors.Add(c);
+            }
+        }
 
-        bool hasParameterlessCtor = constructors.Any(c => c.Parameters.Length == 0);
-        bool shouldGenerate = members.Any(m => m.IsReadOnly);
+        bool hasParameterlessCtor = false;
+        foreach (var c in constructors)
+        {
+            if (c.Parameters.Length == 0)
+            {
+                hasParameterlessCtor = true;
+                break;
+            }
+        }
+
+        bool shouldGenerate = false;
+        foreach (var m in members)
+        {
+            if (m.IsReadOnly)
+            {
+                shouldGenerate = true;
+                break;
+            }
+        }
 
         if (!shouldGenerate)
         {
-            var publicConstructors = constructors
-                .Where(c => c.DeclaredAccessibility == Accessibility.Public)
-                .ToList();
-
-            if (publicConstructors.Any())
+            var publicConstructors = new List<IMethodSymbol>();
+            foreach (var c in constructors)
             {
-                var bestConstructor = publicConstructors
-                    .FirstOrDefault(c => c.Parameters.Length == members.Count() && c.Parameters.All(p =>
-                        members.Any(m => string.Equals(m.Name, p.Name, StringComparison.OrdinalIgnoreCase) &&
-                                         m.TypeName == p.Type.ToDisplayString(s_typeNameFormat))));
+                if (c.DeclaredAccessibility == Accessibility.Public)
+                {
+                    publicConstructors.Add(c);
+                }
+            }
+
+            if (publicConstructors.Count > 0)
+            {
+                IMethodSymbol? bestConstructor = null;
+                foreach (var c in publicConstructors)
+                {
+                    int membersCount = 0;
+                    foreach (var _ in members)
+                    {
+                        membersCount++;
+                    }
+                    if (c.Parameters.Length != membersCount)
+                    {
+                        continue;
+                    }
+
+                    bool allParametersMatch = true;
+                    foreach (var p in c.Parameters)
+                    {
+                        bool parameterMatches = false;
+                        foreach (var m in members)
+                        {
+                            if (string.Equals(m.Name, p.Name, StringComparison.OrdinalIgnoreCase) &&
+                                m.TypeName == p.Type.ToDisplayString(s_typeNameFormat))
+                            {
+                                parameterMatches = true;
+                                break;
+                            }
+                        }
+
+                        if (!parameterMatches)
+                        {
+                            allParametersMatch = false;
+                            break;
+                        }
+                    }
+
+                    if (allParametersMatch)
+                    {
+                        bestConstructor = c;
+                        break;
+                    }
+                }
 
                 if (bestConstructor is not null)
                 {
-                    var parameters = bestConstructor.Parameters
-                        .Select(p => new ParameterInfo(p.Name, p.Type.ToDisplayString(s_typeNameFormat)))
-                        .ToImmutableArray();
-                    return new ConstructorInfo(new EquatableArray<ParameterInfo>(parameters), false, hasParameterlessCtor);
+                    var parameters = ImmutableArray.CreateBuilder<ParameterInfo>();
+                    foreach (var p in bestConstructor.Parameters)
+                    {
+                        parameters.Add(new ParameterInfo(p.Name, p.Type.ToDisplayString(s_typeNameFormat)));
+                    }
+                    return new ConstructorInfo(new EquatableArray<ParameterInfo>(parameters.ToImmutable()), false, hasParameterlessCtor);
                 }
             }
         }
 
-        var generatedParameters = members
-            .Select(m => new ParameterInfo(m.Name, m.TypeName))
-            .ToImmutableArray();
+        var generatedParametersBuilder = ImmutableArray.CreateBuilder<ParameterInfo>();
+        foreach (var m in members)
+        {
+            generatedParametersBuilder.Add(new ParameterInfo(m.Name, m.TypeName));
+        }
 
-        return new ConstructorInfo(new EquatableArray<ParameterInfo>(generatedParameters), true, hasParameterlessCtor);
+        return new ConstructorInfo(new EquatableArray<ParameterInfo>(generatedParametersBuilder.ToImmutable()), true, hasParameterlessCtor);
     }
 
     private static bool IsSerializableMember(ISymbol member)
@@ -112,14 +189,19 @@ internal static class TypeInfoProvider
             }
 
             // Read-only properties are serializable if they are auto-properties (have a backing field).
-            return p.ContainingType.GetMembers()
-                .OfType<IFieldSymbol>()
-                .Any(f => SymbolEqualityComparer.Default.Equals(f.AssociatedSymbol, p));
+            foreach (var innerMember in p.ContainingType.GetMembers())
+            {
+                if (innerMember is IFieldSymbol f && SymbolEqualityComparer.Default.Equals(f.AssociatedSymbol, p))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
-        if (member is IFieldSymbol f)
+        if (member is IFieldSymbol field)
         {
-            return f.DeclaredAccessibility == Accessibility.Public;
+            return field.DeclaredAccessibility == Accessibility.Public;
         }
 
         return false;
@@ -132,71 +214,83 @@ internal static class TypeInfoProvider
 
         while (currentType != null && currentType.SpecialType != SpecialType.System_Object)
         {
-            var typeMembers = currentType.GetMembers()
-                .Where(IsSerializableMember)
-                .OrderBy(m => m.Locations.First().SourceSpan.Start)
-                .Select
-                (
-                    m =>
+            var typeMembers = new List<MemberToGenerate>();
+            foreach (var m in currentType.GetMembers())
+            {
+                if (!IsSerializableMember(m))
+                {
+                    continue;
+                }
+
+                var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
+                var isList = memberTypeSymbol.OriginalDefinition.ToDisplayString()
+                             == "System.Collections.Generic.List<T>";
+                ListTypeArgumentInfo? listTypeArgumentInfo = null;
+                if (isList)
+                {
+                    var typeArgumentSymbol = ((INamedTypeSymbol)memberTypeSymbol).TypeArguments[0];
+                    var listTypeHasGenerateSerializerAttribute = false;
+                    foreach (var ad in typeArgumentSymbol.GetAttributes())
                     {
-                        var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
-                        var isList = memberTypeSymbol.OriginalDefinition.ToDisplayString()
-                                     == "System.Collections.Generic.List<T>";
-                        ListTypeArgumentInfo? listTypeArgumentInfo = null;
-                        if (isList)
+                        if (ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute")
                         {
-                            var typeArgumentSymbol = ((INamedTypeSymbol)memberTypeSymbol).TypeArguments[0];
-                            listTypeArgumentInfo = new ListTypeArgumentInfo
-                            (
-                                typeArgumentSymbol.ToDisplayString(s_typeNameFormat),
-                                typeArgumentSymbol.IsUnmanagedType,
-                                typeArgumentSymbol.SpecialType == SpecialType.System_String,
-                                typeArgumentSymbol.GetAttributes()
-                                    .Any
-                                    (
-                                        ad => ad.AttributeClass?.ToDisplayString()
-                                              == "FourSer.Contracts.GenerateSerializerAttribute"
-                                    )
-                            );
+                            listTypeHasGenerateSerializerAttribute = true;
+                            break;
                         }
-
-                        var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(memberTypeSymbol);
-
-                        var polymorphicInfo = GetPolymorphicInfo(m);
-
-                        bool isReadOnly = false;
-                        if (m is IPropertySymbol prop)
-                        {
-                            isReadOnly = prop.SetMethod is null;
-                        }
-                        else if (m is IFieldSymbol field)
-                        {
-                            isReadOnly = field.IsReadOnly;
-                        }
-
-                        return new MemberToGenerate
-                        (
-                            m.Name,
-                            memberTypeSymbol.ToDisplayString(s_typeNameFormat),
-                            memberTypeSymbol.IsUnmanagedType,
-                            memberTypeSymbol.SpecialType == SpecialType.System_String,
-                            memberTypeSymbol.GetAttributes()
-                                .Any
-                                (
-                                    ad => ad.AttributeClass?.ToDisplayString()
-                                          == "FourSer.Contracts.GenerateSerializerAttribute"
-                                ),
-                            isList,
-                            listTypeArgumentInfo,
-                            GetCollectionInfo(m),
-                            polymorphicInfo,
-                            isCollection,
-                            collectionTypeInfo,
-                            isReadOnly
-                        );
                     }
-                )
-                .ToList();
+
+                    listTypeArgumentInfo = new ListTypeArgumentInfo
+                    (
+                        typeArgumentSymbol.ToDisplayString(s_typeNameFormat),
+                        typeArgumentSymbol.IsUnmanagedType,
+                        typeArgumentSymbol.SpecialType == SpecialType.System_String,
+                        listTypeHasGenerateSerializerAttribute
+                    );
+                }
+
+                var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(memberTypeSymbol);
+
+                var polymorphicInfo = GetPolymorphicInfo(m);
+
+                bool isReadOnly = false;
+                if (m is IPropertySymbol prop)
+                {
+                    isReadOnly = prop.SetMethod is null;
+                }
+                else if (m is IFieldSymbol field)
+                {
+                    isReadOnly = field.IsReadOnly;
+                }
+
+                var memberHasGenerateSerializerAttribute = false;
+                foreach (var ad in memberTypeSymbol.GetAttributes())
+                {
+                    if (ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute")
+                    {
+                        memberHasGenerateSerializerAttribute = true;
+                        break;
+                    }
+                }
+
+                typeMembers.Add(new MemberToGenerate
+                (
+                    m.Name,
+                    memberTypeSymbol.ToDisplayString(s_typeNameFormat),
+                    memberTypeSymbol.IsUnmanagedType,
+                    memberTypeSymbol.SpecialType == SpecialType.System_String,
+                    memberHasGenerateSerializerAttribute,
+                    isList,
+                    listTypeArgumentInfo,
+                    GetCollectionInfo(m),
+                    polymorphicInfo,
+                    isCollection,
+                    collectionTypeInfo,
+                    isReadOnly,
+                    m.Locations.First()
+                ));
+            }
+
+            typeMembers.Sort((m1, m2) => m1.Location.SourceSpan.Start.CompareTo(m2.Location.SourceSpan.Start));
 
             members.InsertRange(0, typeMembers);
             currentType = currentType.BaseType;
@@ -211,31 +305,52 @@ internal static class TypeInfoProvider
 
         foreach (var member in parentType.GetMembers())
         {
-            if (member is INamedTypeSymbol nestedTypeSymbol &&
-                nestedTypeSymbol.GetAttributes()
-                    .Any(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute"))
+            if (member is INamedTypeSymbol nestedTypeSymbol)
             {
-                var nestedMembers = GetSerializableMembers(nestedTypeSymbol);
-                var deeperNestedTypes = GetNestedTypes(nestedTypeSymbol);
+                bool hasAttribute = false;
+                foreach (var ad in nestedTypeSymbol.GetAttributes())
+                {
+                    if (ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute")
+                    {
+                        hasAttribute = true;
+                        break;
+                    }
+                }
 
-                var hasSerializableBaseType = nestedTypeSymbol.BaseType?.GetAttributes()
-                    .Any(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute") ?? false;
+                if (hasAttribute)
+                {
+                    var nestedMembers = GetSerializableMembers(nestedTypeSymbol);
+                    var deeperNestedTypes = GetNestedTypes(nestedTypeSymbol);
 
-                var constructorInfo = GetConstructorInfo(nestedTypeSymbol, nestedMembers);
+                    var hasSerializableBaseType = false;
+                    if (nestedTypeSymbol.BaseType is not null)
+                    {
+                        foreach (var ad in nestedTypeSymbol.BaseType.GetAttributes())
+                        {
+                            if (ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute")
+                            {
+                                hasSerializableBaseType = true;
+                                break;
+                            }
+                        }
+                    }
 
-                nestedTypes.Add
-                (
-                    new TypeToGenerate
+                    var constructorInfo = GetConstructorInfo(nestedTypeSymbol, nestedMembers);
+
+                    nestedTypes.Add
                     (
-                        nestedTypeSymbol.Name,
-                        nestedTypeSymbol.ContainingNamespace.ToDisplayString(),
-                        nestedTypeSymbol.IsValueType,
-                        nestedMembers,
-                        deeperNestedTypes,
-                        hasSerializableBaseType,
-                        constructorInfo
-                    )
-                );
+                        new TypeToGenerate
+                        (
+                            nestedTypeSymbol.Name,
+                            nestedTypeSymbol.ContainingNamespace.ToDisplayString(),
+                            nestedTypeSymbol.IsValueType,
+                            nestedMembers,
+                            deeperNestedTypes,
+                            hasSerializableBaseType,
+                            constructorInfo
+                        )
+                    );
+                }
             }
         }
 
@@ -247,13 +362,22 @@ internal static class TypeInfoProvider
         if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
         {
             var elementType = arrayTypeSymbol.ElementType;
+            bool arrayElementHasGenerateSerializerAttribute = false;
+            foreach (var ad in elementType.GetAttributes())
+            {
+                if (ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute")
+                {
+                    arrayElementHasGenerateSerializerAttribute = true;
+                    break;
+                }
+            }
             return (true, new CollectionTypeInfo
             (
                 typeSymbol.ToDisplayString(s_typeNameFormat),
                 elementType.ToDisplayString(s_typeNameFormat),
                 elementType.IsUnmanagedType,
                 elementType.SpecialType == SpecialType.System_String,
-                elementType.GetAttributes().Any(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute"),
+                arrayElementHasGenerateSerializerAttribute,
                 true,
                 null
             ));
@@ -326,13 +450,23 @@ internal static class TypeInfoProvider
             return (false, null);
         }
 
+        bool hasGenerateSerializerAttribute = false;
+        foreach (var ad in genericElementType.GetAttributes())
+        {
+            if (ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute")
+            {
+                hasGenerateSerializerAttribute = true;
+                break;
+            }
+        }
+
         return (true, new CollectionTypeInfo
         (
             originalDefinition,
             genericElementType.ToDisplayString(s_typeNameFormat),
             genericElementType.IsUnmanagedType,
             genericElementType.SpecialType == SpecialType.System_String,
-            genericElementType.GetAttributes().Any(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute"),
+            hasGenerateSerializerAttribute,
             false,
             concreteTypeName
         ));
@@ -385,7 +519,7 @@ internal static class TypeInfoProvider
         var collectionAttribute = AttributeHelper.GetCollectionAttribute(member);
         var options = AttributeHelper.GetPolymorphicOptions(member);
 
-        var hasPolymorphicOptions = options.Any();
+        var hasPolymorphicOptions = options.Count > 0;
         var hasPolymorphicAttribute = attribute is not null;
         var hasPolymorphicCollectionMode = collectionAttribute is not null && 
             AttributeHelper.GetPolymorphicMode(collectionAttribute) != 0;
@@ -399,15 +533,13 @@ internal static class TypeInfoProvider
             (collectionAttribute);
         var typeIdType = AttributeHelper.GetTypeIdType(attribute) ?? AttributeHelper.GetCollectionTypeIdType(collectionAttribute);
 
-        var polymorphicOptions = options.Select
-            (
-                optionAttribute =>
-                {
-                    var (key, type) = AttributeHelper.GetPolymorphicOption(optionAttribute);
-                    return new PolymorphicOption(key, type.ToDisplayString());
-                }
-            )
-            .ToImmutableArray();
+        var polymorphicOptionsBuilder = ImmutableArray.CreateBuilder<PolymorphicOption>();
+        foreach (var optionAttribute in options)
+        {
+            var (key, type) = AttributeHelper.GetPolymorphicOption(optionAttribute);
+            polymorphicOptionsBuilder.Add(new PolymorphicOption(key, type.ToDisplayString()));
+        }
+        var polymorphicOptions = polymorphicOptionsBuilder.ToImmutable();
 
         var enumUnderlyingType = typeIdType is { TypeKind: TypeKind.Enum }
             ? ((INamedTypeSymbol)typeIdType).EnumUnderlyingType!.ToDisplayString()

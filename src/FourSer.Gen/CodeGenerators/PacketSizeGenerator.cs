@@ -80,7 +80,8 @@ public static class PacketSizeGenerator
                 member.PolymorphicInfo,
                 false,
                 null,
-                false
+                false,
+                default
             );
             GeneratePolymorphicSizeCalculation(sb, itemMember, "item");
             sb.AppendLine("        }");

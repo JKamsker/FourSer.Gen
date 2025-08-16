@@ -103,7 +103,18 @@ public class SerializerGenerator : IIncrementalGenerator
 
     internal static void GenerateConstructor(StringBuilder sb, TypeToGenerate typeToGenerate, Models.ConstructorInfo ctor)
     {
-        var parameters = string.Join(", ", ctor.Parameters.Select(p => $"{p.TypeName} {StringExtensions.ToCamelCase(p.Name)}"));
+        var parameters = new StringBuilder();
+        foreach (var p in ctor.Parameters)
+        {
+            if (parameters.Length > 0)
+            {
+                parameters.Append(", ");
+            }
+            parameters.Append(p.TypeName);
+            parameters.Append(" ");
+            parameters.Append(StringExtensions.ToCamelCase(p.Name));
+        }
+
         sb.AppendLine($"    private {typeToGenerate.Name}({parameters})");
         sb.AppendLine("    {");
 
@@ -134,11 +145,15 @@ public class SerializerGenerator : IIncrementalGenerator
     private static void AddHelpers(IncrementalGeneratorPostInitializationContext context)
     {
         var assembly = Assembly.GetExecutingAssembly();
-        var names = assembly.GetManifestResourceNames()
-            .Where(name => name.StartsWith("FourSer.Gen.Resources.Code."));
+        var names = assembly.GetManifestResourceNames();
 
         foreach (var file in names)
         {
+            if (!file.StartsWith("FourSer.Gen.Resources.Code."))
+            {
+                continue;
+            }
+
             using var stream = assembly.GetManifestResourceStream(file);
             if (stream is null) continue;
 

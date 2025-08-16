@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
 
 namespace FourSer.Gen.Models;
 
@@ -65,7 +66,8 @@ public readonly record struct MemberToGenerate(
     PolymorphicInfo? PolymorphicInfo,
     bool IsCollection,
     CollectionTypeInfo? CollectionTypeInfo,
-    bool IsReadOnly) : IEquatable<MemberToGenerate>;
+    bool IsReadOnly,
+    Location Location) : IEquatable<MemberToGenerate>;
 
 /// <summary>
 /// A model describing the type argument of a List&lt;T&gt;.
