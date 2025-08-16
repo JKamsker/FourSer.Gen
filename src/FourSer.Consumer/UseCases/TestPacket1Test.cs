@@ -27,7 +27,7 @@ public class TestPacket1Test
         var span = new Span<byte>(buffer);
         TestPacket1.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = TestPacket1.Deserialize(readOnlySpan, out _);
+        var deserialized = TestPacket1.Deserialize(readOnlySpan);
 
         Assert.AreEqual(original.A, deserialized.A);
         Assert.AreEqual(original.B, deserialized.B);

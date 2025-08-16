@@ -13,7 +13,7 @@ Console.WriteLine($"Serialized '{packet.Name}' into {writtenBytes} bytes.");
 var readOnlySpan = new ReadOnlySpan<byte>(buffer);
 
 // Call the static generated method
-var newPacket = MyTestPacket.Deserialize(readOnlySpan, out int bytesRead);
+var newPacket = MyTestPacket.Deserialize(readOnlySpan);
 
 Console.WriteLine($"Deserialized packet with Id: {newPacket.Id} and Name: {newPacket.Name}");
 

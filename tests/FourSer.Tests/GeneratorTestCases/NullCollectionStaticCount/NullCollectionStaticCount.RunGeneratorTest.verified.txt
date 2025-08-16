@@ -30,13 +30,16 @@ public partial class Item : ISerializable<Item>
         this.Id = default;
     }
 
-    public static Item Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static Item Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var obj = new Item(id);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static Item Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(Item obj, System.Span<byte> data)
@@ -84,19 +87,21 @@ public partial class MainObject : ISerializable<MainObject>
         this.Items = default;
     }
 
-    public static MainObject Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static MainObject Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var itemsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>(itemsCount);
         for (int i = 0; i < itemsCount; i++)
         {
-            items.Add(Item.Deserialize(buffer, out var itemBytesRead));
-            buffer = buffer.Slice(itemBytesRead);
+            items.Add(Item.Deserialize(ref buffer));
         }
         var obj = new MainObject(items);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static MainObject Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(MainObject obj, System.Span<byte> data)

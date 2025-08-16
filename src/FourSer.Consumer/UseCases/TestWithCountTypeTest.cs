@@ -23,7 +23,7 @@ public class TestWithCountTypeTest
         var span = new Span<byte>(buffer);
         TestWithCountType.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = TestWithCountType.Deserialize(readOnlySpan, out _);
+        var deserialized = TestWithCountType.Deserialize(readOnlySpan);
 
         Assert.AreEqual(true, original.MyList.SequenceEqual(deserialized.MyList));
     }

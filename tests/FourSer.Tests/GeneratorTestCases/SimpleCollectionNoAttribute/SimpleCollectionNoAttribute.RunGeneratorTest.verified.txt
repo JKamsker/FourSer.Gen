@@ -31,14 +31,17 @@ public partial class MyPacket : ISerializable<MyPacket>
         this.Data = default;
     }
 
-    public static MyPacket Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static MyPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var dataCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var data = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBytes(ref buffer, (int)dataCount).ToList();
         var obj = new MyPacket(data);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static MyPacket Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(MyPacket obj, System.Span<byte> data)

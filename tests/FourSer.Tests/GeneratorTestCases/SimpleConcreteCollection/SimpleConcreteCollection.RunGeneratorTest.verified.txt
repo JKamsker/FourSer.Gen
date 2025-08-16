@@ -34,19 +34,21 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
         this.Cats = default;
     }
 
-    public static SimpleConcreteCollectionTest Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static SimpleConcreteCollectionTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var catsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat>(catsCount);
         for (int i = 0; i < catsCount; i++)
         {
-            cats.Add(Cat.Deserialize(buffer, out var itemBytesRead));
-            buffer = buffer.Slice(itemBytesRead);
+            cats.Add(Cat.Deserialize(ref buffer));
         }
         var obj = new SimpleConcreteCollectionTest(cats);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static SimpleConcreteCollectionTest Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(SimpleConcreteCollectionTest obj, System.Span<byte> data)
@@ -105,14 +107,17 @@ public partial class Cat : ISerializable<Cat>
         this.Name = default;
     }
 
-    public static Cat Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static Cat Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
         var obj = new Cat(id, name);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static Cat Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(Cat obj, System.Span<byte> data)

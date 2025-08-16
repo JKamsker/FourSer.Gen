@@ -34,19 +34,21 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
         this.Cats = default;
     }
 
-    public static ULongCountTest Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static ULongCountTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var catsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt64(ref buffer);
         var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat>((int)catsCount);
         for (int i = 0; i < (int)catsCount; i++)
         {
-            cats.Add(Cat.Deserialize(buffer, out var itemBytesRead));
-            buffer = buffer.Slice(itemBytesRead);
+            cats.Add(Cat.Deserialize(ref buffer));
         }
         var obj = new ULongCountTest(cats);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static ULongCountTest Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(ULongCountTest obj, System.Span<byte> data)
@@ -105,14 +107,17 @@ public partial class Cat : ISerializable<Cat>
         this.Name = default;
     }
 
-    public static Cat Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static Cat Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
         var obj = new Cat(id, name);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static Cat Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(Cat obj, System.Span<byte> data)

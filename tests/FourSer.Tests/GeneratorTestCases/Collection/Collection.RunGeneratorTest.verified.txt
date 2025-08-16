@@ -31,9 +31,8 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         this.Numbers = default;
     }
 
-    public static CollectionPacket Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static CollectionPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var numbersCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var numbers = new System.Collections.Generic.List<int>(numbersCount);
         for (int i = 0; i < numbersCount; i++)
@@ -41,8 +40,12 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
             numbers.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer));
         }
         var obj = new CollectionPacket(numbers);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static CollectionPacket Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(CollectionPacket obj, System.Span<byte> data)

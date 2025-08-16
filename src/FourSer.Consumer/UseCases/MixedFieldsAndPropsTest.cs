@@ -45,7 +45,7 @@ public class MixedFieldsAndPropsTest
         var span = new Span<byte>(buffer);
         MixedFieldsAndPropsPacket.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = MixedFieldsAndPropsPacket.Deserialize(readOnlySpan, out _);
+        var deserialized = MixedFieldsAndPropsPacket.Deserialize(readOnlySpan);
 
         // Verify properties are serialized/deserialized
         Assert.AreEqual(original.PropertyInt, deserialized.PropertyInt);

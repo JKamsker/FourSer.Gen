@@ -24,9 +24,7 @@ namespace FourSer.Consumer.UseCases
             var span = new Span<byte>(buffer);
             IndividualTypeIdsTest.Serialize(original, span);
 
-            var deserialized = IndividualTypeIdsTest.Deserialize(buffer, out var bytesRead);
-
-            Assert.AreEqual(size, bytesRead, "Bytes read should match original size.");
+            var deserialized = IndividualTypeIdsTest.Deserialize(buffer);
             Assert.AreEqual(original.Animals.Count, deserialized.Animals.Count, "Animal counts should match.");
 
             for (int i = 0; i < original.Animals.Count; i++)

@@ -44,6 +44,6 @@ public class PolymorphicWithByteTypeIdTests
         PolymorphicTypeIdTest.TestSerialization(byteEntity, "Byte TypeId", 
             () => PolymorphicWithByteTypeId.GetPacketSize(byteEntity),
             (buffer) => PolymorphicWithByteTypeId.Serialize(byteEntity, buffer),
-            (buffer) => PolymorphicWithByteTypeId.Deserialize(buffer, out var bytesRead));
+            (buffer) => PolymorphicWithByteTypeId.Deserialize(buffer));
     }
 }

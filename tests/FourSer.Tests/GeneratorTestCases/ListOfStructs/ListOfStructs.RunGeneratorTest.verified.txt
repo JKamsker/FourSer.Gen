@@ -26,13 +26,16 @@ public partial struct MyStruct : ISerializable<MyStruct>
     }
 
 
-    public static MyStruct Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static MyStruct Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var a = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var obj = new MyStruct(a);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static MyStruct Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(MyStruct obj, System.Span<byte> data)
@@ -80,19 +83,21 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         this.Structs = default;
     }
 
-    public static PacketWithListOfStructs Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static PacketWithListOfStructs Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var structsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
         for (int i = 0; i < structsCount; i++)
         {
-            structs.Add(MyStruct.Deserialize(buffer, out var itemBytesRead));
-            buffer = buffer.Slice(itemBytesRead);
+            structs.Add(MyStruct.Deserialize(ref buffer));
         }
         var obj = new PacketWithListOfStructs(structs);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static PacketWithListOfStructs Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(PacketWithListOfStructs obj, System.Span<byte> data)

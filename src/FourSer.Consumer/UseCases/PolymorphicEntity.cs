@@ -100,8 +100,7 @@ public static class PolymorphicTest
         
         // Deserialize
         var readSpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = PolymorphicEntity.Deserialize(readSpan, out var bytesRead);
-        Console.WriteLine($"  Bytes read: {bytesRead}");
+        var deserialized = PolymorphicEntity.Deserialize(readSpan);
         
         // Verify
         Console.WriteLine($"  Original ID: {original.Id}, Deserialized ID: {deserialized.Id}");

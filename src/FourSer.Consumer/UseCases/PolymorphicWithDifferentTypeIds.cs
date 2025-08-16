@@ -114,7 +114,7 @@ public static class PolymorphicTypeIdTest
         TestSerialization(ushortEntity, "UShort TypeId",
             () => PolymorphicWithUShortTypeId.GetPacketSize(ushortEntity),
             (buffer) => PolymorphicWithUShortTypeId.Serialize(ushortEntity, buffer),
-            (buffer) => PolymorphicWithUShortTypeId.Deserialize(buffer, out var bytesRead));
+            (buffer) => PolymorphicWithUShortTypeId.Deserialize(buffer));
         
         // Test long TypeId
         var longEntity = new PolymorphicWithLongTypeId
@@ -125,7 +125,7 @@ public static class PolymorphicTypeIdTest
         TestSerialization(longEntity, "Long TypeId",
             () => PolymorphicWithLongTypeId.GetPacketSize(longEntity),
             (buffer) => PolymorphicWithLongTypeId.Serialize(longEntity, buffer),
-            (buffer) => PolymorphicWithLongTypeId.Deserialize(buffer, out var bytesRead));
+            (buffer) => PolymorphicWithLongTypeId.Deserialize(buffer));
         
         // Test enum TypeId
         var enumEntity = new PolymorphicWithEnumTypeId
@@ -136,7 +136,7 @@ public static class PolymorphicTypeIdTest
         TestSerialization(enumEntity, "Enum TypeId",
             () => PolymorphicWithEnumTypeId.GetPacketSize(enumEntity),
             (buffer) => PolymorphicWithEnumTypeId.Serialize(enumEntity, buffer),
-            (buffer) => PolymorphicWithEnumTypeId.Deserialize(buffer, out var bytesRead));
+            (buffer) => PolymorphicWithEnumTypeId.Deserialize(buffer));
         
         Console.WriteLine("=== Polymorphic Different TypeId Types Test Complete ===\n");
     }

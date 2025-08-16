@@ -30,7 +30,7 @@ public class NestedObjectTest
         var span = new Span<byte>(buffer);
         ContainerPacket.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = ContainerPacket.Deserialize(readOnlySpan, out _);
+        var deserialized = ContainerPacket.Deserialize(readOnlySpan);
 
         Assert.AreEqual(original.Name, deserialized.Name);
         Assert.AreEqual(original.Nested.Id, deserialized.Nested.Id);

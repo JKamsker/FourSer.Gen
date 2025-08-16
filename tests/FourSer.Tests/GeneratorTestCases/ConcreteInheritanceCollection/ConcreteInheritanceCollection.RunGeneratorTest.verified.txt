@@ -34,19 +34,21 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
         this.Dogs = default;
     }
 
-    public static ConcreteInheritanceTest Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static ConcreteInheritanceTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var dogsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var dogs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(dogsCount);
         for (int i = 0; i < dogsCount; i++)
         {
-            dogs.Add(Dog.Deserialize(buffer, out var itemBytesRead));
-            buffer = buffer.Slice(itemBytesRead);
+            dogs.Add(Dog.Deserialize(ref buffer));
         }
         var obj = new ConcreteInheritanceTest(dogs);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static ConcreteInheritanceTest Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(ConcreteInheritanceTest obj, System.Span<byte> data)
@@ -108,15 +110,18 @@ public partial class Dog : ISerializable<Dog>
         this.Breed = default;
     }
 
-    public static new Dog Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static new Dog Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
         var age = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var breed = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
         var obj = new Dog(name, age, breed);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static new Dog Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(Dog obj, System.Span<byte> data)
@@ -165,14 +170,17 @@ public partial class Pet : ISerializable<Pet>
         this.Age = default;
     }
 
-    public static Pet Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static Pet Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
         var age = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var obj = new Pet(name, age);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static Pet Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(Pet obj, System.Span<byte> data)

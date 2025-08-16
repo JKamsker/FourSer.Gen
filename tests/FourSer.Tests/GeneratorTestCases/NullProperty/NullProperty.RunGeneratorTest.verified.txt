@@ -30,13 +30,16 @@ public partial class NestedObject : ISerializable<NestedObject>
         this.Id = default;
     }
 
-    public static NestedObject Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static NestedObject Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
         var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var obj = new NestedObject(id);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static NestedObject Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(NestedObject obj, System.Span<byte> data)
@@ -80,14 +83,16 @@ public partial class MainObject : ISerializable<MainObject>
         this.Nested = default;
     }
 
-    public static MainObject Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    public static MainObject Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var originalBuffer = buffer;
-        var nested = NestedObject.Deserialize(buffer, out var nestedBytesRead);
-        buffer = buffer.Slice(nestedBytesRead);
+        var nested = NestedObject.Deserialize(ref buffer);
         var obj = new MainObject(nested);
-        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
+    }
+
+    public static MainObject Deserialize(System.ReadOnlySpan<byte> buffer)
+    {
+        return Deserialize(ref buffer);
     }
 
     public static int Serialize(MainObject obj, System.Span<byte> data)

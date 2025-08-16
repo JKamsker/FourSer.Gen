@@ -35,7 +35,7 @@ public class TestWithListOfReferenceTypesTest
         var span = new Span<byte>(buffer);
         TestWithListOfReferenceTypes.Serialize(original, span);
         var readOnlySpan = new ReadOnlySpan<byte>(buffer);
-        var deserialized = TestWithListOfReferenceTypes.Deserialize(readOnlySpan, out _);
+        var deserialized = TestWithListOfReferenceTypes.Deserialize(readOnlySpan);
 
         Assert.AreEqual(original.MyList.Count, deserialized.MyList.Count);
         for (int i = 0; i < original.MyList.Count; i++)

@@ -22,7 +22,7 @@ public class Tests
 
         var buffer = new byte[1024];
         var bytesWritten = UnlimitedCollectionPacket.Serialize(packet, buffer);
-        var deserialized = UnlimitedCollectionPacket.Deserialize(buffer.AsSpan(0, bytesWritten), out _);
+        var deserialized = UnlimitedCollectionPacket.Deserialize(buffer.AsSpan(0, bytesWritten));
 
         deserialized.Items.Should().HaveCount(3);
         deserialized.Items.Select(x => x.Value).Should().Equal(1, 2, 3);
