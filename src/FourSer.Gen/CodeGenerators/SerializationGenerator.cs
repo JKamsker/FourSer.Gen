@@ -310,7 +310,7 @@ public static class SerializationGenerator
         {
             var typeName = TypeHelper.GetSimpleTypeName(option.Type);
             sb.AppendLine($"            case {typeName} typedInstance:");
-
+            sb.AppendLine("            {");
             if (string.IsNullOrEmpty(info.TypeIdProperty))
             {
                 sb.AppendLine(PolymorphicUtilities.GenerateWriteTypeIdCode(option, info, "                ", target, helper));
@@ -326,6 +326,7 @@ public static class SerializationGenerator
                 sb.AppendLine($"                {typeName}.Serialize(typedInstance, stream);");
             }
             sb.AppendLine("                break;");
+            sb.AppendLine("            }");
         }
 
         sb.AppendLine("            case null:");
@@ -346,6 +347,7 @@ public static class SerializationGenerator
         {
             var typeName = TypeHelper.GetSimpleTypeName(option.Type);
             sb.AppendLine($"                case {typeName} typedInstance:");
+            sb.AppendLine("                {");
 
             if (string.IsNullOrEmpty(info.TypeIdProperty))
             {
@@ -362,6 +364,7 @@ public static class SerializationGenerator
                 sb.AppendLine($"                    {typeName}.Serialize(typedInstance, stream);");
             }
             sb.AppendLine("                    break;");
+            sb.AppendLine("                }");
         }
 
         sb.AppendLine("                case null:");

@@ -51,6 +51,18 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
         return Deserialize(ref buffer);
     }
 
+    public static ConcreteInheritanceTest Deserialize(System.IO.Stream stream)
+    {
+        var dogsCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var dogs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(dogsCount);
+        for (int i = 0; i < dogsCount; i++)
+        {
+            dogs.Add(Dog.Deserialize(stream));
+        }
+        var obj = new ConcreteInheritanceTest(dogs);
+        return obj;
+    }
+
     public static int Serialize(ConcreteInheritanceTest obj, System.Span<byte> data)
     {
         var originalData = data;
@@ -68,6 +80,22 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
             }
         }
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(ConcreteInheritanceTest obj, System.IO.Stream stream)
+    {
+        if (obj.Dogs is null)
+        {
+            throw new System.NullReferenceException($"Collection \"Dogs\" cannot be null.");
+        }
+        else
+        {
+            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Dogs.Count);
+            for (int i = 0; i < obj.Dogs.Count; i++)
+            {
+            Dog.Serialize(obj.Dogs[i], stream);
+            }
+        }
     }
 }
 
@@ -124,6 +152,15 @@ public partial class Dog : ISerializable<Dog>
         return Deserialize(ref buffer);
     }
 
+    public static new Dog Deserialize(System.IO.Stream stream)
+    {
+        var name = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
+        var age = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var breed = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
+        var obj = new Dog(name, age, breed);
+        return obj;
+    }
+
     public static int Serialize(Dog obj, System.Span<byte> data)
     {
         var originalData = data;
@@ -131,6 +168,13 @@ public partial class Dog : ISerializable<Dog>
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Age);
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.Breed);
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(Dog obj, System.IO.Stream stream)
+    {
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Age);
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Breed);
     }
 }
 
@@ -183,11 +227,25 @@ public partial class Pet : ISerializable<Pet>
         return Deserialize(ref buffer);
     }
 
+    public static Pet Deserialize(System.IO.Stream stream)
+    {
+        var name = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
+        var age = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var obj = new Pet(name, age);
+        return obj;
+    }
+
     public static int Serialize(Pet obj, System.Span<byte> data)
     {
         var originalData = data;
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.Name);
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Age);
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(Pet obj, System.IO.Stream stream)
+    {
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Age);
     }
 }

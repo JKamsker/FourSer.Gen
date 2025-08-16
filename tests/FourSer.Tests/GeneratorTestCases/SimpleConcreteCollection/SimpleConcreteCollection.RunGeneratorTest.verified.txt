@@ -51,6 +51,18 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
         return Deserialize(ref buffer);
     }
 
+    public static SimpleConcreteCollectionTest Deserialize(System.IO.Stream stream)
+    {
+        var catsCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat>(catsCount);
+        for (int i = 0; i < catsCount; i++)
+        {
+            cats.Add(Cat.Deserialize(stream));
+        }
+        var obj = new SimpleConcreteCollectionTest(cats);
+        return obj;
+    }
+
     public static int Serialize(SimpleConcreteCollectionTest obj, System.Span<byte> data)
     {
         var originalData = data;
@@ -68,6 +80,22 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
             }
         }
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(SimpleConcreteCollectionTest obj, System.IO.Stream stream)
+    {
+        if (obj.Cats is null)
+        {
+            throw new System.NullReferenceException($"Collection \"Cats\" cannot be null.");
+        }
+        else
+        {
+            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Cats.Count);
+            for (int i = 0; i < obj.Cats.Count; i++)
+            {
+            Cat.Serialize(obj.Cats[i], stream);
+            }
+        }
     }
 }
 
@@ -120,11 +148,25 @@ public partial class Cat : ISerializable<Cat>
         return Deserialize(ref buffer);
     }
 
+    public static Cat Deserialize(System.IO.Stream stream)
+    {
+        var id = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var name = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
+        var obj = new Cat(id, name);
+        return obj;
+    }
+
     public static int Serialize(Cat obj, System.Span<byte> data)
     {
         var originalData = data;
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Id);
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.Name);
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(Cat obj, System.IO.Stream stream)
+    {
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);
     }
 }

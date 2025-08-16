@@ -50,6 +50,15 @@ public partial class LoginPacket : ISerializable<LoginPacket>
         return Deserialize(ref buffer);
     }
 
+    public static LoginPacket Deserialize(System.IO.Stream stream)
+    {
+        var result = FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
+        var userID = FourSer.Gen.Helpers.StreamReaderHelpers.ReadUInt32(stream);
+        var username = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
+        var obj = new LoginPacket(result, userID, username);
+        return obj;
+    }
+
     public static int Serialize(LoginPacket obj, System.Span<byte> data)
     {
         var originalData = data;
@@ -57,5 +66,12 @@ public partial class LoginPacket : ISerializable<LoginPacket>
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteUInt32(ref data, (UInt32)obj.UserID);
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.Username);
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(LoginPacket obj, System.IO.Stream stream)
+    {
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (Byte)obj.Result);
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteUInt32(stream, (UInt32)obj.UserID);
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Username);
     }
 }

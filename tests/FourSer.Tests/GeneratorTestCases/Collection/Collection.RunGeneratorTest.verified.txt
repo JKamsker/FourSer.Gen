@@ -48,6 +48,18 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         return Deserialize(ref buffer);
     }
 
+    public static CollectionPacket Deserialize(System.IO.Stream stream)
+    {
+        var numbersCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var numbers = new System.Collections.Generic.List<int>(numbersCount);
+        for (int i = 0; i < numbersCount; i++)
+        {
+            numbers.Add(FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream));
+        }
+        var obj = new CollectionPacket(numbers);
+        return obj;
+    }
+
     public static int Serialize(CollectionPacket obj, System.Span<byte> data)
     {
         var originalData = data;
@@ -64,5 +76,21 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
             }
         }
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(CollectionPacket obj, System.IO.Stream stream)
+    {
+        if (obj.Numbers is null)
+        {
+            throw new System.NullReferenceException($"Collection \"Numbers\" cannot be null.");
+        }
+        else
+        {
+            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Numbers.Count);
+            for (int i = 0; i < obj.Numbers.Count; i++)
+            {
+            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Numbers[i]);
+            }
+        }
     }
 }

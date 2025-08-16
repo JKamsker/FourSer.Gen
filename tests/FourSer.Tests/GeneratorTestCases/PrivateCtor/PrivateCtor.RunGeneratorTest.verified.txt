@@ -37,10 +37,22 @@ public partial class PrivateCtorPacket : ISerializable<PrivateCtorPacket>
         return Deserialize(ref buffer);
     }
 
+    public static PrivateCtorPacket Deserialize(System.IO.Stream stream)
+    {
+        var value = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var obj = new PrivateCtorPacket(value);
+        return obj;
+    }
+
     public static int Serialize(PrivateCtorPacket obj, System.Span<byte> data)
     {
         var originalData = data;
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Value);
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(PrivateCtorPacket obj, System.IO.Stream stream)
+    {
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Value);
     }
 }
