@@ -159,14 +159,14 @@ public static class SerializationGenerator
 
     private static void GenerateCollectionSerialization(StringBuilder sb, MemberToGenerate member, string target, string helper)
     {
-        if (member.CollectionInfo is null) return;
+        if (member.CollectionInfo is not { } collectionInfo) return;
         var refOrEmpty = target == "data" ? "ref " : "";
 
         sb.AppendLine($"        if (obj.{member.Name} is null)");
         sb.AppendLine("        {");
-        if (member.CollectionInfo.Value.CountType != null || !string.IsNullOrEmpty(member.CollectionInfo.Value.CountSizeReference))
+        if (collectionInfo.CountType != null || !string.IsNullOrEmpty(collectionInfo.CountSizeReference))
         {
-            var countType = member.CollectionInfo.Value.CountType ?? TypeHelper.GetDefaultCountType();
+            var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
             var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
             sb.AppendLine($"            FourSer.Gen.Helpers.{helper}.{countWriteMethod}({refOrEmpty}{target}, ({countType})0);");
         }
@@ -178,9 +178,9 @@ public static class SerializationGenerator
         sb.AppendLine("        else");
         sb.AppendLine("        {");
 
-        if (member.CollectionInfo is { Unlimited: false })
+        if (collectionInfo is { Unlimited: false })
         {
-            var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
+            var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
             var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
 
             var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
@@ -189,7 +189,7 @@ public static class SerializationGenerator
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
-            if (member.CollectionInfo.Value.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
+            if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
             {
                 sb.AppendLine($"            foreach(var item in obj.{member.Name})");
                 sb.AppendLine("            {");
@@ -215,10 +215,10 @@ public static class SerializationGenerator
                 return;
             }
 
-            if (member.CollectionInfo.Value.PolymorphicMode == PolymorphicMode.SingleTypeId)
+            if (collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId)
             {
                 var info = member.PolymorphicInfo!.Value;
-                var typeIdProperty = member.CollectionInfo.Value.TypeIdProperty;
+                var typeIdProperty = collectionInfo.TypeIdProperty;
 
                 sb.AppendLine($"            switch (obj.{typeIdProperty})");
                 sb.AppendLine("            {");

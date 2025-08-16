@@ -61,9 +61,13 @@ public static class PacketSizeGenerator
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
+            if (member.PolymorphicInfo is not { } info)
+            {
+                return;
+            }
+
             sb.AppendLine($"        foreach(var item in obj.{member.Name})");
             sb.AppendLine("        {");
-            var info = member.PolymorphicInfo.Value;
             if (string.IsNullOrEmpty(info.TypeIdProperty))
             {
                 sb.AppendLine($"            size += {PolymorphicUtilities.GenerateTypeIdSizeExpression(info)};");
@@ -137,7 +141,10 @@ public static class PacketSizeGenerator
             instanceName = $"obj.{member.Name}";
         }
 
-        var info = member.PolymorphicInfo!.Value;
+        if (member.PolymorphicInfo is not { } info)
+        {
+            return;
+        }
 
         sb.AppendLine($"        switch ({instanceName})");
         sb.AppendLine("        {");
