@@ -42,11 +42,23 @@ public partial class Item : ISerializable<Item>
         return Deserialize(ref buffer);
     }
 
+    public static Item Deserialize(System.IO.Stream stream)
+    {
+        var id = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var obj = new Item(id);
+        return obj;
+    }
+
     public static int Serialize(Item obj, System.Span<byte> data)
     {
         var originalData = data;
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Id);
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(Item obj, System.IO.Stream stream)
+    {
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
     }
 }
 
@@ -104,6 +116,18 @@ public partial class MainObject : ISerializable<MainObject>
         return Deserialize(ref buffer);
     }
 
+    public static MainObject Deserialize(System.IO.Stream stream)
+    {
+        var itemsCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>(itemsCount);
+        for (int i = 0; i < itemsCount; i++)
+        {
+            items.Add(Item.Deserialize(stream));
+        }
+        var obj = new MainObject(items);
+        return obj;
+    }
+
     public static int Serialize(MainObject obj, System.Span<byte> data)
     {
         var originalData = data;
@@ -121,5 +145,21 @@ public partial class MainObject : ISerializable<MainObject>
             }
         }
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(MainObject obj, System.IO.Stream stream)
+    {
+        if (obj.Items is null)
+        {
+            throw new System.NullReferenceException($"Collection \"Items\" cannot be null.");
+        }
+        else
+        {
+            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Items.Count);
+            for (int i = 0; i < obj.Items.Count; i++)
+            {
+            Item.Serialize(obj.Items[i], stream);
+            }
+        }
     }
 }

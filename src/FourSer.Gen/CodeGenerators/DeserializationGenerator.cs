@@ -175,8 +175,7 @@ namespace FourSer.Gen.CodeGenerators
             {
                 if (member.CollectionTypeInfo?.IsArray == true)
                 {
-                    sb.AppendLine($"        {target} = new byte[(int){countVar}];");
-                    sb.AppendLine($"        FourSer.Gen.Helpers.{helper}.ReadBytes({refOrEmpty}{source}, {memberName});");
+                sb.AppendLine($"        {target} = FourSer.Gen.Helpers.{helper}.ReadBytes({refOrEmpty}{source}, (int){countVar});");
                 }
                 else if (member.CollectionTypeInfo?.CollectionTypeName == "System.Collections.Generic.List<T>")
                 {

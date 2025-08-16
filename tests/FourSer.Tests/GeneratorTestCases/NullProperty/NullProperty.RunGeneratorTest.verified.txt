@@ -42,11 +42,23 @@ public partial class NestedObject : ISerializable<NestedObject>
         return Deserialize(ref buffer);
     }
 
+    public static NestedObject Deserialize(System.IO.Stream stream)
+    {
+        var id = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var obj = new NestedObject(id);
+        return obj;
+    }
+
     public static int Serialize(NestedObject obj, System.Span<byte> data)
     {
         var originalData = data;
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Id);
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(NestedObject obj, System.IO.Stream stream)
+    {
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
     }
 }
 
@@ -95,6 +107,13 @@ public partial class MainObject : ISerializable<MainObject>
         return Deserialize(ref buffer);
     }
 
+    public static MainObject Deserialize(System.IO.Stream stream)
+    {
+        var nested = NestedObject.Deserialize(stream);
+        var obj = new MainObject(nested);
+        return obj;
+    }
+
     public static int Serialize(MainObject obj, System.Span<byte> data)
     {
         var originalData = data;
@@ -105,5 +124,14 @@ public partial class MainObject : ISerializable<MainObject>
         var bytesWritten = NestedObject.Serialize(obj.Nested, data);
         data = data.Slice(bytesWritten);
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(MainObject obj, System.IO.Stream stream)
+    {
+        if (obj.Nested is null)
+        {
+            throw new System.NullReferenceException($"Property \"Nested\" cannot be null.");
+        }
+        NestedObject.Serialize(obj.Nested, stream);
     }
 }

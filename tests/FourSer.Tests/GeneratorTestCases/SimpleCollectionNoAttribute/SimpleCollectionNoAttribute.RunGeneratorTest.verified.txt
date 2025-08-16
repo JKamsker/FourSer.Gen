@@ -44,6 +44,14 @@ public partial class MyPacket : ISerializable<MyPacket>
         return Deserialize(ref buffer);
     }
 
+    public static MyPacket Deserialize(System.IO.Stream stream)
+    {
+        var dataCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var data = FourSer.Gen.Helpers.StreamReaderHelpers.ReadBytes(stream, (int)dataCount).ToList();
+        var obj = new MyPacket(data);
+        return obj;
+    }
+
     public static int Serialize(MyPacket obj, System.Span<byte> data)
     {
         var originalData = data;
@@ -57,5 +65,18 @@ public partial class MyPacket : ISerializable<MyPacket>
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteBytes(ref data, obj.Data);
         }
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(MyPacket obj, System.IO.Stream stream)
+    {
+        if (obj.Data is null)
+        {
+            throw new System.NullReferenceException($"Collection \"Data\" cannot be null.");
+        }
+        else
+        {
+            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Data.Count);
+            FourSer.Gen.Helpers.StreamWriterHelpers.WriteBytes(stream, obj.Data);
+        }
     }
 }
