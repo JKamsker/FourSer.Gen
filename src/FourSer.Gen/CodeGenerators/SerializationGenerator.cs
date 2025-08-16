@@ -124,8 +124,7 @@ public static class SerializationGenerator
                     member.PolymorphicInfo,
                     false,
                     null,
-                    false,
-                    default
+                    false
                 );
 
                 GeneratePolymorphicItemSerialization(sb, itemMember, "item", itemBytesWrittenVar);

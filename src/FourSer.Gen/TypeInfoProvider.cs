@@ -218,16 +218,22 @@ internal static class TypeInfoProvider
 
         while (currentType != null && currentType.SpecialType != SpecialType.System_Object)
         {
-            var typeMembers = new List<MemberToGenerate>();
+            var typeMembersWithLocation = new List<(MemberToGenerate, Location)>();
             foreach (var m in currentType.GetMembers())
             {
                 if (IsSerializableMember(m))
                 {
-                    typeMembers.Add(CreateMemberToGenerate(m));
+                    typeMembersWithLocation.Add(CreateMemberToGenerate(m));
                 }
             }
 
-            typeMembers.Sort((m1, m2) => m1.Location.SourceSpan.Start.CompareTo(m2.Location.SourceSpan.Start));
+            typeMembersWithLocation.Sort((m1, m2) => m1.Item2.SourceSpan.Start.CompareTo(m2.Item2.SourceSpan.Start));
+
+            var typeMembers = new List<MemberToGenerate>();
+            foreach(var m in typeMembersWithLocation)
+            {
+                typeMembers.Add(m.Item1);
+            }
 
             members.InsertRange(0, typeMembers);
             currentType = currentType.BaseType;
@@ -236,7 +242,7 @@ internal static class TypeInfoProvider
         return new EquatableArray<MemberToGenerate>(members.ToImmutableArray());
     }
 
-    private static MemberToGenerate CreateMemberToGenerate(ISymbol m)
+    private static (MemberToGenerate, Location) CreateMemberToGenerate(ISymbol m)
     {
         var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
         var isList = memberTypeSymbol.OriginalDefinition.ToDisplayString()
@@ -288,7 +294,7 @@ internal static class TypeInfoProvider
             }
         }
 
-        return new MemberToGenerate
+        var memberToGenerate = new MemberToGenerate
         (
             m.Name,
             memberTypeSymbol.ToDisplayString(s_typeNameFormat),
@@ -301,9 +307,10 @@ internal static class TypeInfoProvider
             polymorphicInfo,
             isCollection,
             collectionTypeInfo,
-            isReadOnly,
-            m.Locations.First()
+            isReadOnly
         );
+
+        return (memberToGenerate, m.Locations.First());
     }
 
     private static EquatableArray<TypeToGenerate> GetNestedTypes(INamedTypeSymbol parentType)

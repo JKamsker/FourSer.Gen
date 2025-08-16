@@ -153,7 +153,7 @@ public static class DeserializationGenerator
                     member.ListTypeArgument.Value.IsUnmanagedType,
                     member.ListTypeArgument.Value.IsStringType,
                     member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
-                    false, null, null, member.PolymorphicInfo, false, null, false, default
+                    false, null, null, member.PolymorphicInfo, false, null, false
                 );
                 GeneratePolymorphicItemDeserialization(sb, itemMember, "item");
                 sb.AppendLine($"            {memberName}.Add(item);");
