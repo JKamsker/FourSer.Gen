@@ -103,19 +103,22 @@ public class SerializerGenerator : IIncrementalGenerator
 
     internal static void GenerateConstructor(StringBuilder sb, TypeToGenerate typeToGenerate, Models.ConstructorInfo ctor)
     {
-        var parameters = new StringBuilder();
+        sb.Append($"    private {typeToGenerate.Name}(");
+
+        bool first = true;
         foreach (var p in ctor.Parameters)
         {
-            if (parameters.Length > 0)
+            if (!first)
             {
-                parameters.Append(", ");
+                sb.Append(", ");
             }
-            parameters.Append(p.TypeName);
-            parameters.Append(" ");
-            parameters.Append(StringExtensions.ToCamelCase(p.Name));
+            sb.Append(p.TypeName);
+            sb.Append(" ");
+            sb.Append(StringExtensions.ToCamelCase(p.Name));
+            first = false;
         }
 
-        sb.AppendLine($"    private {typeToGenerate.Name}({parameters})");
+        sb.AppendLine(")");
         sb.AppendLine("    {");
 
         foreach (var parameter in ctor.Parameters)
