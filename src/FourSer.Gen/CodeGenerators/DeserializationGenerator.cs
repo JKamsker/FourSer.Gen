@@ -141,12 +141,12 @@ namespace FourSer.Gen.CodeGenerators
 
         private static void GenerateCollectionDeserialization(StringBuilder sb, MemberToGenerate member, string target, string source, string helper)
         {
-            if (member.CollectionInfo is null)
+            if (member.CollectionInfo is not { } collectionInfo)
                 return;
 
             var refOrEmpty = source == "buffer" ? "ref " : "";
 
-            if (member.CollectionInfo.Value.Unlimited)
+            if (collectionInfo.Unlimited)
             {
                 GenerateUnlimitedCollectionDeserialization(sb, member, target, source, helper);
                 return;
@@ -155,10 +155,10 @@ namespace FourSer.Gen.CodeGenerators
             var memberName = StringExtensions.ToCamelCase(member.Name);
             string countVar;
 
-            var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
+            var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
             var countReadMethod = TypeHelper.GetReadMethodName(countType);
 
-            if (member.CollectionInfo.Value.CountSizeReference is string countSizeReference)
+            if (collectionInfo.CountSizeReference is string countSizeReference)
             {
                 countVar = StringExtensions.ToCamelCase(countSizeReference);
             }
@@ -195,7 +195,7 @@ namespace FourSer.Gen.CodeGenerators
 
             if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
             {
-                if (member.CollectionInfo.Value.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
+                if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
                 {
                     sb.AppendLine($"        for (int i = 0; i < {loopLimitVar}; i++)");
                     sb.AppendLine("        {");
@@ -214,10 +214,10 @@ namespace FourSer.Gen.CodeGenerators
                     return;
                 }
 
-                if (member.CollectionInfo.Value.PolymorphicMode == PolymorphicMode.SingleTypeId)
+                if (collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId)
                 {
                     var info = member.PolymorphicInfo!.Value;
-                    var typeIdProperty = member.CollectionInfo.Value.TypeIdProperty;
+                    var typeIdProperty = collectionInfo.TypeIdProperty;
                     var typeIdVar = StringExtensions.ToCamelCase(typeIdProperty!);
 
                     sb.AppendLine($"        switch ({typeIdVar})");
@@ -269,20 +269,42 @@ namespace FourSer.Gen.CodeGenerators
 
         private static void GenerateUnlimitedCollectionDeserialization(StringBuilder sb, MemberToGenerate member, string target, string source, string helper)
         {
-            var elementType = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
             var tempCollectionVar = $"temp{member.Name}";
             var refOrEmpty = source == "buffer" ? "ref " : "";
+
+            ListTypeArgumentInfo listTypeInfo;
+            string elementType;
+
+            if (member.ListTypeArgument is not null)
+            {
+                listTypeInfo = member.ListTypeArgument.Value;
+                elementType = listTypeInfo.TypeName;
+            }
+            else if (member.CollectionTypeInfo is not null)
+            {
+                var collectionTypeInfo = member.CollectionTypeInfo.Value;
+                elementType = collectionTypeInfo.ElementTypeName;
+                listTypeInfo = new ListTypeArgumentInfo(
+                    elementType,
+                    collectionTypeInfo.IsElementUnmanagedType,
+                    collectionTypeInfo.IsElementStringType,
+                    collectionTypeInfo.HasElementGenerateSerializerAttribute
+                );
+            }
+            else
+            {
+                // This path should ideally not be hit for a collection.
+                // Adding a comment to reflect that this is an undesirable state.
+                sb.AppendLine($"        // Fallback for unlimited collection {member.Name} - element type could not be determined.");
+                elementType = "object"; // Fallback to object to avoid breaking compilation, though this is not ideal.
+                listTypeInfo = new ListTypeArgumentInfo(elementType, false, false, false);
+            }
+
 
             sb.AppendLine($"        var {tempCollectionVar} = new System.Collections.Generic.List<{elementType}>();");
             sb.AppendLine(source == "buffer" ? "        while (buffer.Length > 0)" : "        while (stream.Position < stream.Length)");
             sb.AppendLine("        {");
 
-            var listTypeInfo = member.ListTypeArgument ?? new ListTypeArgumentInfo(
-                elementType,
-                member.CollectionTypeInfo.Value.IsElementUnmanagedType,
-                member.CollectionTypeInfo.Value.IsElementStringType,
-                member.CollectionTypeInfo.Value.HasElementGenerateSerializerAttribute
-            );
             GenerateListElementDeserialization(sb, listTypeInfo, tempCollectionVar, source, helper);
 
             sb.AppendLine("        }");
