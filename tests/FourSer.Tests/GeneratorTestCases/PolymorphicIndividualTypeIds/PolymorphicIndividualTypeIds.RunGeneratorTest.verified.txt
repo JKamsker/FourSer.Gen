@@ -50,8 +50,8 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
     {
         var originalBuffer = buffer;
         var animalsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref buffer);
-        var animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal>((int)animalsCount);
-        for (int i = 0; i < (int)animalsCount; i++)
+        var animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal>(animalsCount);
+        for (int i = 0; i < animalsCount; i++)
         {
             FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal item;
             int itemBytesRead;

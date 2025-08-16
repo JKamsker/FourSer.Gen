@@ -84,8 +84,8 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
     {
         var originalBuffer = buffer;
         var structsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
-        var structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>((int)structsCount);
-        for (int i = 0; i < (int)structsCount; i++)
+        var structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
+        for (int i = 0; i < structsCount; i++)
         {
             structs.Add(MyStruct.Deserialize(buffer, out var itemBytesRead));
             buffer = buffer.Slice(itemBytesRead);

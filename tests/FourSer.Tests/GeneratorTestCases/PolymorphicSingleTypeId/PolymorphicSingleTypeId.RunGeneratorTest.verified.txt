@@ -53,12 +53,12 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
         var originalBuffer = buffer;
         var animalTypeId = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref buffer);
         var animalsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt16(ref buffer);
-        var animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Animal>((int)animalsCount);
+        var animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Animal>(animalsCount);
         switch (animalTypeId)
         {
             case 1:
             {
-                for (int i = 0; i < (int)animalsCount; i++)
+                for (int i = 0; i < animalsCount; i++)
                 {
                     var item = Cat.Deserialize(buffer, out var itemBytesRead);
                     animals.Add(item);
@@ -68,7 +68,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             }
             case 2:
             {
-                for (int i = 0; i < (int)animalsCount; i++)
+                for (int i = 0; i < animalsCount; i++)
                 {
                     var item = Dog.Deserialize(buffer, out var itemBytesRead);
                     animals.Add(item);

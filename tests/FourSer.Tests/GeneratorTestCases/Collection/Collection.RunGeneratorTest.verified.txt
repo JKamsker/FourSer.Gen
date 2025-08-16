@@ -35,8 +35,8 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
     {
         var originalBuffer = buffer;
         var numbersCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
-        var numbers = new System.Collections.Generic.List<int>((int)numbersCount);
-        for (int i = 0; i < (int)numbersCount; i++)
+        var numbers = new System.Collections.Generic.List<int>(numbersCount);
+        for (int i = 0; i < numbersCount; i++)
         {
             numbers.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer));
         }
