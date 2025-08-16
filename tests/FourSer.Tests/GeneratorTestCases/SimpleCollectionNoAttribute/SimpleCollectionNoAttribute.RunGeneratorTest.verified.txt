@@ -44,8 +44,15 @@ public partial class MyPacket : ISerializable<MyPacket>
     public static int Serialize(MyPacket obj, System.Span<byte> data)
     {
         var originalData = data;
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Data.Count);
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteBytes(ref data, obj.Data);
+        if (obj.Data is null)
+        {
+            throw new System.NullReferenceException($"Collection \"Data\" cannot be null.");
+        }
+        else
+        {
+            FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Data.Count);
+            FourSer.Gen.Helpers.SpanWriterHelpers.WriteBytes(ref data, obj.Data);
+        }
         return originalData.Length - data.Length;
     }
 }

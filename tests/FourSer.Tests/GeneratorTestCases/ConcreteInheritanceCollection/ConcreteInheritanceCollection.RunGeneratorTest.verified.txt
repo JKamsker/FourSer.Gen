@@ -52,11 +52,18 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
     public static int Serialize(ConcreteInheritanceTest obj, System.Span<byte> data)
     {
         var originalData = data;
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Dogs.Count);
-        for (int i = 0; i < obj.Dogs.Count; i++)
+        if (obj.Dogs is null)
         {
+            throw new System.NullReferenceException($"Collection \"Dogs\" cannot be null.");
+        }
+        else
+        {
+            FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Dogs.Count);
+            for (int i = 0; i < obj.Dogs.Count; i++)
+            {
             var bytesWritten = Dog.Serialize(obj.Dogs[i], data);
             data = data.Slice(bytesWritten);
+            }
         }
         return originalData.Length - data.Length;
     }

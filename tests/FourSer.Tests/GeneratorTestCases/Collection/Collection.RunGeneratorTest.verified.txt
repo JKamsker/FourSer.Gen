@@ -48,10 +48,17 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
     public static int Serialize(CollectionPacket obj, System.Span<byte> data)
     {
         var originalData = data;
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Numbers.Count);
-        for (int i = 0; i < obj.Numbers.Count; i++)
+        if (obj.Numbers is null)
         {
+            throw new System.NullReferenceException($"Collection \"Numbers\" cannot be null.");
+        }
+        else
+        {
+            FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Numbers.Count);
+            for (int i = 0; i < obj.Numbers.Count; i++)
+            {
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Numbers[i]);
+            }
         }
         return originalData.Length - data.Length;
     }
