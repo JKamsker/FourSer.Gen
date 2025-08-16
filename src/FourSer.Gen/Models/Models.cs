@@ -18,7 +18,27 @@ public readonly record struct TypeToGenerate(
     bool IsValueType,
     EquatableArray<MemberToGenerate> Members,
     EquatableArray<TypeToGenerate> NestedTypes,
-    bool HasSerializableBaseType) : IEquatable<TypeToGenerate>;
+    bool HasSerializableBaseType,
+    ConstructorInfo? Constructor) : IEquatable<TypeToGenerate>;
+
+/// <summary>
+/// A model describing a constructor parameter.
+/// </summary>
+/// <param name="Name">The name of the parameter.</param>
+/// <param name="TypeName">The full name of the parameter's type.</param>
+public readonly record struct ParameterInfo(
+    string Name,
+    string TypeName) : IEquatable<ParameterInfo>;
+
+/// <summary>
+/// A model describing a constructor.
+/// </summary>
+/// <param name="Parameters">The list of parameters for the constructor.</param>
+/// <param name="ShouldGenerate">Whether the constructor should be generated.</param>
+public readonly record struct ConstructorInfo(
+    EquatableArray<ParameterInfo> Parameters,
+    bool ShouldGenerate,
+    bool HasParameterlessConstructor) : IEquatable<ConstructorInfo>;
 
 /// <summary>
 /// A model describing a member (property or field) to be serialized.
@@ -44,7 +64,8 @@ public readonly record struct MemberToGenerate(
     CollectionInfo? CollectionInfo,
     PolymorphicInfo? PolymorphicInfo,
     bool IsCollection,
-    CollectionTypeInfo? CollectionTypeInfo) : IEquatable<MemberToGenerate>;
+    CollectionTypeInfo? CollectionTypeInfo,
+    bool IsReadOnly) : IEquatable<MemberToGenerate>;
 
 /// <summary>
 /// A model describing the type argument of a List&lt;T&gt;.

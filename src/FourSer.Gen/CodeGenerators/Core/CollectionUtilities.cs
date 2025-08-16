@@ -42,12 +42,12 @@ namespace FourSer.Gen.CodeGenerators.Core
         /// <summary>
         /// Collection instantiation logic for deserialization.
         /// </summary>
-        public static string GenerateCollectionInstantiation(MemberToGenerate member, string countVar)
+        public static string GenerateCollectionInstantiation(MemberToGenerate member, string countVar, string target)
         {
             var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
             if (member.CollectionTypeInfo?.IsArray == true)
             {
-                return $"obj.{member.Name} = new {elementTypeName}[{countVar}];";
+                return $"{target} = new {elementTypeName}[{countVar}];";
             }
 
             if (member.CollectionTypeInfo?.ConcreteTypeName != null)
@@ -55,12 +55,12 @@ namespace FourSer.Gen.CodeGenerators.Core
                 var concreteTypeName = member.CollectionTypeInfo.Value.ConcreteTypeName;
                 if (SupportsCapacityConstructor(concreteTypeName))
                 {
-                    return $"var temp{member.Name} = new {concreteTypeName}<{elementTypeName}>({countVar});";
+                    return $"{target} = new {concreteTypeName}<{elementTypeName}>({countVar});";
                 }
-                return $"var temp{member.Name} = new {concreteTypeName}<{elementTypeName}>();";
+                return $"{target} = new {concreteTypeName}<{elementTypeName}>();";
             }
 
-            return $"obj.{member.Name} = new System.Collections.Generic.List<{elementTypeName}>({countVar});";
+            return $"{target} = new System.Collections.Generic.List<{elementTypeName}>({countVar});";
         }
 
         /// <summary>

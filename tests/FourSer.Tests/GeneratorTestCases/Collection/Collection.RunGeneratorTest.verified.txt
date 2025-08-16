@@ -21,18 +21,27 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         return size;
     }
 
-    public static CollectionPacket Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
+    private CollectionPacket(System.Collections.Generic.List<int> numbers)
     {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new CollectionPacket();
-        var NumbersCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        obj.Numbers = new System.Collections.Generic.List<int>(NumbersCount);
-        for (int i = 0; i < NumbersCount; i++)
+        this.Numbers = numbers;
+    }
+
+    public CollectionPacket()
+    {
+        this.Numbers = default;
+    }
+
+    public static CollectionPacket Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    {
+        var originalBuffer = buffer;
+        var numbersCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var numbers = new System.Collections.Generic.List<int>(numbersCount);
+        for (int i = 0; i < numbersCount; i++)
         {
-            obj.Numbers.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data));
+            numbers.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer));
         }
-        bytesRead = originalData.Length - data.Length;
+        var obj = new CollectionPacket(numbers);
+        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }
 

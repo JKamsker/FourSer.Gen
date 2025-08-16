@@ -36,40 +36,51 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
         return size;
     }
 
-    public static PolymorphicSingleTest Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
+    private PolymorphicSingleTest(byte animalTypeId, System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Animal> animals)
     {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new PolymorphicSingleTest();
-        obj.AnimalTypeId = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref data);
-        var AnimalsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt16(ref data);
-        obj.Animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Animal>(AnimalsCount);
-        switch (obj.AnimalTypeId)
+        this.AnimalTypeId = animalTypeId;
+        this.Animals = animals;
+    }
+
+    public PolymorphicSingleTest()
+    {
+        this.AnimalTypeId = default;
+        this.Animals = default;
+    }
+
+    public static PolymorphicSingleTest Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    {
+        var originalBuffer = buffer;
+        var animalTypeId = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref buffer);
+        var animalsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt16(ref buffer);
+        var animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Animal>(animalsCount);
+        switch (animalTypeId)
         {
             case 1:
             {
-                for (int i = 0; i < AnimalsCount; i++)
+                for (int i = 0; i < animalsCount; i++)
                 {
-                    var item = Cat.Deserialize(data, out var itemBytesRead);
-                    obj.Animals.Add(item);
-                    data = data.Slice(itemBytesRead);
+                    var item = Cat.Deserialize(buffer, out var itemBytesRead);
+                    animals.Add(item);
+                    buffer = buffer.Slice(itemBytesRead);
                 }
                 break;
             }
             case 2:
             {
-                for (int i = 0; i < AnimalsCount; i++)
+                for (int i = 0; i < animalsCount; i++)
                 {
-                    var item = Dog.Deserialize(data, out var itemBytesRead);
-                    obj.Animals.Add(item);
-                    data = data.Slice(itemBytesRead);
+                    var item = Dog.Deserialize(buffer, out var itemBytesRead);
+                    animals.Add(item);
+                    buffer = buffer.Slice(itemBytesRead);
                 }
                 break;
             }
             default:
-                throw new System.IO.InvalidDataException($"Unknown type id for Animals: {obj.AnimalTypeId}");
+                throw new System.IO.InvalidDataException($"Unknown type id for Animals: {animalTypeId}");
         }
-        bytesRead = originalData.Length - data.Length;
+        var obj = new PolymorphicSingleTest(animalTypeId, animals);
+        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }
 
@@ -129,14 +140,25 @@ public partial class Cat : ISerializable<Cat>
         return size;
     }
 
-    public static new Cat Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
+    private Cat(int id, string name)
     {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new Cat();
-        obj.Id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        obj.Name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data);
-        bytesRead = originalData.Length - data.Length;
+        this.Id = id;
+        this.Name = name;
+    }
+
+    public Cat()
+    {
+        this.Id = default;
+        this.Name = default;
+    }
+
+    public static new Cat Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    {
+        var originalBuffer = buffer;
+        var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
+        var obj = new Cat(id, name);
+        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }
 
@@ -173,14 +195,25 @@ public partial class Dog : ISerializable<Dog>
         return size;
     }
 
-    public static new Dog Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
+    private Dog(int id, string breed)
     {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new Dog();
-        obj.Id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        obj.Breed = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data);
-        bytesRead = originalData.Length - data.Length;
+        this.Id = id;
+        this.Breed = breed;
+    }
+
+    public Dog()
+    {
+        this.Id = default;
+        this.Breed = default;
+    }
+
+    public static new Dog Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    {
+        var originalBuffer = buffer;
+        var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var breed = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
+        var obj = new Dog(id, breed);
+        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }
 
@@ -216,13 +249,22 @@ public partial class Animal : ISerializable<Animal>
         return size;
     }
 
-    public static Animal Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
+    private Animal(int id)
     {
-        bytesRead = 0;
-        var originalData = data;
-        var obj = new Animal();
-        obj.Id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
-        bytesRead = originalData.Length - data.Length;
+        this.Id = id;
+    }
+
+    public Animal()
+    {
+        this.Id = default;
+    }
+
+    public static Animal Deserialize(System.ReadOnlySpan<byte> buffer, out int bytesRead)
+    {
+        var originalBuffer = buffer;
+        var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var obj = new Animal(id);
+        bytesRead = originalBuffer.Length - buffer.Length;
         return obj;
     }
 

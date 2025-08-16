@@ -6,6 +6,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using FourSer.Gen.CodeGenerators;
+using FourSer.Gen.Helpers;
+using System.Collections.Immutable;
 
 namespace FourSer.Gen;
 
@@ -35,9 +37,6 @@ public class SerializerGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, TypeToGenerate typeToGenerate)
     {
-        // // In a real implementation, you would handle diagnostics here
-        // // For example: context.ReportDiagnostic(diagnostic);
-        // var source = SourceGenerator.GenerateSource(typeToGenerate);
         var sb = new StringBuilder();
 
         GenerateFileHeader(sb, typeToGenerate);
@@ -45,6 +44,21 @@ public class SerializerGenerator : IIncrementalGenerator
 
         PacketSizeGenerator.GenerateGetPacketSize(sb, typeToGenerate);
         sb.AppendLine();
+
+        if (typeToGenerate.Constructor is { ShouldGenerate: true } ctor)
+        {
+            if (!ctor.Parameters.IsEmpty)
+            {
+                GenerateConstructor(sb, typeToGenerate, ctor);
+                sb.AppendLine();
+            }
+
+            if (!ctor.HasParameterlessConstructor)
+            {
+                GenerateParameterlessConstructor(sb, typeToGenerate);
+                sb.AppendLine();
+            }
+        }
 
         DeserializationGenerator.GenerateDeserialize(sb, typeToGenerate);
         sb.AppendLine();
@@ -85,6 +99,36 @@ public class SerializerGenerator : IIncrementalGenerator
         var typeKeyword = typeToGenerate.IsValueType ? "struct" : "class";
         sb.AppendLine($"public partial {typeKeyword} {typeToGenerate.Name} : ISerializable<{typeToGenerate.Name}>");
         sb.AppendLine("{");
+    }
+
+    internal static void GenerateConstructor(StringBuilder sb, TypeToGenerate typeToGenerate, Models.ConstructorInfo ctor)
+    {
+        var parameters = string.Join(", ", ctor.Parameters.Select(p => $"{p.TypeName} {StringExtensions.ToCamelCase(p.Name)}"));
+        sb.AppendLine($"    private {typeToGenerate.Name}({parameters})");
+        sb.AppendLine("    {");
+
+        foreach (var parameter in ctor.Parameters)
+        {
+            sb.AppendLine($"        this.{parameter.Name} = {StringExtensions.ToCamelCase(parameter.Name)};");
+        }
+
+        sb.AppendLine("    }");
+    }
+
+    internal static void GenerateParameterlessConstructor(StringBuilder sb, TypeToGenerate typeToGenerate)
+    {
+        if (typeToGenerate.IsValueType) return;
+
+        sb.AppendLine($"    public {typeToGenerate.Name}()");
+        sb.AppendLine("    {");
+
+        foreach (var member in typeToGenerate.Members)
+        {
+            if (member.IsReadOnly) continue;
+
+            sb.AppendLine($"        this.{member.Name} = default;");
+        }
+        sb.AppendLine("    }");
     }
 
     private static void AddHelpers(IncrementalGeneratorPostInitializationContext context)
