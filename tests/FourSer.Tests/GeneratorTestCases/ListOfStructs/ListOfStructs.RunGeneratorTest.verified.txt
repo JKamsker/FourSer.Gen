@@ -38,11 +38,23 @@ public partial struct MyStruct : ISerializable<MyStruct>
         return Deserialize(ref buffer);
     }
 
+    public static MyStruct Deserialize(System.IO.Stream stream)
+    {
+        var a = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var obj = new MyStruct(a);
+        return obj;
+    }
+
     public static int Serialize(MyStruct obj, System.Span<byte> data)
     {
         var originalData = data;
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.A);
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(MyStruct obj, System.IO.Stream stream)
+    {
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.A);
     }
 }
 
@@ -100,6 +112,18 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         return Deserialize(ref buffer);
     }
 
+    public static PacketWithListOfStructs Deserialize(System.IO.Stream stream)
+    {
+        var structsCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
+        for (int i = 0; i < structsCount; i++)
+        {
+            structs.Add(MyStruct.Deserialize(stream));
+        }
+        var obj = new PacketWithListOfStructs(structs);
+        return obj;
+    }
+
     public static int Serialize(PacketWithListOfStructs obj, System.Span<byte> data)
     {
         var originalData = data;
@@ -117,5 +141,21 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
             }
         }
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(PacketWithListOfStructs obj, System.IO.Stream stream)
+    {
+        if (obj.Structs is null)
+        {
+            throw new System.NullReferenceException($"Collection \"Structs\" cannot be null.");
+        }
+        else
+        {
+            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Structs.Count);
+            for (int i = 0; i < obj.Structs.Count; i++)
+            {
+            MyStruct.Serialize(obj.Structs[i], stream);
+            }
+        }
     }
 }

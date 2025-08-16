@@ -23,12 +23,13 @@ namespace FourSer.Gen.CodeGenerators.Core
             return key.ToString();
         }
 
-        public static string GenerateWriteTypeIdCode(PolymorphicOption option, PolymorphicInfo info, string indent = "                ")
+        public static string GenerateWriteTypeIdCode(PolymorphicOption option, PolymorphicInfo info, string indent = "                ", string target = "data", string helper = "SpanWriterHelpers")
         {
             var key = FormatTypeIdKey(option.Key, info);
             var underlyingType = info.EnumUnderlyingType ?? info.TypeIdType;
             var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(underlyingType);
-            return $"{indent}FourSer.Gen.Helpers.SpanWriterHelpers.Write{typeIdTypeName}(ref data, ({underlyingType}){key});";
+            var refOrEmpty = target == "data" ? "ref " : "";
+            return $"{indent}FourSer.Gen.Helpers.{helper}.Write{typeIdTypeName}({refOrEmpty}{target}, ({underlyingType}){key});";
         }
 
         public static string GenerateTypeIdSizeExpression(PolymorphicInfo info)

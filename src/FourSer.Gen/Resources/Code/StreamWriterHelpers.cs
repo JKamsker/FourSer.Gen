@@ -1,0 +1,139 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+namespace FourSer.Gen.Helpers;
+
+internal static class StreamWriterHelpers
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteByte(this Stream stream, byte value)
+    {
+        stream.WriteByte(value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteSByte(this Stream stream, sbyte value)
+    {
+        stream.WriteByte((byte)value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteBoolean(this Stream stream, bool value)
+    {
+        stream.WriteByte(value ? (byte)1 : (byte)0);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteBytes(this Stream stream, ReadOnlySpan<byte> value)
+    {
+        stream.Write(value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteBytes(this Stream stream, byte[] value)
+    {
+        stream.Write(value, 0, value.Length);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void WriteUInt32(this Stream stream, uint value)
+    {
+        Span<byte> buffer = stackalloc byte[sizeof(uint)];
+        BitConverter.TryWriteBytes(buffer, value);
+        stream.Write(buffer);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void WriteSingle(this Stream stream, float value)
+    {
+        Span<byte> buffer = stackalloc byte[sizeof(float)];
+        BitConverter.TryWriteBytes(buffer, value);
+        stream.Write(buffer);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void WriteDouble(this Stream stream, double value)
+    {
+        Span<byte> buffer = stackalloc byte[sizeof(double)];
+        BitConverter.TryWriteBytes(buffer, value);
+        stream.Write(buffer);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteUInt16(this Stream stream, ushort value)
+    {
+        Span<byte> buffer = stackalloc byte[sizeof(ushort)];
+        BitConverter.TryWriteBytes(buffer, value);
+        stream.Write(buffer);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteInt16(this Stream stream, short value)
+    {
+        Span<byte> buffer = stackalloc byte[sizeof(short)];
+        BitConverter.TryWriteBytes(buffer, value);
+        stream.Write(buffer);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteUInt64(this Stream stream, ulong value)
+    {
+        Span<byte> buffer = stackalloc byte[sizeof(ulong)];
+        BitConverter.TryWriteBytes(buffer, value);
+        stream.Write(buffer);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteInt64(this Stream stream, long value)
+    {
+        Span<byte> buffer = stackalloc byte[sizeof(long)];
+        BitConverter.TryWriteBytes(buffer, value);
+        stream.Write(buffer);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteInt32(this Stream stream, int value)
+    {
+        Span<byte> buffer = stackalloc byte[sizeof(int)];
+        BitConverter.TryWriteBytes(buffer, value);
+        stream.Write(buffer);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteString(this Stream stream, string value)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(value);
+        stream.WriteUInt16((ushort)bytes.Length);
+        stream.Write(bytes, 0, bytes.Length);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteBytes(this Stream stream, IEnumerable<byte>? value)
+    {
+        if (value is null)
+        {
+            return;
+        }
+
+        if (value is byte[] array)
+        {
+            stream.Write(array, 0, array.Length);
+            return;
+        }
+
+        if (value is List<byte> list)
+        {
+            var span = CollectionsMarshal.AsSpan(list);
+            stream.Write(span);
+            return;
+        }
+
+        foreach (var b in value)
+        {
+            stream.WriteByte(b);
+        }
+    }
+}

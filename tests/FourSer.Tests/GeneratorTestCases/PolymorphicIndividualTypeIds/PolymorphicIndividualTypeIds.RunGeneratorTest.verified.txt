@@ -80,6 +80,35 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         return Deserialize(ref buffer);
     }
 
+    public static PolymorphicIndividualTest Deserialize(System.IO.Stream stream)
+    {
+        var animalsCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
+        var animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal>(animalsCount);
+        for (int i = 0; i < animalsCount; i++)
+        {
+            FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal item;
+            var typeId = FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
+            switch (typeId)
+            {
+                case 1:
+                {
+                    item = Cat.Deserialize(stream);
+                    break;
+                }
+                case 2:
+                {
+                    item = Dog.Deserialize(stream);
+                    break;
+                }
+                default:
+                    throw new System.IO.InvalidDataException($"Unknown type id for item: {typeId}");
+            }
+            animals.Add(item);
+        }
+        var obj = new PolymorphicIndividualTest(animals);
+        return obj;
+    }
+
     public static int Serialize(PolymorphicIndividualTest obj, System.Span<byte> data)
     {
         var originalData = data;
@@ -90,21 +119,24 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         else
         {
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)obj.Animals.Count);
-            int AnimalsItemBytesWritten;
             foreach(var item in obj.Animals)
             {
             switch (item)
             {
                 case Cat typedInstance:
+                {
                     FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)1);
-                    AnimalsItemBytesWritten = Cat.Serialize(typedInstance, data);
-                    data = data.Slice(AnimalsItemBytesWritten);
+                    var bytesWritten = Cat.Serialize(typedInstance, data);
+                    data = data.Slice(bytesWritten);
                     break;
+                }
                 case Dog typedInstance:
+                {
                     FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)2);
-                    AnimalsItemBytesWritten = Dog.Serialize(typedInstance, data);
-                    data = data.Slice(AnimalsItemBytesWritten);
+                    var bytesWritten = Dog.Serialize(typedInstance, data);
+                    data = data.Slice(bytesWritten);
                     break;
+                }
                 case null:
                     throw new System.NullReferenceException($"Item in collection cannot be null.");
                 default:
@@ -113,6 +145,40 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
             }
         }
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(PolymorphicIndividualTest obj, System.IO.Stream stream)
+    {
+        if (obj.Animals is null)
+        {
+            FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)0);
+        }
+        else
+        {
+            FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)obj.Animals.Count);
+            foreach(var item in obj.Animals)
+            {
+            switch (item)
+            {
+                case Cat typedInstance:
+                {
+                    FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)1);
+                    Cat.Serialize(typedInstance, stream);
+                    break;
+                }
+                case Dog typedInstance:
+                {
+                    FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)2);
+                    Dog.Serialize(typedInstance, stream);
+                    break;
+                }
+                case null:
+                    throw new System.NullReferenceException($"Item in collection cannot be null.");
+                default:
+                    throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+            }
+            }
+        }
     }
 }
 
@@ -165,12 +231,26 @@ public partial class Cat : ISerializable<Cat>
         return Deserialize(ref buffer);
     }
 
+    public static new Cat Deserialize(System.IO.Stream stream)
+    {
+        var id = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var name = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
+        var obj = new Cat(id, name);
+        return obj;
+    }
+
     public static int Serialize(Cat obj, System.Span<byte> data)
     {
         var originalData = data;
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Id);
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.Name);
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(Cat obj, System.IO.Stream stream)
+    {
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);
     }
 }
 
@@ -223,12 +303,26 @@ public partial class Dog : ISerializable<Dog>
         return Deserialize(ref buffer);
     }
 
+    public static new Dog Deserialize(System.IO.Stream stream)
+    {
+        var id = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var breed = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
+        var obj = new Dog(id, breed);
+        return obj;
+    }
+
     public static int Serialize(Dog obj, System.Span<byte> data)
     {
         var originalData = data;
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Id);
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.Breed);
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(Dog obj, System.IO.Stream stream)
+    {
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Breed);
     }
 }
 
@@ -277,10 +371,22 @@ public partial class Animal : ISerializable<Animal>
         return Deserialize(ref buffer);
     }
 
+    public static Animal Deserialize(System.IO.Stream stream)
+    {
+        var id = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var obj = new Animal(id);
+        return obj;
+    }
+
     public static int Serialize(Animal obj, System.Span<byte> data)
     {
         var originalData = data;
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Id);
         return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(Animal obj, System.IO.Stream stream)
+    {
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
     }
 }
