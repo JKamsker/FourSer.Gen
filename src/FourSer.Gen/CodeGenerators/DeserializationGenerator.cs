@@ -174,7 +174,8 @@ public static class DeserializationGenerator
                 {
                     var key = option.Key.ToString();
                     if (info.EnumUnderlyingType is not null) { key = $"({info.TypeIdType}){key}"; }
-                    else if (info.TypeIdType.EndsWith("Enum")) { key = $"{info.TypeIdType}.{key}"; }
+                    else if (info.TypeIdType.EndsWith("Enum"))
+                        key = $"{info.TypeIdType}.{key}";
 
                     sb.AppendLine($"            case {key}:");
                     sb.AppendLine("            {");
