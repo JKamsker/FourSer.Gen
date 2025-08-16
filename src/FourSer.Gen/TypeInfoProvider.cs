@@ -27,6 +27,7 @@ internal static class TypeInfoProvider
             return null;
         }
 
+        // We only generate for top-level types. Nested types are generated as part of their container.
         if (typeSymbol.ContainingType != null)
         {
             return null;
@@ -240,6 +241,7 @@ internal static class TypeInfoProvider
 
     private static (bool IsCollection, CollectionTypeInfo? CollectionTypeInfo) GetCollectionTypeInfo(ITypeSymbol typeSymbol)
     {
+        // Handle arrays first (arrays are not INamedTypeSymbol)
         if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
         {
             var elementType = arrayTypeSymbol.ElementType;
@@ -260,6 +262,7 @@ internal static class TypeInfoProvider
             return (false, null);
         }
 
+        // Check if it's a generic collection type
         if (!namedTypeSymbol.IsGenericType || namedTypeSymbol.TypeArguments.Length != 1)
         {
             return (false, null);
@@ -275,13 +278,13 @@ internal static class TypeInfoProvider
         {
             case "System.Collections.Generic.List<T>":
                 isCollection = true;
-                concreteTypeName = null;
+                concreteTypeName = null; // List<T> is already concrete
                 break;
             case "System.Collections.Generic.IList<T>":
             case "System.Collections.Generic.ICollection<T>":
             case "System.Collections.Generic.IEnumerable<T>":
                 isCollection = true;
-                concreteTypeName = "System.Collections.Generic.List";
+                concreteTypeName = "System.Collections.Generic.List"; // Interfaces map to List<T>
                 break;
             case "System.Collections.ObjectModel.Collection<T>":
                 isCollection = true;
@@ -345,13 +348,15 @@ internal static class TypeInfoProvider
         {
             if (isCollection)
             {
+                // Return default CollectionInfo with no special configuration
                 return new CollectionInfo
                 (
                     PolymorphicMode.None,
-                    null,
-                    null,
-                    null,
-                    null
+                    null, // TypeIdProperty
+                    null, // CountType (will use default)
+                    null, // CountSize (will use default)
+                    null, // CountSizeReference
+                    false // Unlimited
                 );
             }
             return null;
@@ -362,6 +367,7 @@ internal static class TypeInfoProvider
         var countType = AttributeHelper.GetCountType(attribute)?.ToDisplayString(s_typeNameFormat);
         var countSize = AttributeHelper.GetCountSize(attribute);
         var countSizeReference = AttributeHelper.GetCountSizeReference(attribute);
+        var unlimited = AttributeHelper.GetUnlimited(attribute);
 
         return new CollectionInfo
         (
@@ -369,7 +375,8 @@ internal static class TypeInfoProvider
             typeIdProperty,
             countType,
             countSize,
-            countSizeReference
+            countSizeReference,
+            unlimited
         );
     }
 
@@ -379,10 +386,11 @@ internal static class TypeInfoProvider
         var collectionAttribute = AttributeHelper.GetCollectionAttribute(member);
         var options = AttributeHelper.GetPolymorphicOptions(member);
 
+        // Only create PolymorphicInfo if there are actual polymorphic options or explicit polymorphic configuration
         var hasPolymorphicOptions = options.Any();
         var hasPolymorphicAttribute = attribute is not null;
-        var hasPolymorphicCollectionMode = collectionAttribute is not null && 
-            AttributeHelper.GetPolymorphicMode(collectionAttribute) != 0;
+        var hasPolymorphicCollectionMode = collectionAttribute is not null &&
+            AttributeHelper.GetPolymorphicMode(collectionAttribute) != 0; // 0 = PolymorphicMode.None
 
         if (!hasPolymorphicOptions && !hasPolymorphicAttribute && !hasPolymorphicCollectionMode)
         {

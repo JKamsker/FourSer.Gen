@@ -45,30 +45,23 @@ namespace FourSer.Gen.CodeGenerators.Core
         {
             if (!string.IsNullOrEmpty(typeIdProperty))
             {
-                return $"obj.{typeIdProperty}";
+                // In the new model, the TypeId property will have been deserialized into a local variable already.
+                return StringExtensions.ToCamelCase(typeIdProperty);
             }
 
             if (isDeserialization)
             {
                 var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(info.EnumUnderlyingType ?? info.TypeIdType);
-                sb.AppendLine($"{indent}var typeId = FourSer.Gen.Helpers.RoSpanReaderHelpers.Read{typeIdTypeName}(ref data);");
+                sb.AppendLine($"{indent}var typeId = FourSer.Gen.Helpers.RoSpanReaderHelpers.Read{typeIdTypeName}(ref buffer);");
                 return "typeId";
             }
 
-            // For serialization and size calculation, the type ID is handled differently (usually inside the switch cases based on the object type).
-            // This method is primarily for deserialization when the ID is external.
             return string.Empty;
         }
 
         /// <summary>
         /// Generates a complete switch statement for polymorphic types.
         /// </summary>
-        /// <param name="sb">The string builder to append the code to.</param>
-        /// <param name="info">The polymorphic information for the member.</param>
-        /// <param name="switchVariable">The variable or property to switch on.</param>
-        /// <param name="caseHandler">An action that generates the code inside each case block.
-        /// The action receives the polymorphic option and the formatted key.</param>
-        /// <param name="defaultCaseHandler">An action that generates the code for the default case.</param>
         public static void GeneratePolymorphicSwitch(
             StringBuilder sb,
             PolymorphicInfo info,
@@ -84,11 +77,15 @@ namespace FourSer.Gen.CodeGenerators.Core
             {
                 var key = FormatTypeIdKey(option.Key, info);
                 sb.AppendLine($"{indent}    case {key}:");
+                sb.AppendLine($"{indent}    {{");
                 caseHandler(option, key);
+                sb.AppendLine($"{indent}    }}");
             }
 
             sb.AppendLine($"{indent}    default:");
+            sb.AppendLine($"{indent}    {{");
             defaultCaseHandler();
+            sb.AppendLine($"{indent}    }}");
             sb.AppendLine($"{indent}}}");
         }
     }

@@ -58,7 +58,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
         {
             case 1:
             {
-                for (int i = 0; i < (int)animalsCount; i++)
+                for (int i = 0; i < animalsCount; i++)
                 {
                     var item = Cat.Deserialize(buffer, out var itemBytesRead);
                     animals.Add(item);
@@ -68,7 +68,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             }
             case 2:
             {
-                for (int i = 0; i < (int)animalsCount; i++)
+                for (int i = 0; i < animalsCount; i++)
                 {
                     var item = Dog.Deserialize(buffer, out var itemBytesRead);
                     animals.Add(item);
