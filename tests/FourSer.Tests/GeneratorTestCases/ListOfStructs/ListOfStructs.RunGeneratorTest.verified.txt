@@ -98,11 +98,18 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
     public static int Serialize(PacketWithListOfStructs obj, System.Span<byte> data)
     {
         var originalData = data;
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Structs.Count);
-        for (int i = 0; i < obj.Structs.Count; i++)
+        if (obj.Structs is null)
         {
+            throw new System.NullReferenceException($"Collection \"Structs\" cannot be null.");
+        }
+        else
+        {
+            FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Structs.Count);
+            for (int i = 0; i < obj.Structs.Count; i++)
+            {
             var bytesWritten = MyStruct.Serialize(obj.Structs[i], data);
             data = data.Slice(bytesWritten);
+            }
         }
         return originalData.Length - data.Length;
     }

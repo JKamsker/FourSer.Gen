@@ -48,6 +48,10 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
     {
         var originalData = data;
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Id);
+        if (obj.Data is null)
+        {
+            throw new System.NullReferenceException($"Property \"Data\" cannot be null.");
+        }
         var bytesWritten = NestedData.Serialize(obj.Data, data);
         data = data.Slice(bytesWritten);
         return originalData.Length - data.Length;

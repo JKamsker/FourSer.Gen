@@ -74,6 +74,10 @@ public static class SerializationGenerator
         }
         else if (member.HasGenerateSerializerAttribute)
         {
+            sb.AppendLine($"        if (obj.{member.Name} is null)");
+            sb.AppendLine("        {");
+            sb.AppendLine($"            throw new System.NullReferenceException($\"Property \\\"{member.Name}\\\" cannot be null.\");");
+            sb.AppendLine("        }");
             sb.AppendLine($"        var bytesWritten = {TypeHelper.GetSimpleTypeName(member.TypeName)}.Serialize(obj.{member.Name}, data);");
             sb.AppendLine($"        data = data.Slice(bytesWritten);");
         }
@@ -93,6 +97,22 @@ public static class SerializationGenerator
     {
         if (member.CollectionInfo is null) return;
 
+        sb.AppendLine($"        if (obj.{member.Name} is null)");
+        sb.AppendLine("        {");
+        if (member.CollectionInfo.Value.CountType != null || !string.IsNullOrEmpty(member.CollectionInfo.Value.CountSizeReference))
+        {
+            var countType = member.CollectionInfo.Value.CountType ?? TypeHelper.GetDefaultCountType();
+            var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
+            sb.AppendLine($"            FourSer.Gen.Helpers.SpanWriterHelpers.{countWriteMethod}(ref data, ({countType})0);");
+        }
+        else
+        {
+            sb.AppendLine($"            throw new System.NullReferenceException($\"Collection \\\"{member.Name}\\\" cannot be null.\");");
+        }
+        sb.AppendLine("        }");
+        sb.AppendLine("        else");
+        sb.AppendLine("        {");
+
         if (member.CollectionInfo is { Unlimited: false })
         {
             // Determine the count type to use
@@ -100,7 +120,7 @@ public static class SerializationGenerator
             var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
 
             var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
-            sb.AppendLine($"        FourSer.Gen.Helpers.SpanWriterHelpers.{countWriteMethod}(ref data, ({countType}){countExpression});");
+            sb.AppendLine($"            FourSer.Gen.Helpers.SpanWriterHelpers.{countWriteMethod}(ref data, ({countType}){countExpression});");
         }
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
@@ -108,9 +128,9 @@ public static class SerializationGenerator
             if (member.CollectionInfo.Value.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
             {
                 var itemBytesWrittenVar = $"{member.Name}ItemBytesWritten";
-                sb.AppendLine($"        int {itemBytesWrittenVar};");
-                sb.AppendLine($"        foreach(var item in obj.{member.Name})");
-                sb.AppendLine("        {");
+                sb.AppendLine($"            int {itemBytesWrittenVar};");
+                sb.AppendLine($"            foreach(var item in obj.{member.Name})");
+                sb.AppendLine("            {");
 
                 var itemMember = new MemberToGenerate(
                     "item",
@@ -128,6 +148,7 @@ public static class SerializationGenerator
                 );
 
                 GeneratePolymorphicItemSerialization(sb, itemMember, "item", itemBytesWrittenVar);
+                sb.AppendLine("            }");
                 sb.AppendLine("        }");
                 return;
             }
@@ -137,8 +158,8 @@ public static class SerializationGenerator
                 var info = member.PolymorphicInfo!.Value;
                 var typeIdProperty = member.CollectionInfo.Value.TypeIdProperty;
 
-                sb.AppendLine($"        switch (obj.{typeIdProperty})");
-                sb.AppendLine("        {");
+                sb.AppendLine($"            switch (obj.{typeIdProperty})");
+                sb.AppendLine("            {");
 
                 foreach (var option in info.Options)
                 {
@@ -152,19 +173,20 @@ public static class SerializationGenerator
                         key = $"{info.TypeIdType}.{key}";
                     }
 
-                    sb.AppendLine($"            case {key}:");
-                    sb.AppendLine("            {");
-                    sb.AppendLine($"                foreach(var item in obj.{member.Name})");
+                    sb.AppendLine($"                case {key}:");
                     sb.AppendLine("                {");
-                    sb.AppendLine($"                    var bytesWritten = {TypeHelper.GetSimpleTypeName(option.Type)}.Serialize(({TypeHelper.GetSimpleTypeName(option.Type)})item, data);");
-                    sb.AppendLine($"                    data = data.Slice(bytesWritten);");
+                    sb.AppendLine($"                    foreach(var item in obj.{member.Name})");
+                    sb.AppendLine("                    {");
+                    sb.AppendLine($"                        var bytesWritten = {TypeHelper.GetSimpleTypeName(option.Type)}.Serialize(({TypeHelper.GetSimpleTypeName(option.Type)})item, data);");
+                    sb.AppendLine($"                        data = data.Slice(bytesWritten);");
+                    sb.AppendLine("                    }");
+                    sb.AppendLine("                    break;");
                     sb.AppendLine("                }");
-                    sb.AppendLine("                break;");
-                    sb.AppendLine("            }");
                 }
 
-                sb.AppendLine("            default:");
-                sb.AppendLine($"                throw new System.IO.InvalidDataException($\"Unknown type id for {member.Name}: {{obj.{typeIdProperty}}}\");");
+                sb.AppendLine("                default:");
+                sb.AppendLine($"                    throw new System.IO.InvalidDataException($\"Unknown type id for {member.Name}: {{obj.{typeIdProperty}}}\");");
+                sb.AppendLine("            }");
                 sb.AppendLine("        }");
                 return;
             }
@@ -177,7 +199,7 @@ public static class SerializationGenerator
         if (isByteCollection)
         {
             // We have an extension method for this now
-            sb.AppendLine($"        FourSer.Gen.Helpers.SpanWriterHelpers.WriteBytes(ref data, obj.{member.Name});");
+            sb.AppendLine($"            FourSer.Gen.Helpers.SpanWriterHelpers.WriteBytes(ref data, obj.{member.Name});");
         }
         else
         {
@@ -185,8 +207,8 @@ public static class SerializationGenerator
             if (member.CollectionTypeInfo?.IsArray == true || member.IsList)
             {
                 var loopCountExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
-                sb.AppendLine($"        for (int i = 0; i < {loopCountExpression}; i++)");
-                sb.AppendLine("        {");
+                sb.AppendLine($"            for (int i = 0; i < {loopCountExpression}; i++)");
+                sb.AppendLine("            {");
                 if (member.ListTypeArgument is not null)
                 {
                     GenerateListElementSerialization(sb, member.ListTypeArgument.Value, $"obj.{member.Name}[i]");
@@ -195,19 +217,20 @@ public static class SerializationGenerator
                 {
                     GenerateCollectionElementSerialization(sb, member.CollectionTypeInfo.Value, $"obj.{member.Name}[i]");
                 }
-                sb.AppendLine("        }");
+                sb.AppendLine("            }");
             }
             else
             {
-                sb.AppendLine($"        foreach (var item in obj.{member.Name})");
-                sb.AppendLine("        {");
+                sb.AppendLine($"            foreach (var item in obj.{member.Name})");
+                sb.AppendLine("            {");
                 if (member.CollectionTypeInfo is not null)
                 {
                     GenerateCollectionElementSerialization(sb, member.CollectionTypeInfo.Value, "item");
                 }
-                sb.AppendLine("        }");
+                sb.AppendLine("            }");
             }
         }
+        sb.AppendLine("        }");
     }
 
     private static void GeneratePolymorphicSerialization(StringBuilder sb, MemberToGenerate member)
@@ -235,7 +258,7 @@ public static class SerializationGenerator
         }
 
         sb.AppendLine("            case null:");
-        sb.AppendLine("                break;");
+        sb.AppendLine($"                throw new System.NullReferenceException($\"Property \\\"{member.Name}\\\" cannot be null.\");");
         sb.AppendLine("            default:");
         sb.AppendLine($"                throw new System.IO.InvalidDataException($\"Unknown type for {member.Name}: {{obj.{member.Name}?.GetType().FullName}}\");");
         sb.AppendLine("        }");
@@ -264,7 +287,7 @@ public static class SerializationGenerator
         }
 
         sb.AppendLine("                case null:");
-        sb.AppendLine("                    break;");
+        sb.AppendLine($"                    throw new System.NullReferenceException($\"Item in collection cannot be null.\");");
         sb.AppendLine("                default:");
         sb.AppendLine($"                    throw new System.IO.InvalidDataException($\"Unknown type for {instanceName}: {{{instanceName}?.GetType().FullName}}\");");
         sb.AppendLine("            }");

@@ -83,10 +83,16 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
     public static int Serialize(PolymorphicIndividualTest obj, System.Span<byte> data)
     {
         var originalData = data;
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)obj.Animals.Count);
-        int AnimalsItemBytesWritten;
-        foreach(var item in obj.Animals)
+        if (obj.Animals is null)
         {
+            FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)0);
+        }
+        else
+        {
+            FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)obj.Animals.Count);
+            int AnimalsItemBytesWritten;
+            foreach(var item in obj.Animals)
+            {
             switch (item)
             {
                 case Cat typedInstance:
@@ -100,9 +106,10 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
                     data = data.Slice(AnimalsItemBytesWritten);
                     break;
                 case null:
-                    break;
+                    throw new System.NullReferenceException($"Item in collection cannot be null.");
                 default:
                     throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+            }
             }
         }
         return originalData.Length - data.Length;

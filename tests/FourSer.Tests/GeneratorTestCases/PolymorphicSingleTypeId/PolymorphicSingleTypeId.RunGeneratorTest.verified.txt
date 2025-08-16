@@ -88,29 +88,36 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
     {
         var originalData = data;
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (Byte)obj.AnimalTypeId);
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteUInt16(ref data, (ushort)obj.Animals.Count);
-        switch (obj.AnimalTypeId)
+        if (obj.Animals is null)
         {
-            case 1:
+            FourSer.Gen.Helpers.SpanWriterHelpers.WriteUInt16(ref data, (ushort)0);
+        }
+        else
+        {
+            FourSer.Gen.Helpers.SpanWriterHelpers.WriteUInt16(ref data, (ushort)obj.Animals.Count);
+            switch (obj.AnimalTypeId)
             {
-                foreach(var item in obj.Animals)
+                case 1:
                 {
-                    var bytesWritten = Cat.Serialize((Cat)item, data);
-                    data = data.Slice(bytesWritten);
+                    foreach(var item in obj.Animals)
+                    {
+                        var bytesWritten = Cat.Serialize((Cat)item, data);
+                        data = data.Slice(bytesWritten);
+                    }
+                    break;
                 }
-                break;
-            }
-            case 2:
-            {
-                foreach(var item in obj.Animals)
+                case 2:
                 {
-                    var bytesWritten = Dog.Serialize((Dog)item, data);
-                    data = data.Slice(bytesWritten);
+                    foreach(var item in obj.Animals)
+                    {
+                        var bytesWritten = Dog.Serialize((Dog)item, data);
+                        data = data.Slice(bytesWritten);
+                    }
+                    break;
                 }
-                break;
+                default:
+                    throw new System.IO.InvalidDataException($"Unknown type id for Animals: {obj.AnimalTypeId}");
             }
-            default:
-                throw new System.IO.InvalidDataException($"Unknown type id for Animals: {obj.AnimalTypeId}");
         }
         return originalData.Length - data.Length;
     }
