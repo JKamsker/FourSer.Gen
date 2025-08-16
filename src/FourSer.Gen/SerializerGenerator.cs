@@ -53,7 +53,7 @@ public class SerializerGenerator : IIncrementalGenerator
                 sb.AppendLine();
             }
 
-            if (!ctor.HasPublicParameterlessConstructor)
+            if (!ctor.HasParameterlessConstructor)
             {
                 GenerateParameterlessConstructor(sb, typeToGenerate);
                 sb.AppendLine();

@@ -38,7 +38,7 @@ public readonly record struct ParameterInfo(
 public readonly record struct ConstructorInfo(
     EquatableArray<ParameterInfo> Parameters,
     bool ShouldGenerate,
-    bool HasPublicParameterlessConstructor) : IEquatable<ConstructorInfo>;
+    bool HasParameterlessConstructor) : IEquatable<ConstructorInfo>;
 
 /// <summary>
 /// A model describing a member (property or field) to be serialized.

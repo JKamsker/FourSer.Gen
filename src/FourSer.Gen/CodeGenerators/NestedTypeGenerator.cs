@@ -25,17 +25,17 @@ public static class NestedTypeGenerator
             sb.AppendLine("    {");
 
             // Delegate to the primary generators
-            if (nestedType.Constructor is { ShouldGenerate: true } ctor)
+        if (nestedType.Constructor is { ShouldGenerate: true } ctor)
             {
                 if (!ctor.Parameters.IsEmpty)
                 {
-                    SerializerGenerator.GenerateConstructor(sb, nestedType, ctor);
+                SerializerGenerator.GenerateConstructor(sb, nestedType, ctor);
                     sb.AppendLine();
                 }
 
-                if (!ctor.HasPublicParameterlessConstructor)
+            if (!ctor.HasParameterlessConstructor)
                 {
-                    SerializerGenerator.GenerateParameterlessConstructor(sb, nestedType);
+                SerializerGenerator.GenerateParameterlessConstructor(sb, nestedType);
                     sb.AppendLine();
                 }
             }
