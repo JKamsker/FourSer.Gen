@@ -70,7 +70,7 @@ public class SerializerGenerator : IIncrementalGenerator
             NestedTypeGenerator.GenerateNestedTypes(sb, typeToGenerate.NestedTypes);
         }
 
-        sb.AppendLine("}");
+        sb.Append('}').AppendLine();
 
         // Namespaces can contain '.', which is not allowed in file names.
         var hintName = $"{typeToGenerate.Namespace}.{typeToGenerate.Name}".Replace('.', '_');
@@ -98,13 +98,27 @@ public class SerializerGenerator : IIncrementalGenerator
     {
         var typeKeyword = typeToGenerate.IsValueType ? "struct" : "class";
         sb.AppendLine($"public partial {typeKeyword} {typeToGenerate.Name} : ISerializable<{typeToGenerate.Name}>");
-        sb.AppendLine("{");
+        sb.Append('{').AppendLine();
     }
 
     internal static void GenerateConstructor(StringBuilder sb, TypeToGenerate typeToGenerate, Models.ConstructorInfo ctor)
     {
-        var parameters = string.Join(", ", ctor.Parameters.Select(p => $"{p.TypeName} {StringExtensions.ToCamelCase(p.Name)}"));
-        sb.AppendLine($"    private {typeToGenerate.Name}({parameters})");
+        sb.Append($"    private {typeToGenerate.Name}(");
+
+        bool first = true;
+        foreach (var p in ctor.Parameters)
+        {
+            if (!first)
+            {
+                sb.Append(", ");
+            }
+            sb.Append(p.TypeName);
+            sb.Append(' ');
+            sb.Append(StringExtensions.ToCamelCase(p.Name));
+            first = false;
+        }
+
+        sb.AppendLine(")");
         sb.AppendLine("    {");
 
         foreach (var parameter in ctor.Parameters)
@@ -134,11 +148,15 @@ public class SerializerGenerator : IIncrementalGenerator
     private static void AddHelpers(IncrementalGeneratorPostInitializationContext context)
     {
         var assembly = Assembly.GetExecutingAssembly();
-        var names = assembly.GetManifestResourceNames()
-            .Where(name => name.StartsWith("FourSer.Gen.Resources.Code."));
+        var names = assembly.GetManifestResourceNames();
 
         foreach (var file in names)
         {
+            if (!file.StartsWith("FourSer.Gen.Resources.Code."))
+            {
+                continue;
+            }
+
             using var stream = assembly.GetManifestResourceStream(file);
             if (stream is null) continue;
 
