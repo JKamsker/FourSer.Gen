@@ -16,7 +16,7 @@ public static class StringExtensions
         "sizeof", "stackalloc", "static", "string", "struct", "switch", "this", "throw", "true", "try", "typeof",
         "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual", "void", "volatile", "while",
         // Variables used in the generator
-        "data", "bytesRead", "originalData", "obj"
+        "buffer", "bytesRead", "originalBuffer", "obj"
     };
 
     public static string ToCamelCase(this string str)
