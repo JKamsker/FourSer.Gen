@@ -54,15 +54,19 @@ internal static class TypeInfoProvider
     private static ConstructorInfo? GetConstructorInfo(INamedTypeSymbol typeSymbol,
         EquatableArray<MemberToGenerate> members)
     {
-        bool shouldGenerate = members.Any(m => m.IsReadOnly);
-        var publicConstructors = typeSymbol.Constructors
-            .Where(c => c.DeclaredAccessibility == Accessibility.Public && !c.IsImplicitlyDeclared)
+        var constructors = typeSymbol.Constructors
+            .Where(c => !c.IsImplicitlyDeclared)
             .ToList();
 
-        bool hasPublicParameterlessCtor = publicConstructors.Any(c => c.Parameters.Length == 0);
+        bool hasParameterlessCtor = constructors.Any(c => c.Parameters.Length == 0);
+        bool shouldGenerate = members.Any(m => m.IsReadOnly);
 
         if (!shouldGenerate)
         {
+            var publicConstructors = constructors
+                .Where(c => c.DeclaredAccessibility == Accessibility.Public)
+                .ToList();
+
             if (publicConstructors.Any())
             {
                 var bestConstructor = publicConstructors
@@ -75,7 +79,7 @@ internal static class TypeInfoProvider
                     var parameters = bestConstructor.Parameters
                         .Select(p => new ParameterInfo(p.Name, p.Type.ToDisplayString(s_typeNameFormat)))
                         .ToImmutableArray();
-                    return new ConstructorInfo(new EquatableArray<ParameterInfo>(parameters), false, hasPublicParameterlessCtor);
+                    return new ConstructorInfo(new EquatableArray<ParameterInfo>(parameters), false, hasParameterlessCtor);
                 }
             }
         }
@@ -84,7 +88,7 @@ internal static class TypeInfoProvider
             .Select(m => new ParameterInfo(m.Name, m.TypeName))
             .ToImmutableArray();
 
-        return new ConstructorInfo(new EquatableArray<ParameterInfo>(generatedParameters), true, hasPublicParameterlessCtor);
+        return new ConstructorInfo(new EquatableArray<ParameterInfo>(generatedParameters), true, hasParameterlessCtor);
     }
 
     private static bool IsSerializableMember(ISymbol member)
