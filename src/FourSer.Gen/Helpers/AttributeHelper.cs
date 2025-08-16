@@ -95,4 +95,14 @@ public static class AttributeHelper
             .FirstOrDefault(arg => arg.Key == "TypeIdProperty")
             .Value.Value?.ToString();
     }
+<<<<<<< HEAD
+=======
+
+    public static bool GetUnlimited(AttributeData? collectionAttribute)
+    {
+        return collectionAttribute?.NamedArguments
+            .FirstOrDefault(arg => arg.Key == "Unlimited")
+            .Value.Value as bool? ?? false;
+    }
+>>>>>>> main
 }

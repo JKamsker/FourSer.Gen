@@ -18,6 +18,7 @@ public readonly record struct TypeToGenerate(
     bool IsValueType,
     EquatableArray<MemberToGenerate> Members,
     EquatableArray<TypeToGenerate> NestedTypes,
+<<<<<<< HEAD
     bool HasSerializableBaseType,
     ConstructorInfo? Constructor) : IEquatable<TypeToGenerate>;
 
@@ -39,6 +40,9 @@ public readonly record struct ConstructorInfo(
     EquatableArray<ParameterInfo> Parameters,
     bool ShouldGenerate,
     bool HasPublicParameterlessConstructor) : IEquatable<ConstructorInfo>;
+=======
+    bool HasSerializableBaseType) : IEquatable<TypeToGenerate>;
+>>>>>>> main
 
 /// <summary>
 /// A model describing a member (property or field) to be serialized.
@@ -64,8 +68,12 @@ public readonly record struct MemberToGenerate(
     CollectionInfo? CollectionInfo,
     PolymorphicInfo? PolymorphicInfo,
     bool IsCollection,
+<<<<<<< HEAD
     CollectionTypeInfo? CollectionTypeInfo,
     bool IsReadOnly) : IEquatable<MemberToGenerate>;
+=======
+    CollectionTypeInfo? CollectionTypeInfo) : IEquatable<MemberToGenerate>;
+>>>>>>> main
 
 /// <summary>
 /// A model describing the type argument of a List&lt;T&gt;.
@@ -107,12 +115,21 @@ public readonly record struct CollectionTypeInfo(
 /// <param name="CountType">The type to use for the collection count (e.g., "byte", "ushort", "int").</param>
 /// <param name="CountSize">The size in bytes for the collection count.</param>
 /// <param name="CountSizeReference">The name of a property/field that contains the count.</param>
+<<<<<<< HEAD
+=======
+/// <param name="Unlimited">Whether the collection is unlimited in size.</param>
+>>>>>>> main
 public readonly record struct CollectionInfo(
     PolymorphicMode PolymorphicMode,
     string? TypeIdProperty,
     string? CountType,
     int? CountSize,
+<<<<<<< HEAD
     string? CountSizeReference) : IEquatable<CollectionInfo>;
+=======
+    string? CountSizeReference,
+    bool Unlimited = false) : IEquatable<CollectionInfo>;
+>>>>>>> main
 
 /// <summary>
 /// A model describing a polymorphic option.

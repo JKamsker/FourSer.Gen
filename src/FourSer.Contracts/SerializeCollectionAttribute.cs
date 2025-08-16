@@ -27,5 +27,10 @@ public class SerializeCollectionAttribute : Attribute
     /// For `SingleTypeId` mode only. The name of the property on the containing class that holds the TypeId for all elements in the collection.
     /// </summary>
     public string? TypeIdProperty { get; set; }
-}
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the collection should be serialized until the end of the stream.
+    /// If true, no count prefix is written for the collection.
+    /// </summary>
+    public bool Unlimited { get; set; }
+}

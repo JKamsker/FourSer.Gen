@@ -62,17 +62,5 @@ namespace FourSer.Gen.CodeGenerators.Core
 
             return $"{target} = new System.Collections.Generic.List<{elementTypeName}>({countVar});";
         }
-
-        /// <summary>
-        /// Collection assignment logic for interface types after deserialization.
-        /// </summary>
-        public static string GenerateCollectionAssignment(MemberToGenerate member, string tempVarName)
-        {
-            if (member.CollectionTypeInfo?.ConcreteTypeName != null)
-            {
-                return $"obj.{member.Name} = {tempVarName};";
-            }
-            return string.Empty;
-        }
     }
 }

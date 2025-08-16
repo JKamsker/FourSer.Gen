@@ -53,6 +53,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         return size;
     }
 
+<<<<<<< HEAD
     private EnumerationTypesPacket(System.Collections.Generic.List<int> numbers, System.Collections.Generic.ICollection<string> names, System.Collections.Generic.IEnumerable<byte> @data, System.Collections.Generic.List<byte> data1, System.Collections.Concurrent.ConcurrentBag<float> values, System.Collections.Generic.HashSet<long> uniqueIds, System.Collections.Generic.Queue<ushort> processingQueue, System.Collections.Generic.Stack<uint> processingStack, int[] arrayData, System.Collections.Generic.IList<double> measurements, System.Collections.ObjectModel.Collection<bool> flags, System.Collections.ObjectModel.ObservableCollection<short> observableData, System.Collections.Generic.LinkedList<ushort> characters, System.Collections.Generic.SortedSet<long> sortedValues, System.Collections.Generic.HashSet<string> smallSet, System.Collections.Generic.Queue<int> mediumQueue, System.Collections.Concurrent.ConcurrentBag<long> largeBag)
     {
         this.Numbers = numbers;
@@ -194,6 +195,121 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         var obj = new EnumerationTypesPacket(numbers, names, @data, data1, values, uniqueIds, processingQueue, processingStack, arrayData, measurements, flags, observableData, characters, sortedValues, smallSet, mediumQueue, largeBag);
         bytesRead = originalBuffer.Length - buffer.Length;
+=======
+    public static EnumerationTypesPacket Deserialize(System.ReadOnlySpan<byte> data, out int bytesRead)
+    {
+        bytesRead = 0;
+        var originalData = data;
+        var obj = new EnumerationTypesPacket();
+        var NumbersCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        obj.Numbers = new System.Collections.Generic.List<int>(NumbersCount);
+        for (int i = 0; i < NumbersCount; i++)
+        {
+            obj.Numbers.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data));
+        }
+        var NamesCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        var tempNames = new System.Collections.Generic.List<string>(NamesCount);
+        for (int i = 0; i < NamesCount; i++)
+        {
+            tempNames.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data));
+        }
+        obj.Names = tempNames;
+        var DataCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        obj.Data = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBytes(ref data, DataCount);
+        var Data1Count = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        obj.Data1 = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBytes(ref data, Data1Count).ToList();
+        var ValuesCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        var tempValues = new System.Collections.Concurrent.ConcurrentBag<float>();
+        for (int i = 0; i < ValuesCount; i++)
+        {
+            tempValues.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadSingle(ref data));
+        }
+        obj.Values = tempValues;
+        var UniqueIdsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        var tempUniqueIds = new System.Collections.Generic.HashSet<long>(UniqueIdsCount);
+        for (int i = 0; i < UniqueIdsCount; i++)
+        {
+            tempUniqueIds.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt64(ref data));
+        }
+        obj.UniqueIds = tempUniqueIds;
+        var ProcessingQueueCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        var tempProcessingQueue = new System.Collections.Generic.Queue<ushort>(ProcessingQueueCount);
+        for (int i = 0; i < ProcessingQueueCount; i++)
+        {
+            tempProcessingQueue.Enqueue(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt16(ref data));
+        }
+        obj.ProcessingQueue = tempProcessingQueue;
+        var ProcessingStackCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        var tempProcessingStack = new System.Collections.Generic.Stack<uint>(ProcessingStackCount);
+        for (int i = 0; i < ProcessingStackCount; i++)
+        {
+            tempProcessingStack.Push(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt32(ref data));
+        }
+        obj.ProcessingStack = tempProcessingStack;
+        var ArrayDataCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        obj.ArrayData = new int[ArrayDataCount];
+        for (int i = 0; i < ArrayDataCount; i++)
+        {
+            obj.ArrayData[i] = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        }
+        var MeasurementsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        var tempMeasurements = new System.Collections.Generic.List<double>(MeasurementsCount);
+        for (int i = 0; i < MeasurementsCount; i++)
+        {
+            tempMeasurements.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadDouble(ref data));
+        }
+        obj.Measurements = tempMeasurements;
+        var FlagsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        var tempFlags = new System.Collections.ObjectModel.Collection<bool>();
+        for (int i = 0; i < FlagsCount; i++)
+        {
+            tempFlags.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBoolean(ref data));
+        }
+        obj.Flags = tempFlags;
+        var ObservableDataCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        var tempObservableData = new System.Collections.ObjectModel.ObservableCollection<short>();
+        for (int i = 0; i < ObservableDataCount; i++)
+        {
+            tempObservableData.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt16(ref data));
+        }
+        obj.ObservableData = tempObservableData;
+        var CharactersCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        var tempCharacters = new System.Collections.Generic.LinkedList<ushort>();
+        for (int i = 0; i < CharactersCount; i++)
+        {
+            tempCharacters.AddLast(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt16(ref data));
+        }
+        obj.Characters = tempCharacters;
+        var SortedValuesCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        var tempSortedValues = new System.Collections.Generic.SortedSet<long>();
+        for (int i = 0; i < SortedValuesCount; i++)
+        {
+            tempSortedValues.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt64(ref data));
+        }
+        obj.SortedValues = tempSortedValues;
+        var SmallSetCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref data);
+        var tempSmallSet = new System.Collections.Generic.HashSet<string>(SmallSetCount);
+        for (int i = 0; i < SmallSetCount; i++)
+        {
+            tempSmallSet.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref data));
+        }
+        obj.SmallSet = tempSmallSet;
+        var MediumQueueCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt16(ref data);
+        var tempMediumQueue = new System.Collections.Generic.Queue<int>(MediumQueueCount);
+        for (int i = 0; i < MediumQueueCount; i++)
+        {
+            tempMediumQueue.Enqueue(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data));
+        }
+        obj.MediumQueue = tempMediumQueue;
+        var LargeBagCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref data);
+        var tempLargeBag = new System.Collections.Concurrent.ConcurrentBag<long>();
+        for (int i = 0; i < LargeBagCount; i++)
+        {
+            tempLargeBag.Add(FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt64(ref data));
+        }
+        obj.LargeBag = tempLargeBag;
+        bytesRead = originalData.Length - data.Length;
+>>>>>>> main
         return obj;
     }
 
