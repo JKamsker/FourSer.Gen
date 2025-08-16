@@ -38,6 +38,8 @@
     <!-- These are also embedded to be injected into the consumer's compilation -->
     <Compile Remove="Resources\**\*.cs" />
     <EmbeddedResource Include="Resources\**\*.cs" />
+    <EmbeddedResource Include="Resources\Code\StreamReaderHelpers.cs" />
+    <EmbeddedResource Include="Resources\Code\StreamWriterHelpers.cs" />
   </ItemGroup>
 
 </Project>
