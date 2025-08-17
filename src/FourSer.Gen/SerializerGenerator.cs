@@ -105,7 +105,7 @@ public class SerializerGenerator : IIncrementalGenerator
         sb.WriteLine("using System.IO;");
         sb.WriteLine("using FourSer.Gen.Helpers;");
         sb.WriteLine();
-        sb.WriteLine($"namespace {typeToGenerate.Namespace};");
+        sb.WriteLineFormat("namespace {0};", typeToGenerate.Namespace);
         sb.WriteLine();
     }
 
@@ -117,13 +117,13 @@ public class SerializerGenerator : IIncrementalGenerator
             typeKeyword = $"record {typeKeyword}";
         }
 
-        sb.WriteLine($"public partial {typeKeyword} {typeToGenerate.Name} : ISerializable<{typeToGenerate.Name}>");
+        sb.WriteLineFormat("public partial {0} {1} : ISerializable<{1}>", typeKeyword, typeToGenerate.Name);
     }
 
     internal static void GenerateConstructor(IndentedStringBuilder sb, TypeToGenerate typeToGenerate, ConstructorInfo ctor)
     {
         var ctorBuilder = new StringBuilder();
-        ctorBuilder.Append($"private {typeToGenerate.Name}(");
+        ctorBuilder.AppendFormat("private {0}(", typeToGenerate.Name);
 
         var first = true;
         foreach (var p in ctor.Parameters)
@@ -145,7 +145,7 @@ public class SerializerGenerator : IIncrementalGenerator
         using var _ = sb.BeginBlock();
         foreach (var parameter in ctor.Parameters)
         {
-            sb.WriteLine($"this.{parameter.Name} = {parameter.Name.ToCamelCase()};");
+            sb.WriteLineFormat("this.{0} = {1};", parameter.Name, parameter.Name.ToCamelCase());
         }
     }
 
@@ -156,7 +156,7 @@ public class SerializerGenerator : IIncrementalGenerator
             return;
         }
 
-        sb.WriteLine($"public {typeToGenerate.Name}()");
+        sb.WriteLineFormat("public {0}()", typeToGenerate.Name);
         using var _ = sb.BeginBlock();
         foreach (var member in typeToGenerate.Members)
         {
@@ -165,7 +165,7 @@ public class SerializerGenerator : IIncrementalGenerator
                 continue;
             }
 
-            sb.WriteLine($"this.{member.Name} = default;");
+            sb.WriteLineFormat("this.{0} = default;", member.Name);
         }
     }
 

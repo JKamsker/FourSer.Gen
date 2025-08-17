@@ -19,7 +19,7 @@ public static class NestedTypeGenerator
         {
             sb.WriteLine();
             var typeKeyword = nestedType.IsValueType ? "struct" : "class";
-            sb.WriteLine($"public partial {typeKeyword} {nestedType.Name} : ISerializable<{nestedType.Name}>");
+            sb.WriteLineFormat("public partial {0} {1} : ISerializable<{1}>", typeKeyword, nestedType.Name);
             using var _ = sb.BeginBlock();
             // Delegate to the primary generators
             if (nestedType.Constructor is { ShouldGenerate: true } ctor)
