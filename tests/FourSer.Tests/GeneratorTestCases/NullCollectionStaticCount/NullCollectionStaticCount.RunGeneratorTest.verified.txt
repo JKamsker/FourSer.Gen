@@ -8,6 +8,8 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
+using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount;
 
@@ -32,7 +34,7 @@ public partial class Item : ISerializable<Item>
 
     public static Item Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var id = SpanReader.ReadInt32(ref buffer);
         var obj = new Item(id);
         return obj;
     }
@@ -44,7 +46,7 @@ public partial class Item : ISerializable<Item>
 
     public static Item Deserialize(System.IO.Stream stream)
     {
-        var id = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var id = StreamReader.ReadInt32(stream);
         var obj = new Item(id);
         return obj;
     }
@@ -73,6 +75,8 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
+using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount;
 
@@ -101,7 +105,7 @@ public partial class MainObject : ISerializable<MainObject>
 
     public static MainObject Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var itemsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var itemsCount = SpanReader.ReadInt32(ref buffer);
         var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>(itemsCount);
         for (int i = 0; i < itemsCount; i++)
         {
@@ -118,7 +122,7 @@ public partial class MainObject : ISerializable<MainObject>
 
     public static MainObject Deserialize(System.IO.Stream stream)
     {
-        var itemsCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var itemsCount = StreamReader.ReadInt32(stream);
         var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>(itemsCount);
         for (int i = 0; i < itemsCount; i++)
         {

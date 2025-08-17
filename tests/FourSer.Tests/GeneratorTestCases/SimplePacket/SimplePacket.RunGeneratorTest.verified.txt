@@ -8,6 +8,8 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
+using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.SimplePacket;
 
@@ -38,9 +40,9 @@ public partial class LoginPacket : ISerializable<LoginPacket>
 
     public static LoginPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var result = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref buffer);
-        var userID = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt32(ref buffer);
-        var username = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
+        var result = SpanReader.ReadByte(ref buffer);
+        var userID = SpanReader.ReadUInt32(ref buffer);
+        var username = SpanReader.ReadString(ref buffer);
         var obj = new LoginPacket(result, userID, username);
         return obj;
     }
@@ -52,9 +54,9 @@ public partial class LoginPacket : ISerializable<LoginPacket>
 
     public static LoginPacket Deserialize(System.IO.Stream stream)
     {
-        var result = FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
-        var userID = FourSer.Gen.Helpers.StreamReaderHelpers.ReadUInt32(stream);
-        var username = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
+        var result = StreamReader.ReadByte(stream);
+        var userID = StreamReader.ReadUInt32(stream);
+        var username = StreamReader.ReadString(stream);
         var obj = new LoginPacket(result, userID, username);
         return obj;
     }

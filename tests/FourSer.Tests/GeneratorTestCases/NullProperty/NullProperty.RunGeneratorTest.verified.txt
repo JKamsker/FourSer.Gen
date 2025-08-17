@@ -8,6 +8,8 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
+using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.NullProperty;
 
@@ -32,7 +34,7 @@ public partial class NestedObject : ISerializable<NestedObject>
 
     public static NestedObject Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var id = SpanReader.ReadInt32(ref buffer);
         var obj = new NestedObject(id);
         return obj;
     }
@@ -44,7 +46,7 @@ public partial class NestedObject : ISerializable<NestedObject>
 
     public static NestedObject Deserialize(System.IO.Stream stream)
     {
-        var id = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var id = StreamReader.ReadInt32(stream);
         var obj = new NestedObject(id);
         return obj;
     }
@@ -73,6 +75,8 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
+using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.NullProperty;
 
