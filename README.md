@@ -470,4 +470,4 @@ This project uses source generators to provide compile-time serialization code g
 
 ## License
 
-[Add your license information here]
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
