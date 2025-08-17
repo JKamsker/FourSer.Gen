@@ -20,7 +20,7 @@ public class SerializerGenerator : IIncrementalGenerator
         "Invalid collection type argument",
         "The type '{0}' in the collection '{1}' must have the [GenerateSerializer] attribute because it is not a primitive type.",
         "Usage",
-        DiagnosticSeverity.Error,
+        DiagnosticSeverity.Warning,
         true
     );
 
