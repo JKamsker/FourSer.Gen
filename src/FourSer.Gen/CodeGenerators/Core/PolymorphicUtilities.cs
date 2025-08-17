@@ -30,7 +30,7 @@ public static class PolymorphicUtilities
         PolymorphicOption option,
         PolymorphicInfo info,
         string target = "data",
-        string helper = "SpanWriterHelpers"
+        string helper = "SpanWriter"
     )
     {
         var key = FormatTypeIdKey(option.Key, info);
@@ -39,7 +39,7 @@ public static class PolymorphicUtilities
         var refOrEmpty = target == "data" ? "ref " : "";
         sb.WriteLineFormat
         (
-            "FourSer.Gen.Helpers.{0}.Write{1}({2}{3}, ({4}){5});",
+            "{0}.Write{1}({2}{3}, ({4}){5});",
             helper,
             typeIdTypeName,
             refOrEmpty,
@@ -70,7 +70,7 @@ public static class PolymorphicUtilities
         if (isDeserialization)
         {
             var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(info.EnumUnderlyingType ?? info.TypeIdType);
-            sb.WriteLine($"var typeId = FourSer.Gen.Helpers.RoSpanReaderHelpers.Read{typeIdTypeName}(ref data);");
+            sb.WriteLine($"var typeId = SpanReader.Read{typeIdTypeName}(ref data);");
             return "typeId";
         }
 

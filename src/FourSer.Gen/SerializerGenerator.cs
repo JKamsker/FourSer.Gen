@@ -104,6 +104,10 @@ public class SerializerGenerator : IIncrementalGenerator
         sb.WriteLine("using FourSer.Contracts;");
         sb.WriteLine("using System.IO;");
         sb.WriteLine("using FourSer.Gen.Helpers;");
+        sb.WriteLine("using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;");
+        sb.WriteLine("using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;");
+        sb.WriteLine("using SpanWriter = FourSer.Gen.Helpers.SpanWriterHelpers;");
+        sb.WriteLine("using StreamWriter = FourSer.Gen.Helpers.StreamWriterHelpers;");
         sb.WriteLine();
         sb.WriteLineFormat("namespace {0};", typeToGenerate.Namespace);
         sb.WriteLine();

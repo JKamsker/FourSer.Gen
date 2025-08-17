@@ -8,6 +8,10 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
+using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
+using SpanWriter = FourSer.Gen.Helpers.SpanWriterHelpers;
+using StreamWriter = FourSer.Gen.Helpers.StreamWriterHelpers;
 
 namespace Test;
 
@@ -27,7 +31,7 @@ public partial class PrivateCtorPacket : ISerializable<PrivateCtorPacket>
 
     public static PrivateCtorPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var value = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var value = SpanReader.ReadInt32(ref buffer);
         var obj = new PrivateCtorPacket(value);
         return obj;
     }
@@ -39,7 +43,7 @@ public partial class PrivateCtorPacket : ISerializable<PrivateCtorPacket>
 
     public static PrivateCtorPacket Deserialize(System.IO.Stream stream)
     {
-        var value = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var value = StreamReader.ReadInt32(stream);
         var obj = new PrivateCtorPacket(value);
         return obj;
     }
@@ -47,12 +51,12 @@ public partial class PrivateCtorPacket : ISerializable<PrivateCtorPacket>
     public static int Serialize(PrivateCtorPacket obj, System.Span<byte> data)
     {
         var originalData = data;
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Value);
+        SpanWriter.WriteInt32(ref data, (Int32)obj.Value);
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(PrivateCtorPacket obj, System.IO.Stream stream)
     {
-        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Value);
+        StreamWriter.WriteInt32(stream, (Int32)obj.Value);
     }
 }

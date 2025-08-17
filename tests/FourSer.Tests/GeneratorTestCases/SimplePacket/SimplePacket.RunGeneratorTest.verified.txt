@@ -8,6 +8,10 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
+using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
+using SpanWriter = FourSer.Gen.Helpers.SpanWriterHelpers;
+using StreamWriter = FourSer.Gen.Helpers.StreamWriterHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.SimplePacket;
 
@@ -38,9 +42,9 @@ public partial class LoginPacket : ISerializable<LoginPacket>
 
     public static LoginPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var result = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref buffer);
-        var userID = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt32(ref buffer);
-        var username = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
+        var result = SpanReader.ReadByte(ref buffer);
+        var userID = SpanReader.ReadUInt32(ref buffer);
+        var username = SpanReader.ReadString(ref buffer);
         var obj = new LoginPacket(result, userID, username);
         return obj;
     }
@@ -52,9 +56,9 @@ public partial class LoginPacket : ISerializable<LoginPacket>
 
     public static LoginPacket Deserialize(System.IO.Stream stream)
     {
-        var result = FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
-        var userID = FourSer.Gen.Helpers.StreamReaderHelpers.ReadUInt32(stream);
-        var username = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
+        var result = StreamReader.ReadByte(stream);
+        var userID = StreamReader.ReadUInt32(stream);
+        var username = StreamReader.ReadString(stream);
         var obj = new LoginPacket(result, userID, username);
         return obj;
     }
@@ -62,16 +66,16 @@ public partial class LoginPacket : ISerializable<LoginPacket>
     public static int Serialize(LoginPacket obj, System.Span<byte> data)
     {
         var originalData = data;
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (Byte)obj.Result);
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteUInt32(ref data, (UInt32)obj.UserID);
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.Username);
+        SpanWriter.WriteByte(ref data, (Byte)obj.Result);
+        SpanWriter.WriteUInt32(ref data, (UInt32)obj.UserID);
+        SpanWriter.WriteString(ref data, obj.Username);
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(LoginPacket obj, System.IO.Stream stream)
     {
-        FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (Byte)obj.Result);
-        FourSer.Gen.Helpers.StreamWriterHelpers.WriteUInt32(stream, (UInt32)obj.UserID);
-        FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Username);
+        StreamWriter.WriteByte(stream, (Byte)obj.Result);
+        StreamWriter.WriteUInt32(stream, (UInt32)obj.UserID);
+        StreamWriter.WriteString(stream, obj.Username);
     }
 }

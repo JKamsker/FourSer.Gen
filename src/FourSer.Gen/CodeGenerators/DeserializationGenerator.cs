@@ -42,7 +42,7 @@ public static class DeserializationGenerator
                 member,
                 true,
                 "stream",
-                "StreamReaderHelpers"
+                "StreamReader"
             );
         }
 
@@ -86,7 +86,7 @@ public static class DeserializationGenerator
                 member,
                 true,
                 "buffer",
-                "RoSpanReaderHelpers"
+                "SpanReader"
             );
         }
 
@@ -151,13 +151,13 @@ public static class DeserializationGenerator
         }
         else if (member.IsStringType)
         {
-            sb.WriteLineFormat("{0} = FourSer.Gen.Helpers.{1}.ReadString({2}{3});", target, helper, refOrEmpty, source);
+            sb.WriteLineFormat("{0} = {1}.ReadString({2}{3});", target, helper, refOrEmpty, source);
         }
         else if (member.IsUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
             var readMethod = $"Read{typeName}";
-            sb.WriteLineFormat("{0} = FourSer.Gen.Helpers.{1}.{2}({3}{4});", target, helper, readMethod, refOrEmpty, source);
+            sb.WriteLineFormat("{0} = {1}.{2}({3}{4});", target, helper, readMethod, refOrEmpty, source);
         }
     }
 
@@ -203,7 +203,7 @@ public static class DeserializationGenerator
         else
         {
             countVar = $"{memberName}Count";
-            sb.WriteLineFormat("var {0} = FourSer.Gen.Helpers.{1}.{2}({3}{4});", countVar, helper, countReadMethod, refOrEmpty, source);
+            sb.WriteLineFormat("var {0} = {1}.{2}({3}{4});", countVar, helper, countReadMethod, refOrEmpty, source);
         }
 
         var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
@@ -213,16 +213,16 @@ public static class DeserializationGenerator
         {
             if (member.CollectionTypeInfo?.IsArray == true)
             {
-                sb.WriteLineFormat("{0} = FourSer.Gen.Helpers.{1}.ReadBytes({2}{3}, (int){4});", target, helper, refOrEmpty, source, countVar);
+                sb.WriteLineFormat("{0} = {1}.ReadBytes({2}{3}, (int){4});", target, helper, refOrEmpty, source, countVar);
             }
             else if (member.CollectionTypeInfo?.CollectionTypeName == "System.Collections.Generic.List<T>")
             {
                 sb.WriteLineFormat
-                    ("{0} = FourSer.Gen.Helpers.{1}.ReadBytes({2}{3}, (int){4}).ToList();", target, helper, refOrEmpty, source, countVar);
+                    ("{0} = {1}.ReadBytes({2}{3}, (int){4}).ToList();", target, helper, refOrEmpty, source, countVar);
             }
             else
             {
-                sb.WriteLineFormat("{0} = FourSer.Gen.Helpers.{1}.ReadBytes({2}{3}, (int){4});", target, helper, refOrEmpty, source, countVar);
+                sb.WriteLineFormat("{0} = {1}.ReadBytes({2}{3}, (int){4});", target, helper, refOrEmpty, source, countVar);
             }
 
             return;
@@ -434,7 +434,7 @@ public static class DeserializationGenerator
             var typeToRead = info.EnumUnderlyingType ?? info.TypeIdType;
             var typeIdReadMethod = TypeHelper.GetReadMethodName(typeToRead);
             var cast = info.EnumUnderlyingType is not null ? $"({info.TypeIdType})" : "";
-            sb.WriteLineFormat("var {0} = {1}FourSer.Gen.Helpers.{2}.{3}({4}{5});", switchVar, cast, helper, typeIdReadMethod, refOrEmpty, source);
+            sb.WriteLineFormat("var {0} = {1}{2}.{3}({4}{5});", switchVar, cast, helper, typeIdReadMethod, refOrEmpty, source);
         }
 
         sb.WriteLineFormat("switch ({0})", switchVar);
@@ -478,7 +478,7 @@ public static class DeserializationGenerator
         var typeToRead = info.EnumUnderlyingType ?? info.TypeIdType;
         var typeIdReadMethod = TypeHelper.GetReadMethodName(typeToRead);
         var cast = info.EnumUnderlyingType is not null ? $"({info.TypeIdType})" : "";
-        sb.WriteLineFormat("var {0} = {1}FourSer.Gen.Helpers.{2}.{3}({4}{5});", switchVar, cast, helper, typeIdReadMethod, refOrEmpty, source);
+        sb.WriteLineFormat("var {0} = {1}{2}.{3}({4}{5});", switchVar, cast, helper, typeIdReadMethod, refOrEmpty, source);
 
         sb.WriteLineFormat("switch ({0})", switchVar);
         using var _ = sb.BeginBlock();
@@ -518,11 +518,11 @@ public static class DeserializationGenerator
         if (elementInfo.IsElementUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
-            sb.WriteLineFormat("{0}[{1}] = FourSer.Gen.Helpers.{2}.Read{3}({4}{5});", arrayName, indexVar, helper, typeName, refOrEmpty, source);
+            sb.WriteLineFormat("{0}[{1}] = {2}.Read{3}({4}{5});", arrayName, indexVar, helper, typeName, refOrEmpty, source);
         }
         else if (elementInfo.IsElementStringType)
         {
-            sb.WriteLineFormat("{0}[{1}] = FourSer.Gen.Helpers.{2}.ReadString({3}{4});", arrayName, indexVar, helper, refOrEmpty, source);
+            sb.WriteLineFormat("{0}[{1}] = {2}.ReadString({3}{4});", arrayName, indexVar, helper, refOrEmpty, source);
         }
         else if (elementInfo.HasElementGenerateSerializerAttribute)
         {
@@ -553,11 +553,11 @@ public static class DeserializationGenerator
         else if (elementInfo.IsUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.TypeName);
-            sb.WriteLineFormat("{0}.Add(FourSer.Gen.Helpers.{1}.Read{2}({3}{4}));", collectionTarget, helper, typeName, refOrEmpty, source);
+            sb.WriteLineFormat("{0}.Add({1}.Read{2}({3}{4}));", collectionTarget, helper, typeName, refOrEmpty, source);
         }
         else if (elementInfo.IsStringType)
         {
-            sb.WriteLineFormat("{0}.Add(FourSer.Gen.Helpers.{1}.ReadString({2}{3}));", collectionTarget, helper, refOrEmpty, source);
+            sb.WriteLineFormat("{0}.Add({1}.ReadString({2}{3}));", collectionTarget, helper, refOrEmpty, source);
         }
     }
 
@@ -576,11 +576,11 @@ public static class DeserializationGenerator
         if (elementInfo.IsElementUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
-            sb.WriteLineFormat("{0}.{1}(FourSer.Gen.Helpers.{2}.Read{3}({4}{5}));", collectionTarget, addMethod, helper, typeName, refOrEmpty, source);
+            sb.WriteLineFormat("{0}.{1}({2}.Read{3}({4}{5}));", collectionTarget, addMethod, helper, typeName, refOrEmpty, source);
         }
         else if (elementInfo.IsElementStringType)
         {
-            sb.WriteLineFormat("{0}.{1}(FourSer.Gen.Helpers.{2}.ReadString({3}{4}));", collectionTarget, addMethod, helper, refOrEmpty, source);
+            sb.WriteLineFormat("{0}.{1}({2}.ReadString({3}{4}));", collectionTarget, addMethod, helper, refOrEmpty, source);
         }
         else if (elementInfo.HasElementGenerateSerializerAttribute)
         {

@@ -8,6 +8,10 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
+using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
+using SpanWriter = FourSer.Gen.Helpers.SpanWriterHelpers;
+using StreamWriter = FourSer.Gen.Helpers.StreamWriterHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount;
 
@@ -32,7 +36,7 @@ public partial class Item : ISerializable<Item>
 
     public static Item Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var id = SpanReader.ReadInt32(ref buffer);
         var obj = new Item(id);
         return obj;
     }
@@ -44,7 +48,7 @@ public partial class Item : ISerializable<Item>
 
     public static Item Deserialize(System.IO.Stream stream)
     {
-        var id = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var id = StreamReader.ReadInt32(stream);
         var obj = new Item(id);
         return obj;
     }
@@ -52,13 +56,13 @@ public partial class Item : ISerializable<Item>
     public static int Serialize(Item obj, System.Span<byte> data)
     {
         var originalData = data;
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Id);
+        SpanWriter.WriteInt32(ref data, (Int32)obj.Id);
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(Item obj, System.IO.Stream stream)
     {
-        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
+        StreamWriter.WriteInt32(stream, (Int32)obj.Id);
     }
 }
 
@@ -73,6 +77,10 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
+using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
+using SpanWriter = FourSer.Gen.Helpers.SpanWriterHelpers;
+using StreamWriter = FourSer.Gen.Helpers.StreamWriterHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount;
 
@@ -101,7 +109,7 @@ public partial class MainObject : ISerializable<MainObject>
 
     public static MainObject Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var itemsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref buffer);
+        var itemsCount = SpanReader.ReadByte(ref buffer);
         var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item>(itemsCount);
         for (int i = 0; i < itemsCount; i++)
         {
@@ -118,7 +126,7 @@ public partial class MainObject : ISerializable<MainObject>
 
     public static MainObject Deserialize(System.IO.Stream stream)
     {
-        var itemsCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
+        var itemsCount = StreamReader.ReadByte(stream);
         var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item>(itemsCount);
         for (int i = 0; i < itemsCount; i++)
         {
@@ -133,11 +141,11 @@ public partial class MainObject : ISerializable<MainObject>
         var originalData = data;
         if (obj.Items is null)
         {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)0);
+            SpanWriter.WriteByte(ref data, (byte)0);
         }
         else
         {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)obj.Items.Count);
+            SpanWriter.WriteByte(ref data, (byte)obj.Items.Count);
             for (int i = 0; i < obj.Items.Count; i++)
             {
                 var bytesWritten = Item.Serialize(obj.Items[i], data);
@@ -151,11 +159,11 @@ public partial class MainObject : ISerializable<MainObject>
     {
         if (obj.Items is null)
         {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)0);
+            StreamWriter.WriteByte(stream, (byte)0);
         }
         else
         {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)obj.Items.Count);
+            StreamWriter.WriteByte(stream, (byte)obj.Items.Count);
             for (int i = 0; i < obj.Items.Count; i++)
             {
                 Item.Serialize(obj.Items[i], stream);

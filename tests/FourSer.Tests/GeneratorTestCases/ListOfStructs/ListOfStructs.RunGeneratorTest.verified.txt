@@ -8,6 +8,10 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
+using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
+using SpanWriter = FourSer.Gen.Helpers.SpanWriterHelpers;
+using StreamWriter = FourSer.Gen.Helpers.StreamWriterHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.ListOfStructs;
 
@@ -28,7 +32,7 @@ public partial struct MyStruct : ISerializable<MyStruct>
 
     public static MyStruct Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var a = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var a = SpanReader.ReadInt32(ref buffer);
         var obj = new MyStruct(a);
         return obj;
     }
@@ -40,7 +44,7 @@ public partial struct MyStruct : ISerializable<MyStruct>
 
     public static MyStruct Deserialize(System.IO.Stream stream)
     {
-        var a = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var a = StreamReader.ReadInt32(stream);
         var obj = new MyStruct(a);
         return obj;
     }
@@ -48,13 +52,13 @@ public partial struct MyStruct : ISerializable<MyStruct>
     public static int Serialize(MyStruct obj, System.Span<byte> data)
     {
         var originalData = data;
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.A);
+        SpanWriter.WriteInt32(ref data, (Int32)obj.A);
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(MyStruct obj, System.IO.Stream stream)
     {
-        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.A);
+        StreamWriter.WriteInt32(stream, (Int32)obj.A);
     }
 }
 
@@ -69,6 +73,10 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
+using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
+using SpanWriter = FourSer.Gen.Helpers.SpanWriterHelpers;
+using StreamWriter = FourSer.Gen.Helpers.StreamWriterHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.ListOfStructs;
 
@@ -97,7 +105,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
 
     public static PacketWithListOfStructs Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var structsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var structsCount = SpanReader.ReadInt32(ref buffer);
         var structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
         for (int i = 0; i < structsCount; i++)
         {
@@ -114,7 +122,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
 
     public static PacketWithListOfStructs Deserialize(System.IO.Stream stream)
     {
-        var structsCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var structsCount = StreamReader.ReadInt32(stream);
         var structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
         for (int i = 0; i < structsCount; i++)
         {
@@ -133,7 +141,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         }
         else
         {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Structs.Count);
+            SpanWriter.WriteInt32(ref data, (int)obj.Structs.Count);
             for (int i = 0; i < obj.Structs.Count; i++)
             {
                 var bytesWritten = MyStruct.Serialize(obj.Structs[i], data);
@@ -151,7 +159,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         }
         else
         {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Structs.Count);
+            StreamWriter.WriteInt32(stream, (int)obj.Structs.Count);
             for (int i = 0; i < obj.Structs.Count; i++)
             {
                 MyStruct.Serialize(obj.Structs[i], stream);
