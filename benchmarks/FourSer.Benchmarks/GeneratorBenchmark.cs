@@ -12,14 +12,14 @@ namespace FourSer.Benchmarks
     public class GeneratorBenchmark
     {
         private static readonly string[] s_contractsSource = new[]
-    {
-        @"
+        {
+            @"
 using System;
 namespace FourSer.Contracts;
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
 public class GenerateSerializerAttribute : Attribute { }
 ",
-        @"
+            @"
 using System;
 namespace FourSer.Contracts;
 public interface ISerializable<T> where T : ISerializable<T>
@@ -30,11 +30,11 @@ public interface ISerializable<T> where T : ISerializable<T>
     static abstract T Deserialize(ReadOnlySpan<byte> data);
 }
 ",
-        @"
+            @"
 namespace FourSer.Contracts;
 public enum PolymorphicMode { None, SingleTypeId, IndividualTypeIds }
 ",
-        @"
+            @"
 using System;
 namespace FourSer.Contracts;
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
@@ -48,7 +48,7 @@ public class SerializeCollectionAttribute : Attribute
     public string? TypeIdProperty { get; set; }
 }
 ",
-        @"
+            @"
 using System;
 namespace FourSer.Contracts;
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
@@ -71,11 +71,11 @@ public class PolymorphicOptionAttribute : Attribute
     public PolymorphicOptionAttribute(object id, Type type) { Id = id; Type = type; }
 }
 "
-    };
+        };
 
         private static readonly string[] s_extensionsSource = new[]
-    {
-        @"
+        {
+            @"
 using System;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -100,7 +100,7 @@ public static class StringEx
         return Utf8Encoding.GetString(strSpan);
     }
 }",
-        @"
+            @"
 using System;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
@@ -145,7 +145,7 @@ public static class RoSpanReaderExtensions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string ReadString(this ref ReadOnlySpan<byte> input) => StringEx.ReadString(ref input);
 }",
-        @"
+            @"
 using System;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
@@ -199,48 +199,55 @@ public static class SpanWriterExtensions
         input = input.Slice(byteCount);
     }
 }"
-    };
+        };
+
+        private static string _testCaseDirectory = WildPath.PathResolver.Resolve(@"...\tests\FourSer.Tests\GeneratorTestCases")
+            ?? throw new DirectoryNotFoundException("Test case directory not found.");
+
+        private static Dictionary<string, string> _testCases;
+
+        static GeneratorBenchmark()
+        {
+            // Initialize the test cases dictionary if needed
+            _testCases = new Dictionary<string, string>();
+            if (!Directory.Exists(_testCaseDirectory))
+            {
+                throw new DirectoryNotFoundException("GeneratorTestCases directory not found.");
+            }
+
+            var testCaseFolders = Directory.GetDirectories(_testCaseDirectory)
+                .Select(Path.GetFileName)
+                .Where(name => name != "InvalidNestedCollection" && name != "InvalidPolymorphicCollection");
+
+            foreach (var folder in testCaseFolders)
+            {
+                var inputFilePath = Path.Combine(_testCaseDirectory, folder, "input.cs");
+                if (!File.Exists(inputFilePath))
+                {
+                    // throw new FileNotFoundException($"Input file not found for test case: {folder}");
+                    continue;
+                }
+
+                var source = File.ReadAllText(inputFilePath);
+                _testCases[folder] = AddDefaultUsings(source);
+            }
+        }
+
 
         public IEnumerable<string> GetTestCases()
-        {
-            var testCaseFolders = Directory.GetDirectories("GeneratorTestCases")
-                .Select(Path.GetFileName)
-                .Where(name => name != "InvalidNestedCollection");
+            => _testCases.Keys;
 
-            return testCaseFolders;
-        }
+        [ParamsSource(nameof(GetTestCases))] public string TestCaseName { get; set; }
 
-        [ParamsSource(nameof(GetTestCases))]
-        public string TestCaseName { get; set; }
-
-        [Benchmark]
-        public void RunGenerator()
-        {
-            var source = ReadSource(TestCaseName);
-
-            var syntaxTrees = s_contractsSource.Select(s => CSharpSyntaxTree.ParseText(s)).ToList();
-            syntaxTrees.AddRange(s_extensionsSource.Select(s => CSharpSyntaxTree.ParseText(s)));
-            syntaxTrees.Add(CSharpSyntaxTree.ParseText(source));
-
-            var compilation = CSharpCompilation.Create
-            (
-                "BenchmarkProject",
-                syntaxTrees,
-                Basic.Reference.Assemblies.Net90.References.All,
-                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)
-            );
-
-            var generator = new SerializerGenerator();
-            var driver = CSharpGeneratorDriver.Create(generator);
-
-            driver.RunGenerators(compilation);
-        }
 
         private static string ReadSource(string testCaseName)
         {
-            var path = Path.Combine("GeneratorTestCases", testCaseName, "input.cs");
-            string source = File.ReadAllText(path);
-            return AddDefaultUsings(source);
+            if (_testCases.TryGetValue(testCaseName, out var source))
+            {
+                return source;
+            }
+
+            throw new KeyNotFoundException($"Test case '{testCaseName}' not found.");
         }
 
         private static string AddDefaultUsings(string source)
@@ -270,6 +277,29 @@ public static class SpanWriterExtensions
             }
 
             return source;
+        }
+
+        [Benchmark]
+        public void RunGenerator()
+        {
+            var source = ReadSource(TestCaseName);
+
+            var syntaxTrees = s_contractsSource.Select(s => CSharpSyntaxTree.ParseText(s)).ToList();
+            syntaxTrees.AddRange(s_extensionsSource.Select(s => CSharpSyntaxTree.ParseText(s)));
+            syntaxTrees.Add(CSharpSyntaxTree.ParseText(source));
+
+            var compilation = CSharpCompilation.Create
+            (
+                "BenchmarkProject",
+                syntaxTrees,
+                Basic.Reference.Assemblies.Net90.References.All,
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)
+            );
+
+            var generator = new SerializerGenerator();
+            var driver = CSharpGeneratorDriver.Create(generator);
+
+            driver.RunGenerators(compilation);
         }
     }
 }
