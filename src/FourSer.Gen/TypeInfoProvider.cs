@@ -20,6 +20,40 @@ internal static class TypeInfoProvider
                               | SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers
     );
 
+    private sealed class WellKnownTypes
+    {
+        public readonly INamedTypeSymbol? GenerateSerializerAttribute;
+        public readonly INamedTypeSymbol? ListT;
+        public readonly INamedTypeSymbol? IListT;
+        public readonly INamedTypeSymbol? ICollectionT;
+        public readonly INamedTypeSymbol? IEnumerableT;
+        public readonly INamedTypeSymbol? CollectionT;
+        public readonly INamedTypeSymbol? ObservableCollectionT;
+        public readonly INamedTypeSymbol? HashSetT;
+        public readonly INamedTypeSymbol? SortedSetT;
+        public readonly INamedTypeSymbol? QueueT;
+        public readonly INamedTypeSymbol? StackT;
+        public readonly INamedTypeSymbol? LinkedListT;
+        public readonly INamedTypeSymbol? ConcurrentBagT;
+
+        public WellKnownTypes(Compilation compilation)
+        {
+            GenerateSerializerAttribute = compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            ListT = compilation.GetTypeByMetadataName("System.Collections.Generic.List`1");
+            IListT = compilation.GetTypeByMetadataName("System.Collections.Generic.IList`1");
+            ICollectionT = compilation.GetTypeByMetadataName("System.Collections.Generic.ICollection`1");
+            IEnumerableT = compilation.GetTypeByMetadataName("System.Collections.Generic.IEnumerable`1");
+            CollectionT = compilation.GetTypeByMetadataName("System.Collections.ObjectModel.Collection`1");
+            ObservableCollectionT = compilation.GetTypeByMetadataName("System.Collections.ObjectModel.ObservableCollection`1");
+            HashSetT = compilation.GetTypeByMetadataName("System.Collections.Generic.HashSet`1");
+            SortedSetT = compilation.GetTypeByMetadataName("System.Collections.Generic.SortedSet`1");
+            QueueT = compilation.GetTypeByMetadataName("System.Collections.Generic.Queue`1");
+            StackT = compilation.GetTypeByMetadataName("System.Collections.Generic.Stack`1");
+            LinkedListT = compilation.GetTypeByMetadataName("System.Collections.Generic.LinkedList`1");
+            ConcurrentBagT = compilation.GetTypeByMetadataName("System.Collections.Concurrent.ConcurrentBag`1");
+        }
+    }
+
     public static TypeToGenerate? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context, CancellationToken ct)
     {
         if (context.TargetSymbol is not INamedTypeSymbol typeSymbol)
@@ -32,11 +66,13 @@ internal static class TypeInfoProvider
             return null;
         }
 
-        var serializableMembers = GetSerializableMembers(typeSymbol);
-        var nestedTypes = GetNestedTypes(typeSymbol);
+        var compilation = context.SemanticModel.Compilation;
+        var wellKnownTypes = new WellKnownTypes(compilation);
+        var serializableMembers = GetSerializableMembers(typeSymbol, wellKnownTypes);
+        var nestedTypes = GetNestedTypes(typeSymbol, wellKnownTypes);
         var constructorInfo = GetConstructorInfo(typeSymbol, serializableMembers);
 
-        var hasSerializableBaseType = HasGenerateSerializerAttribute(typeSymbol.BaseType);
+        var hasSerializableBaseType = HasGenerateSerializerAttribute(typeSymbol.BaseType, wellKnownTypes);
 
         return new TypeToGenerate
         (
@@ -53,22 +89,28 @@ internal static class TypeInfoProvider
     private static ConstructorInfo? GetConstructorInfo(INamedTypeSymbol typeSymbol,
         EquatableArray<MemberToGenerate> members)
     {
-        var constructors = new List<IMethodSymbol>();
+        var publicConstructors = new List<IMethodSymbol>();
+        var hasParameterlessCtor = false;
+
         foreach (var c in typeSymbol.Constructors)
         {
-            if (!c.IsImplicitlyDeclared)
+            if (c.IsImplicitlyDeclared) continue;
+
+            if (c.Parameters.Length == 0)
             {
-                constructors.Add(c);
+                hasParameterlessCtor = true;
+            }
+
+            if (c.DeclaredAccessibility == Accessibility.Public)
+            {
+                publicConstructors.Add(c);
             }
         }
 
-        var hasParameterlessCtor = HasParameterlessConstructor(constructors);
         var shouldGenerate = HasReadOnlyMembers(members);
 
         if (!shouldGenerate)
         {
-            var publicConstructors = GetPublicConstructors(constructors);
-
             if (publicConstructors.Count > 0)
             {
                 var bestConstructor = FindBestConstructor(publicConstructors, members);
@@ -91,18 +133,6 @@ internal static class TypeInfoProvider
         }
 
         return new ConstructorInfo(new EquatableArray<ParameterInfo>(generatedParametersBuilder.ToImmutable()), true, hasParameterlessCtor);
-    }
-
-    private static bool HasParameterlessConstructor(List<IMethodSymbol> constructors)
-    {
-        foreach (var c in constructors)
-        {
-            if (c.Parameters.Length == 0)
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static bool HasBackingField(IPropertySymbol p)
@@ -129,29 +159,11 @@ internal static class TypeInfoProvider
         return false;
     }
 
-    private static List<IMethodSymbol> GetPublicConstructors(List<IMethodSymbol> constructors)
-    {
-        var publicConstructors = new List<IMethodSymbol>();
-        foreach (var c in constructors)
-        {
-            if (c.DeclaredAccessibility == Accessibility.Public)
-            {
-                publicConstructors.Add(c);
-            }
-        }
-        return publicConstructors;
-    }
-
     private static IMethodSymbol? FindBestConstructor(List<IMethodSymbol> constructors, EquatableArray<MemberToGenerate> members)
     {
         foreach (var c in constructors)
         {
-            int membersCount = 0;
-            foreach (var _ in members)
-            {
-                membersCount++;
-            }
-            if (c.Parameters.Length != membersCount)
+            if (c.Parameters.Length != members.Length)
             {
                 continue;
             }
@@ -221,7 +233,7 @@ internal static class TypeInfoProvider
         return false;
     }
 
-    private static EquatableArray<MemberToGenerate> GetSerializableMembers(INamedTypeSymbol typeSymbol)
+    private static EquatableArray<MemberToGenerate> GetSerializableMembers(INamedTypeSymbol typeSymbol, WellKnownTypes wellKnownTypes)
     {
         var members = new List<MemberToGenerate>();
         var currentType = typeSymbol;
@@ -233,7 +245,7 @@ internal static class TypeInfoProvider
             {
                 if (IsSerializableMember(m))
                 {
-                    typeMembersWithLocation.Add(CreateMemberToGenerate(m));
+                    typeMembersWithLocation.Add(CreateMemberToGenerate(m, wellKnownTypes));
                 }
             }
 
@@ -252,16 +264,17 @@ internal static class TypeInfoProvider
         return new EquatableArray<MemberToGenerate>(members.ToImmutableArray());
     }
 
-    private static (MemberToGenerate, Location) CreateMemberToGenerate(ISymbol m)
+    private static (MemberToGenerate, Location) CreateMemberToGenerate(ISymbol m, WellKnownTypes wellKnownTypes)
     {
         var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
-        var isList = memberTypeSymbol.OriginalDefinition.ToDisplayString()
-                     == "System.Collections.Generic.List<T>";
+
+        var isList = wellKnownTypes.ListT is not null && SymbolEqualityComparer.Default.Equals(memberTypeSymbol.OriginalDefinition, wellKnownTypes.ListT);
+
         ListTypeArgumentInfo? listTypeArgumentInfo = null;
         if (isList)
         {
             var typeArgumentSymbol = ((INamedTypeSymbol)memberTypeSymbol).TypeArguments[0];
-            var listTypeHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(typeArgumentSymbol as INamedTypeSymbol);
+            var listTypeHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(typeArgumentSymbol as INamedTypeSymbol, wellKnownTypes);
 
             listTypeArgumentInfo = new ListTypeArgumentInfo
             (
@@ -272,7 +285,7 @@ internal static class TypeInfoProvider
             );
         }
 
-        var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(memberTypeSymbol);
+        var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(memberTypeSymbol, wellKnownTypes);
 
         var polymorphicInfo = GetPolymorphicInfo(m);
 
@@ -286,7 +299,7 @@ internal static class TypeInfoProvider
             isReadOnly = field.IsReadOnly;
         }
 
-        var memberHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(memberTypeSymbol as INamedTypeSymbol);
+        var memberHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(memberTypeSymbol as INamedTypeSymbol, wellKnownTypes);
 
         var location = m.Locations.First();
         var lineSpan = location.GetLineSpan();
@@ -301,7 +314,7 @@ internal static class TypeInfoProvider
             memberHasGenerateSerializerAttribute,
             isList,
             listTypeArgumentInfo,
-            GetCollectionInfo(m),
+            GetCollectionInfo(m, wellKnownTypes),
             polymorphicInfo,
             isCollection,
             collectionTypeInfo,
@@ -312,7 +325,7 @@ internal static class TypeInfoProvider
         return (memberToGenerate, location);
     }
 
-    private static EquatableArray<TypeToGenerate> GetNestedTypes(INamedTypeSymbol parentType)
+    private static EquatableArray<TypeToGenerate> GetNestedTypes(INamedTypeSymbol parentType, WellKnownTypes wellKnownTypes)
     {
         var nestedTypes = ImmutableArray.CreateBuilder<TypeToGenerate>();
 
@@ -320,7 +333,7 @@ internal static class TypeInfoProvider
         {
             if (member is INamedTypeSymbol nestedTypeSymbol)
             {
-                var nestedType = CreateNestedTypeToGenerate(nestedTypeSymbol);
+                var nestedType = CreateNestedTypeToGenerate(nestedTypeSymbol, wellKnownTypes);
                 if (nestedType is not null)
                 {
                     nestedTypes.Add(nestedType.Value);
@@ -331,16 +344,16 @@ internal static class TypeInfoProvider
         return new EquatableArray<TypeToGenerate>(nestedTypes.ToImmutable());
     }
 
-    private static bool HasGenerateSerializerAttribute(INamedTypeSymbol? typeSymbol)
+    private static bool HasGenerateSerializerAttribute(INamedTypeSymbol? typeSymbol, WellKnownTypes wellKnownTypes)
     {
-        if (typeSymbol is null)
+        if (typeSymbol is null || wellKnownTypes.GenerateSerializerAttribute is null)
         {
             return false;
         }
 
         foreach (var ad in typeSymbol.GetAttributes())
         {
-            if (ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute")
+            if (SymbolEqualityComparer.Default.Equals(ad.AttributeClass, wellKnownTypes.GenerateSerializerAttribute))
             {
                 return true;
             }
@@ -349,17 +362,17 @@ internal static class TypeInfoProvider
         return false;
     }
 
-    private static TypeToGenerate? CreateNestedTypeToGenerate(INamedTypeSymbol nestedTypeSymbol)
+    private static TypeToGenerate? CreateNestedTypeToGenerate(INamedTypeSymbol nestedTypeSymbol, WellKnownTypes wellKnownTypes)
     {
-        if (!HasGenerateSerializerAttribute(nestedTypeSymbol))
+        if (!HasGenerateSerializerAttribute(nestedTypeSymbol, wellKnownTypes))
         {
             return null;
         }
 
-        var nestedMembers = GetSerializableMembers(nestedTypeSymbol);
-        var deeperNestedTypes = GetNestedTypes(nestedTypeSymbol);
+        var nestedMembers = GetSerializableMembers(nestedTypeSymbol, wellKnownTypes);
+        var deeperNestedTypes = GetNestedTypes(nestedTypeSymbol, wellKnownTypes);
 
-        var hasSerializableBaseType = HasGenerateSerializerAttribute(nestedTypeSymbol.BaseType);
+        var hasSerializableBaseType = HasGenerateSerializerAttribute(nestedTypeSymbol.BaseType, wellKnownTypes);
 
         var constructorInfo = GetConstructorInfo(nestedTypeSymbol, nestedMembers);
 
@@ -375,12 +388,12 @@ internal static class TypeInfoProvider
         );
     }
 
-    private static (bool IsCollection, CollectionTypeInfo? CollectionTypeInfo) GetCollectionTypeInfo(ITypeSymbol typeSymbol)
+    private static (bool IsCollection, CollectionTypeInfo? CollectionTypeInfo) GetCollectionTypeInfo(ITypeSymbol typeSymbol, WellKnownTypes wellKnownTypes)
     {
         if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
         {
             var elementType = arrayTypeSymbol.ElementType;
-            var arrayElementHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(elementType as INamedTypeSymbol);
+            var arrayElementHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(elementType as INamedTypeSymbol, wellKnownTypes);
             return (true, new CollectionTypeInfo
             (
                 typeSymbol.ToDisplayString(s_typeNameFormat),
@@ -403,56 +416,63 @@ internal static class TypeInfoProvider
             return (false, null);
         }
 
-        var originalDefinition = namedTypeSymbol.OriginalDefinition.ToDisplayString();
+        var originalDefinition = namedTypeSymbol.OriginalDefinition;
         var genericElementType = namedTypeSymbol.TypeArguments[0];
 
         string? concreteTypeName = null;
         bool isCollection = false;
 
-        switch (originalDefinition)
+        if (SymbolEqualityComparer.Default.Equals(originalDefinition, wellKnownTypes.ListT))
         {
-            case "System.Collections.Generic.List<T>":
-                isCollection = true;
-                concreteTypeName = null;
-                break;
-            case "System.Collections.Generic.IList<T>":
-            case "System.Collections.Generic.ICollection<T>":
-            case "System.Collections.Generic.IEnumerable<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.Generic.List";
-                break;
-            case "System.Collections.ObjectModel.Collection<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.ObjectModel.Collection";
-                break;
-            case "System.Collections.ObjectModel.ObservableCollection<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.ObjectModel.ObservableCollection";
-                break;
-            case "System.Collections.Generic.HashSet<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.Generic.HashSet";
-                break;
-            case "System.Collections.Generic.SortedSet<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.Generic.SortedSet";
-                break;
-            case "System.Collections.Generic.Queue<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.Generic.Queue";
-                break;
-            case "System.Collections.Generic.Stack<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.Generic.Stack";
-                break;
-            case "System.Collections.Generic.LinkedList<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.Generic.LinkedList";
-                break;
-            case "System.Collections.Concurrent.ConcurrentBag<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.Concurrent.ConcurrentBag";
-                break;
+            isCollection = true;
+            concreteTypeName = null;
+        }
+        else if (SymbolEqualityComparer.Default.Equals(originalDefinition, wellKnownTypes.IListT) ||
+                 SymbolEqualityComparer.Default.Equals(originalDefinition, wellKnownTypes.ICollectionT) ||
+                 SymbolEqualityComparer.Default.Equals(originalDefinition, wellKnownTypes.IEnumerableT))
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.Generic.List";
+        }
+        else if (SymbolEqualityComparer.Default.Equals(originalDefinition, wellKnownTypes.CollectionT))
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.ObjectModel.Collection";
+        }
+        else if (SymbolEqualityComparer.Default.Equals(originalDefinition, wellKnownTypes.ObservableCollectionT))
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.ObjectModel.ObservableCollection";
+        }
+        else if (SymbolEqualityComparer.Default.Equals(originalDefinition, wellKnownTypes.HashSetT))
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.Generic.HashSet";
+        }
+        else if (SymbolEqualityComparer.Default.Equals(originalDefinition, wellKnownTypes.SortedSetT))
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.Generic.SortedSet";
+        }
+        else if (SymbolEqualityComparer.Default.Equals(originalDefinition, wellKnownTypes.QueueT))
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.Generic.Queue";
+        }
+        else if (SymbolEqualityComparer.Default.Equals(originalDefinition, wellKnownTypes.StackT))
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.Generic.Stack";
+        }
+        else if (SymbolEqualityComparer.Default.Equals(originalDefinition, wellKnownTypes.LinkedListT))
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.Generic.LinkedList";
+        }
+        else if (SymbolEqualityComparer.Default.Equals(originalDefinition, wellKnownTypes.ConcurrentBagT))
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.Concurrent.ConcurrentBag";
         }
 
         if (!isCollection)
@@ -460,11 +480,11 @@ internal static class TypeInfoProvider
             return (false, null);
         }
 
-        var hasGenerateSerializerAttribute = HasGenerateSerializerAttribute(genericElementType as INamedTypeSymbol);
+        var hasGenerateSerializerAttribute = HasGenerateSerializerAttribute(genericElementType as INamedTypeSymbol, wellKnownTypes);
 
         return (true, new CollectionTypeInfo
         (
-            originalDefinition,
+            originalDefinition.ToDisplayString(s_typeNameFormat),
             genericElementType.ToDisplayString(s_typeNameFormat),
             genericElementType.IsUnmanagedType,
             genericElementType.SpecialType == SpecialType.System_String,
@@ -474,12 +494,12 @@ internal static class TypeInfoProvider
         ));
     }
 
-    private static CollectionInfo? GetCollectionInfo(ISymbol member)
+    private static CollectionInfo? GetCollectionInfo(ISymbol member, WellKnownTypes wellKnownTypes)
     {
         var attribute = AttributeHelper.GetCollectionAttribute(member);
         
         var memberTypeSymbol = member is IPropertySymbol p ? p.Type : ((IFieldSymbol)member).Type;
-        var (isCollection, _) = GetCollectionTypeInfo(memberTypeSymbol);
+        var (isCollection, _) = GetCollectionTypeInfo(memberTypeSymbol, wellKnownTypes);
         
         if (attribute is null)
         {

@@ -42,6 +42,11 @@ public readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnume
     public bool IsEmpty => this.array.IsDefaultOrEmpty;
 
     /// <summary>
+    /// Gets the number of items in the current array.
+    /// </summary>
+    public int Length => this.array.Length;
+
+    /// <summary>
     /// Implicitly converts an <see cref="ImmutableArray{T}"/> to <see cref="EquatableArray{T}"/>.
     /// </summary>
     /// <param name="array">The <see cref="ImmutableArray{T}"/> to wrap.</param>
