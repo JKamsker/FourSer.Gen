@@ -1,4 +1,3 @@
-using System.Text;
 using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
@@ -10,7 +9,7 @@ namespace FourSer.Gen.CodeGenerators;
 /// </summary>
 public static class NestedTypeGenerator
 {
-    public static void GenerateNestedTypes(StringBuilder sb, EquatableArray<TypeToGenerate> nestedTypes)
+    public static void GenerateNestedTypes(IndentedStringBuilder sb, EquatableArray<TypeToGenerate> nestedTypes)
     {
         if (nestedTypes.IsEmpty)
         {
@@ -19,40 +18,39 @@ public static class NestedTypeGenerator
 
         foreach (var nestedType in nestedTypes)
         {
-            sb.AppendLine();
+            sb.WriteLine();
             var typeKeyword = nestedType.IsValueType ? "struct" : "class";
-            sb.AppendLine($"    public partial {typeKeyword} {nestedType.Name} : ISerializable<{nestedType.Name}>");
-            sb.AppendLine("    {");
-
-            // Delegate to the primary generators
-        if (nestedType.Constructor is { ShouldGenerate: true } ctor)
+            sb.WriteLine($"public partial {typeKeyword} {nestedType.Name} : ISerializable<{nestedType.Name}>");
+            using (sb.BeginBlock())
             {
-                if (!ctor.Parameters.IsEmpty)
+                // Delegate to the primary generators
+                if (nestedType.Constructor is { ShouldGenerate: true } ctor)
                 {
-                SerializerGenerator.GenerateConstructor(sb, nestedType, ctor);
-                    sb.AppendLine();
+                    if (!ctor.Parameters.IsEmpty)
+                    {
+                        SerializerGenerator.GenerateConstructor(sb, nestedType, ctor);
+                        sb.WriteLine();
+                    }
+
+                    if (!ctor.HasParameterlessConstructor)
+                    {
+                        SerializerGenerator.GenerateParameterlessConstructor(sb, nestedType);
+                        sb.WriteLine();
+                    }
                 }
 
-            if (!ctor.HasParameterlessConstructor)
+                PacketSizeGenerator.GenerateGetPacketSize(sb, nestedType);
+                sb.WriteLine();
+                DeserializationGenerator.GenerateDeserialize(sb, nestedType);
+                sb.WriteLine();
+                SerializationGenerator.GenerateSerialize(sb, nestedType);
+
+                // Handle even deeper nested types recursively
+                if (!nestedType.NestedTypes.IsEmpty)
                 {
-                SerializerGenerator.GenerateParameterlessConstructor(sb, nestedType);
-                    sb.AppendLine();
+                    GenerateNestedTypes(sb, nestedType.NestedTypes);
                 }
             }
-
-            PacketSizeGenerator.GenerateGetPacketSize(sb, nestedType);
-            sb.AppendLine();
-            DeserializationGenerator.GenerateDeserialize(sb, nestedType);
-            sb.AppendLine();
-            SerializationGenerator.GenerateSerialize(sb, nestedType);
-
-            // Handle even deeper nested types recursively
-            if (!nestedType.NestedTypes.IsEmpty)
-            {
-                GenerateNestedTypes(sb, nestedType.NestedTypes);
-            }
-
-            sb.AppendLine("    }");
         }
     }
 }

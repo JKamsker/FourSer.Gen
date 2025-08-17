@@ -1,7 +1,6 @@
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 using System;
-using System.Text;
 
 namespace FourSer.Gen.CodeGenerators.Core
 {
@@ -23,7 +22,7 @@ namespace FourSer.Gen.CodeGenerators.Core
             return key.ToString();
         }
 
-        public static string GenerateWriteTypeIdCode(PolymorphicOption option, PolymorphicInfo info, string indent = "                ", string target = "data", string helper = "SpanWriterHelpers")
+        public static string GenerateWriteTypeIdCode(PolymorphicOption option, PolymorphicInfo info, string indent = "    ", string target = "data", string helper = "SpanWriterHelpers")
         {
             var key = FormatTypeIdKey(option.Key, info);
             var underlyingType = info.EnumUnderlyingType ?? info.TypeIdType;
@@ -42,7 +41,7 @@ namespace FourSer.Gen.CodeGenerators.Core
         // / Generates the code to get the Type ID value for a switch statement.
         /// If the TypeIdProperty is specified, it uses that. Otherwise, it reads the ID from the data stream.
         /// </summary>
-        public static string GenerateTypeIdVariable(StringBuilder sb, PolymorphicInfo info, string? typeIdProperty, bool isDeserialization, string indent = "        ")
+        public static string GenerateTypeIdVariable(IndentedStringBuilder sb, PolymorphicInfo info, string? typeIdProperty, bool isDeserialization)
         {
             if (!string.IsNullOrEmpty(typeIdProperty))
             {
@@ -52,7 +51,7 @@ namespace FourSer.Gen.CodeGenerators.Core
             if (isDeserialization)
             {
                 var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(info.EnumUnderlyingType ?? info.TypeIdType);
-                sb.AppendLine($"{indent}var typeId = FourSer.Gen.Helpers.RoSpanReaderHelpers.Read{typeIdTypeName}(ref data);");
+                sb.WriteLine($"var typeId = FourSer.Gen.Helpers.RoSpanReaderHelpers.Read{typeIdTypeName}(ref data);");
                 return "typeId";
             }
 
@@ -71,26 +70,25 @@ namespace FourSer.Gen.CodeGenerators.Core
         /// The action receives the polymorphic option and the formatted key.</param>
         /// <param name="defaultCaseHandler">An action that generates the code for the default case.</param>
         public static void GeneratePolymorphicSwitch(
-            StringBuilder sb,
+            IndentedStringBuilder sb,
             PolymorphicInfo info,
             string switchVariable,
             Action<PolymorphicOption, string> caseHandler,
-            Action defaultCaseHandler,
-            string indent = "        ")
+            Action defaultCaseHandler)
         {
-            sb.AppendLine($"{indent}switch (({info.TypeIdType}){switchVariable})");
-            sb.AppendLine($"{indent}{{");
-
-            foreach (var option in info.Options)
+            sb.WriteLine($"switch (({info.TypeIdType}){switchVariable})");
+            using (sb.BeginBlock())
             {
-                var key = FormatTypeIdKey(option.Key, info);
-                sb.AppendLine($"{indent}    case {key}:");
-                caseHandler(option, key);
-            }
+                foreach (var option in info.Options)
+                {
+                    var key = FormatTypeIdKey(option.Key, info);
+                    sb.WriteLine($"case {key}:");
+                    caseHandler(option, key);
+                }
 
-            sb.AppendLine($"{indent}    default:");
-            defaultCaseHandler();
-            sb.AppendLine($"{indent}}}");
+                sb.WriteLine("default:");
+                defaultCaseHandler();
+            }
         }
     }
 }

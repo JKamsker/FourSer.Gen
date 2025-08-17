@@ -20,18 +20,18 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         foreach(var item in obj.Animals)
         {
             size += sizeof(byte);
-        switch (item)
-        {
-            case Cat typedInstance:
-                size += Cat.GetPacketSize(typedInstance);
-                break;
-            case Dog typedInstance:
-                size += Dog.GetPacketSize(typedInstance);
-                break;
-            case null: break;
-            default:
-                throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
-        }
+            switch (item)
+            {
+                case Cat typedInstance:
+                    size += Cat.GetPacketSize(typedInstance);
+                    break;
+                case Dog typedInstance:
+                    size += Dog.GetPacketSize(typedInstance);
+                    break;
+                case null: break;
+                default:
+                    throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+            }
         }
         return size;
     }
@@ -121,27 +121,27 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)obj.Animals.Count);
             foreach(var item in obj.Animals)
             {
-            switch (item)
-            {
-                case Cat typedInstance:
+                switch (item)
                 {
-                    FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)1);
-                    var bytesWritten = Cat.Serialize(typedInstance, data);
-                    data = data.Slice(bytesWritten);
-                    break;
+                    case Cat typedInstance:
+                    {
+                                FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)1);
+                        var bytesWritten = Cat.Serialize(typedInstance, data);
+                        data = data.Slice(bytesWritten);
+                        break;
+                    }
+                    case Dog typedInstance:
+                    {
+                                FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)2);
+                        var bytesWritten = Dog.Serialize(typedInstance, data);
+                        data = data.Slice(bytesWritten);
+                        break;
+                    }
+                    case null:
+                        throw new System.NullReferenceException($"Item in collection cannot be null.");
+                    default:
+                        throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
                 }
-                case Dog typedInstance:
-                {
-                    FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)2);
-                    var bytesWritten = Dog.Serialize(typedInstance, data);
-                    data = data.Slice(bytesWritten);
-                    break;
-                }
-                case null:
-                    throw new System.NullReferenceException($"Item in collection cannot be null.");
-                default:
-                    throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
-            }
             }
         }
         return originalData.Length - data.Length;
@@ -158,25 +158,25 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)obj.Animals.Count);
             foreach(var item in obj.Animals)
             {
-            switch (item)
-            {
-                case Cat typedInstance:
+                switch (item)
                 {
-                    FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)1);
-                    Cat.Serialize(typedInstance, stream);
-                    break;
+                    case Cat typedInstance:
+                    {
+                                FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)1);
+                        Cat.Serialize(typedInstance, stream);
+                        break;
+                    }
+                    case Dog typedInstance:
+                    {
+                                FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)2);
+                        Dog.Serialize(typedInstance, stream);
+                        break;
+                    }
+                    case null:
+                        throw new System.NullReferenceException($"Item in collection cannot be null.");
+                    default:
+                        throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
                 }
-                case Dog typedInstance:
-                {
-                    FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)2);
-                    Dog.Serialize(typedInstance, stream);
-                    break;
-                }
-                case null:
-                    throw new System.NullReferenceException($"Item in collection cannot be null.");
-                default:
-                    throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
-            }
             }
         }
     }

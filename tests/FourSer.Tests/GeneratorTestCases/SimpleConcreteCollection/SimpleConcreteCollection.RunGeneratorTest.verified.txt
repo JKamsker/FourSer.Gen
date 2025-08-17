@@ -75,8 +75,8 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Cats.Count);
             for (int i = 0; i < obj.Cats.Count; i++)
             {
-            var bytesWritten = Cat.Serialize(obj.Cats[i], data);
-            data = data.Slice(bytesWritten);
+                var bytesWritten = Cat.Serialize(obj.Cats[i], data);
+                data = data.Slice(bytesWritten);
             }
         }
         return originalData.Length - data.Length;
@@ -93,7 +93,7 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Cats.Count);
             for (int i = 0; i < obj.Cats.Count; i++)
             {
-            Cat.Serialize(obj.Cats[i], stream);
+                Cat.Serialize(obj.Cats[i], stream);
             }
         }
     }

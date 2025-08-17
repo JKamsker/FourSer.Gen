@@ -75,8 +75,8 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Dogs.Count);
             for (int i = 0; i < obj.Dogs.Count; i++)
             {
-            var bytesWritten = Dog.Serialize(obj.Dogs[i], data);
-            data = data.Slice(bytesWritten);
+                var bytesWritten = Dog.Serialize(obj.Dogs[i], data);
+                data = data.Slice(bytesWritten);
             }
         }
         return originalData.Length - data.Length;
@@ -93,7 +93,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Dogs.Count);
             for (int i = 0; i < obj.Dogs.Count; i++)
             {
-            Dog.Serialize(obj.Dogs[i], stream);
+                Dog.Serialize(obj.Dogs[i], stream);
             }
         }
     }
