@@ -239,13 +239,13 @@ internal static class TypeInfoProvider
 
             typeMembersWithLocation.Sort((m1, m2) => m1.Item2.SourceSpan.Start.CompareTo(m2.Item2.SourceSpan.Start));
 
-            var typeMembers = new List<MemberToGenerate>();
-            foreach(var m in typeMembersWithLocation)
+            var sortedMembers = new MemberToGenerate[typeMembersWithLocation.Count];
+            for (var i = 0; i < typeMembersWithLocation.Count; i++)
             {
-                typeMembers.Add(m.Item1);
+                sortedMembers[i] = typeMembersWithLocation[i].Item1;
             }
 
-            members.InsertRange(0, typeMembers);
+            members.InsertRange(0, sortedMembers);
             currentType = currentType.BaseType;
         }
 
