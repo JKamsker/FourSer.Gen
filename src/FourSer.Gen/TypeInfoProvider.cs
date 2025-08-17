@@ -514,6 +514,12 @@ internal static class TypeInfoProvider
 
         var polymorphicMode = (PolymorphicMode)AttributeHelper.GetPolymorphicMode(attribute);
         var typeIdProperty = AttributeHelper.GetCollectionTypeIdProperty(attribute);
+
+        if (!string.IsNullOrEmpty(typeIdProperty) && polymorphicMode == PolymorphicMode.None)
+        {
+            polymorphicMode = PolymorphicMode.SingleTypeId;
+        }
+
         var countType = AttributeHelper.GetCountType(attribute)?.ToDisplayString(s_typeNameFormat);
         var countSize = AttributeHelper.GetCountSize(attribute);
         var countSizeReference = AttributeHelper.GetCountSizeReference(attribute);

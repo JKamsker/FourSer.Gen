@@ -77,6 +77,20 @@ namespace FourSer.Analyzers
                 return;
             }
 
+            var typeToCheck = memberType;
+            if (memberType is INamedTypeSymbol namedTypeSymbol &&
+                namedTypeSymbol.IsGenericType &&
+                namedTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>" &&
+                namedTypeSymbol.TypeArguments.Length == 1)
+            {
+                typeToCheck = namedTypeSymbol.TypeArguments[0];
+            }
+            else if (memberType is IArrayTypeSymbol arrayTypeSymbol)
+            {
+                typeToCheck = arrayTypeSymbol.ElementType;
+            }
+
+
             foreach (var attribute in polymorphicOptionAttributes)
             {
                 if (attribute.ConstructorArguments.Length < 2) continue;
@@ -84,9 +98,9 @@ namespace FourSer.Analyzers
                 if (attribute.ConstructorArguments[1].Value is ITypeSymbol attributeType)
                 {
                     // Check for assignability
-                    if (!IsAssignable(attributeType, memberType))
+                    if (!IsAssignable(attributeType, typeToCheck))
                     {
-                        var diagnostic = Diagnostic.Create(AssignabilityRule, attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), attributeType.Name, memberType.Name);
+                        var diagnostic = Diagnostic.Create(AssignabilityRule, attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), attributeType.Name, typeToCheck.Name);
                         context.ReportDiagnostic(diagnostic);
                     }
 
