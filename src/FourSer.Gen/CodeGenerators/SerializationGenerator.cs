@@ -62,7 +62,7 @@ public static class SerializationGenerator
 
         foreach (var member in typeToGenerate.Members)
         {
-            GenerateMemberSerialization(sb, member, "data", "SpanWriterHelpers");
+            GenerateMemberSerialization(sb, member, "data", "SpanWriter");
         }
 
         sb.WriteLine("return originalData.Length - data.Length;");
@@ -111,7 +111,7 @@ public static class SerializationGenerator
 
         foreach (var member in typeToGenerate.Members)
         {
-            GenerateMemberSerialization(sb, member, "stream", "StreamWriterHelpers");
+            GenerateMemberSerialization(sb, member, "stream", "StreamWriter");
         }
     }
 
@@ -149,13 +149,13 @@ public static class SerializationGenerator
         }
         else if (member.IsStringType)
         {
-            sb.WriteLineFormat("FourSer.Gen.Helpers.{0}.WriteString({1}{2}, obj.{3});", helper, refOrEmpty, target, member.Name);
+            sb.WriteLineFormat("{0}.WriteString({1}{2}, obj.{3});", helper, refOrEmpty, target, member.Name);
         }
         else if (member.IsUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
             var writeMethod = $"Write{typeName}";
-            sb.WriteLineFormat("FourSer.Gen.Helpers.{0}.{1}({2}{3}, ({4})obj.{5});", helper, writeMethod, refOrEmpty, target, typeName, member.Name);
+            sb.WriteLineFormat("{0}.{1}({2}{3}, ({4})obj.{5});", helper, writeMethod, refOrEmpty, target, typeName, member.Name);
         }
     }
 
@@ -176,7 +176,7 @@ public static class SerializationGenerator
             {
                 var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
                 var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
-                sb.WriteLineFormat("FourSer.Gen.Helpers.{0}.{1}({2}{3}, ({4})0);", helper, countWriteMethod, refOrEmpty, target, countType);
+                sb.WriteLineFormat("{0}.{1}({2}{3}, ({4})0);", helper, countWriteMethod, refOrEmpty, target, countType);
             }
             else
             {
@@ -193,7 +193,7 @@ public static class SerializationGenerator
 
             var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
             sb.WriteLineFormat
-                ("FourSer.Gen.Helpers.{0}.{1}({2}{3}, ({4}){5});", helper, countWriteMethod, refOrEmpty, target, countType, countExpression);
+                ("{0}.{1}({2}{3}, ({4}){5});", helper, countWriteMethod, refOrEmpty, target, countType, countExpression);
         }
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
@@ -306,7 +306,7 @@ public static class SerializationGenerator
 
         if (isByteCollection)
         {
-            sb.WriteLineFormat("FourSer.Gen.Helpers.{0}.WriteBytes({1}{2}, obj.{3});", helper, refOrEmpty, target, member.Name);
+            sb.WriteLineFormat("{0}.WriteBytes({1}{2}, obj.{3});", helper, refOrEmpty, target, member.Name);
         }
         else
         {
@@ -371,7 +371,7 @@ public static class SerializationGenerator
             using var __ = sb.BeginBlock();
             if (string.IsNullOrEmpty(info.TypeIdProperty))
             {
-                PolymorphicUtilities.GenerateWriteTypeIdCode
+                Core.PolymorphicUtilities.GenerateWriteTypeIdCode
                 (
                     sb,
                     option,
@@ -424,8 +424,7 @@ public static class SerializationGenerator
             using var __ = sb.BeginBlock();
             if (string.IsNullOrEmpty(info.TypeIdProperty))
             {
-                // sb.WriteLine(PolymorphicUtilities.GenerateWriteTypeIdCode(option, info, "        ", target, helper));
-                PolymorphicUtilities.GenerateWriteTypeIdCode
+                Core.PolymorphicUtilities.GenerateWriteTypeIdCode
                 (
                     sb,
                     option,
@@ -486,11 +485,11 @@ public static class SerializationGenerator
         else if (elementInfo.IsUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.TypeName);
-            sb.WriteLineFormat("FourSer.Gen.Helpers.{0}.Write{1}({2}{3}, ({1}){4});", helper, typeName, refOrEmpty, target, elementAccess);
+            sb.WriteLineFormat("{0}.Write{1}({2}{3}, ({1}){4});", helper, typeName, refOrEmpty, target, elementAccess);
         }
         else if (elementInfo.IsStringType)
         {
-            sb.WriteLineFormat("FourSer.Gen.Helpers.{0}.WriteString({1}{2}, {3});", helper, refOrEmpty, target, elementAccess);
+            sb.WriteLineFormat("{0}.WriteString({1}{2}, {3});", helper, refOrEmpty, target, elementAccess);
         }
     }
 
@@ -507,11 +506,11 @@ public static class SerializationGenerator
         if (elementInfo.IsElementUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
-            sb.WriteLineFormat("FourSer.Gen.Helpers.{0}.Write{1}({2}{3}, ({1}){4});", helper, typeName, refOrEmpty, target, elementAccess);
+            sb.WriteLineFormat("{0}.Write{1}({2}{3}, ({1}){4});", helper, typeName, refOrEmpty, target, elementAccess);
         }
         else if (elementInfo.IsElementStringType)
         {
-            sb.WriteLineFormat("FourSer.Gen.Helpers.{0}.WriteString({1}{2}, {3});", helper, refOrEmpty, target, elementAccess);
+            sb.WriteLineFormat("{0}.WriteString({1}{2}, {3});", helper, refOrEmpty, target, elementAccess);
         }
         else if (elementInfo.HasElementGenerateSerializerAttribute)
         {

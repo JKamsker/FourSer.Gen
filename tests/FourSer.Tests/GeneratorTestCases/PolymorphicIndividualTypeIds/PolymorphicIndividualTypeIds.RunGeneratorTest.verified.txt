@@ -8,8 +8,6 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
-using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
-using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds;
 
@@ -50,12 +48,12 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
 
     public static PolymorphicIndividualTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var animalsCount = SpanReader.ReadByte(ref buffer);
+        var animalsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref buffer);
         var animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal>(animalsCount);
         for (int i = 0; i < animalsCount; i++)
         {
             FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal item;
-            var typeId = SpanReader.ReadByte(ref buffer);
+            var typeId = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref buffer);
             switch (typeId)
             {
                 case 1:
@@ -84,12 +82,12 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
 
     public static PolymorphicIndividualTest Deserialize(System.IO.Stream stream)
     {
-        var animalsCount = StreamReader.ReadByte(stream);
+        var animalsCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
         var animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal>(animalsCount);
         for (int i = 0; i < animalsCount; i++)
         {
             FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal item;
-            var typeId = StreamReader.ReadByte(stream);
+            var typeId = FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
             switch (typeId)
             {
                 case 1:
@@ -195,8 +193,6 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
-using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
-using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds;
 
@@ -224,8 +220,8 @@ public partial class Cat : ISerializable<Cat>
 
     public static new Cat Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = SpanReader.ReadInt32(ref buffer);
-        var name = SpanReader.ReadString(ref buffer);
+        var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
         var obj = new Cat(id, name);
         return obj;
     }
@@ -237,8 +233,8 @@ public partial class Cat : ISerializable<Cat>
 
     public static new Cat Deserialize(System.IO.Stream stream)
     {
-        var id = StreamReader.ReadInt32(stream);
-        var name = StreamReader.ReadString(stream);
+        var id = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var name = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
         var obj = new Cat(id, name);
         return obj;
     }
@@ -269,8 +265,6 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
-using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
-using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds;
 
@@ -298,8 +292,8 @@ public partial class Dog : ISerializable<Dog>
 
     public static new Dog Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = SpanReader.ReadInt32(ref buffer);
-        var breed = SpanReader.ReadString(ref buffer);
+        var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var breed = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
         var obj = new Dog(id, breed);
         return obj;
     }
@@ -311,8 +305,8 @@ public partial class Dog : ISerializable<Dog>
 
     public static new Dog Deserialize(System.IO.Stream stream)
     {
-        var id = StreamReader.ReadInt32(stream);
-        var breed = StreamReader.ReadString(stream);
+        var id = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var breed = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
         var obj = new Dog(id, breed);
         return obj;
     }
@@ -343,8 +337,6 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
-using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
-using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds;
 
@@ -369,7 +361,7 @@ public partial class Animal : ISerializable<Animal>
 
     public static Animal Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = SpanReader.ReadInt32(ref buffer);
+        var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var obj = new Animal(id);
         return obj;
     }
@@ -381,7 +373,7 @@ public partial class Animal : ISerializable<Animal>
 
     public static Animal Deserialize(System.IO.Stream stream)
     {
-        var id = StreamReader.ReadInt32(stream);
+        var id = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         var obj = new Animal(id);
         return obj;
     }

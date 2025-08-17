@@ -8,8 +8,6 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
-using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
-using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace Test;
 
@@ -29,7 +27,7 @@ public partial class PrivateCtorPacket : ISerializable<PrivateCtorPacket>
 
     public static PrivateCtorPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var value = SpanReader.ReadInt32(ref buffer);
+        var value = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var obj = new PrivateCtorPacket(value);
         return obj;
     }
@@ -41,7 +39,7 @@ public partial class PrivateCtorPacket : ISerializable<PrivateCtorPacket>
 
     public static PrivateCtorPacket Deserialize(System.IO.Stream stream)
     {
-        var value = StreamReader.ReadInt32(stream);
+        var value = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         var obj = new PrivateCtorPacket(value);
         return obj;
     }

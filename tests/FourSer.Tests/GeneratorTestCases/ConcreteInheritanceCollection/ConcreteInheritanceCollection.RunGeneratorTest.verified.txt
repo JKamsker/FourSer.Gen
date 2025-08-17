@@ -8,8 +8,6 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
-using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
-using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection;
 
@@ -38,7 +36,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
 
     public static ConcreteInheritanceTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var dogsCount = SpanReader.ReadInt32(ref buffer);
+        var dogsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var dogs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(dogsCount);
         for (int i = 0; i < dogsCount; i++)
         {
@@ -55,7 +53,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
 
     public static ConcreteInheritanceTest Deserialize(System.IO.Stream stream)
     {
-        var dogsCount = StreamReader.ReadInt32(stream);
+        var dogsCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         var dogs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(dogsCount);
         for (int i = 0; i < dogsCount; i++)
         {
@@ -112,8 +110,6 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
-using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
-using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection;
 
@@ -144,9 +140,9 @@ public partial class Dog : ISerializable<Dog>
 
     public static new Dog Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var name = SpanReader.ReadString(ref buffer);
-        var age = SpanReader.ReadInt32(ref buffer);
-        var breed = SpanReader.ReadString(ref buffer);
+        var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
+        var age = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var breed = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
         var obj = new Dog(name, age, breed);
         return obj;
     }
@@ -158,9 +154,9 @@ public partial class Dog : ISerializable<Dog>
 
     public static new Dog Deserialize(System.IO.Stream stream)
     {
-        var name = StreamReader.ReadString(stream);
-        var age = StreamReader.ReadInt32(stream);
-        var breed = StreamReader.ReadString(stream);
+        var name = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
+        var age = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var breed = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
         var obj = new Dog(name, age, breed);
         return obj;
     }
@@ -193,8 +189,6 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
-using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
-using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection;
 
@@ -222,8 +216,8 @@ public partial class Pet : ISerializable<Pet>
 
     public static Pet Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var name = SpanReader.ReadString(ref buffer);
-        var age = SpanReader.ReadInt32(ref buffer);
+        var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
+        var age = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var obj = new Pet(name, age);
         return obj;
     }
@@ -235,8 +229,8 @@ public partial class Pet : ISerializable<Pet>
 
     public static Pet Deserialize(System.IO.Stream stream)
     {
-        var name = StreamReader.ReadString(stream);
-        var age = StreamReader.ReadInt32(stream);
+        var name = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
+        var age = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         var obj = new Pet(name, age);
         return obj;
     }

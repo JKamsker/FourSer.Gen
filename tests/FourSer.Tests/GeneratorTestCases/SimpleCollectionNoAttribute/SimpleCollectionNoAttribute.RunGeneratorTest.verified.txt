@@ -8,8 +8,6 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
-using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
-using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.SimpleCollectionNoAttribute;
 
@@ -35,8 +33,8 @@ public partial class MyPacket : ISerializable<MyPacket>
 
     public static MyPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var dataCount = SpanReader.ReadInt32(ref buffer);
-        var data = SpanReader.ReadBytes(ref buffer, (int)dataCount).ToList();
+        var dataCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var data = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBytes(ref buffer, (int)dataCount).ToList();
         var obj = new MyPacket(data);
         return obj;
     }
@@ -48,8 +46,8 @@ public partial class MyPacket : ISerializable<MyPacket>
 
     public static MyPacket Deserialize(System.IO.Stream stream)
     {
-        var dataCount = StreamReader.ReadInt32(stream);
-        var data = StreamReader.ReadBytes(stream, (int)dataCount).ToList();
+        var dataCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var data = FourSer.Gen.Helpers.StreamReaderHelpers.ReadBytes(stream, (int)dataCount).ToList();
         var obj = new MyPacket(data);
         return obj;
     }

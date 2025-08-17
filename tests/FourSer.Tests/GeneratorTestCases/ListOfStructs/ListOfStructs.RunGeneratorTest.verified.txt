@@ -8,8 +8,6 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
-using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
-using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.ListOfStructs;
 
@@ -30,7 +28,7 @@ public partial struct MyStruct : ISerializable<MyStruct>
 
     public static MyStruct Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var a = SpanReader.ReadInt32(ref buffer);
+        var a = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var obj = new MyStruct(a);
         return obj;
     }
@@ -42,7 +40,7 @@ public partial struct MyStruct : ISerializable<MyStruct>
 
     public static MyStruct Deserialize(System.IO.Stream stream)
     {
-        var a = StreamReader.ReadInt32(stream);
+        var a = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         var obj = new MyStruct(a);
         return obj;
     }
@@ -71,8 +69,6 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
-using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
-using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.ListOfStructs;
 
@@ -101,7 +97,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
 
     public static PacketWithListOfStructs Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var structsCount = SpanReader.ReadInt32(ref buffer);
+        var structsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
         for (int i = 0; i < structsCount; i++)
         {
@@ -118,7 +114,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
 
     public static PacketWithListOfStructs Deserialize(System.IO.Stream stream)
     {
-        var structsCount = StreamReader.ReadInt32(stream);
+        var structsCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         var structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
         for (int i = 0; i < structsCount; i++)
         {
