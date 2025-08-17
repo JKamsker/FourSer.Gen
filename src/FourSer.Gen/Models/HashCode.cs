@@ -7,6 +7,7 @@
 // netstandard2.0, which doesn't have access to this type.
 // Source: https://github.com/CommunityToolkit/dotnet/blob/7b53ae23dfc6a7fb12d0fc058b89b6e948f48448/src/CommunityToolkit.Mvvm.Source.Generators/Helpers/HashCode.cs
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -14,13 +15,13 @@ using System.Runtime.CompilerServices;
 namespace FourSer.Gen.Models;
 
 /// <summary>
-/// A helper type to build hash codes for custom types.
+///     A helper type to build hash codes for custom types.
 /// </summary>
 /// <remarks>This type is not intended to be used directly by consumers.</remarks>
 [EditorBrowsable(EditorBrowsableState.Never)]
 internal struct HashCode
 {
-    private static readonly uint s_seed = (uint)new System.Random().Next();
+    private static readonly uint s_seed = (uint)new Random().Next();
 
     private const uint Prime1 = 2654435761U;
     private const uint Prime2 = 2246822519U;
@@ -31,45 +32,45 @@ internal struct HashCode
     private uint hash;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="HashCode"/> struct.
+    ///     Initializes a new instance of the <see cref="HashCode" /> struct.
     /// </summary>
     public HashCode()
     {
-        this.hash = s_seed;
+        hash = s_seed;
     }
 
     /// <summary>
-    /// Adds a value to the hash code.
+    ///     Adds a value to the hash code.
     /// </summary>
     /// <typeparam name="T">The type of the value to add.</typeparam>
     /// <param name="value">The value to add.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Add<T>(T value)
     {
-        this.hash += (uint)(value?.GetHashCode() ?? 0);
-        this.hash *= Prime1;
+        hash += (uint)(value?.GetHashCode() ?? 0);
+        hash *= Prime1;
     }
 
     /// <summary>
-    /// Adds a value to the hash code.
+    ///     Adds a value to the hash code.
     /// </summary>
     /// <typeparam name="T">The type of the value to add.</typeparam>
     /// <param name="value">The value to add.</param>
-    /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> instance to use.</param>
+    /// <param name="comparer">The <see cref="IEqualityComparer{T}" /> instance to use.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Add<T>(T value, IEqualityComparer<T> comparer)
     {
-        this.hash += (uint)(value is null ? 0 : comparer.GetHashCode(value));
-        this.hash *= Prime1;
+        hash += (uint)(value is null ? 0 : comparer.GetHashCode(value));
+        hash *= Prime1;
     }
 
     /// <summary>
-    /// Gets the resulting hash code.
+    ///     Gets the resulting hash code.
     /// </summary>
     /// <returns>The resulting hash code.</returns>
     public int ToHashCode()
     {
-        uint h = this.hash;
+        var h = hash;
 
         h ^= h >> 15;
         h *= Prime2;

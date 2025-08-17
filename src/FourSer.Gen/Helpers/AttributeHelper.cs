@@ -1,10 +1,11 @@
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace FourSer.Gen.Helpers;
 
 /// <summary>
-/// Helper methods for working with serialization attributes
+///     Helper methods for working with serialization attributes
 /// </summary>
 public static class AttributeHelper
 {
@@ -20,7 +21,7 @@ public static class AttributeHelper
             .FirstOrDefault(a => a.AttributeClass?.Name == "SerializePolymorphicAttribute");
     }
 
-    public static System.Collections.Generic.List<AttributeData> GetPolymorphicOptions(ISymbol member)
+    public static List<AttributeData> GetPolymorphicOptions(ISymbol member)
     {
         return member.GetAttributes()
             .Where(a => a.AttributeClass?.Name == "PolymorphicOptionAttribute")

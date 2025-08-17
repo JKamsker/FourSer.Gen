@@ -16,20 +16,20 @@ using System.Linq;
 namespace FourSer.Gen.Models;
 
 /// <summary>
-/// A wrapper for an <see cref="ImmutableArray{T}"/> that implements value equality.
+///     A wrapper for an <see cref="ImmutableArray{T}" /> that implements value equality.
 /// </summary>
 /// <typeparam name="T">The type of values in the array.</typeparam>
 public readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnumerable<T>
     where T : IEquatable<T>
 {
     /// <summary>
-    /// The wrapped <see cref="ImmutableArray{T}"/> instance.
+    ///     The wrapped <see cref="ImmutableArray{T}" /> instance.
     /// </summary>
     private readonly ImmutableArray<T> array;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="EquatableArray{T}"/> struct.
-    /// <param name="array">The <see cref="ImmutableArray{T}"/> to wrap.</param>
+    ///     Initializes a new instance of the <see cref="EquatableArray{T}" /> struct.
+    ///     <param name="array">The <see cref="ImmutableArray{T}" /> to wrap.</param>
     /// </summary>
     public EquatableArray(ImmutableArray<T> array)
     {
@@ -37,42 +37,42 @@ public readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnume
     }
 
     /// <summary>
-    /// Gets a value indicating whether the current array is empty.
+    ///     Gets a value indicating whether the current array is empty.
     /// </summary>
-    public bool IsEmpty => this.array.IsDefaultOrEmpty;
+    public bool IsEmpty => array.IsDefaultOrEmpty;
 
     /// <summary>
-    /// Implicitly converts an <see cref="ImmutableArray{T}"/> to <see cref="EquatableArray{T}"/>.
+    ///     Implicitly converts an <see cref="ImmutableArray{T}" /> to <see cref="EquatableArray{T}" />.
     /// </summary>
-    /// <param name="array">The <see cref="ImmutableArray{T}"/> to wrap.</param>
+    /// <param name="array">The <see cref="ImmutableArray{T}" /> to wrap.</param>
     public static implicit operator EquatableArray<T>(ImmutableArray<T> array)
     {
         return new(array);
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public bool Equals(EquatableArray<T> other)
     {
-        return this.array.SequenceEqual(other.array);
+        return array.SequenceEqual(other.array);
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public override bool Equals(object? obj)
     {
         return obj is EquatableArray<T> array && Equals(array);
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public override int GetHashCode()
     {
-        if (this.array.IsDefault)
+        if (array.IsDefault)
         {
             return 0;
         }
 
         HashCode hashCode = default;
 
-        foreach (T item in this.array)
+        foreach (var item in array)
         {
             hashCode.Add(item);
         }
@@ -81,23 +81,23 @@ public readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnume
     }
 
     /// <summary>
-    /// Gets an <see cref="ImmutableArray{T}.Enumerator"/> for the current array.
+    ///     Gets an <see cref="ImmutableArray{T}.Enumerator" /> for the current array.
     /// </summary>
-    /// <returns>An <see cref="ImmutableArray{T}.Enumerator"/> for the current array.</returns>
+    /// <returns>An <see cref="ImmutableArray{T}.Enumerator" /> for the current array.</returns>
     public ImmutableArray<T>.Enumerator GetEnumerator()
     {
-        return this.array.GetEnumerator();
+        return array.GetEnumerator();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     IEnumerator<T> IEnumerable<T>.GetEnumerator()
     {
-        return ((IEnumerable<T>)this.array).GetEnumerator();
+        return ((IEnumerable<T>)array).GetEnumerator();
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return ((IEnumerable)this.array).GetEnumerator();
+        return ((IEnumerable)array).GetEnumerator();
     }
 }

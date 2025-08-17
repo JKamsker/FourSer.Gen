@@ -312,7 +312,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Numbers.Count);
             for (int i = 0; i < obj.Numbers.Count; i++)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Numbers[i]);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Numbers[i]);
             }
         }
         if (obj.Names is null)
@@ -324,7 +324,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Names.Count());
             foreach (var item in obj.Names)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, item);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, item);
             }
         }
         if (obj.Data is null)
@@ -354,7 +354,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Values.Count);
             foreach (var item in obj.Values)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteSingle(ref data, (Single)item);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteSingle(ref data, (Single)item);
             }
         }
         if (obj.UniqueIds is null)
@@ -366,7 +366,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.UniqueIds.Count);
             foreach (var item in obj.UniqueIds)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt64(ref data, (Int64)item);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt64(ref data, (Int64)item);
             }
         }
         if (obj.ProcessingQueue is null)
@@ -378,7 +378,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.ProcessingQueue.Count);
             foreach (var item in obj.ProcessingQueue)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteUInt16(ref data, (UInt16)item);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteUInt16(ref data, (UInt16)item);
             }
         }
         if (obj.ProcessingStack is null)
@@ -390,7 +390,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.ProcessingStack.Count);
             foreach (var item in obj.ProcessingStack)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteUInt32(ref data, (UInt32)item);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteUInt32(ref data, (UInt32)item);
             }
         }
         if (obj.ArrayData is null)
@@ -402,7 +402,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.ArrayData.Length);
             for (int i = 0; i < obj.ArrayData.Length; i++)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.ArrayData[i]);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.ArrayData[i]);
             }
         }
         if (obj.Measurements is null)
@@ -414,7 +414,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Measurements.Count());
             foreach (var item in obj.Measurements)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteDouble(ref data, (Double)item);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteDouble(ref data, (Double)item);
             }
         }
         if (obj.Flags is null)
@@ -426,7 +426,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Flags.Count);
             foreach (var item in obj.Flags)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteBoolean(ref data, (Boolean)item);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteBoolean(ref data, (Boolean)item);
             }
         }
         if (obj.ObservableData is null)
@@ -438,7 +438,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.ObservableData.Count);
             foreach (var item in obj.ObservableData)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt16(ref data, (Int16)item);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt16(ref data, (Int16)item);
             }
         }
         if (obj.Characters is null)
@@ -450,7 +450,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Characters.Count);
             foreach (var item in obj.Characters)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteUInt16(ref data, (UInt16)item);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteUInt16(ref data, (UInt16)item);
             }
         }
         if (obj.SortedValues is null)
@@ -462,7 +462,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.SortedValues.Count);
             foreach (var item in obj.SortedValues)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt64(ref data, (Int64)item);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt64(ref data, (Int64)item);
             }
         }
         if (obj.SmallSet is null)
@@ -474,7 +474,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)obj.SmallSet.Count);
             foreach (var item in obj.SmallSet)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, item);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, item);
             }
         }
         if (obj.MediumQueue is null)
@@ -486,7 +486,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteUInt16(ref data, (ushort)obj.MediumQueue.Count);
             foreach (var item in obj.MediumQueue)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)item);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)item);
             }
         }
         if (obj.LargeBag is null)
@@ -498,7 +498,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.LargeBag.Count);
             foreach (var item in obj.LargeBag)
             {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt64(ref data, (Int64)item);
+                FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt64(ref data, (Int64)item);
             }
         }
         return originalData.Length - data.Length;
@@ -515,7 +515,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Numbers.Count);
             for (int i = 0; i < obj.Numbers.Count; i++)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Numbers[i]);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Numbers[i]);
             }
         }
         if (obj.Names is null)
@@ -527,7 +527,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Names.Count());
             foreach (var item in obj.Names)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, item);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, item);
             }
         }
         if (obj.Data is null)
@@ -557,7 +557,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Values.Count);
             foreach (var item in obj.Values)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteSingle(stream, (Single)item);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteSingle(stream, (Single)item);
             }
         }
         if (obj.UniqueIds is null)
@@ -569,7 +569,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.UniqueIds.Count);
             foreach (var item in obj.UniqueIds)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt64(stream, (Int64)item);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt64(stream, (Int64)item);
             }
         }
         if (obj.ProcessingQueue is null)
@@ -581,7 +581,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.ProcessingQueue.Count);
             foreach (var item in obj.ProcessingQueue)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteUInt16(stream, (UInt16)item);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteUInt16(stream, (UInt16)item);
             }
         }
         if (obj.ProcessingStack is null)
@@ -593,7 +593,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.ProcessingStack.Count);
             foreach (var item in obj.ProcessingStack)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteUInt32(stream, (UInt32)item);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteUInt32(stream, (UInt32)item);
             }
         }
         if (obj.ArrayData is null)
@@ -605,7 +605,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.ArrayData.Length);
             for (int i = 0; i < obj.ArrayData.Length; i++)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.ArrayData[i]);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.ArrayData[i]);
             }
         }
         if (obj.Measurements is null)
@@ -617,7 +617,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Measurements.Count());
             foreach (var item in obj.Measurements)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteDouble(stream, (Double)item);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteDouble(stream, (Double)item);
             }
         }
         if (obj.Flags is null)
@@ -629,7 +629,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Flags.Count);
             foreach (var item in obj.Flags)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteBoolean(stream, (Boolean)item);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteBoolean(stream, (Boolean)item);
             }
         }
         if (obj.ObservableData is null)
@@ -641,7 +641,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.ObservableData.Count);
             foreach (var item in obj.ObservableData)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt16(stream, (Int16)item);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt16(stream, (Int16)item);
             }
         }
         if (obj.Characters is null)
@@ -653,7 +653,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Characters.Count);
             foreach (var item in obj.Characters)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteUInt16(stream, (UInt16)item);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteUInt16(stream, (UInt16)item);
             }
         }
         if (obj.SortedValues is null)
@@ -665,7 +665,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.SortedValues.Count);
             foreach (var item in obj.SortedValues)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt64(stream, (Int64)item);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt64(stream, (Int64)item);
             }
         }
         if (obj.SmallSet is null)
@@ -677,7 +677,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)obj.SmallSet.Count);
             foreach (var item in obj.SmallSet)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, item);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, item);
             }
         }
         if (obj.MediumQueue is null)
@@ -689,7 +689,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteUInt16(stream, (ushort)obj.MediumQueue.Count);
             foreach (var item in obj.MediumQueue)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)item);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)item);
             }
         }
         if (obj.LargeBag is null)
@@ -701,7 +701,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.LargeBag.Count);
             foreach (var item in obj.LargeBag)
             {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt64(stream, (Int64)item);
+                FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt64(stream, (Int64)item);
             }
         }
     }

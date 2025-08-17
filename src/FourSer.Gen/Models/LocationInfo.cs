@@ -1,5 +1,3 @@
-using System;
-
 namespace FourSer.Gen.Models;
 
 public record LocationInfo(string FilePath, int Start, int End)

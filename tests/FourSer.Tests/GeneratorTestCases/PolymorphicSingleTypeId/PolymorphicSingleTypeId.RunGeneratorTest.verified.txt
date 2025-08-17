@@ -20,18 +20,18 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
         size += sizeof(ushort); // Count size for Animals
         foreach(var item in obj.Animals)
         {
-        switch (item)
-        {
-            case Cat typedInstance:
-                size += Cat.GetPacketSize(typedInstance);
-                break;
-            case Dog typedInstance:
-                size += Dog.GetPacketSize(typedInstance);
-                break;
-            case null: break;
-            default:
-                throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
-        }
+            switch (item)
+            {
+                case Cat typedInstance:
+                    size += Cat.GetPacketSize(typedInstance);
+                    break;
+                case Dog typedInstance:
+                    size += Dog.GetPacketSize(typedInstance);
+                    break;
+                case null: break;
+                default:
+                    throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+            }
         }
         return size;
     }

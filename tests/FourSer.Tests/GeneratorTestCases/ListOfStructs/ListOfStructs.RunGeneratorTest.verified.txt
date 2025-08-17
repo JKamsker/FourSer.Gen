@@ -136,8 +136,8 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
             FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)obj.Structs.Count);
             for (int i = 0; i < obj.Structs.Count; i++)
             {
-            var bytesWritten = MyStruct.Serialize(obj.Structs[i], data);
-            data = data.Slice(bytesWritten);
+                var bytesWritten = MyStruct.Serialize(obj.Structs[i], data);
+                data = data.Slice(bytesWritten);
             }
         }
         return originalData.Length - data.Length;
@@ -154,7 +154,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)obj.Structs.Count);
             for (int i = 0; i < obj.Structs.Count; i++)
             {
-            MyStruct.Serialize(obj.Structs[i], stream);
+                MyStruct.Serialize(obj.Structs[i], stream);
             }
         }
     }

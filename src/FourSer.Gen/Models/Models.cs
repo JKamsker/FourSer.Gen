@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Immutable;
 
 namespace FourSer.Gen.Models;
 
 /// <summary>
-/// A model describing a type to be serialized.
+///     A model describing a type to be serialized.
 /// </summary>
 /// <param name="Name">The name of the type.</param>
 /// <param name="Namespace">The namespace of the type.</param>
@@ -12,7 +11,8 @@ namespace FourSer.Gen.Models;
 /// <param name="Members">The list of serializable members in the type.</param>
 /// <param name="NestedTypes">The list of nested types to be generated.</param>
 /// <param name="HasSerializableBaseType">Whether the type has a base type with the [GenerateSerializer] attribute.</param>
-public readonly record struct TypeToGenerate(
+public readonly record struct TypeToGenerate
+(
     string Name,
     string Namespace,
     bool IsValueType,
@@ -20,29 +20,34 @@ public readonly record struct TypeToGenerate(
     EquatableArray<MemberToGenerate> Members,
     EquatableArray<TypeToGenerate> NestedTypes,
     bool HasSerializableBaseType,
-    ConstructorInfo? Constructor) : IEquatable<TypeToGenerate>;
+    ConstructorInfo? Constructor
+) : IEquatable<TypeToGenerate>;
 
 /// <summary>
-/// A model describing a constructor parameter.
+///     A model describing a constructor parameter.
 /// </summary>
 /// <param name="Name">The name of the parameter.</param>
 /// <param name="TypeName">The full name of the parameter's type.</param>
-public readonly record struct ParameterInfo(
+public readonly record struct ParameterInfo
+(
     string Name,
-    string TypeName) : IEquatable<ParameterInfo>;
+    string TypeName
+) : IEquatable<ParameterInfo>;
 
 /// <summary>
-/// A model describing a constructor.
+///     A model describing a constructor.
 /// </summary>
 /// <param name="Parameters">The list of parameters for the constructor.</param>
 /// <param name="ShouldGenerate">Whether the constructor should be generated.</param>
-public readonly record struct ConstructorInfo(
+public readonly record struct ConstructorInfo
+(
     EquatableArray<ParameterInfo> Parameters,
     bool ShouldGenerate,
-    bool HasParameterlessConstructor) : IEquatable<ConstructorInfo>;
+    bool HasParameterlessConstructor
+) : IEquatable<ConstructorInfo>;
 
 /// <summary>
-/// A model describing a member (property or field) to be serialized.
+///     A model describing a member (property or field) to be serialized.
 /// </summary>
 /// <param name="Name">The name of the member.</param>
 /// <param name="TypeName">The full name of the member's type.</param>
@@ -54,7 +59,8 @@ public readonly record struct ConstructorInfo(
 /// <param name="CollectionInfo">Information about the collection attribute, if present.</param>
 /// <param name="IsCollection">Whether the member's type is any supported collection type.</param>
 /// <param name="CollectionTypeInfo">Information about the collection type, if applicable.</param>
-public readonly record struct MemberToGenerate(
+public readonly record struct MemberToGenerate
+(
     string Name,
     string TypeName,
     bool IsUnmanagedType,
@@ -68,42 +74,51 @@ public readonly record struct MemberToGenerate(
     CollectionTypeInfo? CollectionTypeInfo,
     bool IsReadOnly,
     bool IsInitOnly,
-    LocationInfo Location) : IEquatable<MemberToGenerate>;
+    LocationInfo Location
+) : IEquatable<MemberToGenerate>;
 
 /// <summary>
-/// A model describing the type argument of a List&lt;T&gt;.
+///     A model describing the type argument of a List&lt;T&gt;.
 /// </summary>
 /// <param name="TypeName">The name of the type argument.</param>
 /// <param name="IsUnmanagedType">Whether the type is unmanaged.</param>
 /// <param name="IsStringType">Whether the type is a string.</param>
 /// <param name="HasGenerateSerializerAttribute">Whether the type has the [GenerateSerializer] attribute.</param>
-public readonly record struct ListTypeArgumentInfo(
+public readonly record struct ListTypeArgumentInfo
+(
     string TypeName,
     bool IsUnmanagedType,
     bool IsStringType,
-    bool HasGenerateSerializerAttribute) : IEquatable<ListTypeArgumentInfo>;
+    bool HasGenerateSerializerAttribute
+) : IEquatable<ListTypeArgumentInfo>;
 
 /// <summary>
-/// A model describing information about a collection type.
+///     A model describing information about a collection type.
 /// </summary>
-/// <param name="CollectionTypeName">The full name of the collection type (e.g., "System.Collections.Generic.List<T>").</param>
+/// <param name="CollectionTypeName">
+///     The full name of the collection type (e.g., "System.Collections.Generic.List<T>").
+/// </param>
 /// <param name="ElementTypeName">The name of the element type.</param>
 /// <param name="IsElementUnmanagedType">Whether the element type is unmanaged.</param>
 /// <param name="IsElementStringType">Whether the element type is a string.</param>
 /// <param name="HasElementGenerateSerializerAttribute">Whether the element type has the [GenerateSerializer] attribute.</param>
 /// <param name="IsArray">Whether this is an array type.</param>
-/// <param name="ConcreteTypeName">The concrete type to instantiate for interfaces (e.g., "List<T>" for "ICollection<T>").</param>
-public readonly record struct CollectionTypeInfo(
+/// <param name="ConcreteTypeName">
+///     The concrete type to instantiate for interfaces (e.g., "List<T>" for "ICollection<T>").
+/// </param>
+public readonly record struct CollectionTypeInfo
+(
     string CollectionTypeName,
     string ElementTypeName,
     bool IsElementUnmanagedType,
     bool IsElementStringType,
     bool HasElementGenerateSerializerAttribute,
     bool IsArray,
-    string? ConcreteTypeName) : IEquatable<CollectionTypeInfo>;
+    string? ConcreteTypeName
+) : IEquatable<CollectionTypeInfo>;
 
 /// <summary>
-/// A model describing the [Collection] attribute on a member.
+///     A model describing the [Collection] attribute on a member.
 /// </summary>
 /// <param name="PolymorphicMode">The polymorphic mode for the collection.</param>
 /// <param name="TypeIdProperty">The name of the property used for type discrimination.</param>
@@ -111,31 +126,37 @@ public readonly record struct CollectionTypeInfo(
 /// <param name="CountSize">The size in bytes for the collection count.</param>
 /// <param name="CountSizeReference">The name of a property/field that contains the count.</param>
 /// <param name="Unlimited">Whether the collection is unlimited in size.</param>
-public readonly record struct CollectionInfo(
+public readonly record struct CollectionInfo
+(
     PolymorphicMode PolymorphicMode,
     string? TypeIdProperty,
     string? CountType,
     int? CountSize,
     string? CountSizeReference,
-    bool Unlimited = false) : IEquatable<CollectionInfo>;
+    bool Unlimited = false
+) : IEquatable<CollectionInfo>;
 
 /// <summary>
-/// A model describing a polymorphic option.
+///     A model describing a polymorphic option.
 /// </summary>
 /// <param name="Key">The key used to identify the type.</param>
 /// <param name="Type">The type associated with the key.</param>
-public readonly record struct PolymorphicOption(
+public readonly record struct PolymorphicOption
+(
     object Key,
-    string Type) : IEquatable<PolymorphicOption>;
+    string Type
+) : IEquatable<PolymorphicOption>;
 
 /// <summary>
-/// A model describing the [SerializePolymorphic] attribute on a member.
+///     A model describing the [SerializePolymorphic] attribute on a member.
 /// </summary>
 /// <param name="TypeIdProperty">The name of the property used for type discrimination.</param>
 /// <param name="TypeIdType">The type of the TypeId property.</param>
 /// <param name="Options">The list of polymorphic options.</param>
-public readonly record struct PolymorphicInfo(
+public readonly record struct PolymorphicInfo
+(
     string? TypeIdProperty,
     string TypeIdType,
     EquatableArray<PolymorphicOption> Options,
-    string? EnumUnderlyingType) : IEquatable<PolymorphicInfo>;
+    string? EnumUnderlyingType
+) : IEquatable<PolymorphicInfo>;
