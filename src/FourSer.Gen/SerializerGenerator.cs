@@ -32,7 +32,7 @@ public class SerializerGenerator : IIncrementalGenerator
             .ForAttributeWithMetadataName
             (
                 "FourSer.Contracts.GenerateSerializerAttribute",
-                predicate: (node, _) => node is ClassDeclarationSyntax or StructDeclarationSyntax,
+                predicate: (node, _) => node is ClassDeclarationSyntax or StructDeclarationSyntax or RecordDeclarationSyntax,
                 transform: TypeInfoProvider.GetSemanticTargetForGeneration
             );
 
@@ -60,7 +60,7 @@ public class SerializerGenerator : IIncrementalGenerator
         PacketSizeGenerator.GenerateGetPacketSize(sb, typeToGenerate);
         sb.AppendLine();
 
-        if (typeToGenerate.Constructor is { ShouldGenerate: true } ctor)
+        if (typeToGenerate.Constructor is { ShouldGenerate: true } ctor && !typeToGenerate.IsRecord)
         {
             if (!ctor.Parameters.IsEmpty)
             {
@@ -112,6 +112,10 @@ public class SerializerGenerator : IIncrementalGenerator
     private static void GenerateClassDeclaration(StringBuilder sb, TypeToGenerate typeToGenerate)
     {
         var typeKeyword = typeToGenerate.IsValueType ? "struct" : "class";
+        if (typeToGenerate.IsRecord)
+        {
+            typeKeyword = $"record {typeKeyword}";
+        }
         sb.AppendLine($"public partial {typeKeyword} {typeToGenerate.Name} : ISerializable<{typeToGenerate.Name}>");
         sb.Append('{').AppendLine();
     }

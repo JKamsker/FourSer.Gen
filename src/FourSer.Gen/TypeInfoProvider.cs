@@ -43,6 +43,7 @@ internal static class TypeInfoProvider
             typeSymbol.Name,
             typeSymbol.ContainingNamespace.ToDisplayString(),
             typeSymbol.IsValueType,
+            typeSymbol.IsRecord,
             serializableMembers,
             nestedTypes,
             hasSerializableBaseType,
@@ -121,7 +122,7 @@ internal static class TypeInfoProvider
     {
         foreach (var m in members)
         {
-            if (m.IsReadOnly)
+            if (m.IsReadOnly || m.IsInitOnly)
             {
                 return true;
             }
@@ -277,9 +278,11 @@ internal static class TypeInfoProvider
         var polymorphicInfo = GetPolymorphicInfo(m);
 
         bool isReadOnly = false;
+        bool isInitOnly = false;
         if (m is IPropertySymbol prop)
         {
             isReadOnly = prop.SetMethod is null;
+            isInitOnly = prop.SetMethod?.IsInitOnly ?? false;
         }
         else if (m is IFieldSymbol field)
         {
@@ -306,6 +309,7 @@ internal static class TypeInfoProvider
             isCollection,
             collectionTypeInfo,
             isReadOnly,
+            isInitOnly,
             locationInfo
         );
 
@@ -368,6 +372,7 @@ internal static class TypeInfoProvider
             nestedTypeSymbol.Name,
             nestedTypeSymbol.ContainingNamespace.ToDisplayString(),
             nestedTypeSymbol.IsValueType,
+            nestedTypeSymbol.IsRecord,
             nestedMembers,
             deeperNestedTypes,
             hasSerializableBaseType,
