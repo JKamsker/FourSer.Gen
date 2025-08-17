@@ -86,5 +86,92 @@ public partial class CompatibleType : ISerializable<CompatibleType>
 
             await test.RunAsync();
         }
+
+        [Fact]
+        public async Task HashSetOfPrimitives_NoDiagnostic()
+        {
+            var testCode = @"
+using FourSer.Contracts;
+using System.Collections.Generic;
+
+[GenerateSerializer]
+public partial class MyData
+{
+    public HashSet<int> MySet { get; set; }
+}";
+            var test = new CSharpAnalyzerTest<IncompatibleTypeAnalyzer, DefaultVerifier>
+            {
+                TestState = { Sources = { GenerateSerializerAttributeSource, testCode } },
+                ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            };
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task QueueOfSerializableType_NoDiagnostic()
+        {
+            var testCode = @"
+using FourSer.Contracts;
+using System.Collections.Generic;
+
+[GenerateSerializer]
+public partial class MyData
+{
+    public Queue<CompatibleType> MyQueue { get; set; }
+}
+
+[GenerateSerializer]
+public partial class CompatibleType { }
+";
+            var test = new CSharpAnalyzerTest<IncompatibleTypeAnalyzer, DefaultVerifier>
+            {
+                TestState = { Sources = { GenerateSerializerAttributeSource, testCode } },
+                ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            };
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task StackOfIncompatibleType_ReportsDiagnostic()
+        {
+            var testCode = @"
+using FourSer.Contracts;
+using System.Collections.Generic;
+
+[GenerateSerializer]
+public partial class MyData
+{
+    public Stack<IncompatibleType> {|FS0002:MyStack|} { get; set; }
+}
+
+public class IncompatibleType { }
+";
+            var test = new CSharpAnalyzerTest<IncompatibleTypeAnalyzer, DefaultVerifier>
+            {
+                TestState = { Sources = { GenerateSerializerAttributeSource, testCode } },
+                ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            };
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task IEnumerableOfPrimitives_NoDiagnostic()
+        {
+            var testCode = @"
+using FourSer.Contracts;
+using System.Collections.Generic;
+
+[GenerateSerializer]
+public partial class MyData
+{
+    public IEnumerable<int> MyEnumerable { get; set; }
+}";
+            var test = new CSharpAnalyzerTest<IncompatibleTypeAnalyzer, DefaultVerifier>
+            {
+                TestState = { Sources = { GenerateSerializerAttributeSource, testCode } },
+                ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            };
+            await test.RunAsync();
+        }
     }
 }
