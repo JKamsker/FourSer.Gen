@@ -125,14 +125,14 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
                 {
                     case Cat typedInstance:
                     {
-                                FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)1);
+                        FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)1);
                         var bytesWritten = Cat.Serialize(typedInstance, data);
                         data = data.Slice(bytesWritten);
                         break;
                     }
                     case Dog typedInstance:
                     {
-                                FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)2);
+                        FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)2);
                         var bytesWritten = Dog.Serialize(typedInstance, data);
                         data = data.Slice(bytesWritten);
                         break;
@@ -162,13 +162,13 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
                 {
                     case Cat typedInstance:
                     {
-                                FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)1);
+                        FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)1);
                         Cat.Serialize(typedInstance, stream);
                         break;
                     }
                     case Dog typedInstance:
                     {
-                                FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)2);
+                        FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)2);
                         Dog.Serialize(typedInstance, stream);
                         break;
                     }

@@ -1,12 +1,12 @@
 namespace FourSer.Gen.Helpers;
 
 /// <summary>
-/// Helper methods for type name conversions in code generation
+///     Helper methods for type name conversions in code generation
 /// </summary>
 public static class TypeHelper
 {
     /// <summary>
-    /// Converts a type name to the appropriate Read method name for Span extensions
+    ///     Converts a type name to the appropriate Read method name for Span extensions
     /// </summary>
     public static string GetReadMethodName(string typeName)
     {
@@ -15,7 +15,7 @@ public static class TypeHelper
             "byte" => "ReadByte",
             "sbyte" => "ReadSByte",
             "short" => "ReadInt16",
-            "ushort" => "ReadUInt16", 
+            "ushort" => "ReadUInt16",
             "int" => "ReadInt32",
             "uint" => "ReadUInt32",
             "long" => "ReadInt64",
@@ -28,14 +28,14 @@ public static class TypeHelper
     }
 
     /// <summary>
-    /// Converts a type name to the appropriate Write method name for Span extensions  
+    ///     Converts a type name to the appropriate Write method name for Span extensions
     /// </summary>
     public static string GetWriteMethodName(string typeName)
     {
         return typeName switch
         {
             "byte" => "WriteByte",
-            "sbyte" => "WriteSByte", 
+            "sbyte" => "WriteSByte",
             "short" => "WriteInt16",
             "ushort" => "WriteUInt16",
             "int" => "WriteInt32",
@@ -43,14 +43,14 @@ public static class TypeHelper
             "long" => "WriteInt64",
             "ulong" => "WriteUInt64",
             "float" => "WriteSingle",
-            "double" => "WriteDouble", 
+            "double" => "WriteDouble",
             "bool" => "WriteBoolean",
             _ => $"Write{GetMethodFriendlyTypeName(typeName)}"
         };
     }
 
     /// <summary>
-    /// Gets the sizeof expression for a type
+    ///     Gets the sizeof expression for a type
     /// </summary>
     public static string GetSizeOfExpression(string typeName)
     {
@@ -58,19 +58,22 @@ public static class TypeHelper
     }
 
     /// <summary>
-    /// Gets the default count type for collections (int)
+    ///     Gets the default count type for collections (int)
     /// </summary>
-    public static string GetDefaultCountType() => "int";
+    public static string GetDefaultCountType()
+    {
+        return "int";
+    }
 
     /// <summary>
-    /// Converts a type name to a method-friendly version (e.g., "int" -> "Int32")
+    ///     Converts a type name to a method-friendly version (e.g., "int" -> "Int32")
     /// </summary>
     public static string GetMethodFriendlyTypeName(string typeName)
     {
         return typeName switch
         {
             "int" => "Int32",
-            "uint" => "UInt32", 
+            "uint" => "UInt32",
             "short" => "Int16",
             "ushort" => "UInt16",
             "long" => "Int64",
@@ -88,21 +91,26 @@ public static class TypeHelper
     }
 
     /// <summary>
-    /// Gets the simple type name from a fully qualified name
+    ///     Gets the simple type name from a fully qualified name
     /// </summary>
     public static string GetSimpleTypeName(string? fullyQualifiedName)
     {
-        if (string.IsNullOrEmpty(fullyQualifiedName)) return string.Empty;
+        if (string.IsNullOrEmpty(fullyQualifiedName))
+        {
+            return string.Empty;
+        }
+
         var lastDot = fullyQualifiedName!.LastIndexOf('.');
         if (lastDot == -1)
         {
             return fullyQualifiedName;
         }
+
         return fullyQualifiedName.Substring(lastDot + 1);
     }
 
     /// <summary>
-    /// Determines if a collection contains byte elements and can use bulk operations
+    ///     Determines if a collection contains byte elements and can use bulk operations
     /// </summary>
     public static bool IsByteCollection(string? elementTypeName)
     {

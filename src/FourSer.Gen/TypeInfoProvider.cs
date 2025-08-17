@@ -1,11 +1,11 @@
 using System;
-using Microsoft.CodeAnalysis;
-using FourSer.Gen.Helpers;
-using FourSer.Gen.Models;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
+using FourSer.Gen.Helpers;
+using FourSer.Gen.Models;
+using Microsoft.CodeAnalysis;
 
 namespace FourSer.Gen;
 
@@ -13,11 +13,11 @@ internal static class TypeInfoProvider
 {
     private static readonly SymbolDisplayFormat s_typeNameFormat = new
     (
-        globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
-        typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
-        genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+        SymbolDisplayGlobalNamespaceStyle.Omitted,
+        SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
+        SymbolDisplayGenericsOptions.IncludeTypeParameters,
         miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes
-                              | SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers
+        | SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers
     );
 
     public static TypeToGenerate? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context, CancellationToken ct)
@@ -51,8 +51,11 @@ internal static class TypeInfoProvider
         );
     }
 
-    private static ConstructorInfo? GetConstructorInfo(INamedTypeSymbol typeSymbol,
-        EquatableArray<MemberToGenerate> members)
+    private static ConstructorInfo? GetConstructorInfo
+    (
+        INamedTypeSymbol typeSymbol,
+        EquatableArray<MemberToGenerate> members
+    )
     {
         var constructors = new List<IMethodSymbol>();
         foreach (var c in typeSymbol.Constructors)
@@ -78,9 +81,10 @@ internal static class TypeInfoProvider
                     var parameters = ImmutableArray.CreateBuilder<ParameterInfo>();
                     foreach (var p in bestConstructor.Parameters)
                     {
-                        parameters.Add(new ParameterInfo(p.Name, p.Type.ToDisplayString(s_typeNameFormat)));
+                        parameters.Add(new(p.Name, p.Type.ToDisplayString(s_typeNameFormat)));
                     }
-                    return new ConstructorInfo(new EquatableArray<ParameterInfo>(parameters.ToImmutable()), false, hasParameterlessCtor);
+
+                    return new ConstructorInfo(new(parameters.ToImmutable()), false, hasParameterlessCtor);
                 }
             }
         }
@@ -88,10 +92,10 @@ internal static class TypeInfoProvider
         var generatedParametersBuilder = ImmutableArray.CreateBuilder<ParameterInfo>();
         foreach (var m in members)
         {
-            generatedParametersBuilder.Add(new ParameterInfo(m.Name, m.TypeName));
+            generatedParametersBuilder.Add(new(m.Name, m.TypeName));
         }
 
-        return new ConstructorInfo(new EquatableArray<ParameterInfo>(generatedParametersBuilder.ToImmutable()), true, hasParameterlessCtor);
+        return new ConstructorInfo(new(generatedParametersBuilder.ToImmutable()), true, hasParameterlessCtor);
     }
 
     private static bool HasParameterlessConstructor(List<IMethodSymbol> constructors)
@@ -103,6 +107,7 @@ internal static class TypeInfoProvider
                 return true;
             }
         }
+
         return false;
     }
 
@@ -115,6 +120,7 @@ internal static class TypeInfoProvider
                 return true;
             }
         }
+
         return false;
     }
 
@@ -127,6 +133,7 @@ internal static class TypeInfoProvider
                 return true;
             }
         }
+
         return false;
     }
 
@@ -140,6 +147,7 @@ internal static class TypeInfoProvider
                 publicConstructors.Add(c);
             }
         }
+
         return publicConstructors;
     }
 
@@ -147,11 +155,12 @@ internal static class TypeInfoProvider
     {
         foreach (var c in constructors)
         {
-            int membersCount = 0;
+            var membersCount = 0;
             foreach (var _ in members)
             {
                 membersCount++;
             }
+
             if (c.Parameters.Length != membersCount)
             {
                 continue;
@@ -170,7 +179,7 @@ internal static class TypeInfoProvider
     {
         foreach (var p in constructor.Parameters)
         {
-            bool parameterMatches = false;
+            var parameterMatches = false;
             foreach (var m in members)
             {
                 if (string.Equals(m.Name, p.Name, StringComparison.OrdinalIgnoreCase) &&
@@ -241,7 +250,7 @@ internal static class TypeInfoProvider
             typeMembersWithLocation.Sort((m1, m2) => m1.Item2.SourceSpan.Start.CompareTo(m2.Item2.SourceSpan.Start));
 
             var typeMembers = new List<MemberToGenerate>();
-            foreach(var m in typeMembersWithLocation)
+            foreach (var m in typeMembersWithLocation)
             {
                 typeMembers.Add(m.Item1);
             }
@@ -250,14 +259,14 @@ internal static class TypeInfoProvider
             currentType = currentType.BaseType;
         }
 
-        return new EquatableArray<MemberToGenerate>(members.ToImmutableArray());
+        return new(members.ToImmutableArray());
     }
 
     private static (MemberToGenerate, Location) CreateMemberToGenerate(ISymbol m)
     {
         var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
         var isList = memberTypeSymbol.OriginalDefinition.ToDisplayString()
-                     == "System.Collections.Generic.List<T>";
+            == "System.Collections.Generic.List<T>";
         ListTypeArgumentInfo? listTypeArgumentInfo = null;
         if (isList)
         {
@@ -277,8 +286,8 @@ internal static class TypeInfoProvider
 
         var polymorphicInfo = GetPolymorphicInfo(m);
 
-        bool isReadOnly = false;
-        bool isInitOnly = false;
+        var isReadOnly = false;
+        var isInitOnly = false;
         if (m is IPropertySymbol prop)
         {
             isReadOnly = prop.SetMethod is null;
@@ -332,7 +341,7 @@ internal static class TypeInfoProvider
             }
         }
 
-        return new EquatableArray<TypeToGenerate>(nestedTypes.ToImmutable());
+        return new(nestedTypes.ToImmutable());
     }
 
     private static bool HasGenerateSerializerAttribute(INamedTypeSymbol? typeSymbol)
@@ -412,7 +421,7 @@ internal static class TypeInfoProvider
         var genericElementType = namedTypeSymbol.TypeArguments[0];
 
         string? concreteTypeName = null;
-        bool isCollection = false;
+        var isCollection = false;
 
         switch (originalDefinition)
         {
@@ -482,10 +491,10 @@ internal static class TypeInfoProvider
     private static CollectionInfo? GetCollectionInfo(ISymbol member)
     {
         var attribute = AttributeHelper.GetCollectionAttribute(member);
-        
+
         var memberTypeSymbol = member is IPropertySymbol p ? p.Type : ((IFieldSymbol)member).Type;
         var (isCollection, _) = GetCollectionTypeInfo(memberTypeSymbol);
-        
+
         if (attribute is null)
         {
             if (isCollection)
@@ -499,6 +508,7 @@ internal static class TypeInfoProvider
                     null
                 );
             }
+
             return null;
         }
 
@@ -528,7 +538,7 @@ internal static class TypeInfoProvider
 
         var hasPolymorphicOptions = options.Count > 0;
         var hasPolymorphicAttribute = attribute is not null;
-        var hasPolymorphicCollectionMode = collectionAttribute is not null && 
+        var hasPolymorphicCollectionMode = collectionAttribute is not null &&
             AttributeHelper.GetPolymorphicMode(collectionAttribute) != 0;
 
         if (!hasPolymorphicOptions && !hasPolymorphicAttribute && !hasPolymorphicCollectionMode)
@@ -550,7 +560,7 @@ internal static class TypeInfoProvider
         (
             typeIdProperty,
             typeIdType?.ToDisplayString() ?? "int",
-            new EquatableArray<PolymorphicOption>(polymorphicOptions),
+            new(polymorphicOptions),
             enumUnderlyingType
         );
     }
@@ -561,8 +571,9 @@ internal static class TypeInfoProvider
         foreach (var optionAttribute in options)
         {
             var (key, type) = AttributeHelper.GetPolymorphicOption(optionAttribute);
-            polymorphicOptionsBuilder.Add(new PolymorphicOption(key, type.ToDisplayString()));
+            polymorphicOptionsBuilder.Add(new(key, type.ToDisplayString()));
         }
+
         return polymorphicOptionsBuilder.ToImmutable();
     }
 }

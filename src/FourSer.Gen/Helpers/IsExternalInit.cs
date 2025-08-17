@@ -3,15 +3,17 @@
 // See the LICENSE file in the project root for more information.
 // </auto-generated>
 
+using System.ComponentModel;
+
 #if !NET5_0_OR_GREATER
 
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
-    /// Reserved to be used by the compiler for tracking metadata.
-    /// This class should not be used by developers in source code.
+    ///     Reserved to be used by the compiler for tracking metadata.
+    ///     This class should not be used by developers in source code.
     /// </summary>
-    [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     internal static class IsExternalInit
     {
     }

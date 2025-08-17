@@ -1,18 +1,19 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace FourSer.Gen.Helpers;
 
 public class IndentedStringBuilder
 {
+    private const string Indentation = "    ";
     private readonly StringBuilder _stringBuilder;
     private int _indentationLevel;
     private bool _isAtStartOfLine = true;
-    private const string Indentation = "    ";
 
     public IndentedStringBuilder()
     {
-        _stringBuilder = new StringBuilder();
+        _stringBuilder = new();
     }
 
     public void WriteLine(string line)
@@ -35,7 +36,26 @@ public class IndentedStringBuilder
             AppendIndentation();
             _isAtStartOfLine = false;
         }
+
         _stringBuilder.Append(text);
+    }
+
+    public void WriteFormat(string format, params object[] args)
+    {
+        if (_isAtStartOfLine)
+        {
+            AppendIndentation();
+            _isAtStartOfLine = false;
+        }
+
+        _stringBuilder.AppendFormat(format, args);
+    }
+
+    public void WriteLineFormat([StringSyntax("CompositeFormat")] string format, params object[] args)
+    {
+        WriteFormat(format, args);
+        _stringBuilder.AppendLine();
+        _isAtStartOfLine = true;
     }
 
     public IDisposable BeginBlock()
@@ -53,7 +73,7 @@ public class IndentedStringBuilder
 
     private void AppendIndentation()
     {
-        for (int i = 0; i < _indentationLevel; i++)
+        for (var i = 0; i < _indentationLevel; i++)
         {
             _stringBuilder.Append(Indentation);
         }

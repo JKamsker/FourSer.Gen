@@ -5,53 +5,58 @@ using FourSer.Gen.Models;
 namespace FourSer.Gen.CodeGenerators;
 
 /// <summary>
-/// Generates GetPacketSize method implementations
+///     Generates GetPacketSize method implementations
 /// </summary>
 public static class PacketSizeGenerator
 {
     public static void GenerateGetPacketSize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
     {
         sb.WriteLine($"public static int GetPacketSize({typeToGenerate.Name} obj)");
-        using (sb.BeginBlock())
+        using var _ = sb.BeginBlock();
+        sb.WriteLine("var size = 0;");
+
+        foreach (var member in typeToGenerate.Members)
         {
-            sb.WriteLine("var size = 0;");
-
-            foreach (var member in typeToGenerate.Members)
+            if (member.IsList || member.IsCollection)
             {
-                if (member.IsList || member.IsCollection)
-                {
-                    GenerateCollectionSizeCalculation(sb, member);
-                }
-                else if (member.PolymorphicInfo is not null)
-                {
-                    var info = member.PolymorphicInfo.Value;
-                    if (string.IsNullOrEmpty(info.TypeIdProperty))
-                    {
-                        sb.WriteLine($"size += {PolymorphicUtilities.GenerateTypeIdSizeExpression(info)};");
-                    }
-                    GeneratePolymorphicSizeCalculation(sb, member);
-                }
-                else if (member.HasGenerateSerializerAttribute)
-                {
-                    sb.WriteLine($"size += {TypeHelper.GetSimpleTypeName(member.TypeName)}.GetPacketSize(obj.{member.Name}); // Size for nested type {member.Name}");
-                }
-                else if (member.IsStringType)
-                {
-                    sb.WriteLine($"size += StringEx.MeasureSize(obj.{member.Name}); // Size for string {member.Name}");
-                }
-                else if (member.IsUnmanagedType)
-                {
-                    sb.WriteLine($"size += sizeof({member.TypeName}); // Size for unmanaged type {member.Name}");
-                }
+                GenerateCollectionSizeCalculation(sb, member);
             }
+            else if (member.PolymorphicInfo is not null)
+            {
+                var info = member.PolymorphicInfo.Value;
+                if (string.IsNullOrEmpty(info.TypeIdProperty))
+                {
+                    sb.WriteLine($"size += {PolymorphicUtilities.GenerateTypeIdSizeExpression(info)};");
+                }
 
-            sb.WriteLine("return size;");
+                GeneratePolymorphicSizeCalculation(sb, member);
+            }
+            else if (member.HasGenerateSerializerAttribute)
+            {
+                sb.WriteLine
+                (
+                    $"size += {TypeHelper.GetSimpleTypeName(member.TypeName)}.GetPacketSize(obj.{member.Name}); // Size for nested type {member.Name}"
+                );
+            }
+            else if (member.IsStringType)
+            {
+                sb.WriteLine($"size += StringEx.MeasureSize(obj.{member.Name}); // Size for string {member.Name}");
+            }
+            else if (member.IsUnmanagedType)
+            {
+                sb.WriteLine($"size += sizeof({member.TypeName}); // Size for unmanaged type {member.Name}");
+            }
         }
+
+        sb.WriteLine("return size;");
     }
 
     private static void GenerateCollectionSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member)
     {
-        if (member.CollectionInfo is null) return;
+        if (member.CollectionInfo is null)
+        {
+            return;
+        }
 
         // Determine the count type to use
         var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
@@ -67,30 +72,30 @@ public static class PacketSizeGenerator
             }
 
             sb.WriteLine($"foreach(var item in obj.{member.Name})");
-            using (sb.BeginBlock())
+            using var _ = sb.BeginBlock();
+            if (string.IsNullOrEmpty(info.TypeIdProperty))
             {
-                if (string.IsNullOrEmpty(info.TypeIdProperty))
-                {
-                    sb.WriteLine($"size += {PolymorphicUtilities.GenerateTypeIdSizeExpression(info)};");
-                }
-                var itemMember = new MemberToGenerate(
-                    "item",
-                    member.ListTypeArgument!.Value.TypeName,
-                    member.ListTypeArgument.Value.IsUnmanagedType,
-                    member.ListTypeArgument.Value.IsStringType,
-                    member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
-                    false,
-                    null,
-                    null,
-                    member.PolymorphicInfo,
-                    false,
-                    null,
-                        false,
-                        false,
-                        LocationInfo.None
-                );
-                GeneratePolymorphicSizeCalculation(sb, itemMember, "item");
+                sb.WriteLine($"size += {PolymorphicUtilities.GenerateTypeIdSizeExpression(info)};");
             }
+
+            var itemMember = new MemberToGenerate
+            (
+                "item",
+                member.ListTypeArgument!.Value.TypeName,
+                member.ListTypeArgument.Value.IsUnmanagedType,
+                member.ListTypeArgument.Value.IsStringType,
+                member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
+                false,
+                null,
+                null,
+                member.PolymorphicInfo,
+                false,
+                null,
+                false,
+                false,
+                LocationInfo.None
+            );
+            GeneratePolymorphicSizeCalculation(sb, itemMember, "item");
             return;
         }
 
@@ -101,10 +106,8 @@ public static class PacketSizeGenerator
             if (typeArg.HasGenerateSerializerAttribute)
             {
                 sb.WriteLine($"foreach(var item in obj.{member.Name})");
-                using (sb.BeginBlock())
-                {
-                    sb.WriteLine($"size += {TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item);");
-                }
+                using var _ = sb.BeginBlock();
+                sb.WriteLine($"size += {TypeHelper.GetSimpleTypeName(typeArg.TypeName)}.GetPacketSize(item);");
             }
             else if (typeArg.IsUnmanagedType)
             {
@@ -131,15 +134,14 @@ public static class PacketSizeGenerator
             else if (collectionInfo.HasElementGenerateSerializerAttribute)
             {
                 sb.WriteLine($"foreach(var item in obj.{member.Name})");
-                using (sb.BeginBlock())
-                {
-                    sb.WriteLine($"size += {TypeHelper.GetSimpleTypeName(collectionInfo.ElementTypeName)}.GetPacketSize(item);");
-                }
+                using var _ = sb.BeginBlock();
+                sb.WriteLine($"size += {TypeHelper.GetSimpleTypeName(collectionInfo.ElementTypeName)}.GetPacketSize(item);");
             }
         }
     }
 
-    private static void GeneratePolymorphicSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member, string instanceName = "")
+    private static void GeneratePolymorphicSizeCalculation
+        (IndentedStringBuilder sb, MemberToGenerate member, string instanceName = "")
     {
         if (string.IsNullOrEmpty(instanceName))
         {
@@ -152,19 +154,20 @@ public static class PacketSizeGenerator
         }
 
         sb.WriteLine($"switch ({instanceName})");
-        using (sb.BeginBlock())
+        using var _ = sb.BeginBlock();
+        foreach (var option in info.Options)
         {
-            foreach (var option in info.Options)
-            {
-                var typeName = TypeHelper.GetSimpleTypeName(option.Type);
-                sb.WriteLine($"case {typeName} typedInstance:");
-                sb.WriteLine($"    size += {typeName}.GetPacketSize(typedInstance);");
-                sb.WriteLine("    break;");
-            }
-
-            sb.WriteLine("case null: break;");
-            sb.WriteLine("default:");
-            sb.WriteLine($"    throw new System.IO.InvalidDataException($\"Unknown type for {member.Name}: {{{instanceName}?.GetType().FullName}}\");");
+            var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+            sb.WriteLine($"case {typeName} typedInstance:");
+            sb.WriteLine($"    size += {typeName}.GetPacketSize(typedInstance);");
+            sb.WriteLine("    break;");
         }
+
+        sb.WriteLine("case null: break;");
+        sb.WriteLine("default:");
+        sb.WriteLine
+        (
+            $"    throw new System.IO.InvalidDataException($\"Unknown type for {member.Name}: {{{instanceName}?.GetType().FullName}}\");"
+        );
     }
 }
