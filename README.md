@@ -95,7 +95,7 @@ int bytesWritten = GameState.Serialize(state, span);
 
 // 3. Deserialize the object from the buffer
 var readSpan = new ReadOnlySpan<byte>(buffer);
-var deserializedState = GameState.Deserialize(readSpan, out int bytesRead);
+var deserializedState = GameState.Deserialize(readSpan);
 
 // Now you have a deep copy of the original object
 Console.WriteLine($"Game ID: {deserializedState.GameId}");
@@ -107,14 +107,23 @@ foreach (var player in deserializedState.Players)
 
 ## Generated Interface
 
-Each class marked with `[GenerateSerializer]` implements `ISerializable<T>`:
+Each class marked with `[GenerateSerializer]` implements `ISerializable<T>`. This interface provides the core methods for serialization and deserialization.
 
 ```csharp
 public interface ISerializable<T> where T : ISerializable<T>
 {
+    // Calculates the total size in bytes required to serialize the object.
     static abstract int GetPacketSize(T obj);
-    static abstract T Deserialize(ReadOnlySpan<byte> data, out int bytesRead);
+
+    // Serializes the object into the provided span.
     static abstract int Serialize(T obj, Span<byte> data);
+
+    // Deserializes an object from the provided span.
+    // The span is advanced by the number of bytes read.
+    static abstract T Deserialize(ref ReadOnlySpan<byte> data);
+
+    // Deserializes an object from the provided span without advancing it.
+    static abstract T Deserialize(ReadOnlySpan<byte> data);
 }
 ```
 
