@@ -371,7 +371,7 @@ public static class SerializationGenerator
             using var __ = sb.BeginBlock();
             if (string.IsNullOrEmpty(info.TypeIdProperty))
             {
-                Core.PolymorphicUtilities.GenerateWriteTypeIdCode
+                PolymorphicUtilities.GenerateWriteTypeIdCode
                 (
                     sb,
                     option,
@@ -424,7 +424,7 @@ public static class SerializationGenerator
             using var __ = sb.BeginBlock();
             if (string.IsNullOrEmpty(info.TypeIdProperty))
             {
-                Core.PolymorphicUtilities.GenerateWriteTypeIdCode
+                PolymorphicUtilities.GenerateWriteTypeIdCode
                 (
                     sb,
                     option,

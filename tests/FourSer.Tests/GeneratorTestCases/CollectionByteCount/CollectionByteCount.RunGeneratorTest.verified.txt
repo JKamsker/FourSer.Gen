@@ -8,6 +8,10 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
+using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
+using SpanWriter = FourSer.Gen.Helpers.SpanWriterHelpers;
+using StreamWriter = FourSer.Gen.Helpers.StreamWriterHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.CollectionByteCount;
 
@@ -36,7 +40,7 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
 
     public static IndividualTypeIdsTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var catsCount = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref buffer);
+        var catsCount = SpanReader.ReadByte(ref buffer);
         var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat>(catsCount);
         for (int i = 0; i < catsCount; i++)
         {
@@ -53,7 +57,7 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
 
     public static IndividualTypeIdsTest Deserialize(System.IO.Stream stream)
     {
-        var catsCount = FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
+        var catsCount = StreamReader.ReadByte(stream);
         var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat>(catsCount);
         for (int i = 0; i < catsCount; i++)
         {
@@ -68,11 +72,11 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
         var originalData = data;
         if (obj.Cats is null)
         {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)0);
+            SpanWriter.WriteByte(ref data, (byte)0);
         }
         else
         {
-            FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)obj.Cats.Count);
+            SpanWriter.WriteByte(ref data, (byte)obj.Cats.Count);
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 var bytesWritten = Cat.Serialize(obj.Cats[i], data);
@@ -86,11 +90,11 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
     {
         if (obj.Cats is null)
         {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)0);
+            StreamWriter.WriteByte(stream, (byte)0);
         }
         else
         {
-            FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)obj.Cats.Count);
+            StreamWriter.WriteByte(stream, (byte)obj.Cats.Count);
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 Cat.Serialize(obj.Cats[i], stream);
@@ -110,6 +114,10 @@ using System.Text;
 using FourSer.Contracts;
 using System.IO;
 using FourSer.Gen.Helpers;
+using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
+using SpanWriter = FourSer.Gen.Helpers.SpanWriterHelpers;
+using StreamWriter = FourSer.Gen.Helpers.StreamWriterHelpers;
 
 namespace FourSer.Tests.GeneratorTestCases.CollectionByteCount;
 
@@ -137,8 +145,8 @@ public partial class Cat : ISerializable<Cat>
 
     public static Cat Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
-        var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
+        var id = SpanReader.ReadInt32(ref buffer);
+        var name = SpanReader.ReadString(ref buffer);
         var obj = new Cat(id, name);
         return obj;
     }
@@ -150,8 +158,8 @@ public partial class Cat : ISerializable<Cat>
 
     public static Cat Deserialize(System.IO.Stream stream)
     {
-        var id = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var name = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
+        var id = StreamReader.ReadInt32(stream);
+        var name = StreamReader.ReadString(stream);
         var obj = new Cat(id, name);
         return obj;
     }
@@ -159,14 +167,14 @@ public partial class Cat : ISerializable<Cat>
     public static int Serialize(Cat obj, System.Span<byte> data)
     {
         var originalData = data;
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Id);
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.Name);
+        SpanWriter.WriteInt32(ref data, (Int32)obj.Id);
+        SpanWriter.WriteString(ref data, obj.Name);
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(Cat obj, System.IO.Stream stream)
     {
-        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
-        FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);
+        StreamWriter.WriteInt32(stream, (Int32)obj.Id);
+        StreamWriter.WriteString(stream, obj.Name);
     }
 }
