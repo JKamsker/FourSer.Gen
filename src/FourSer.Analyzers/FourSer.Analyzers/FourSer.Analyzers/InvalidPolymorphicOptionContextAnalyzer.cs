@@ -73,6 +73,14 @@ namespace FourSer.Analyzers
                         return;
                     }
                 }
+
+                var typeIdPropertyArgument = serializeCollectionAttribute.NamedArguments
+                    .FirstOrDefault(arg => arg.Key == "TypeIdProperty");
+
+                if (typeIdPropertyArgument.Key != null)
+                {
+                    return;
+                }
             }
 
             // If we reach here, there's no valid context for [PolymorphicOption]

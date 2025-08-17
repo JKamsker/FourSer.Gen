@@ -61,6 +61,12 @@ public static class GeneratorUtilities
             return true;
         }
 
+        // Or if the collection has a TypeIdProperty, which implies polymorphic serialization
+        if (!string.IsNullOrEmpty(member.CollectionInfo?.TypeIdProperty))
+        {
+            return true;
+        }
+
         // Or if SerializePolymorphic attribute is present with actual options
         if (member.PolymorphicInfo?.Options.IsEmpty == false)
         {
