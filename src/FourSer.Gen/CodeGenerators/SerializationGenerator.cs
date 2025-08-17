@@ -71,9 +71,8 @@ public static class SerializationGenerator
 
     private static void GenerateStreamSerialize(StringBuilder sb, TypeToGenerate typeToGenerate)
     {
-        sb.AppendLine($"    public static int Serialize({typeToGenerate.Name} obj, System.IO.Stream stream)");
+        sb.AppendLine($"    public static void Serialize({typeToGenerate.Name} obj, System.IO.Stream stream)");
         sb.AppendLine("    {");
-        sb.AppendLine("        var initialPosition = stream.Position;");
         // Pre-pass to update TypeId properties
         foreach (var member in typeToGenerate.Members)
         {
@@ -114,7 +113,6 @@ public static class SerializationGenerator
         {
             GenerateMemberSerialization(sb, member, "stream", "StreamWriterHelpers");
         }
-        sb.AppendLine("        return (int)(stream.Position - initialPosition);");
         sb.AppendLine("    }");
     }
 

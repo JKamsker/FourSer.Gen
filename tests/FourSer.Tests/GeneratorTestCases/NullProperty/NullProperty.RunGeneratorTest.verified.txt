@@ -56,11 +56,9 @@ public partial class NestedObject : ISerializable<NestedObject>
         return originalData.Length - data.Length;
     }
 
-    public static int Serialize(NestedObject obj, System.IO.Stream stream)
+    public static void Serialize(NestedObject obj, System.IO.Stream stream)
     {
-        var initialPosition = stream.Position;
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
-        return (int)(stream.Position - initialPosition);
     }
 }
 
@@ -128,14 +126,12 @@ public partial class MainObject : ISerializable<MainObject>
         return originalData.Length - data.Length;
     }
 
-    public static int Serialize(MainObject obj, System.IO.Stream stream)
+    public static void Serialize(MainObject obj, System.IO.Stream stream)
     {
-        var initialPosition = stream.Position;
         if (obj.Nested is null)
         {
             throw new System.NullReferenceException($"Property \"Nested\" cannot be null.");
         }
         NestedObject.Serialize(obj.Nested, stream);
-        return (int)(stream.Position - initialPosition);
     }
 }

@@ -504,9 +504,8 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         return originalData.Length - data.Length;
     }
 
-    public static int Serialize(EnumerationTypesPacket obj, System.IO.Stream stream)
+    public static void Serialize(EnumerationTypesPacket obj, System.IO.Stream stream)
     {
-        var initialPosition = stream.Position;
         if (obj.Numbers is null)
         {
             throw new System.NullReferenceException($"Collection \"Numbers\" cannot be null.");
@@ -705,6 +704,5 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt64(stream, (Int64)item);
             }
         }
-        return (int)(stream.Position - initialPosition);
     }
 }

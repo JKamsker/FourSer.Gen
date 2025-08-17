@@ -56,11 +56,9 @@ public partial class Item : ISerializable<Item>
         return originalData.Length - data.Length;
     }
 
-    public static int Serialize(Item obj, System.IO.Stream stream)
+    public static void Serialize(Item obj, System.IO.Stream stream)
     {
-        var initialPosition = stream.Position;
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
-        return (int)(stream.Position - initialPosition);
     }
 }
 
@@ -149,9 +147,8 @@ public partial class MainObject : ISerializable<MainObject>
         return originalData.Length - data.Length;
     }
 
-    public static int Serialize(MainObject obj, System.IO.Stream stream)
+    public static void Serialize(MainObject obj, System.IO.Stream stream)
     {
-        var initialPosition = stream.Position;
         if (obj.Items is null)
         {
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)0);
@@ -164,6 +161,5 @@ public partial class MainObject : ISerializable<MainObject>
             Item.Serialize(obj.Items[i], stream);
             }
         }
-        return (int)(stream.Position - initialPosition);
     }
 }

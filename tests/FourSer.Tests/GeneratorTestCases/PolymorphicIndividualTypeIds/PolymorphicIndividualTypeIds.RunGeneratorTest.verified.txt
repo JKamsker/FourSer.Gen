@@ -147,9 +147,8 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         return originalData.Length - data.Length;
     }
 
-    public static int Serialize(PolymorphicIndividualTest obj, System.IO.Stream stream)
+    public static void Serialize(PolymorphicIndividualTest obj, System.IO.Stream stream)
     {
-        var initialPosition = stream.Position;
         if (obj.Animals is null)
         {
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)0);
@@ -180,7 +179,6 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
             }
             }
         }
-        return (int)(stream.Position - initialPosition);
     }
 }
 
@@ -249,12 +247,10 @@ public partial class Cat : ISerializable<Cat>
         return originalData.Length - data.Length;
     }
 
-    public static int Serialize(Cat obj, System.IO.Stream stream)
+    public static void Serialize(Cat obj, System.IO.Stream stream)
     {
-        var initialPosition = stream.Position;
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);
-        return (int)(stream.Position - initialPosition);
     }
 }
 
@@ -323,12 +319,10 @@ public partial class Dog : ISerializable<Dog>
         return originalData.Length - data.Length;
     }
 
-    public static int Serialize(Dog obj, System.IO.Stream stream)
+    public static void Serialize(Dog obj, System.IO.Stream stream)
     {
-        var initialPosition = stream.Position;
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Breed);
-        return (int)(stream.Position - initialPosition);
     }
 }
 
@@ -391,10 +385,8 @@ public partial class Animal : ISerializable<Animal>
         return originalData.Length - data.Length;
     }
 
-    public static int Serialize(Animal obj, System.IO.Stream stream)
+    public static void Serialize(Animal obj, System.IO.Stream stream)
     {
-        var initialPosition = stream.Position;
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
-        return (int)(stream.Position - initialPosition);
     }
 }
