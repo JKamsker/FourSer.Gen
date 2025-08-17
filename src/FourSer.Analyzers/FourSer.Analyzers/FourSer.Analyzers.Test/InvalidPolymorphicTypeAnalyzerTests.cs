@@ -57,6 +57,30 @@ class MyData
         }
 
         [Fact]
+        public async Task PolymorphicOption_OnListWithAssignableType_NoDiagnostic()
+        {
+            var testCode = @"
+using FourSer.Contracts;
+using System.Collections.Generic;
+
+class MyData
+{
+    [PolymorphicOption(1, typeof(DerivedType))]
+    public List<BaseType> MyList { get; set; }
+}";
+
+            var test = new CSharpAnalyzerTest<InvalidPolymorphicTypeAnalyzer, DefaultVerifier>
+            {
+                TestState =
+                {
+                    Sources = { AttributeSource, testCode },
+                },
+                ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            };
+            await test.RunAsync();
+        }
+
+        [Fact]
         public async Task PolymorphicOption_WithoutGenerateSerializer_ReportsDiagnostic()
         {
             var testCode = @"
