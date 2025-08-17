@@ -18,7 +18,7 @@ namespace FourSer.Analyzers
         private const string Category = "Usage";
 
         private static readonly LocalizableString MismatchedTypesTitle = "Mismatched polymorphic option types";
-        private static readonly LocalizableString MismatchedTypesMessageFormat = "Mismatched polymorphic option types: '{0}' and '{1}'";
+        private static readonly LocalizableString MismatchedTypesMessageFormat = "Mismatched polymorphic option types on property '{0}'. Expected '{1}' but found '{2}'.";
         private static readonly LocalizableString MismatchedTypesDescription = "All polymorphic option IDs on a property must have the same type.";
 
 

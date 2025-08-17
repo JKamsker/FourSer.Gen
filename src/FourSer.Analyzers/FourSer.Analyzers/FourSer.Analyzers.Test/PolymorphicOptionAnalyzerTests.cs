@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
-using Microsoft.CodeAnalysis.Testing.Verifiers;
 using Xunit;
 
 namespace FourSer.Analyzers.Test
@@ -65,18 +64,22 @@ public partial class MyData
 {
     [SerializePolymorphic(TypeIdType = typeof(int))]
     [PolymorphicOption(1, typeof(EntityType1))]
-    [PolymorphicOption({|FS0004:(byte)2|}, typeof(EntityType2))]
+    [PolymorphicOption((byte)2, typeof(EntityType2))]
     public BaseEntity MyProperty { get; set; }
 }
 " + BaseClassesSource;
 
-            var test = new CSharpAnalyzerTest<PolymorphicOptionAnalyzer, XUnitVerifier>
+            var expected = new DiagnosticResult(PolymorphicOptionAnalyzer.MismatchedTypesRule)
+                .WithSpan("/0/Test3.cs", 9, 6, 9, 53)
+                .WithArguments("MyProperty", "Int32", "Byte");
+
+            var test = new CSharpAnalyzerTest<PolymorphicOptionAnalyzer, DefaultVerifier>
             {
                 TestState =
                 {
                     Sources = { GenerateSerializerAttributeSource, SerializePolymorphicAttributeSource, PolymorphicOptionAttributeSource, testCode },
+                    ExpectedDiagnostics = { expected },
                 },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
             };
 
             await test.RunAsync();
@@ -91,20 +94,24 @@ using FourSer.Contracts;
 [GenerateSerializer]
 public partial class MyData
 {
-    [{|FS0003:[SerializePolymorphic(TypeIdType = typeof(byte))]|}]
+    [SerializePolymorphic(TypeIdType = typeof(byte))]
     [PolymorphicOption(1, typeof(EntityType1))]
     [PolymorphicOption(2, typeof(EntityType2))]
     public BaseEntity MyProperty { get; set; }
 }
 " + BaseClassesSource;
 
-            var test = new CSharpAnalyzerTest<PolymorphicOptionAnalyzer, XUnitVerifier>
+            var expected = new DiagnosticResult(PolymorphicOptionAnalyzer.Rule)
+                .WithSpan("/0/Test3.cs", 7, 6, 7, 53)
+                .WithArguments("Int32", "Byte");
+
+            var test = new CSharpAnalyzerTest<PolymorphicOptionAnalyzer, DefaultVerifier>
             {
                 TestState =
                 {
                     Sources = { GenerateSerializerAttributeSource, SerializePolymorphicAttributeSource, PolymorphicOptionAttributeSource, testCode },
+                    ExpectedDiagnostics = { expected },
                 },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
             };
 
             await test.RunAsync();
@@ -126,13 +133,12 @@ public partial class MyData
 }
 " + BaseClassesSource;
 
-            var test = new CSharpAnalyzerTest<PolymorphicOptionAnalyzer, XUnitVerifier>
+            var test = new CSharpAnalyzerTest<PolymorphicOptionAnalyzer, DefaultVerifier>
             {
                 TestState =
                 {
                     Sources = { GenerateSerializerAttributeSource, SerializePolymorphicAttributeSource, PolymorphicOptionAttributeSource, testCode },
                 },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
             };
 
             await test.RunAsync();
