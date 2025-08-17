@@ -71,19 +71,31 @@ namespace FourSer.Analyzers
                 return true;
             }
 
+            if (type.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute"))
+            {
+                return true;
+            }
+
             if (type.AllInterfaces.Any(i => i.ToDisplayString().StartsWith("FourSer.Contracts.ISerializable")))
             {
                 return true;
             }
 
+            // Check for collection types
+            var ienumerable_t = type.AllInterfaces.FirstOrDefault(i => i.IsGenericType && i.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.IEnumerable<T>");
+            if (type is INamedTypeSymbol namedType && namedType.IsGenericType && namedType.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.IEnumerable<T>")
+            {
+                ienumerable_t = namedType;
+            }
+
+            if (ienumerable_t != null)
+            {
+                return IsSerializable(ienumerable_t.TypeArguments.First());
+            }
+
             if (type is IArrayTypeSymbol arrayType)
             {
                 return IsSerializable(arrayType.ElementType);
-            }
-
-            if (type is INamedTypeSymbol namedType && namedType.IsGenericType && namedType.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>")
-            {
-                return IsSerializable(namedType.TypeArguments.First());
             }
 
             return false;
