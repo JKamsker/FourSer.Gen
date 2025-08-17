@@ -12,15 +12,25 @@ using System;
 
 namespace FourSer.Contracts
 {
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+    public class GenerateSerializerAttribute : Attribute { }
+
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = true)]
     public class PolymorphicOptionAttribute : Attribute
     {
         public PolymorphicOptionAttribute(int id, Type type) { }
     }
 
-    public class BaseType { }
-    public class DerivedType : BaseType { }
-    public class UnrelatedType { }
+    [GenerateSerializer]
+    public partial class BaseType { }
+
+    [GenerateSerializer]
+    public partial class DerivedType : BaseType { }
+
+    [GenerateSerializer]
+    public partial class UnrelatedType { }
+
+    public class AssignableButNotSerializable : BaseType { }
 }";
 
         [Fact]
@@ -32,6 +42,29 @@ using FourSer.Contracts;
 class MyData
 {
     [PolymorphicOption(1, typeof(DerivedType))]
+    public BaseType MyProperty { get; set; }
+}";
+
+            var test = new CSharpAnalyzerTest<InvalidPolymorphicTypeAnalyzer, DefaultVerifier>
+            {
+                TestState =
+                {
+                    Sources = { AttributeSource, testCode },
+                },
+                ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            };
+            await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task PolymorphicOption_WithoutGenerateSerializer_ReportsDiagnostic()
+        {
+            var testCode = @"
+using FourSer.Contracts;
+
+class MyData
+{
+    [{|FS0016:PolymorphicOption(1, typeof(AssignableButNotSerializable))|}]
     public BaseType MyProperty { get; set; }
 }";
 
