@@ -52,9 +52,11 @@ public partial struct MyStruct : ISerializable<MyStruct>
         return originalData.Length - data.Length;
     }
 
-    public static void Serialize(MyStruct obj, System.IO.Stream stream)
+    public static int Serialize(MyStruct obj, System.IO.Stream stream)
     {
+        var initialPosition = stream.Position;
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.A);
+        return (int)(stream.Position - initialPosition);
     }
 }
 
@@ -143,8 +145,9 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         return originalData.Length - data.Length;
     }
 
-    public static void Serialize(PacketWithListOfStructs obj, System.IO.Stream stream)
+    public static int Serialize(PacketWithListOfStructs obj, System.IO.Stream stream)
     {
+        var initialPosition = stream.Position;
         if (obj.Structs is null)
         {
             throw new System.NullReferenceException($"Collection \"Structs\" cannot be null.");
@@ -157,5 +160,6 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
             MyStruct.Serialize(obj.Structs[i], stream);
             }
         }
+        return (int)(stream.Position - initialPosition);
     }
 }

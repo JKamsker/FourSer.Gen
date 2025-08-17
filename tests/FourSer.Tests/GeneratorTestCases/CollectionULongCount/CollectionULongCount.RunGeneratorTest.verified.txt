@@ -82,8 +82,9 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
         return originalData.Length - data.Length;
     }
 
-    public static void Serialize(ULongCountTest obj, System.IO.Stream stream)
+    public static int Serialize(ULongCountTest obj, System.IO.Stream stream)
     {
+        var initialPosition = stream.Position;
         if (obj.Cats is null)
         {
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteUInt64(stream, (ulong)0);
@@ -96,6 +97,7 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
             Cat.Serialize(obj.Cats[i], stream);
             }
         }
+        return (int)(stream.Position - initialPosition);
     }
 }
 
@@ -164,9 +166,11 @@ public partial class Cat : ISerializable<Cat>
         return originalData.Length - data.Length;
     }
 
-    public static void Serialize(Cat obj, System.IO.Stream stream)
+    public static int Serialize(Cat obj, System.IO.Stream stream)
     {
+        var initialPosition = stream.Position;
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);
+        return (int)(stream.Position - initialPosition);
     }
 }

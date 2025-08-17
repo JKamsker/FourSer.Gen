@@ -67,14 +67,16 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
         return originalData.Length - data.Length;
     }
 
-    public static void Serialize(ContainerPacket obj, System.IO.Stream stream)
+    public static int Serialize(ContainerPacket obj, System.IO.Stream stream)
     {
+        var initialPosition = stream.Position;
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
         if (obj.Data is null)
         {
             throw new System.NullReferenceException($"Property \"Data\" cannot be null.");
         }
         NestedData.Serialize(obj.Data, stream);
+        return (int)(stream.Position - initialPosition);
     }
 }
 
@@ -143,9 +145,11 @@ public partial class NestedData : ISerializable<NestedData>
         return originalData.Length - data.Length;
     }
 
-    public static void Serialize(NestedData obj, System.IO.Stream stream)
+    public static int Serialize(NestedData obj, System.IO.Stream stream)
     {
+        var initialPosition = stream.Position;
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteSingle(stream, (Single)obj.Value);
+        return (int)(stream.Position - initialPosition);
     }
 }

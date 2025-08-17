@@ -78,8 +78,9 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         return originalData.Length - data.Length;
     }
 
-    public static void Serialize(CollectionPacket obj, System.IO.Stream stream)
+    public static int Serialize(CollectionPacket obj, System.IO.Stream stream)
     {
+        var initialPosition = stream.Position;
         if (obj.Numbers is null)
         {
             throw new System.NullReferenceException($"Collection \"Numbers\" cannot be null.");
@@ -92,5 +93,6 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
             FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Numbers[i]);
             }
         }
+        return (int)(stream.Position - initialPosition);
     }
 }

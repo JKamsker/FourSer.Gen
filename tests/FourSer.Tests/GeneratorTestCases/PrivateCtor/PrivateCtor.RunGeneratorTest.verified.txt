@@ -51,8 +51,10 @@ public partial class PrivateCtorPacket : ISerializable<PrivateCtorPacket>
         return originalData.Length - data.Length;
     }
 
-    public static void Serialize(PrivateCtorPacket obj, System.IO.Stream stream)
+    public static int Serialize(PrivateCtorPacket obj, System.IO.Stream stream)
     {
+        var initialPosition = stream.Position;
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Value);
+        return (int)(stream.Position - initialPosition);
     }
 }

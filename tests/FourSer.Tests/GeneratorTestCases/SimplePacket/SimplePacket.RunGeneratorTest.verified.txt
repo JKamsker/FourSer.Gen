@@ -68,10 +68,12 @@ public partial class LoginPacket : ISerializable<LoginPacket>
         return originalData.Length - data.Length;
     }
 
-    public static void Serialize(LoginPacket obj, System.IO.Stream stream)
+    public static int Serialize(LoginPacket obj, System.IO.Stream stream)
     {
+        var initialPosition = stream.Position;
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (Byte)obj.Result);
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteUInt32(stream, (UInt32)obj.UserID);
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Username);
+        return (int)(stream.Position - initialPosition);
     }
 }

@@ -82,8 +82,9 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
         return originalData.Length - data.Length;
     }
 
-    public static void Serialize(ConcreteInheritanceTest obj, System.IO.Stream stream)
+    public static int Serialize(ConcreteInheritanceTest obj, System.IO.Stream stream)
     {
+        var initialPosition = stream.Position;
         if (obj.Dogs is null)
         {
             throw new System.NullReferenceException($"Collection \"Dogs\" cannot be null.");
@@ -96,6 +97,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
             Dog.Serialize(obj.Dogs[i], stream);
             }
         }
+        return (int)(stream.Position - initialPosition);
     }
 }
 
@@ -170,11 +172,13 @@ public partial class Dog : ISerializable<Dog>
         return originalData.Length - data.Length;
     }
 
-    public static void Serialize(Dog obj, System.IO.Stream stream)
+    public static int Serialize(Dog obj, System.IO.Stream stream)
     {
+        var initialPosition = stream.Position;
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Age);
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Breed);
+        return (int)(stream.Position - initialPosition);
     }
 }
 
@@ -243,9 +247,11 @@ public partial class Pet : ISerializable<Pet>
         return originalData.Length - data.Length;
     }
 
-    public static void Serialize(Pet obj, System.IO.Stream stream)
+    public static int Serialize(Pet obj, System.IO.Stream stream)
     {
+        var initialPosition = stream.Position;
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Age);
+        return (int)(stream.Position - initialPosition);
     }
 }
