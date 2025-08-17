@@ -206,7 +206,8 @@ namespace FourSer.Gen.CodeGenerators
                         member.ListTypeArgument.Value.IsUnmanagedType,
                         member.ListTypeArgument.Value.IsStringType,
                         member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
-                        false, null, null, member.PolymorphicInfo, false, null, false
+                        false, null, null, member.PolymorphicInfo, false, null, false,
+                        LocationInfo.None
                     );
                     GeneratePolymorphicItemDeserialization(sb, itemMember, "item", source, helper);
                     sb.AppendLine($"            {memberName}.Add(item);");
@@ -448,5 +449,6 @@ namespace FourSer.Gen.CodeGenerators
                 sb.AppendLine($"            {collectionTarget}.{addMethod}({TypeHelper.GetSimpleTypeName(elementInfo.ElementTypeName)}.Deserialize({refOrEmpty}{source}));");
             }
         }
+
     }
 }

@@ -206,7 +206,8 @@ public static class SerializationGenerator
                     member.PolymorphicInfo,
                     false,
                     null,
-                    false
+                    false,
+                    LocationInfo.None
                 );
 
                 GeneratePolymorphicItemSerialization(sb, itemMember, "item", target, helper);

@@ -216,7 +216,8 @@ public static class SpanWriterExtensions
                     return parts[parts.Length - 3];
                 }
             )
-            .Distinct();
+            .Distinct()
+            .Where(name => name != "InvalidNestedCollection");
 
         foreach (var folder in testCaseFolders)
         {
@@ -268,6 +269,35 @@ public static class SpanWriterExtensions
                 .UseDirectory(Path.Combine("GeneratorTestCases", testCaseName))
                 .UseTypeName(testCaseName)
             ;
+    }
+
+    [Fact]
+    public void RunGeneratorTest_WithInvalidCollection_ShouldProduceDiagnostic()
+    {
+        var source = ReadSource("InvalidNestedCollection");
+
+        var syntaxTrees = s_contractsSource.Select(s => CSharpSyntaxTree.ParseText(s)).ToList();
+        syntaxTrees.AddRange(s_extensionsSource.Select(s => CSharpSyntaxTree.ParseText(s)));
+        syntaxTrees.Add(CSharpSyntaxTree.ParseText(source));
+
+        var compilation = CSharpCompilation.Create
+        (
+            "TestProject",
+            syntaxTrees,
+            Basic.Reference.Assemblies.Net90.References.All,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)
+        );
+
+        var generator = new SerializerGenerator();
+        var driver = CSharpGeneratorDriver.Create(generator);
+
+        driver = (CSharpGeneratorDriver)driver.RunGenerators(compilation);
+
+        var result = driver.GetRunResult();
+
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("FSSG001", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
     }
 
     private static string ReadSource(string testCaseName)

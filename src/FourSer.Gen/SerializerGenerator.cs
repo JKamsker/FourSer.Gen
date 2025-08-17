@@ -14,6 +14,16 @@ namespace FourSer.Gen;
 [Generator]
 public class SerializerGenerator : IIncrementalGenerator
 {
+    private static readonly DiagnosticDescriptor s_invalidCollectionTypeArgument = new
+    (
+        "FSSG001",
+        "Invalid collection type argument",
+        "The type '{0}' in the collection '{1}' must have the [GenerateSerializer] attribute because it is not a primitive type.",
+        "Usage",
+        DiagnosticSeverity.Warning,
+        true
+    );
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         context.RegisterPostInitializationOutput(AddHelpers);
@@ -37,6 +47,11 @@ public class SerializerGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, TypeToGenerate typeToGenerate)
     {
+        if (HasInvalidCollection(context, typeToGenerate))
+        {
+            return;
+        }
+
         var sb = new StringBuilder();
 
         GenerateFileHeader(sb, typeToGenerate);
@@ -143,6 +158,43 @@ public class SerializerGenerator : IIncrementalGenerator
             sb.AppendLine($"        this.{member.Name} = default;");
         }
         sb.AppendLine("    }");
+    }
+
+    private static bool HasInvalidCollection(SourceProductionContext context, TypeToGenerate typeToGenerate)
+    {
+        bool hasError = false;
+        foreach (var member in typeToGenerate.Members)
+        {
+            if (!member.IsCollection || member.CollectionTypeInfo is null)
+            {
+                continue;
+            }
+
+            var collectionTypeInfo = member.CollectionTypeInfo.Value;
+            if (collectionTypeInfo.IsElementUnmanagedType || collectionTypeInfo.IsElementStringType ||
+                collectionTypeInfo.HasElementGenerateSerializerAttribute)
+            {
+                continue;
+            }
+
+            var location = Location.Create
+            (
+                member.Location.FilePath,
+                new Microsoft.CodeAnalysis.Text.TextSpan(member.Location.Start, member.Location.End - member.Location.Start),
+                new Microsoft.CodeAnalysis.Text.LinePositionSpan
+                (
+                    new Microsoft.CodeAnalysis.Text.LinePosition(member.Location.Start, 0),
+                    new Microsoft.CodeAnalysis.Text.LinePosition(member.Location.End, 0)
+                )
+            );
+
+            context.ReportDiagnostic(Diagnostic.Create(s_invalidCollectionTypeArgument, location,
+                collectionTypeInfo.ElementTypeName, member.Name));
+
+            hasError = true;
+        }
+
+        return hasError;
     }
 
     private static void AddHelpers(IncrementalGeneratorPostInitializationContext context)

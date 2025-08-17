@@ -14,7 +14,8 @@ namespace FourSer.Consumer.UseCases
         public List<AnimalBase> Animals { get; set; } = new();
     }
 
-    public abstract class AnimalBase
+    [GenerateSerializer]
+    public partial class AnimalBase
     {
         public int Age { get; set; }
     }

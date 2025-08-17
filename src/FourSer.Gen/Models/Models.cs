@@ -65,7 +65,8 @@ public readonly record struct MemberToGenerate(
     PolymorphicInfo? PolymorphicInfo,
     bool IsCollection,
     CollectionTypeInfo? CollectionTypeInfo,
-    bool IsReadOnly) : IEquatable<MemberToGenerate>;
+    bool IsReadOnly,
+    LocationInfo Location) : IEquatable<MemberToGenerate>;
 
 /// <summary>
 /// A model describing the type argument of a List&lt;T&gt;.

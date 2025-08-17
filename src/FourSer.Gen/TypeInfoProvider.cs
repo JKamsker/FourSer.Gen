@@ -288,6 +288,10 @@ internal static class TypeInfoProvider
 
         var memberHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(memberTypeSymbol as INamedTypeSymbol);
 
+        var location = m.Locations.First();
+        var lineSpan = location.GetLineSpan();
+        var locationInfo = new LocationInfo(lineSpan.Path, lineSpan.StartLinePosition.Line, lineSpan.EndLinePosition.Line);
+
         var memberToGenerate = new MemberToGenerate
         (
             m.Name,
@@ -301,10 +305,11 @@ internal static class TypeInfoProvider
             polymorphicInfo,
             isCollection,
             collectionTypeInfo,
-            isReadOnly
+            isReadOnly,
+            locationInfo
         );
 
-        return (memberToGenerate, m.Locations.First());
+        return (memberToGenerate, location);
     }
 
     private static EquatableArray<TypeToGenerate> GetNestedTypes(INamedTypeSymbol parentType)
