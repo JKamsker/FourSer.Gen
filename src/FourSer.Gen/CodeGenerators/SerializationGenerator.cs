@@ -73,7 +73,6 @@ public static class SerializationGenerator
     {
         sb.AppendLine($"    public static void Serialize({typeToGenerate.Name} obj, System.IO.Stream stream)");
         sb.AppendLine("    {");
-
         // Pre-pass to update TypeId properties
         foreach (var member in typeToGenerate.Members)
         {
