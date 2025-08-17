@@ -85,6 +85,7 @@ public static class PacketSizeGenerator
                 false,
                 null,
                     false,
+                    false,
                     LocationInfo.None
             );
             GeneratePolymorphicSizeCalculation(sb, itemMember, "item");

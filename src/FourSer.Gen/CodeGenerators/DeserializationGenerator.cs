@@ -206,7 +206,7 @@ namespace FourSer.Gen.CodeGenerators
                         member.ListTypeArgument.Value.IsUnmanagedType,
                         member.ListTypeArgument.Value.IsStringType,
                         member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
-                        false, null, null, member.PolymorphicInfo, false, null, false,
+                        false, null, null, member.PolymorphicInfo, false, null, false, false,
                         LocationInfo.None
                     );
                     GeneratePolymorphicItemDeserialization(sb, itemMember, "item", source, helper);

@@ -207,6 +207,7 @@ public static class SerializationGenerator
                     false,
                     null,
                     false,
+                    false,
                     LocationInfo.None
                 );
 

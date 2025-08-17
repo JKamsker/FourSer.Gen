@@ -16,6 +16,7 @@ public readonly record struct TypeToGenerate(
     string Name,
     string Namespace,
     bool IsValueType,
+    bool IsRecord,
     EquatableArray<MemberToGenerate> Members,
     EquatableArray<TypeToGenerate> NestedTypes,
     bool HasSerializableBaseType,
@@ -66,6 +67,7 @@ public readonly record struct MemberToGenerate(
     bool IsCollection,
     CollectionTypeInfo? CollectionTypeInfo,
     bool IsReadOnly,
+    bool IsInitOnly,
     LocationInfo Location) : IEquatable<MemberToGenerate>;
 
 /// <summary>
