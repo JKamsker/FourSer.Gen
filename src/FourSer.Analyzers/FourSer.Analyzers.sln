@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FourSer.Analyzers", "FourSe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FourSer.Analyzers.Test", "FourSer.Analyzers\FourSer.Analyzers.Test\FourSer.Analyzers.Test.csproj", "{88F29EA0-BB85-4E16-AF40-E48B69085017}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FourSer.Analyzers.Vsix", "FourSer.Analyzers\FourSer.Analyzers.Vsix\FourSer.Analyzers.Vsix.csproj", "{6830D342-6930-43F8-AA43-2E222DE700E2}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

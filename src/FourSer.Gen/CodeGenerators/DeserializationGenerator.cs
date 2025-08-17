@@ -37,8 +37,7 @@ namespace FourSer.Gen.CodeGenerators
             sb.AppendLine($"    public static {newKeyword}{typeToGenerate.Name} Deserialize(System.IO.Stream stream)");
             sb.AppendLine("    {");
 
-            var orderedMembers = GetOrderedMembersForDeserialization(typeToGenerate.Members);
-            foreach (var member in orderedMembers)
+            foreach (var member in typeToGenerate.Members)
             {
                 GenerateMemberDeserialization(sb, member, true, "stream", "StreamReaderHelpers");
             }
@@ -77,8 +76,7 @@ namespace FourSer.Gen.CodeGenerators
             sb.AppendLine($"    public static {newKeyword}{typeToGenerate.Name} Deserialize(ref System.ReadOnlySpan<byte> buffer)");
             sb.AppendLine("    {");
 
-            var orderedMembers = GetOrderedMembersForDeserialization(typeToGenerate.Members);
-            foreach (var member in orderedMembers)
+            foreach (var member in typeToGenerate.Members)
             {
                 GenerateMemberDeserialization(sb, member, true, "buffer", "RoSpanReaderHelpers");
             }
@@ -452,39 +450,5 @@ namespace FourSer.Gen.CodeGenerators
             }
         }
 
-        private static List<MemberToGenerate> GetOrderedMembersForDeserialization(EquatableArray<MemberToGenerate> members)
-        {
-            var memberList = members.ToList();
-            var memberOrderMap = new Dictionary<string, int>();
-
-            for (int i = 0; i < memberList.Count; i++)
-            {
-                memberOrderMap[memberList[i].Name] = i;
-            }
-
-            foreach (var member in memberList.ToList()) // Create a copy for safe iteration
-            {
-                if (member.CollectionInfo?.TypeIdProperty is string typeIdProperty)
-                {
-                    if (memberOrderMap.TryGetValue(typeIdProperty, out var typeIdIndex) &&
-                        memberOrderMap.TryGetValue(member.Name, out var collectionIndex) &&
-                        typeIdIndex > collectionIndex)
-                    {
-                        // The TypeId property is after the collection, we need to move it before.
-                        var typeIdMember = memberList[typeIdIndex];
-                        memberList.RemoveAt(typeIdIndex);
-                        memberList.Insert(collectionIndex, typeIdMember);
-
-                        // Update the map
-                        for (int i = 0; i < memberList.Count; i++)
-                        {
-                            memberOrderMap[memberList[i].Name] = i;
-                        }
-                    }
-                }
-            }
-
-            return memberList;
-        }
     }
 }
