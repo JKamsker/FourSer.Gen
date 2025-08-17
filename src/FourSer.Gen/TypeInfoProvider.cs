@@ -239,13 +239,10 @@ internal static class TypeInfoProvider
 
             typeMembersWithLocation.Sort((m1, m2) => m1.Item2.SourceSpan.Start.CompareTo(m2.Item2.SourceSpan.Start));
 
-            var typeMembers = new List<MemberToGenerate>();
             foreach(var m in typeMembersWithLocation)
             {
-                typeMembers.Add(m.Item1);
+                members.Insert(0, m.Item1);
             }
-
-            members.InsertRange(0, typeMembers);
             currentType = currentType.BaseType;
         }
 
@@ -288,6 +285,10 @@ internal static class TypeInfoProvider
 
         var memberHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(memberTypeSymbol as INamedTypeSymbol);
 
+        var location = m.Locations.First();
+        var lineSpan = location.GetLineSpan();
+        var locationInfo = new LocationInfo(lineSpan.Path, lineSpan.StartLinePosition.Line, lineSpan.EndLinePosition.Line);
+
         var memberToGenerate = new MemberToGenerate
         (
             m.Name,
@@ -301,10 +302,11 @@ internal static class TypeInfoProvider
             polymorphicInfo,
             isCollection,
             collectionTypeInfo,
-            isReadOnly
+            isReadOnly,
+            locationInfo
         );
 
-        return (memberToGenerate, m.Locations.First());
+        return (memberToGenerate, location);
     }
 
     private static EquatableArray<TypeToGenerate> GetNestedTypes(INamedTypeSymbol parentType)
