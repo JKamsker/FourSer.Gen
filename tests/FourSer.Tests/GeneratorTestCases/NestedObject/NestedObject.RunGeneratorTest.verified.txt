@@ -16,28 +16,28 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
     public static int GetPacketSize(ContainerPacket obj)
     {
         var size = 0;
-        size += NestedData.GetPacketSize(obj.Data); // Size for nested type Data
         size += sizeof(int); // Size for unmanaged type Id
+        size += NestedData.GetPacketSize(obj.Data); // Size for nested type Data
         return size;
     }
 
-    private ContainerPacket(FourSer.Tests.GeneratorTestCases.NestedObject.NestedData data, int id)
+    private ContainerPacket(int id, FourSer.Tests.GeneratorTestCases.NestedObject.NestedData data)
     {
-        this.Data = data;
         this.Id = id;
+        this.Data = data;
     }
 
     public ContainerPacket()
     {
-        this.Data = default;
         this.Id = default;
+        this.Data = default;
     }
 
     public static ContainerPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var data = NestedData.Deserialize(ref buffer);
         var id = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
-        var obj = new ContainerPacket(data, id);
+        var data = NestedData.Deserialize(ref buffer);
+        var obj = new ContainerPacket(id, data);
         return obj;
     }
 
@@ -48,33 +48,33 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
 
     public static ContainerPacket Deserialize(System.IO.Stream stream)
     {
-        var data = NestedData.Deserialize(stream);
         var id = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var obj = new ContainerPacket(data, id);
+        var data = NestedData.Deserialize(stream);
+        var obj = new ContainerPacket(id, data);
         return obj;
     }
 
     public static int Serialize(ContainerPacket obj, System.Span<byte> data)
     {
         var originalData = data;
+        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Id);
         if (obj.Data is null)
         {
             throw new System.NullReferenceException($"Property \"Data\" cannot be null.");
         }
         var bytesWritten = NestedData.Serialize(obj.Data, data);
         data = data.Slice(bytesWritten);
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Id);
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(ContainerPacket obj, System.IO.Stream stream)
     {
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
         if (obj.Data is null)
         {
             throw new System.NullReferenceException($"Property \"Data\" cannot be null.");
         }
         NestedData.Serialize(obj.Data, stream);
-        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Id);
     }
 }
 
@@ -97,28 +97,28 @@ public partial class NestedData : ISerializable<NestedData>
     public static int GetPacketSize(NestedData obj)
     {
         var size = 0;
-        size += sizeof(float); // Size for unmanaged type Value
         size += StringEx.MeasureSize(obj.Name); // Size for string Name
+        size += sizeof(float); // Size for unmanaged type Value
         return size;
     }
 
-    private NestedData(float value, string name)
+    private NestedData(string name, float value)
     {
-        this.Value = value;
         this.Name = name;
+        this.Value = value;
     }
 
     public NestedData()
     {
-        this.Value = default;
         this.Name = default;
+        this.Value = default;
     }
 
     public static NestedData Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var value = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadSingle(ref buffer);
         var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
-        var obj = new NestedData(value, name);
+        var value = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadSingle(ref buffer);
+        var obj = new NestedData(name, value);
         return obj;
     }
 
@@ -129,23 +129,23 @@ public partial class NestedData : ISerializable<NestedData>
 
     public static NestedData Deserialize(System.IO.Stream stream)
     {
-        var value = FourSer.Gen.Helpers.StreamReaderHelpers.ReadSingle(stream);
         var name = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new NestedData(value, name);
+        var value = FourSer.Gen.Helpers.StreamReaderHelpers.ReadSingle(stream);
+        var obj = new NestedData(name, value);
         return obj;
     }
 
     public static int Serialize(NestedData obj, System.Span<byte> data)
     {
         var originalData = data;
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteSingle(ref data, (Single)obj.Value);
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.Name);
+        FourSer.Gen.Helpers.SpanWriterHelpers.WriteSingle(ref data, (Single)obj.Value);
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(NestedData obj, System.IO.Stream stream)
     {
-        FourSer.Gen.Helpers.StreamWriterHelpers.WriteSingle(stream, (Single)obj.Value);
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteSingle(stream, (Single)obj.Value);
     }
 }

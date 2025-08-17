@@ -118,32 +118,32 @@ public partial class Dog : ISerializable<Dog>
     public static int GetPacketSize(Dog obj)
     {
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type Age
         size += StringEx.MeasureSize(obj.Name); // Size for string Name
+        size += sizeof(int); // Size for unmanaged type Age
         size += StringEx.MeasureSize(obj.Breed); // Size for string Breed
         return size;
     }
 
-    private Dog(int age, string name, string breed)
+    private Dog(string name, int age, string breed)
     {
-        this.Age = age;
         this.Name = name;
+        this.Age = age;
         this.Breed = breed;
     }
 
     public Dog()
     {
-        this.Age = default;
         this.Name = default;
+        this.Age = default;
         this.Breed = default;
     }
 
     public static new Dog Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var age = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
+        var age = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var breed = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
-        var obj = new Dog(age, name, breed);
+        var obj = new Dog(name, age, breed);
         return obj;
     }
 
@@ -154,26 +154,26 @@ public partial class Dog : ISerializable<Dog>
 
     public static new Dog Deserialize(System.IO.Stream stream)
     {
-        var age = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         var name = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
+        var age = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         var breed = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new Dog(age, name, breed);
+        var obj = new Dog(name, age, breed);
         return obj;
     }
 
     public static int Serialize(Dog obj, System.Span<byte> data)
     {
         var originalData = data;
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Age);
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.Name);
+        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Age);
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.Breed);
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(Dog obj, System.IO.Stream stream)
     {
-        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Age);
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Age);
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Breed);
     }
 }
@@ -197,28 +197,28 @@ public partial class Pet : ISerializable<Pet>
     public static int GetPacketSize(Pet obj)
     {
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type Age
         size += StringEx.MeasureSize(obj.Name); // Size for string Name
+        size += sizeof(int); // Size for unmanaged type Age
         return size;
     }
 
-    private Pet(int age, string name)
+    private Pet(string name, int age)
     {
-        this.Age = age;
         this.Name = name;
+        this.Age = age;
     }
 
     public Pet()
     {
-        this.Age = default;
         this.Name = default;
+        this.Age = default;
     }
 
     public static Pet Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var age = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         var name = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
-        var obj = new Pet(age, name);
+        var age = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
+        var obj = new Pet(name, age);
         return obj;
     }
 
@@ -229,23 +229,23 @@ public partial class Pet : ISerializable<Pet>
 
     public static Pet Deserialize(System.IO.Stream stream)
     {
-        var age = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         var name = FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new Pet(age, name);
+        var age = FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
+        var obj = new Pet(name, age);
         return obj;
     }
 
     public static int Serialize(Pet obj, System.Span<byte> data)
     {
         var originalData = data;
-        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Age);
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteString(ref data, obj.Name);
+        FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (Int32)obj.Age);
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(Pet obj, System.IO.Stream stream)
     {
-        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Age);
         FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);
+        FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (Int32)obj.Age);
     }
 }
