@@ -89,9 +89,9 @@ using System.Collections.Generic;
 [GenerateSerializer]
 class MyData
 {
-    public string {|FS0007:MyCount|} { get; set; }
+    public string MyCount { get; set; }
 
-    [SerializeCollection(CountSizeReference = ""MyCount"")]
+    [SerializeCollection({|FS0007:CountSizeReference = ""MyCount""|})]
     public List<int> MyList { get; set; }
 }";
 

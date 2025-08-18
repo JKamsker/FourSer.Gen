@@ -79,7 +79,8 @@ namespace FourSer.Analyzers
                     var typeIdPropertyArg = serializeCollectionAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "TypeIdProperty");
                     if (typeIdPropertyArg.Key == null || typeIdPropertyArg.Value.Value is not string value || string.IsNullOrEmpty(value))
                     {
-                        var diagnostic = Diagnostic.Create(Rule, serializeCollectionAttribute.ApplicationSyntaxReference!.GetSyntax().GetLocation());
+                        var location = AnalyzerHelper.GetNamedArgumentLocation(serializeCollectionAttribute, "PolymorphicMode") ?? serializeCollectionAttribute.ApplicationSyntaxReference!.GetSyntax().GetLocation();
+                        var diagnostic = Diagnostic.Create(Rule, location);
                         context.ReportDiagnostic(diagnostic);
                     }
                 }

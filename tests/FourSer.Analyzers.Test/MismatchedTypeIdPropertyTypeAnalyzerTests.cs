@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
@@ -64,12 +65,23 @@ class MyData { [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleType
 using FourSer.Contracts;
 using System.Collections.Generic;
 [GenerateSerializer]
-class MyData { [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdProperty = ""P"", TypeIdType = typeof(byte))] public List<int> L {get;set;} public int {|FS0015:P|} {get;set;} }";
-            await new CSharpAnalyzerTest<MismatchedTypeIdPropertyTypeAnalyzer, DefaultVerifier>
+class MyData { [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdProperty = ""P"", TypeIdType = typeof(byte))] public List<int> L {get;set;} public int P {get;set;} }";
+
+            var test = new CSharpAnalyzerTest<MismatchedTypeIdPropertyTypeAnalyzer, DefaultVerifier>
             {
-                TestState = { Sources = { AttributeSource, testCode } },
+                TestState =
+                {
+                    Sources = { AttributeSource, testCode }
+                },
                 ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
-            }.RunAsync();
+            };
+
+            test.ExpectedDiagnostics.Add(
+                new DiagnosticResult("FS0015", DiagnosticSeverity.Error)
+                    .WithSpan("/0/Test1.cs", 5, 85, 5, 105)
+                    .WithArguments("P", "Int32", "Byte"));
+
+            await test.RunAsync();
         }
     }
 }

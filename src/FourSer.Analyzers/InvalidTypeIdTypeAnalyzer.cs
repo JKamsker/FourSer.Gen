@@ -82,7 +82,8 @@ namespace FourSer.Analyzers
                 {
                     if (!IsValidTypeIdType(typeIdType))
                     {
-                        var diagnostic = Diagnostic.Create(Rule, attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), typeIdType.Name);
+                        var location = AnalyzerHelper.GetNamedArgumentLocation(attribute, "TypeIdType") ?? attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation();
+                        var diagnostic = Diagnostic.Create(Rule, location, typeIdType.Name);
                         context.ReportDiagnostic(diagnostic);
                     }
                 }
