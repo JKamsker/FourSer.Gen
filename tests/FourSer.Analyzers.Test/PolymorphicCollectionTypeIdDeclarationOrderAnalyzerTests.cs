@@ -89,5 +89,35 @@ public class Nested {}
             };
             await test.RunAsync();
         }
+        
+        [Fact]
+        public async Task TypeIdDeclaredAfterCollection_ReportsDiagnostic_ImplicitTypeId()
+        {
+            var testCode = @"
+using System.Collections.Generic;
+using FourSer.Contracts;
+
+[GenerateSerializer]
+public partial class MyData
+{
+    [SerializeCollection(TypeIdProperty = nameof(TypeId))]
+    [PolymorphicOption(1, typeof(Nested))]
+    public List<object> {|FSSG002:Items|} { get; set; }
+
+    public int TypeId { get; set; }
+}
+public class Nested {}
+";
+
+            var test = new CSharpAnalyzerTest<PolymorphicCollectionTypeIdDeclarationOrderAnalyzer, DefaultVerifier>
+            {
+                TestState =
+                {
+                    Sources = { ContractsSource, testCode },
+                },
+                ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            };
+            await test.RunAsync();
+        }
     }
 }

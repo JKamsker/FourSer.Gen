@@ -26,13 +26,28 @@ namespace FourSer.Contracts
         [Fact]
         public async Task ValidIntegerTypeIdType_NoDiagnostic()
         {
-            var testCode = @"
-using FourSer.Contracts;
-[GenerateSerializer]
-class MyData { [SerializePolymorphic(TypeIdType = typeof(int))] public object MyProp { get; set; } }";
+            var testCode =
+                //language=csharp
+                """
+
+                using FourSer.Contracts;
+                [GenerateSerializer]
+                class MyData 
+                {
+                    [SerializePolymorphic(TypeIdType = typeof(int))] 
+                    public object MyProp { get; set; }
+                }
+                """;
             await new CSharpAnalyzerTest<InvalidTypeIdTypeAnalyzer, DefaultVerifier>
             {
-                TestState = { Sources = { AttributeSource, testCode } },
+                TestState =
+                {
+                    Sources =
+                    {
+                        AttributeSource,
+                        testCode
+                    }
+                },
                 ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
             }.RunAsync();
         }
@@ -46,7 +61,14 @@ using FourSer.Contracts;
 class MyData { [SerializeCollection(TypeIdType = typeof(MyEnum))] public object MyProp { get; set; } }";
             await new CSharpAnalyzerTest<InvalidTypeIdTypeAnalyzer, DefaultVerifier>
             {
-                TestState = { Sources = { AttributeSource, testCode } },
+                TestState =
+                {
+                    Sources =
+                    {
+                        AttributeSource,
+                        testCode
+                    }
+                },
                 ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
             }.RunAsync();
         }
@@ -60,7 +82,14 @@ using FourSer.Contracts;
 class MyData { [{|FS0013:SerializePolymorphic(TypeIdType = typeof(string))|}] public object MyProp { get; set; } }";
             await new CSharpAnalyzerTest<InvalidTypeIdTypeAnalyzer, DefaultVerifier>
             {
-                TestState = { Sources = { AttributeSource, testCode } },
+                TestState =
+                {
+                    Sources =
+                    {
+                        AttributeSource,
+                        testCode
+                    }
+                },
                 ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
             }.RunAsync();
         }

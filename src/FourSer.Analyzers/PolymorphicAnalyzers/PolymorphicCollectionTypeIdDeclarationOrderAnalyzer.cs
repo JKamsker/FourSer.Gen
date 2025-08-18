@@ -80,16 +80,6 @@ namespace FourSer.Analyzers
                     continue;
                 }
 
-                // Check for PolymorphicMode.SingleTypeId (assuming its value is 1)
-                var polymorphicModeArg = collectionAttributeData.NamedArguments
-                                           .FirstOrDefault(na => na.Key == "PolymorphicMode");
-                
-                // Ensure the argument exists and its value is the one we care about.
-                if (polymorphicModeArg.Value.Value is not int mode || mode != 1) 
-                {
-                    continue;
-                }
-
                 // Get the TypeId property name from the attribute argument.
                 var typeIdPropertyArg = collectionAttributeData.NamedArguments
                                           .FirstOrDefault(na => na.Key == "TypeIdProperty");
