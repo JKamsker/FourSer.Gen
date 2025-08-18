@@ -60,7 +60,7 @@ using System.Collections.Generic;
 public partial class Inventory
 {
     [SerializeCollection(CountSizeReference = nameof(Count))]
-    public List<int> {|FS0007:Items|} { get; set; }
+    public List<int> {|FS0017:Items|} { get; set; }
 
     public int Count { get; set; }
 }";
