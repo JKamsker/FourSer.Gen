@@ -50,6 +50,31 @@ public partial class Inventory
         }
 
         [Fact]
+        public async Task CountSizeReference_DeclaredAfterCollection_Nameof__ReportsDiagnostic()
+        {
+            var testCode = @"
+using FourSer.Contracts;
+using System.Collections.Generic;
+
+[GenerateSerializer]
+public partial class Inventory
+{
+    [SerializeCollection(CountSizeReference = nameof({|FS0017:Count|}))]
+    public List<int> Items { get; set; }
+
+    public int Count { get; set; }
+}";
+
+            await new CSharpAnalyzerTest<CountSizeReferenceOrderAnalyzer, DefaultVerifier>
+            {
+                TestState =
+                {
+                    Sources = { AttributeSource, testCode },
+                }
+            }.RunAsync();
+        }
+        
+        [Fact]
         public async Task CountSizeReference_DeclaredAfterCollection_ReportsDiagnostic()
         {
             var testCode = @"
@@ -59,8 +84,8 @@ using System.Collections.Generic;
 [GenerateSerializer]
 public partial class Inventory
 {
-    [SerializeCollection(CountSizeReference = nameof(Count))]
-    public List<int> {|FS0017:Items|} { get; set; }
+    [SerializeCollection(CountSizeReference = {|FS0017:""Count""|})]
+    public List<int> Items { get; set; }
 
     public int Count { get; set; }
 }";
