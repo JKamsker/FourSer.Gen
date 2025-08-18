@@ -54,13 +54,13 @@ public static class PacketSizeGenerator
 
     private static void GenerateCollectionSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member)
     {
-        if (member.CollectionInfo is null)
+        if (member.CollectionInfo is not { } collectionInfo)
         {
             return;
         }
 
         // Determine the count type to use
-        var countType = member.CollectionInfo?.CountType ?? TypeHelper.GetDefaultCountType();
+        var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
         var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
 
         sb.WriteLineFormat("size += {0}; // Count size for {1}", countSizeExpression, member.Name);
@@ -72,31 +72,41 @@ public static class PacketSizeGenerator
                 return;
             }
 
-            sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
-            using var _ = sb.BeginBlock();
-            if (string.IsNullOrEmpty(info.TypeIdProperty))
+            if (collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId)
             {
-                sb.WriteLineFormat("size += {0};", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
+                if (string.IsNullOrEmpty(info.TypeIdProperty))
+                {
+                    sb.WriteLineFormat("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
+                }
             }
 
-            var itemMember = new MemberToGenerate
-            (
-                "item",
-                member.ListTypeArgument!.Value.TypeName,
-                member.ListTypeArgument.Value.IsUnmanagedType,
-                member.ListTypeArgument.Value.IsStringType,
-                member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
-                false,
-                null,
-                null,
-                member.PolymorphicInfo,
-                false,
-                null,
-                false,
-                false,
-                LocationInfo.None
-            );
-            GeneratePolymorphicSizeCalculation(sb, itemMember, "item");
+            sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+            using (sb.BeginBlock())
+            {
+                if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
+                {
+                    sb.WriteLineFormat("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
+                }
+
+                var itemMember = new MemberToGenerate
+                (
+                    "item",
+                    member.ListTypeArgument!.Value.TypeName,
+                    member.ListTypeArgument.Value.IsUnmanagedType,
+                    member.ListTypeArgument.Value.IsStringType,
+                    member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
+                    false,
+                    null,
+                    null,
+                    member.PolymorphicInfo,
+                    false,
+                    null,
+                    false,
+                    false,
+                    LocationInfo.None
+                );
+                GeneratePolymorphicSizeCalculation(sb, itemMember, "item");
+            }
             return;
         }
 
@@ -122,21 +132,21 @@ public static class PacketSizeGenerator
         }
         else if (member.CollectionTypeInfo is not null)
         {
-            var collectionInfo = member.CollectionTypeInfo.Value;
-            if (collectionInfo.IsElementUnmanagedType)
+            var collectionTypeValue = member.CollectionTypeInfo.Value;
+            if (collectionTypeValue.IsElementUnmanagedType)
             {
                 var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
-                sb.WriteLineFormat("size += {0} * sizeof({1});", countExpression, collectionInfo.ElementTypeName);
+                sb.WriteLineFormat("size += {0} * sizeof({1});", countExpression, collectionTypeValue.ElementTypeName);
             }
-            else if (collectionInfo.IsElementStringType)
+            else if (collectionTypeValue.IsElementStringType)
             {
                 sb.WriteLineFormat("foreach(var item in obj.{0}) {{ size += StringEx.MeasureSize(item); }}", member.Name);
             }
-            else if (collectionInfo.HasElementGenerateSerializerAttribute)
+            else if (collectionTypeValue.HasElementGenerateSerializerAttribute)
             {
                 sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
                 using var _ = sb.BeginBlock();
-                sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetSimpleTypeName(collectionInfo.ElementTypeName));
+                sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetSimpleTypeName(collectionTypeValue.ElementTypeName));
             }
         }
     }
