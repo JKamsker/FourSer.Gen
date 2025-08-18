@@ -22,37 +22,45 @@ public partial class Inventory : ISerializable<Inventory>
         var size = 0;
         size += sizeof(int); // Count size for Items
         size += sizeof(byte); // Size for polymorphic type id
-        var collectionItems = obj.Items?.ToList();
-        if (collectionItems is not null && collectionItems.Count > 0)
+        if (obj.Items is not null)
         {
-            var firstItem = collectionItems[0];
-            switch(firstItem)
+            using(var enumerator = obj.Items.GetEnumerator())
             {
-                case Sword:
+                if (enumerator.MoveNext())
                 {
-                    foreach(var item in collectionItems)
+                    var firstItem = enumerator.Current;
+                    switch(firstItem)
                     {
-                        size += Sword.GetPacketSize((Sword)item);
+                        case Sword:
+                        {
+                            size += Sword.GetPacketSize((Sword)firstItem);
+                            while(enumerator.MoveNext())
+                            {
+                                size += Sword.GetPacketSize((Sword)enumerator.Current);
+                            }
+                            break;
+                        }
+                        case Shield:
+                        {
+                            size += Shield.GetPacketSize((Shield)firstItem);
+                            while(enumerator.MoveNext())
+                            {
+                                size += Shield.GetPacketSize((Shield)enumerator.Current);
+                            }
+                            break;
+                        }
+                        case Potion:
+                        {
+                            size += Potion.GetPacketSize((Potion)firstItem);
+                            while(enumerator.MoveNext())
+                            {
+                                size += Potion.GetPacketSize((Potion)enumerator.Current);
+                            }
+                            break;
+                        }
+                        default: throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {firstItem.GetType().Name}");
                     }
-                    break;
                 }
-                case Shield:
-                {
-                    foreach(var item in collectionItems)
-                    {
-                        size += Shield.GetPacketSize((Shield)item);
-                    }
-                    break;
-                }
-                case Potion:
-                {
-                    foreach(var item in collectionItems)
-                    {
-                        size += Potion.GetPacketSize((Potion)item);
-                    }
-                    break;
-                }
-                default: throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {firstItem.GetType().Name}");
             }
         }
         return size;
@@ -164,55 +172,6 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
-            var collectionItems = obj.Items.ToList();
-            if (collectionItems is null || collectionItems.Count == 0)
-            {
-                SpanWriter.WriteInt32(ref data, (int)0);
-                SpanWriter.WriteByte(ref data, (byte)(byte)FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.ItemTypeId.Sword);
-            }
-            else
-            {
-                SpanWriter.WriteInt32(ref data, (int)collectionItems.Count);
-                var firstItem = collectionItems[0];
-                var discriminator = firstItem switch
-                {
-                    Sword => (byte)(byte)FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.ItemTypeId.Sword,
-                    Shield => (byte)(byte)FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.ItemTypeId.Shield,
-                    Potion => (byte)(byte)FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.ItemTypeId.Potion,
-                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
-                };
-                SpanWriter.WriteByte(ref data, discriminator);
-                switch (discriminator)
-                {
-                    case (byte)FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.ItemTypeId.Sword:
-                    {
-                        for (int i = 0; i < collectionItems.Count; i++)
-                        {
-                            var bytesWritten = Sword.Serialize((Sword)collectionItems[i], data);
-                            data = data.Slice(bytesWritten);
-                        }
-                        break;
-                    }
-                    case (byte)FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.ItemTypeId.Shield:
-                    {
-                        for (int i = 0; i < collectionItems.Count; i++)
-                        {
-                            var bytesWritten = Shield.Serialize((Shield)collectionItems[i], data);
-                            data = data.Slice(bytesWritten);
-                        }
-                        break;
-                    }
-                    case (byte)FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.ItemTypeId.Potion:
-                    {
-                        for (int i = 0; i < collectionItems.Count; i++)
-                        {
-                            var bytesWritten = Potion.Serialize((Potion)collectionItems[i], data);
-                            data = data.Slice(bytesWritten);
-                        }
-                        break;
-                    }
-                }
-            }
         }
         return originalData.Length - data.Length;
     }
@@ -225,52 +184,6 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
-            var collectionItems = obj.Items.ToList();
-            if (collectionItems is null || collectionItems.Count == 0)
-            {
-                StreamWriter.WriteInt32(stream, (int)0);
-                StreamWriter.WriteByte(stream, (byte)(byte)FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.ItemTypeId.Sword);
-            }
-            else
-            {
-                StreamWriter.WriteInt32(stream, (int)collectionItems.Count);
-                var firstItem = collectionItems[0];
-                var discriminator = firstItem switch
-                {
-                    Sword => (byte)(byte)FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.ItemTypeId.Sword,
-                    Shield => (byte)(byte)FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.ItemTypeId.Shield,
-                    Potion => (byte)(byte)FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.ItemTypeId.Potion,
-                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
-                };
-                StreamWriter.WriteByte(stream, discriminator);
-                switch (discriminator)
-                {
-                    case (byte)FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.ItemTypeId.Sword:
-                    {
-                        for (int i = 0; i < collectionItems.Count; i++)
-                        {
-                            Sword.Serialize((Sword)collectionItems[i], stream);
-                        }
-                        break;
-                    }
-                    case (byte)FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.ItemTypeId.Shield:
-                    {
-                        for (int i = 0; i < collectionItems.Count; i++)
-                        {
-                            Shield.Serialize((Shield)collectionItems[i], stream);
-                        }
-                        break;
-                    }
-                    case (byte)FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.ItemTypeId.Potion:
-                    {
-                        for (int i = 0; i < collectionItems.Count; i++)
-                        {
-                            Potion.Serialize((Potion)collectionItems[i], stream);
-                        }
-                        break;
-                    }
-                }
-            }
         }
     }
 }

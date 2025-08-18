@@ -1,4 +1,3 @@
-using System.Linq;
 using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
@@ -91,37 +90,68 @@ public static class PacketSizeGenerator
                 }
 
                 var isListOrArray = member.IsList || (member.CollectionTypeInfo?.IsArray ?? false);
-                if (isListOrArray)
+                if(isListOrArray)
                 {
                     sb.WriteLine($"var {itemsVar} = obj.{member.Name};");
+                    sb.WriteLine($"if ({itemsVar} is not null && {itemsVar}.Count > 0)");
+                    using (sb.BeginBlock())
+                    {
+                        sb.WriteLine($"var firstItem = {itemsVar}[0];");
+                        sb.WriteLine("switch(firstItem)");
+                        using (sb.BeginBlock())
+                        {
+                            foreach (var option in info.Options)
+                            {
+                                var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+                                sb.WriteLine($"case {typeName}:");
+                                using (sb.BeginBlock())
+                                {
+                                    sb.WriteLine($"foreach(var item in {itemsVar})");
+                                    using (sb.BeginBlock())
+                                    {
+                                        sb.WriteLine($"size += {typeName}.GetPacketSize(({typeName})item);");
+                                    }
+                                    sb.WriteLine("break;");
+                                }
+                            }
+                            sb.WriteLineFormat("default: throw new System.IO.InvalidDataException($\"Unknown item type in collection {0}: {{firstItem.GetType().Name}}\");", member.Name);
+                        }
+                    }
                 }
                 else
                 {
-                    sb.WriteLine($"var {itemsVar} = obj.{member.Name}?.ToList();");
-                }
-
-                sb.WriteLine($"if ({itemsVar} is not null && {itemsVar}.Count > 0)");
-                using (sb.BeginBlock())
-                {
-                    sb.WriteLine($"var firstItem = {itemsVar}[0];");
-                    sb.WriteLine("switch(firstItem)");
+                    sb.WriteLine($"if (obj.{member.Name} is not null)");
                     using (sb.BeginBlock())
                     {
-                        foreach (var option in info.Options)
+                        sb.WriteLine($"using(var enumerator = obj.{member.Name}.GetEnumerator())");
+                        using (sb.BeginBlock())
                         {
-                            var typeName = TypeHelper.GetSimpleTypeName(option.Type);
-                            sb.WriteLine($"case {typeName}:");
+                            sb.WriteLine("if (enumerator.MoveNext())");
                             using (sb.BeginBlock())
                             {
-                                sb.WriteLine($"foreach(var item in {itemsVar})");
+                                sb.WriteLine("var firstItem = enumerator.Current;");
+                                sb.WriteLine("switch(firstItem)");
                                 using (sb.BeginBlock())
                                 {
-                                    sb.WriteLine($"size += {typeName}.GetPacketSize(({typeName})item);");
+                                    foreach (var option in info.Options)
+                                    {
+                                        var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+                                        sb.WriteLine($"case {typeName}:");
+                                        using (sb.BeginBlock())
+                                        {
+                                            sb.WriteLine($"size += {typeName}.GetPacketSize(({typeName})firstItem);");
+                                            sb.WriteLine("while(enumerator.MoveNext())");
+                                            using (sb.BeginBlock())
+                                            {
+                                                sb.WriteLine($"size += {typeName}.GetPacketSize(({typeName})enumerator.Current);");
+                                            }
+                                            sb.WriteLine("break;");
+                                        }
+                                    }
+                                    sb.WriteLine($"default: throw new System.IO.InvalidDataException($\"Unknown item type in collection {member.Name}: {{firstItem.GetType().Name}}\");");
                                 }
-                                sb.WriteLine("break;");
                             }
                         }
-                        sb.WriteLineFormat("default: throw new System.IO.InvalidDataException($\"Unknown item type in collection {0}: {{firstItem.GetType().Name}}\");", member.Name);
                     }
                 }
                 return;

@@ -34,12 +34,11 @@ public static class PolymorphicUtilities
         var refOrEmpty = target == "data" ? "ref " : "";
         sb.WriteLineFormat
         (
-            "{0}.Write{1}({2}{3}, ({4}){5});",
+            "{0}.Write{1}({2}{3}, {4});",
             helper,
             typeIdTypeName,
             refOrEmpty,
             target,
-            underlyingType,
             key
         );
     }
