@@ -1,3 +1,4 @@
+using System.Linq;
 using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
@@ -242,30 +243,79 @@ public static class SerializationGenerator
 
                 if (string.IsNullOrEmpty(typeIdProperty))
                 {
-                    sb.WriteLineFormat("var firstItem = obj.{0}.FirstOrDefault();", member.Name);
-                    sb.WriteLine("if (firstItem is not null)");
+                    // New logic: derive type from the first element
+                    var memberName = $"obj.{member.Name}";
+                    var itemsVar = member.Name.ToCamelCase();
+                    if (itemsVar == "items")
+                    {
+                        itemsVar = "collectionItems"; // Avoid conflict with loop variable
+                    }
+
+                    sb.WriteLine($"var {itemsVar} = {memberName}.ToList();");
+
+                    // Handle null or empty list
+                    var defaultOption = info.Options.FirstOrDefault();
+                    if (defaultOption.Equals(default(PolymorphicOption)))
+                    {
+                        // No options to serialize, this is an error case but we should handle it gracefully
+                        return;
+                    }
+
+                    var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+                    var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
+                    var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
+
+                    sb.WriteLine($"if ({itemsVar} is null || {itemsVar}.Count == 0)");
                     using (sb.BeginBlock())
                     {
-                        sb.WriteLine("switch(firstItem)");
+                        PolymorphicUtilities.GenerateWriteTypeIdCode(sb, defaultOption, info, target, helper);
+                        sb.WriteLineFormat("{0}.{1}({2}{3}, ({4})0);", helper, countWriteMethod, refOrEmpty, target, countType);
+                    }
+                    sb.WriteLine("else");
+                    using (sb.BeginBlock())
+                    {
+                        // Determine discriminator from the first item
+                        sb.WriteLine($"var firstItem = {itemsVar}[0];");
+                        sb.WriteLine($"var discriminator = firstItem switch");
+                        sb.WriteLine("{");
+                        sb.Indent();
+                        foreach (var option in info.Options)
+                        {
+                            var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+                            sb.WriteLineFormat("{0} => ({1}){2},", TypeHelper.GetSimpleTypeName(option.Type), typeIdType, key);
+                        }
+                        sb.WriteLine($"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")");
+                        sb.Unindent();
+                        sb.WriteLine("};");
+
+                        PolymorphicUtilities.GenerateWriteTypeIdCode(sb, "discriminator", info, target, helper);
+
+                        // Write count
+                        var countExpression = $"{itemsVar}.Count";
+                        sb.WriteLineFormat("{0}.{1}({2}{3}, ({4}){5});", helper, countWriteMethod, refOrEmpty, target, countType, countExpression);
+
+                        // Serialize items using a for loop
+                        sb.WriteLine("switch (discriminator)");
                         using (sb.BeginBlock())
                         {
                             foreach (var option in info.Options)
                             {
-                                sb.WriteLineFormat("case {0} typedInstance:", TypeHelper.GetSimpleTypeName(option.Type));
+                                var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+                                var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+                                sb.WriteLine($"case {key}:");
                                 using (sb.BeginBlock())
                                 {
-                                    PolymorphicUtilities.GenerateWriteTypeIdCode(sb, option, info, target, helper);
-                                    sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                                    sb.WriteLine($"for (int i = 0; i < {countExpression}; i++)");
                                     using (sb.BeginBlock())
                                     {
                                         if (target == "data")
                                         {
-                                            sb.WriteLineFormat("var bytesWritten = {0}.Serialize(({1})item, data);", TypeHelper.GetSimpleTypeName(option.Type), TypeHelper.GetSimpleTypeName(option.Type));
+                                            sb.WriteLine($"var bytesWritten = {typeName}.Serialize(({typeName}){itemsVar}[i], data);");
                                             sb.WriteLine("data = data.Slice(bytesWritten);");
                                         }
                                         else
                                         {
-                                            sb.WriteLineFormat("{0}.Serialize(({1})item, stream);", TypeHelper.GetSimpleTypeName(option.Type), TypeHelper.GetSimpleTypeName(option.Type));
+                                            sb.WriteLine($"{typeName}.Serialize(({typeName}){itemsVar}[i], stream);");
                                         }
                                     }
                                     sb.WriteLine("break;");
@@ -274,7 +324,7 @@ public static class SerializationGenerator
                         }
                     }
                 }
-                if (!string.IsNullOrEmpty(typeIdProperty))
+                else
                 {
                     sb.WriteLineFormat("switch (obj.{0})", typeIdProperty);
                     using var __ = sb.BeginBlock();
@@ -318,87 +368,6 @@ public static class SerializationGenerator
                         "    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{obj.{1}}}\");",
                         member.Name, localTypeIdProperty
                     );
-                }
-                else
-                {
-                    // New logic: derive type from the first element
-                    var memberName = $"obj.{member.Name}";
-                    var itemsVar = member.Name.ToCamelCase();
-                    if (itemsVar == "items")
-                    {
-                        itemsVar = "collectionItems"; // Avoid conflict with loop variable
-                    }
-
-                    sb.WriteLine($"var {itemsVar} = {memberName};");
-
-                    // Handle null or empty list
-                    var defaultOption = info.Options.FirstOrDefault();
-                    if (defaultOption is null)
-                    {
-                        // No options to serialize, this is an error case but we should handle it gracefully
-                        return;
-                    }
-
-                    var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
-                    var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
-
-                    sb.WriteLine($"if ({itemsVar} is null || {itemsVar}.Count == 0)");
-                    using (sb.BeginBlock())
-                    {
-                        PolymorphicUtilities.GenerateWriteTypeIdCode(sb, defaultOption, info, target, helper);
-                        sb.WriteLineFormat("{0}.{1}({2}{3}, ({4})0);", helper, countWriteMethod, refOrEmpty, target, countType);
-                    }
-                    sb.WriteLine("else");
-                    using (sb.BeginBlock())
-                    {
-                        // Determine discriminator from the first item
-                        sb.WriteLine($"var firstItem = {itemsVar}[0];");
-                        sb.WriteLine("var discriminator = firstItem switch");
-                        using (sb.BeginBlock(end: "};"))
-                        {
-                            foreach (var option in info.Options)
-                            {
-                                var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                                sb.WriteLineFormat("{0} => {1},", TypeHelper.GetSimpleTypeName(option.Type), key);
-                            }
-                            sb.WriteLine("_ => throw new System.IO.InvalidDataException($\"Unknown item type: {firstItem.GetType().Name}\")");
-                        }
-
-                        PolymorphicUtilities.GenerateWriteTypeIdCode(sb, "discriminator", info, target, helper);
-
-                        // Write count
-                        var countExpression = GeneratorUtilities.GetCountExpression(member, itemsVar);
-                        sb.WriteLineFormat("{0}.{1}({2}{3}, ({4}){5});", helper, countWriteMethod, refOrEmpty, target, countType, countExpression);
-
-                        // Serialize items using a for loop
-                        sb.WriteLine("switch (discriminator)");
-                        using (sb.BeginBlock())
-                        {
-                            foreach (var option in info.Options)
-                            {
-                                var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                                var typeName = TypeHelper.GetSimpleTypeName(option.Type);
-                                sb.WriteLine($"case {key}:");
-                                using (sb.BeginBlock())
-                                {
-                                    sb.WriteLine($"for (int i = 0; i < {countExpression}; i++)");
-                                    using (sb.BeginBlock())
-                                    {
-                                        if (target == "data")
-                                        {
-                                            sb.WriteLine($"var bytesWritten = {typeName}.Serialize(({typeName}){itemsVar}[i], data);");
-                                            sb.WriteLine("data = data.Slice(bytesWritten);");
-                                        }
-                                        else
-                                        {
-                                            sb.WriteLine($"{typeName}.Serialize(({typeName}){itemsVar}[i], stream);");
-                                        }
-                                    }
-                                    sb.WriteLine("break;");
-                                }
-                            }
-                        }
-                    }
                 }
                 return;
             }
