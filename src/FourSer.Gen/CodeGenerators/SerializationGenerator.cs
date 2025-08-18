@@ -251,7 +251,15 @@ public static class SerializationGenerator
                         itemsVar = "collectionItems"; // Avoid conflict with loop variable
                     }
 
-                    sb.WriteLine($"var {itemsVar} = {memberName}.ToList();");
+                    var isListOrArray = member.IsList || (member.CollectionTypeInfo?.IsArray ?? false);
+                    if (isListOrArray)
+                    {
+                        sb.WriteLine($"var {itemsVar} = obj.{member.Name};");
+                    }
+                    else
+                    {
+                        sb.WriteLine($"var {itemsVar} = obj.{member.Name}.ToList();");
+                    }
 
                     // Handle null or empty list
                     var defaultOption = info.Options.FirstOrDefault();
