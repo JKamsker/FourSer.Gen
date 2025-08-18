@@ -42,7 +42,7 @@ public partial class MyData
 {
     [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdProperty = nameof(TypeId))]
     [PolymorphicOption(1, typeof(Nested))]
-    public List<object> {|FS002:Items|} { get; set; }
+    public List<object> {|FS0002:Items|} { get; set; }
 
     public int TypeId { get; set; }
 }
@@ -102,7 +102,7 @@ public partial class MyData
 {
     [SerializeCollection(TypeIdProperty = nameof(TypeId))]
     [PolymorphicOption(1, typeof(Nested))]
-    public List<object> {|FS002:Items|} { get; set; }
+    public List<object> {|FS0002:Items|} { get; set; }
 
     public int TypeId { get; set; }
 }
@@ -133,7 +133,7 @@ public partial class MyData
 {
     [SerializeCollection(TypeIdProperty = ""TypeId"")]
     [PolymorphicOption(1, typeof(Nested))]
-    public List<object> {|FS018:Items|} { get; set; }
+    public List<object> {|FS0018:Items|} { get; set; }
 }
 public class Nested {}
 ";
