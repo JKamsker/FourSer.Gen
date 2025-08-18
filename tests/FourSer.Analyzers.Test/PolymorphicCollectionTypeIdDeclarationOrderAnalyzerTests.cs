@@ -1,8 +1,10 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 using FourSer.Analyzers;
+using FourSer.Analyzers.PolymorphicAnalyzers;
 
 namespace FourSer.Analyzers.Test
 {
@@ -40,9 +42,9 @@ using FourSer.Contracts;
 [GenerateSerializer]
 public partial class MyData
 {
-    [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdProperty = nameof(TypeId))]
+    [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdProperty = nameof({|FS0002:TypeId|}))]
     [PolymorphicOption(1, typeof(Nested))]
-    public List<object> {|FS0002:Items|} { get; set; }
+    public List<object> Items { get; set; }
 
     public int TypeId { get; set; }
 }
@@ -100,9 +102,9 @@ using FourSer.Contracts;
 [GenerateSerializer]
 public partial class MyData
 {
-    [SerializeCollection(TypeIdProperty = nameof(TypeId))]
+    [SerializeCollection(TypeIdProperty = nameof({|FS0002:TypeId|}))]
     [PolymorphicOption(1, typeof(Nested))]
-    public List<object> {|FS0002:Items|} { get; set; }
+    public List<object> Items { get; set; }
 
     public int TypeId { get; set; }
 }
@@ -131,9 +133,9 @@ using FourSer.Contracts;
 [GenerateSerializer]
 public partial class MyData
 {
-    [SerializeCollection(TypeIdProperty = ""TypeId"")]
+    [SerializeCollection(TypeIdProperty = {|FS0018:""TypeId""|})]
     [PolymorphicOption(1, typeof(Nested))]
-    public List<object> {|FS0018:Items|} { get; set; }
+    public List<object> Items { get; set; }
 }
 public class Nested {}
 ";

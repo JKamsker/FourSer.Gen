@@ -1,9 +1,12 @@
+#nullable enable
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace FourSer.Analyzers
+namespace FourSer.Analyzers.PolymorphicAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class PolymorphicCollectionTypeIdDeclarationOrderAnalyzer : DiagnosticAnalyzer
@@ -31,8 +34,7 @@ namespace FourSer.Analyzers
 
         private const string Category = "Usage";
 
-        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor
-        (
+        private static readonly DiagnosticDescriptor Rule = new(
             DiagnosticId,
             Title,
             MessageFormat,
@@ -42,8 +44,7 @@ namespace FourSer.Analyzers
             description: Description
         );
 
-        private static readonly DiagnosticDescriptor MissingTypeIdRule = new DiagnosticDescriptor
-        (
+        private static readonly DiagnosticDescriptor MissingTypeIdRule = new(
             MissingTypeIdDiagnosticId,
             MissingTypeIdTitle,
             MissingTypeIdMessageFormat,
@@ -59,27 +60,33 @@ namespace FourSer.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
+            context.RegisterSyntaxNodeAction(AnalyzePropertyDeclaration, SyntaxKind.PropertyDeclaration);
         }
 
-        private void AnalyzeNamedType(SymbolAnalysisContext context)
+        private void AnalyzePropertyDeclaration(SyntaxNodeAnalysisContext context)
         {
-            var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
+            var propertyDeclaration = (PropertyDeclarationSyntax)context.Node;
 
-            // 1. Get the INamedTypeSymbol for your attributes from the compilation.
-            // This is the core improvement.
-            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
-            var serializeCollectionAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.SerializeCollectionAttribute");
-
-            // If the attributes are not found in the compilation, we can't do anything.
-            if (generateSerializerAttribute == null || serializeCollectionAttribute == null)
+            var typeDeclaration = propertyDeclaration.FirstAncestorOrSelf<TypeDeclarationSyntax>();
+            if (typeDeclaration == null)
             {
                 return;
             }
 
-            // 2. Check for the class attribute by comparing symbols directly.
-            // This is much more efficient and robust than string comparison.
-            bool hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
+            var semanticModel = context.SemanticModel;
+            var typeSymbol = semanticModel.GetDeclaredSymbol(typeDeclaration) as INamedTypeSymbol;
+            if (typeSymbol == null)
+            {
+                return;
+            }
+
+            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            if (generateSerializerAttribute == null)
+            {
+                return;
+            }
+
+            bool hasGenerateSerializerAttribute = typeSymbol.GetAttributes()
                 .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
 
             if (!hasGenerateSerializerAttribute)
@@ -87,58 +94,68 @@ namespace FourSer.Analyzers
                 return;
             }
 
-            // 3. Get all properties once for efficient lookup.
-            var properties = namedTypeSymbol.GetMembers().OfType<IPropertySymbol>().ToImmutableArray();
+            var serializeCollectionAttributeSyntax = propertyDeclaration.AttributeLists
+                .SelectMany(al => al.Attributes)
+                .FirstOrDefault(attr => semanticModel.GetTypeInfo(attr).Type?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
 
-            foreach (var propertySymbol in properties)
+            if (serializeCollectionAttributeSyntax == null)
             {
-                var collectionAttributeData = propertySymbol.GetAttributes()
-                    .FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, serializeCollectionAttribute));
+                return;
+            }
 
-                if (collectionAttributeData == null)
-                {
-                    continue;
-                }
+            var typeIdPropertyArgument = serializeCollectionAttributeSyntax.ArgumentList?.Arguments
+                .FirstOrDefault(arg => arg.NameEquals?.Name.Identifier.ValueText == "TypeIdProperty");
 
-                // Get the TypeId property name from the attribute argument.
-                var typeIdPropertyArg = collectionAttributeData.NamedArguments
-                                          .FirstOrDefault(na => na.Key == "TypeIdProperty");
+            if (typeIdPropertyArgument?.Expression == null)
+            {
+                return;
+            }
 
-                if (typeIdPropertyArg.Value.Value is not string typeIdPropertyName)
-                {
-                    continue;
-                }
+            var argumentExpression = typeIdPropertyArgument.Expression;
+            string? typeIdPropertyName = null;
+            Location? diagnosticLocation = null;
 
-                // 4. Find the TypeId property symbol more directly.
-                var typeIdProperty = properties.FirstOrDefault(p => p.Name == typeIdPropertyName);
-                var collectionLocation = propertySymbol.Locations.FirstOrDefault();
+            if (argumentExpression is LiteralExpressionSyntax literalExpression)
+            {
+                typeIdPropertyName = semanticModel.GetConstantValue(literalExpression).Value as string;
+                diagnosticLocation = literalExpression.GetLocation();
+            }
+            else if (argumentExpression is InvocationExpressionSyntax invocationExpression &&
+                     invocationExpression.Expression is IdentifierNameSyntax identifierName &&
+                     identifierName.Identifier.ValueText == "nameof" &&
+                     invocationExpression.ArgumentList.Arguments.Count == 1)
+            {
+                var nameofArgument = invocationExpression.ArgumentList.Arguments[0];
+                if (nameofArgument.Expression is IdentifierNameSyntax propertyIdentifier)
+                {
+                    typeIdPropertyName = propertyIdentifier.Identifier.ValueText;
+                    diagnosticLocation = propertyIdentifier.GetLocation();
+                }
+            }
 
-                if (typeIdProperty == null)
-                {
-                    // TypeId property not found, report missing TypeId diagnostic.
-                    var diagnostic = Diagnostic.Create(MissingTypeIdRule, collectionLocation, typeIdPropertyName, propertySymbol.Name);
-                    context.ReportDiagnostic(diagnostic);
-                    continue;
-                }
-                
-                // Ensure the property exists and has a location.
-                if (collectionLocation == null)
-                {
-                    continue;
-                }
-                
-                var typeIdPropertyLocation = typeIdProperty.Locations.FirstOrDefault();
-                if (typeIdPropertyLocation == null)
-                {
-                    continue;
-                }
+            if (string.IsNullOrEmpty(typeIdPropertyName) || diagnosticLocation == null)
+            {
+                return;
+            }
 
-                // Compare source code positions to enforce declaration order.
-                if (typeIdPropertyLocation.SourceSpan.Start > collectionLocation.SourceSpan.Start)
-                {
-                    var diagnostic = Diagnostic.Create(Rule, collectionLocation, typeIdPropertyName, propertySymbol.Name);
-                    context.ReportDiagnostic(diagnostic);
-                }
+            var typeIdProperty = typeSymbol.GetMembers(typeIdPropertyName).FirstOrDefault();
+            var propertySymbol = semanticModel.GetDeclaredSymbol(propertyDeclaration) as IPropertySymbol;
+            if (propertySymbol == null)
+            {
+                return;
+            }
+
+            if (typeIdProperty == null)
+            {
+                var diagnostic = Diagnostic.Create(MissingTypeIdRule, diagnosticLocation, typeIdPropertyName, propertySymbol.Name);
+                context.ReportDiagnostic(diagnostic);
+                return;
+            }
+
+            if (typeIdProperty.Locations.First().SourceSpan.Start > propertySymbol.Locations.First().SourceSpan.Start)
+            {
+                var diagnostic = Diagnostic.Create(Rule, diagnosticLocation, typeIdPropertyName, propertySymbol.Name);
+                context.ReportDiagnostic(diagnostic);
             }
         }
     }
