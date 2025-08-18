@@ -12,7 +12,7 @@ namespace FourSer.Analyzers
         public const string DiagnosticId = "FS0015";
 
         private static readonly LocalizableString Title = "Mismatched TypeIdProperty type";
-        private static readonly LocalizableString MessageFormat = "The type of the TypeIdProperty '{0}' is '{1}', which does not match the expected TypeIdType '{2}'.";
+        private static readonly LocalizableString MessageFormat = "The type of the TypeIdProperty '{0}' is '{1}', which does not match the expected TypeIdType '{2}'";
         private static readonly LocalizableString Description = "The type of the property specified in TypeIdProperty must match the type specified in TypeIdType.";
         private const string Category = "Usage";
 
