@@ -12,27 +12,29 @@ namespace FourSer.Gen.CodeGenerators;
 /// </summary>
 public static class DeserializationGenerator
 {
-    public static void GenerateDeserialize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
+    public static void GenerateDeserialize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate, bool isStatic)
     {
-        GenerateDeserializeWithRef(sb, typeToGenerate);
+        GenerateDeserializeWithRef(sb, typeToGenerate, isStatic);
         sb.WriteLine();
-        GenerateDeserializeWithSpan(sb, typeToGenerate);
+        GenerateDeserializeWithSpan(sb, typeToGenerate, isStatic);
         sb.WriteLine();
-        GenerateDeserializeWithStream(sb, typeToGenerate);
+        GenerateDeserializeWithStream(sb, typeToGenerate, isStatic);
     }
 
-    private static void GenerateDeserializeWithSpan(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
+    private static void GenerateDeserializeWithSpan(IndentedStringBuilder sb, TypeToGenerate typeToGenerate, bool isStatic)
     {
         var newKeyword = typeToGenerate.HasSerializableBaseType ? "new " : "";
-        sb.WriteLineFormat("public static {0}{1} Deserialize(System.ReadOnlySpan<byte> buffer)", newKeyword, typeToGenerate.Name);
+        var staticKeyword = isStatic ? "static " : string.Empty;
+        sb.WriteLineFormat("public {0}{1}{2} Deserialize(System.ReadOnlySpan<byte> buffer)", staticKeyword, newKeyword, typeToGenerate.Name);
         using var _ = sb.BeginBlock();
         sb.WriteLine("return Deserialize(ref buffer);");
     }
 
-    private static void GenerateDeserializeWithStream(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
+    private static void GenerateDeserializeWithStream(IndentedStringBuilder sb, TypeToGenerate typeToGenerate, bool isStatic)
     {
         var newKeyword = typeToGenerate.HasSerializableBaseType ? "new " : "";
-        sb.WriteLineFormat("public static {0}{1} Deserialize(System.IO.Stream stream)", newKeyword, typeToGenerate.Name);
+        var staticKeyword = isStatic ? "static " : string.Empty;
+        sb.WriteLineFormat("public {0}{1}{2} Deserialize(System.IO.Stream stream)", staticKeyword, newKeyword, typeToGenerate.Name);
         using var _ = sb.BeginBlock();
         foreach (var member in typeToGenerate.Members)
         {
@@ -46,8 +48,18 @@ public static class DeserializationGenerator
             );
         }
 
-        if (typeToGenerate.Constructor is { } ctor)
+        if (!isStatic || typeToGenerate.Constructor is null)
         {
+            sb.WriteLineFormat("var obj = new {0}();", typeToGenerate.Name);
+            foreach (var member in typeToGenerate.Members)
+            {
+                var camelCaseName = member.Name.ToCamelCase();
+                sb.WriteLineFormat("obj.{0} = {1};", member.Name, camelCaseName);
+            }
+        }
+        else
+        {
+            var ctor = typeToGenerate.Constructor.Value;
             var ctorArgs = string.Join(", ", ctor.Parameters.Select(p => p.Name.ToCamelCase()));
             sb.WriteLineFormat("var obj = new {0}({1});", typeToGenerate.Name, ctorArgs);
 
@@ -60,23 +72,15 @@ public static class DeserializationGenerator
                 sb.WriteLineFormat("obj.{0} = {1};", member.Name, camelCaseName);
             }
         }
-        else
-        {
-            sb.WriteLineFormat("var obj = new {0}();", typeToGenerate.Name);
-            foreach (var member in typeToGenerate.Members)
-            {
-                var camelCaseName = member.Name.ToCamelCase();
-                sb.WriteLineFormat("obj.{0} = {1};", member.Name, camelCaseName);
-            }
-        }
 
         sb.WriteLine("return obj;");
     }
 
-    private static void GenerateDeserializeWithRef(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
+    private static void GenerateDeserializeWithRef(IndentedStringBuilder sb, TypeToGenerate typeToGenerate, bool isStatic)
     {
         var newKeyword = typeToGenerate.HasSerializableBaseType ? "new " : "";
-        sb.WriteLineFormat("public static {0}{1} Deserialize(ref System.ReadOnlySpan<byte> buffer)", newKeyword, typeToGenerate.Name);
+        var staticKeyword = isStatic ? "static " : string.Empty;
+        sb.WriteLineFormat("public {0}{1}{2} Deserialize(ref System.ReadOnlySpan<byte> buffer)", staticKeyword, newKeyword, typeToGenerate.Name);
         using var _ = sb.BeginBlock();
         foreach (var member in typeToGenerate.Members)
         {
@@ -90,15 +94,10 @@ public static class DeserializationGenerator
             );
         }
 
-        if (typeToGenerate.Constructor is { } ctor)
+        if (!isStatic || typeToGenerate.Constructor is null)
         {
-            var ctorArgs = string.Join(", ", ctor.Parameters.Select(p => p.Name.ToCamelCase()));
-            sb.WriteLineFormat("var obj = new {0}({1});", typeToGenerate.Name, ctorArgs);
-
-            var membersInCtor = new HashSet<string>(ctor.Parameters.Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
-            var membersNotInCtor = typeToGenerate.Members.Where(m => !membersInCtor.Contains(m.Name));
-
-            foreach (var member in membersNotInCtor)
+            sb.WriteLineFormat("var obj = new {0}();", typeToGenerate.Name);
+            foreach (var member in typeToGenerate.Members)
             {
                 var camelCaseName = member.Name.ToCamelCase();
                 sb.WriteLineFormat("obj.{0} = {1};", member.Name, camelCaseName);
@@ -106,8 +105,14 @@ public static class DeserializationGenerator
         }
         else
         {
-            sb.WriteLineFormat("var obj = new {0}();", typeToGenerate.Name);
-            foreach (var member in typeToGenerate.Members)
+            var ctor = typeToGenerate.Constructor.Value;
+            var ctorArgs = string.Join(", ", ctor.Parameters.Select(p => p.Name.ToCamelCase()));
+            sb.WriteLineFormat("var obj = new {0}({1});", typeToGenerate.Name, ctorArgs);
+
+            var membersInCtor = new HashSet<string>(ctor.Parameters.Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
+            var membersNotInCtor = typeToGenerate.Members.Where(m => !membersInCtor.Contains(m.Name));
+
+            foreach (var member in membersNotInCtor)
             {
                 var camelCaseName = member.Name.ToCamelCase();
                 sb.WriteLineFormat("obj.{0} = {1};", member.Name, camelCaseName);

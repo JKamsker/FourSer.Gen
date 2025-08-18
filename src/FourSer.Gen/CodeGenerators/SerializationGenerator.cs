@@ -9,16 +9,17 @@ namespace FourSer.Gen.CodeGenerators;
 /// </summary>
 public static class SerializationGenerator
 {
-    public static void GenerateSerialize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
+    public static void GenerateSerialize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate, bool isStatic)
     {
-        GenerateSpanSerialize(sb, typeToGenerate);
+        GenerateSpanSerialize(sb, typeToGenerate, isStatic);
         sb.WriteLine();
-        GenerateStreamSerialize(sb, typeToGenerate);
+        GenerateStreamSerialize(sb, typeToGenerate, isStatic);
     }
 
-    private static void GenerateSpanSerialize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
+    private static void GenerateSpanSerialize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate, bool isStatic)
     {
-        sb.WriteLineFormat("public static int Serialize({0} obj, System.Span<byte> data)", typeToGenerate.Name);
+        var staticKeyword = isStatic ? "static " : string.Empty;
+        sb.WriteLineFormat("public {0}int Serialize({1} obj, System.Span<byte> data)", staticKeyword, typeToGenerate.Name);
         using var _ = sb.BeginBlock();
         sb.WriteLine("var originalData = data;");
 
@@ -68,9 +69,10 @@ public static class SerializationGenerator
         sb.WriteLine("return originalData.Length - data.Length;");
     }
 
-    private static void GenerateStreamSerialize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
+    private static void GenerateStreamSerialize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate, bool isStatic)
     {
-        sb.WriteLineFormat("public static void Serialize({0} obj, System.IO.Stream stream)", typeToGenerate.Name);
+        var staticKeyword = isStatic ? "static " : string.Empty;
+        sb.WriteLineFormat("public {0}void Serialize({1} obj, System.IO.Stream stream)", staticKeyword, typeToGenerate.Name);
         using var _ = sb.BeginBlock();
         // Pre-pass to update TypeId properties
         foreach (var member in typeToGenerate.Members)

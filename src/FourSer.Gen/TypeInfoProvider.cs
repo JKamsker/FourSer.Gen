@@ -37,6 +37,7 @@ internal static class TypeInfoProvider
         var constructorInfo = GetConstructorInfo(typeSymbol, serializableMembers);
 
         var hasSerializableBaseType = HasGenerateSerializerAttribute(typeSymbol.BaseType);
+        var generationMode = GetGenerationMode(context.Attributes[0]);
 
         return new TypeToGenerate
         (
@@ -47,8 +48,27 @@ internal static class TypeInfoProvider
             serializableMembers,
             nestedTypes,
             hasSerializableBaseType,
-            constructorInfo
+            constructorInfo,
+            generationMode
         );
+    }
+
+    private static int GetGenerationMode(AttributeData? attribute)
+    {
+        if (attribute is null)
+        {
+            return 0; // Default to Partial
+        }
+
+        foreach (var namedArgument in attribute.NamedArguments)
+        {
+            if (namedArgument.Key == "Mode" && namedArgument.Value.Value is not null)
+            {
+                return (int)namedArgument.Value.Value;
+            }
+        }
+
+        return 0; // Default to Partial
     }
 
     private static ConstructorInfo? GetConstructorInfo
@@ -346,25 +366,32 @@ internal static class TypeInfoProvider
 
     private static bool HasGenerateSerializerAttribute(INamedTypeSymbol? typeSymbol)
     {
+        return GetGenerateSerializerAttribute(typeSymbol) is not null;
+    }
+
+    private static AttributeData? GetGenerateSerializerAttribute(INamedTypeSymbol? typeSymbol)
+    {
         if (typeSymbol is null)
         {
-            return false;
+            return null;
         }
 
         foreach (var ad in typeSymbol.GetAttributes())
         {
             if (ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute")
             {
-                return true;
+                return ad;
             }
         }
 
-        return false;
+        return null;
     }
 
     private static TypeToGenerate? CreateNestedTypeToGenerate(INamedTypeSymbol nestedTypeSymbol)
     {
-        if (!HasGenerateSerializerAttribute(nestedTypeSymbol))
+        var attribute = GetGenerateSerializerAttribute(nestedTypeSymbol);
+
+        if (attribute is null)
         {
             return null;
         }
@@ -375,6 +402,7 @@ internal static class TypeInfoProvider
         var hasSerializableBaseType = HasGenerateSerializerAttribute(nestedTypeSymbol.BaseType);
 
         var constructorInfo = GetConstructorInfo(nestedTypeSymbol, nestedMembers);
+        var generationMode = GetGenerationMode(attribute);
 
         return new TypeToGenerate
         (
@@ -385,7 +413,8 @@ internal static class TypeInfoProvider
             nestedMembers,
             deeperNestedTypes,
             hasSerializableBaseType,
-            constructorInfo
+            constructorInfo,
+            generationMode
         );
     }
 

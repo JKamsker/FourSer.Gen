@@ -9,9 +9,10 @@ namespace FourSer.Gen.CodeGenerators;
 /// </summary>
 public static class PacketSizeGenerator
 {
-    public static void GenerateGetPacketSize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
+    public static void GenerateGetPacketSize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate, bool isStatic)
     {
-        sb.WriteLineFormat("public static int GetPacketSize({0} obj)", typeToGenerate.Name);
+        var staticKeyword = isStatic ? "static " : string.Empty;
+        sb.WriteLineFormat("public {0}int GetPacketSize({1} obj)", staticKeyword, typeToGenerate.Name);
         using var _ = sb.BeginBlock();
         sb.WriteLine("var size = 0;");
 

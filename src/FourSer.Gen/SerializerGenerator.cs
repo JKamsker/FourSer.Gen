@@ -51,6 +51,23 @@ public class SerializerGenerator : IIncrementalGenerator
             return;
         }
 
+        switch (typeToGenerate.GenerationMode)
+        {
+            case 0: // Partial
+                GeneratePartialSerializer(context, typeToGenerate);
+                break;
+            case 1: // Separate
+                GenerateSeparateSerializer(context, typeToGenerate);
+                break;
+            default:
+                // This case should not be hit if the enum is used correctly.
+                // You might want to report a diagnostic here.
+                break;
+        }
+    }
+
+    private static void GeneratePartialSerializer(SourceProductionContext context, TypeToGenerate typeToGenerate)
+    {
         var sb = new IndentedStringBuilder();
 
         GenerateFileHeader(sb, typeToGenerate);
@@ -58,7 +75,7 @@ public class SerializerGenerator : IIncrementalGenerator
 
         using (sb.BeginBlock())
         {
-            PacketSizeGenerator.GenerateGetPacketSize(sb, typeToGenerate);
+            PacketSizeGenerator.GenerateGetPacketSize(sb, typeToGenerate, true);
             sb.WriteLine();
 
             if (typeToGenerate.Constructor is { ShouldGenerate: true } ctor && !typeToGenerate.IsRecord)
@@ -76,10 +93,10 @@ public class SerializerGenerator : IIncrementalGenerator
                 }
             }
 
-            DeserializationGenerator.GenerateDeserialize(sb, typeToGenerate);
+            DeserializationGenerator.GenerateDeserialize(sb, typeToGenerate, true);
             sb.WriteLine();
 
-            SerializationGenerator.GenerateSerialize(sb, typeToGenerate);
+            SerializationGenerator.GenerateSerialize(sb, typeToGenerate, true);
 
             if (!typeToGenerate.NestedTypes.IsEmpty)
             {
@@ -87,9 +104,35 @@ public class SerializerGenerator : IIncrementalGenerator
             }
         }
 
-        // Namespaces can contain '.', which is not allowed in file names.
         var hintName = $"{typeToGenerate.Namespace}.{typeToGenerate.Name}".Replace('.', '_');
         context.AddSource($"{hintName}.g.cs", sb.ToString());
+    }
+
+    private static void GenerateSeparateSerializer(SourceProductionContext context, TypeToGenerate typeToGenerate)
+    {
+        var sb = new IndentedStringBuilder();
+
+        GenerateFileHeader(sb, typeToGenerate);
+        GenerateSerializerClassDeclaration(sb, typeToGenerate);
+
+        using (sb.BeginBlock())
+        {
+            PacketSizeGenerator.GenerateGetPacketSize(sb, typeToGenerate, false);
+            sb.WriteLine();
+
+            DeserializationGenerator.GenerateDeserialize(sb, typeToGenerate, false);
+            sb.WriteLine();
+
+            SerializationGenerator.GenerateSerialize(sb, typeToGenerate, false);
+        }
+
+        var hintName = $"{typeToGenerate.Namespace}.{typeToGenerate.Name}Serializer".Replace('.', '_');
+        context.AddSource($"{hintName}.g.cs", sb.ToString());
+    }
+
+    private static void GenerateSerializerClassDeclaration(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
+    {
+        sb.WriteLineFormat("public class {0}Serializer : ISerializer<{0}>", typeToGenerate.Name);
     }
 
     private static void GenerateFileHeader(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)

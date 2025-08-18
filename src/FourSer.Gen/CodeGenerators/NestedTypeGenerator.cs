@@ -37,11 +37,11 @@ public static class NestedTypeGenerator
                 }
             }
 
-            PacketSizeGenerator.GenerateGetPacketSize(sb, nestedType);
+            PacketSizeGenerator.GenerateGetPacketSize(sb, nestedType, true);
             sb.WriteLine();
-            DeserializationGenerator.GenerateDeserialize(sb, nestedType);
+            DeserializationGenerator.GenerateDeserialize(sb, nestedType, true);
             sb.WriteLine();
-            SerializationGenerator.GenerateSerialize(sb, nestedType);
+            SerializationGenerator.GenerateSerialize(sb, nestedType, true);
 
             // Handle even deeper nested types recursively
             if (!nestedType.NestedTypes.IsEmpty)

@@ -18,7 +18,10 @@ public class GeneratorTests
 using System;
 namespace FourSer.Contracts;
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-public class GenerateSerializerAttribute : Attribute { }
+public class GenerateSerializerAttribute : Attribute
+{
+    public GenerationMode Mode { get; set; }
+}
 ",
         @"
 using System;
@@ -27,8 +30,31 @@ public interface ISerializable<T> where T : ISerializable<T>
 {
     static abstract int GetPacketSize(T obj);
     static abstract int Serialize(T obj, Span<byte> data);
+    static abstract void Serialize(T obj, System.IO.Stream stream);
     static abstract T Deserialize(ref ReadOnlySpan<byte> data);
     static abstract T Deserialize(ReadOnlySpan<byte> data);
+    static abstract T Deserialize(System.IO.Stream stream);
+}
+",
+        @"
+namespace FourSer.Contracts;
+public enum GenerationMode
+{
+    Partial,
+    Separate
+}
+",
+        @"
+using System;
+namespace FourSer.Contracts;
+public interface ISerializer<T>
+{
+    int GetPacketSize(T obj);
+    int Serialize(T obj, Span<byte> data);
+    void Serialize(T obj, System.IO.Stream stream);
+    T Deserialize(ref ReadOnlySpan<byte> data);
+    T Deserialize(ReadOnlySpan<byte> data);
+    T Deserialize(System.IO.Stream stream);
 }
 ",
         @"
