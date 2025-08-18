@@ -242,61 +242,91 @@ public static class SerializationGenerator
 
                 if (string.IsNullOrEmpty(typeIdProperty))
                 {
-                    // This case should be prevented by an analyzer
-                    sb.WriteLineFormat("// TypeIdProperty is not set for {0}", member.Name);
-                    return;
-                }
-
-                sb.WriteLineFormat("switch (obj.{0})", typeIdProperty);
-                using var __ = sb.BeginBlock();
-                foreach (var option in info.Options)
-                {
-                    var key = option.Key.ToString();
-                    if (info.EnumUnderlyingType is not null)
-                    {
-                        key = $"({info.TypeIdType}){key}";
-                    }
-                    else if (info.TypeIdType.EndsWith("Enum"))
-                    {
-                        key = $"{info.TypeIdType}.{key}";
-                    }
-
-                    sb.WriteLineFormat("case {0}:", key);
+                    sb.WriteLineFormat("var firstItem = obj.{0}.FirstOrDefault();", member.Name);
+                    sb.WriteLine("if (firstItem is not null)");
                     using (sb.BeginBlock())
                     {
-                        sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                        sb.WriteLine("switch(firstItem)");
                         using (sb.BeginBlock())
                         {
-                            if (target == "data")
+                            foreach (var option in info.Options)
                             {
-                                sb.WriteLineFormat
-                                (
-                                    "var bytesWritten = {0}.Serialize(({0})item, data);",
-                                    TypeHelper.GetSimpleTypeName(option.Type)
-                                );
-                                sb.WriteLine("data = data.Slice(bytesWritten);");
-                            }
-                            else
-                            {
-                                sb.WriteLineFormat
-                                (
-                                    "{0}.Serialize(({0})item, stream);",
-                                    TypeHelper.GetSimpleTypeName(option.Type)
-                                );
+                                sb.WriteLineFormat("case {0} typedInstance:", TypeHelper.GetSimpleTypeName(option.Type));
+                                using (sb.BeginBlock())
+                                {
+                                    PolymorphicUtilities.GenerateWriteTypeIdCode(sb, option, info, target, helper);
+                                    sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                                    using (sb.BeginBlock())
+                                    {
+                                        if (target == "data")
+                                        {
+                                            sb.WriteLineFormat("var bytesWritten = {0}.Serialize(({1})item, data);", TypeHelper.GetSimpleTypeName(option.Type), TypeHelper.GetSimpleTypeName(option.Type));
+                                            sb.WriteLine("data = data.Slice(bytesWritten);");
+                                        }
+                                        else
+                                        {
+                                            sb.WriteLineFormat("{0}.Serialize(({1})item, stream);", TypeHelper.GetSimpleTypeName(option.Type), TypeHelper.GetSimpleTypeName(option.Type));
+                                        }
+                                    }
+                                    sb.WriteLine("break;");
+                                }
                             }
                         }
-
-                        sb.WriteLine("break;");
                     }
                 }
+                else
+                {
+                    sb.WriteLineFormat("switch (obj.{0})", typeIdProperty);
+                    using var __ = sb.BeginBlock();
+                    foreach (var option in info.Options)
+                    {
+                        var key = option.Key.ToString();
+                        if (info.EnumUnderlyingType is not null)
+                        {
+                            key = $"({info.TypeIdType}){key}";
+                        }
+                        else if (info.TypeIdType.EndsWith("Enum"))
+                        {
+                            key = $"{info.TypeIdType}.{key}";
+                        }
 
-                sb.WriteLine("default:");
-                var localTypeIdProperty = typeIdProperty;
-                sb.WriteLineFormat
-                (
-                    "    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{obj.{1}}}\");",
-                    member.Name, localTypeIdProperty
-                );
+                        sb.WriteLineFormat("case {0}:", key);
+                        using (sb.BeginBlock())
+                        {
+                            sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                            using (sb.BeginBlock())
+                            {
+                                if (target == "data")
+                                {
+                                    sb.WriteLineFormat
+                                    (
+                                        "var bytesWritten = {0}.Serialize(({0})item, data);",
+                                        TypeHelper.GetSimpleTypeName(option.Type)
+                                    );
+                                    sb.WriteLine("data = data.Slice(bytesWritten);");
+                                }
+                                else
+                                {
+                                    sb.WriteLineFormat
+                                    (
+                                        "{0}.Serialize(({0})item, stream);",
+                                        TypeHelper.GetSimpleTypeName(option.Type)
+                                    );
+                                }
+                            }
+
+                            sb.WriteLine("break;");
+                        }
+                    }
+
+                    sb.WriteLine("default:");
+                    var localTypeIdProperty = typeIdProperty;
+                    sb.WriteLineFormat
+                    (
+                        "    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{obj.{1}}}\");",
+                        member.Name, localTypeIdProperty
+                    );
+                }
                 return;
             }
         }

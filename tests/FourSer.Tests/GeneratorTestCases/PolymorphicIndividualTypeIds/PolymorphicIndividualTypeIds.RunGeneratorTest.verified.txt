@@ -23,7 +23,7 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         size += sizeof(byte); // Count size for Animals
         foreach(var item in obj.Animals)
         {
-            size += sizeof(byte);
+            size += sizeof(byte); // Size for polymorphic type id
             switch (item)
             {
                 case Cat typedInstance:

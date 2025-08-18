@@ -273,7 +273,20 @@ public static class DeserializationGenerator
             {
                 var info = member.PolymorphicInfo!.Value;
                 var typeIdProperty = collectionInfo.TypeIdProperty;
-                var typeIdVar = typeIdProperty!.ToCamelCase();
+                string typeIdVar;
+
+                if (string.IsNullOrEmpty(typeIdProperty))
+                {
+                    typeIdVar = "typeId";
+                    var typeToRead = info.EnumUnderlyingType ?? info.TypeIdType;
+                    var typeIdReadMethod = TypeHelper.GetReadMethodName(typeToRead);
+                    var cast = info.EnumUnderlyingType is not null ? $"({info.TypeIdType})" : "";
+                    sb.WriteLineFormat("var {0} = {1}{2}.{3}({4}{5});", typeIdVar, cast, helper, typeIdReadMethod, refOrEmpty, source);
+                }
+                else
+                {
+                    typeIdVar = typeIdProperty.ToCamelCase();
+                }
 
                 sb.WriteLineFormat("switch ({0})", typeIdVar);
                 using var _ = sb.BeginBlock();
