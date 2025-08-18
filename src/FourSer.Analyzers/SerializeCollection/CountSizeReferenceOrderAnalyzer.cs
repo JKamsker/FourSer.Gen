@@ -9,7 +9,7 @@ namespace FourSer.Analyzers.SerializeCollection
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class CountSizeReferenceOrderAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "FS0007";
+        public const string DiagnosticId = "FS0017";
 
         private static readonly LocalizableString Title = "CountSizeReference target must be declared before the collection";
         private static readonly LocalizableString MessageFormat = "The property '{0}' referenced by CountSizeReference must be declared before the collection property '{1}'";

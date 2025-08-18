@@ -11,6 +11,7 @@ public partial struct ListOfStructsEntity
 [GenerateSerializer]
 public partial class ListOfStructs
 {
-    [SerializeCollection]
+    [SerializeCollection(CountSizeReference = nameof(Count))]
     public List<ListOfStructsEntity> Structs { get; set; } = new();
+    public int Count { get; set; }
 }

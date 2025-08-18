@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace FourSer.Analyzers
+namespace FourSer.Analyzers.SerializeCollection
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class CountSizeReferenceExistenceAnalyzer : DiagnosticAnalyzer
