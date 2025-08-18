@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\FourSer.Analyzers\FourSer.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\FourSer.Gen\FourSer.Gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\FourSer.Contracts\FourSer.Contracts.csproj" />
-    <ProjectReference Include="..\FourSer.Analyzers\FourSer.Analyzers\FourSer.Analyzers\FourSer.Analyzers.csproj" />
   </ItemGroup>
 
   <ItemGroup>
