@@ -89,7 +89,8 @@ namespace FourSer.Analyzers.SerializeCollection
 
                 if (referencedProperty == null)
                 {
-                    var diagnostic = Diagnostic.Create(Rule, symbol.Locations[0], referencedPropertyName, containingType.Name);
+                    var location = AnalyzerHelper.GetNamedArgumentLocation(serializeCollectionAttribute, "CountSizeReference") ?? symbol.Locations[0];
+                    var diagnostic = Diagnostic.Create(Rule, location, referencedPropertyName, containingType.Name);
                     context.ReportDiagnostic(diagnostic);
                 }
             }

@@ -110,7 +110,8 @@ namespace FourSer.Analyzers
 
                 if (!SymbolEqualityComparer.Default.Equals(actualPropertyType, expectedTypeIdType))
                 {
-                    var diagnostic = Diagnostic.Create(Rule, typeIdProperty.Locations[0], propertyName, actualPropertyType.Name, expectedTypeIdType.Name);
+                    var location = AnalyzerHelper.GetNamedArgumentLocation(serializeCollectionAttribute, "TypeIdProperty") ?? typeIdProperty.Locations[0];
+                    var diagnostic = Diagnostic.Create(Rule, location, propertyName, actualPropertyType.Name, expectedTypeIdType.Name);
                     context.ReportDiagnostic(diagnostic);
                 }
             }

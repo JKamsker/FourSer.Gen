@@ -62,8 +62,8 @@ using System.Collections.Generic;
 [GenerateSerializer]
 class MyData
 {
-    [SerializeCollection(CountSizeReference = ""NonExistentCount"")]
-    public List<int> {|FS0006:MyList|} { get; set; }
+    [SerializeCollection({|FS0006:CountSizeReference = ""NonExistentCount""|})]
+    public List<int> MyList { get; set; }
 }";
 
             var test = new CSharpAnalyzerTest<CountSizeReferenceExistenceAnalyzer, DefaultVerifier>

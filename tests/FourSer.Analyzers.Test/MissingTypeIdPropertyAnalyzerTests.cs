@@ -48,7 +48,7 @@ class MyData { [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleType
 using FourSer.Contracts;
 using System.Collections.Generic;
 [GenerateSerializer]
-class MyData { [{|FS0014:SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId)|}] public List<int> L {get;set;} }";
+class MyData { [SerializeCollection({|FS0014:PolymorphicMode = PolymorphicMode.SingleTypeId|})] public List<int> L {get;set;} }";
             await new CSharpAnalyzerTest<MissingTypeIdPropertyAnalyzer, DefaultVerifier>
             {
                 TestState = { Sources = { AttributeSource, testCode } },

@@ -79,7 +79,7 @@ class MyData { [SerializeCollection(TypeIdType = typeof(MyEnum))] public object 
             var testCode = @"
 using FourSer.Contracts;
 [GenerateSerializer]
-class MyData { [{|FS0013:SerializePolymorphic(TypeIdType = typeof(string))|}] public object MyProp { get; set; } }";
+class MyData { [SerializePolymorphic({|FS0013:TypeIdType = typeof(string)|})] public object MyProp { get; set; } }";
             await new CSharpAnalyzerTest<InvalidTypeIdTypeAnalyzer, DefaultVerifier>
             {
                 TestState =
