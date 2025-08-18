@@ -8,8 +8,8 @@ namespace FourSer.Analyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class PolymorphicCollectionTypeIdDeclarationOrderAnalyzer : DiagnosticAnalyzer
     {
-        // ... (Rule, DiagnosticId, etc. remain the same) ...
         public const string DiagnosticId = "FSSG002";
+        public const string MissingTypeIdDiagnosticId = "FSSG018";
 
         private static readonly LocalizableString Title =
             "Polymorphic collection TypeId property must be declared before the collection";
@@ -19,6 +19,15 @@ namespace FourSer.Analyzers
 
         private static readonly LocalizableString Description =
             "For polymorphic collections with a specified TypeId property, the TypeId property must be declared before the collection property to ensure correct deserialization order.";
+
+        private static readonly LocalizableString MissingTypeIdTitle =
+            "TypeId property not found for polymorphic collection";
+
+        private static readonly LocalizableString MissingTypeIdMessageFormat =
+            "The TypeId property '{0}' specified for collection '{1}' was not found in the class.";
+
+        private static readonly LocalizableString MissingTypeIdDescription =
+            "The TypeId property specified in the SerializeCollectionAttribute must exist as a property in the same class.";
 
         private const string Category = "Usage";
 
@@ -33,7 +42,18 @@ namespace FourSer.Analyzers
             description: Description
         );
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule);
+        private static readonly DiagnosticDescriptor MissingTypeIdRule = new DiagnosticDescriptor
+        (
+            MissingTypeIdDiagnosticId,
+            MissingTypeIdTitle,
+            MissingTypeIdMessageFormat,
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true,
+            description: MissingTypeIdDescription
+        );
+
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Rule, MissingTypeIdRule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -92,9 +112,17 @@ namespace FourSer.Analyzers
                 // 4. Find the TypeId property symbol more directly.
                 var typeIdProperty = properties.FirstOrDefault(p => p.Name == typeIdPropertyName);
                 var collectionLocation = propertySymbol.Locations.FirstOrDefault();
+
+                if (typeIdProperty == null)
+                {
+                    // TypeId property not found, report missing TypeId diagnostic.
+                    var diagnostic = Diagnostic.Create(MissingTypeIdRule, collectionLocation, typeIdPropertyName, propertySymbol.Name);
+                    context.ReportDiagnostic(diagnostic);
+                    continue;
+                }
                 
                 // Ensure the property exists and has a location.
-                if (typeIdProperty == null || collectionLocation == null)
+                if (collectionLocation == null)
                 {
                     continue;
                 }

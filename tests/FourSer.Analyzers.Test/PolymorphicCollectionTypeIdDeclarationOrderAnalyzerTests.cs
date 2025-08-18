@@ -119,5 +119,34 @@ public class Nested {}
             };
             await test.RunAsync();
         }
+        
+        // TypeIdProperty specified, but property is not declared
+        [Fact]
+        public async Task TypeIdPropertyNotDeclared_ReportsDiagnostic()
+        {
+            var testCode = @"
+using System.Collections.Generic;
+using FourSer.Contracts;
+
+[GenerateSerializer]
+public partial class MyData
+{
+    [SerializeCollection(TypeIdProperty = ""TypeId"")]
+    [PolymorphicOption(1, typeof(Nested))]
+    public List<object> {|FSSG018:Items|} { get; set; }
+}
+public class Nested {}
+";
+
+            var test = new CSharpAnalyzerTest<PolymorphicCollectionTypeIdDeclarationOrderAnalyzer, DefaultVerifier>
+            {
+                TestState =
+                {
+                    Sources = { ContractsSource, testCode },
+                },
+                ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            };
+            await test.RunAsync();
+        } 
     }
 }
