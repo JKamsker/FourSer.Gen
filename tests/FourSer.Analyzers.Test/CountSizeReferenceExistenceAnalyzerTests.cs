@@ -12,6 +12,9 @@ using System;
 
 namespace FourSer.Contracts
 {
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+    public class GenerateSerializerAttribute : Attribute { }
+
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class SerializeCollectionAttribute : Attribute
     {
@@ -28,6 +31,7 @@ namespace FourSer.Contracts
 using FourSer.Contracts;
 using System.Collections.Generic;
 
+[GenerateSerializer]
 class MyData
 {
     public int MyCount { get; set; }
@@ -54,6 +58,7 @@ class MyData
 using FourSer.Contracts;
 using System.Collections.Generic;
 
+[GenerateSerializer]
 class MyData
 {
     [SerializeCollection(CountSizeReference = ""NonExistentCount"")]

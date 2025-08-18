@@ -5,7 +5,7 @@ using Xunit;
 
 namespace FourSer.Analyzers.Test
 {
-    public class MissingTypeIdPropertyAnalyzerTests
+    public class InvalidCountTypeAnalyzerTests
     {
         private const string AttributeSource = @"
 using System;
@@ -13,24 +13,24 @@ using System.Collections.Generic;
 
 namespace FourSer.Contracts
 {
-    public enum PolymorphicMode { None, SingleTypeId, IndividualTypeIds }
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+    public class GenerateSerializerAttribute : Attribute { }
 
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class SerializeCollectionAttribute : Attribute
     {
-        public PolymorphicMode PolymorphicMode { get; set; } = PolymorphicMode.None;
-        public string TypeIdProperty { get; set; }
+        public Type CountType { get; set; }
     }
 }";
 
         [Fact]
-        public async Task SingleTypeId_WithTypeIdProperty_NoDiagnostic()
+        public async Task ValidIntCountType_NoDiagnostic()
         {
             var testCode = @"
 using FourSer.Contracts;
-using System.Collections.Generic;
-class MyData { [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdProperty = ""P"")] public List<int> L {get;set;} public int P {get;set;} }";
-            await new CSharpAnalyzerTest<MissingTypeIdPropertyAnalyzer, DefaultVerifier>
+[GenerateSerializer]
+class MyData { [SerializeCollection(CountType = typeof(int))] public int[] MyList { get; set; } }";
+            await new CSharpAnalyzerTest<InvalidCountTypeAnalyzer, DefaultVerifier>
             {
                 TestState = { Sources = { AttributeSource, testCode } },
                 ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
@@ -38,13 +38,13 @@ class MyData { [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleType
         }
 
         [Fact]
-        public async Task SingleTypeId_WithoutTypeIdProperty_ReportsDiagnostic()
+        public async Task ValidByteCountType_NoDiagnostic()
         {
             var testCode = @"
 using FourSer.Contracts;
-using System.Collections.Generic;
-class MyData { [{|FS0014:SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId)|}] public List<int> L {get;set;} }";
-            await new CSharpAnalyzerTest<MissingTypeIdPropertyAnalyzer, DefaultVerifier>
+[GenerateSerializer]
+class MyData { [SerializeCollection(CountType = typeof(byte))] public int[] MyList { get; set; } }";
+            await new CSharpAnalyzerTest<InvalidCountTypeAnalyzer, DefaultVerifier>
             {
                 TestState = { Sources = { AttributeSource, testCode } },
                 ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
@@ -52,13 +52,13 @@ class MyData { [{|FS0014:SerializeCollection(PolymorphicMode = PolymorphicMode.S
         }
 
         [Fact]
-        public async Task NotSingleTypeId_NoDiagnostic()
+        public async Task InvalidStringCountType_ReportsDiagnostic()
         {
             var testCode = @"
 using FourSer.Contracts;
-using System.Collections.Generic;
-class MyData { [SerializeCollection(PolymorphicMode = PolymorphicMode.IndividualTypeIds)] public List<int> L {get;set;} }";
-            await new CSharpAnalyzerTest<MissingTypeIdPropertyAnalyzer, DefaultVerifier>
+[GenerateSerializer]
+class MyData { [{|FS0012:SerializeCollection(CountType = typeof(string))|}] public int[] MyList { get; set; } }";
+            await new CSharpAnalyzerTest<InvalidCountTypeAnalyzer, DefaultVerifier>
             {
                 TestState = { Sources = { AttributeSource, testCode } },
                 ReferenceAssemblies = ReferenceAssemblies.Net.Net90,

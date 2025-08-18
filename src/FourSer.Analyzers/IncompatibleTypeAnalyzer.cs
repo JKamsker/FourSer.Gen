@@ -23,15 +23,21 @@ namespace FourSer.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.NamedType);
+            context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
         }
 
-        private static void AnalyzeSymbol(SymbolAnalysisContext context)
+        private static void AnalyzeNamedType(SymbolAnalysisContext context)
         {
             var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            var hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
-                .Any(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute");
+            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            if (generateSerializerAttribute == null)
+            {
+                return;
+            }
+
+            bool hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
+                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
 
             if (!hasGenerateSerializerAttribute)
             {
@@ -47,7 +53,7 @@ namespace FourSer.Analyzers
 
                 if (member is IPropertySymbol property)
                 {
-                    if (!IsSerializable(property.Type))
+                    if (!IsSerializable(property.Type, generateSerializerAttribute))
                     {
                         var diagnostic = Diagnostic.Create(Rule, property.Locations[0], property.Type.Name, property.Name);
                         context.ReportDiagnostic(diagnostic);
@@ -55,7 +61,7 @@ namespace FourSer.Analyzers
                 }
                 else if (member is IFieldSymbol field)
                 {
-                    if (!IsSerializable(field.Type))
+                    if (!IsSerializable(field.Type, generateSerializerAttribute))
                     {
                         var diagnostic = Diagnostic.Create(Rule, field.Locations[0], field.Type.Name, field.Name);
                         context.ReportDiagnostic(diagnostic);
@@ -64,14 +70,14 @@ namespace FourSer.Analyzers
             }
         }
 
-        private static bool IsSerializable(ITypeSymbol type)
+        private static bool IsSerializable(ITypeSymbol type, INamedTypeSymbol generateSerializerAttribute)
         {
             if (type.IsPrimitive() || type.SpecialType == SpecialType.System_String)
             {
                 return true;
             }
 
-            if (type.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute"))
+            if (type.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute)))
             {
                 return true;
             }
@@ -90,12 +96,12 @@ namespace FourSer.Analyzers
 
             if (ienumerable_t != null)
             {
-                return IsSerializable(ienumerable_t.TypeArguments.First());
+                return IsSerializable(ienumerable_t.TypeArguments.First(), generateSerializerAttribute);
             }
 
             if (type is IArrayTypeSymbol arrayType)
             {
-                return IsSerializable(arrayType.ElementType);
+                return IsSerializable(arrayType.ElementType, generateSerializerAttribute);
             }
 
             return false;

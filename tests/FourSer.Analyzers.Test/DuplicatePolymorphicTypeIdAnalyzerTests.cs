@@ -12,6 +12,9 @@ using System;
 
 namespace FourSer.Contracts
 {
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+    public class GenerateSerializerAttribute : Attribute { }
+
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = true)]
     public class PolymorphicOptionAttribute : Attribute
     {
@@ -29,6 +32,7 @@ namespace FourSer.Contracts
             var testCode = @"
 using FourSer.Contracts;
 
+[GenerateSerializer]
 class MyData
 {
     [PolymorphicOption(1, typeof(DerivedType1))]
@@ -53,6 +57,7 @@ class MyData
             var testCode = @"
 using FourSer.Contracts;
 
+[GenerateSerializer]
 class MyData
 {
     [PolymorphicOption(1, typeof(DerivedType1))]

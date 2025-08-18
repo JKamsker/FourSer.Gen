@@ -31,35 +31,57 @@ namespace FourSer.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.Property, SymbolKind.Field);
+            context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
         }
 
-        private void AnalyzeSymbol(SymbolAnalysisContext context)
+        private void AnalyzeNamedType(SymbolAnalysisContext context)
         {
-            var symbol = context.Symbol;
+            var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            var serializeCollectionAttribute = symbol.GetAttributes()
-                .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
-
-            if (serializeCollectionAttribute == null)
+            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            if (generateSerializerAttribute == null)
             {
                 return;
             }
 
-            var countTypeArgument = serializeCollectionAttribute.NamedArguments
-                .FirstOrDefault(arg => arg.Key == "CountType");
+            bool hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
+                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
 
-            if (countTypeArgument.Key == null)
+            if (!hasGenerateSerializerAttribute)
             {
                 return;
             }
 
-            if (countTypeArgument.Value.Value is ITypeSymbol countType)
+            foreach (var symbol in namedTypeSymbol.GetMembers())
             {
-                if (!IsIntegerType(countType))
+                if (symbol is not IPropertySymbol && symbol is not IFieldSymbol)
                 {
-                    var diagnostic = Diagnostic.Create(Rule, serializeCollectionAttribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), countType.Name);
-                    context.ReportDiagnostic(diagnostic);
+                    continue;
+                }
+
+                var serializeCollectionAttribute = symbol.GetAttributes()
+                    .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
+
+                if (serializeCollectionAttribute == null)
+                {
+                    continue;
+                }
+
+                var countTypeArgument = serializeCollectionAttribute.NamedArguments
+                    .FirstOrDefault(arg => arg.Key == "CountType");
+
+                if (countTypeArgument.Key == null)
+                {
+                    continue;
+                }
+
+                if (countTypeArgument.Value.Value is ITypeSymbol countType)
+                {
+                    if (!IsIntegerType(countType))
+                    {
+                        var diagnostic = Diagnostic.Create(Rule, serializeCollectionAttribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), countType.Name);
+                        context.ReportDiagnostic(diagnostic);
+                    }
                 }
             }
         }

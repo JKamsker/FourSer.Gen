@@ -31,37 +31,60 @@ namespace FourSer.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.Property, SymbolKind.Field);
+            context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
         }
 
-        private void AnalyzeSymbol(SymbolAnalysisContext context)
+        private void AnalyzeNamedType(SymbolAnalysisContext context)
         {
-            var symbol = context.Symbol;
-            var attributes = symbol.GetAttributes();
+            var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            var serializePolymorphicAttribute = attributes.FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializePolymorphicAttribute");
-            var serializeCollectionAttribute = attributes.FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
-
-            AttributeData? attribute = serializePolymorphicAttribute ?? serializeCollectionAttribute;
-
-            if (attribute == null)
+            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            if (generateSerializerAttribute == null)
             {
                 return;
             }
 
-            var typeIdTypeArgument = attribute.NamedArguments.FirstOrDefault(arg => arg.Key == "TypeIdType");
+            bool hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
+                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
 
-            if (typeIdTypeArgument.Key == null)
+            if (!hasGenerateSerializerAttribute)
             {
                 return;
             }
 
-            if (typeIdTypeArgument.Value.Value is ITypeSymbol typeIdType)
+            foreach (var symbol in namedTypeSymbol.GetMembers())
             {
-                if (!IsValidTypeIdType(typeIdType))
+                if (symbol is not IPropertySymbol && symbol is not IFieldSymbol)
                 {
-                    var diagnostic = Diagnostic.Create(Rule, attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), typeIdType.Name);
-                    context.ReportDiagnostic(diagnostic);
+                    continue;
+                }
+
+                var attributes = symbol.GetAttributes();
+
+                var serializePolymorphicAttribute = attributes.FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializePolymorphicAttribute");
+                var serializeCollectionAttribute = attributes.FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
+
+                AttributeData? attribute = serializePolymorphicAttribute ?? serializeCollectionAttribute;
+
+                if (attribute == null)
+                {
+                    continue;
+                }
+
+                var typeIdTypeArgument = attribute.NamedArguments.FirstOrDefault(arg => arg.Key == "TypeIdType");
+
+                if (typeIdTypeArgument.Key == null)
+                {
+                    continue;
+                }
+
+                if (typeIdTypeArgument.Value.Value is ITypeSymbol typeIdType)
+                {
+                    if (!IsValidTypeIdType(typeIdType))
+                    {
+                        var diagnostic = Diagnostic.Create(Rule, attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), typeIdType.Name);
+                        context.ReportDiagnostic(diagnostic);
+                    }
                 }
             }
         }

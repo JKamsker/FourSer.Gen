@@ -31,35 +31,57 @@ namespace FourSer.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.Property, SymbolKind.Field);
+            context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
         }
 
-        private void AnalyzeSymbol(SymbolAnalysisContext context)
+        private void AnalyzeNamedType(SymbolAnalysisContext context)
         {
-            var symbol = context.Symbol;
+            var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            var serializeCollectionAttribute = symbol.GetAttributes()
-                .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
-
-            if (serializeCollectionAttribute == null)
+            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            if (generateSerializerAttribute == null)
             {
                 return;
             }
 
-            ITypeSymbol? memberType = null;
-            if (symbol is IPropertySymbol propertySymbol)
+            bool hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
+                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
+
+            if (!hasGenerateSerializerAttribute)
             {
-                memberType = propertySymbol.Type;
-            }
-            else if (symbol is IFieldSymbol fieldSymbol)
-            {
-                memberType = fieldSymbol.Type;
+                return;
             }
 
-            if (memberType != null && !IsCollectionType(memberType, context.Compilation))
+            foreach (var symbol in namedTypeSymbol.GetMembers())
             {
-                var diagnostic = Diagnostic.Create(Rule, symbol.Locations[0], memberType.Name);
-                context.ReportDiagnostic(diagnostic);
+                if (symbol is not IPropertySymbol && symbol is not IFieldSymbol)
+                {
+                    continue;
+                }
+
+                var serializeCollectionAttribute = symbol.GetAttributes()
+                    .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
+
+                if (serializeCollectionAttribute == null)
+                {
+                    continue;
+                }
+
+                ITypeSymbol? memberType = null;
+                if (symbol is IPropertySymbol propertySymbol)
+                {
+                    memberType = propertySymbol.Type;
+                }
+                else if (symbol is IFieldSymbol fieldSymbol)
+                {
+                    memberType = fieldSymbol.Type;
+                }
+
+                if (memberType != null && !IsCollectionType(memberType, context.Compilation))
+                {
+                    var diagnostic = Diagnostic.Create(Rule, symbol.Locations[0], memberType.Name);
+                    context.ReportDiagnostic(diagnostic);
+                }
             }
         }
 
