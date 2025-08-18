@@ -34,6 +34,18 @@ public static class PolymorphicUtilities
     )
     {
         var key = FormatTypeIdKey(option.Key, info);
+        GenerateWriteTypeIdCode(sb, key, info, target, helper);
+    }
+
+    public static void GenerateWriteTypeIdCode
+    (
+        IndentedStringBuilder sb,
+        string key,
+        PolymorphicInfo info,
+        string target = "data",
+        string helper = "SpanWriter"
+    )
+    {
         var underlyingType = info.EnumUnderlyingType ?? info.TypeIdType;
         var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(underlyingType);
         var refOrEmpty = target == "data" ? "ref " : "";
