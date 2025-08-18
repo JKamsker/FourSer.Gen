@@ -81,6 +81,43 @@ public static class PacketSizeGenerator
                 }
             }
 
+            if (collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId && string.IsNullOrEmpty(collectionInfo.TypeIdProperty))
+            {
+                var itemsVar = member.Name.ToCamelCase();
+                if (itemsVar == "items")
+                {
+                    itemsVar = "collectionItems"; // Avoid conflict
+                }
+
+                sb.WriteLine($"var {itemsVar} = obj.{member.Name};");
+                sb.WriteLine($"if ({itemsVar} is not null && {itemsVar}.Count > 0)");
+                using (sb.BeginBlock())
+                {
+                    sb.WriteLine($"var firstItem = {itemsVar}[0];");
+                    sb.WriteLine("switch(firstItem)");
+                    using (sb.BeginBlock())
+                    {
+                        foreach (var option in info.Options)
+                        {
+                            var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+                            sb.WriteLine($"case {typeName}:");
+                            using (sb.BeginBlock())
+                            {
+                                sb.WriteLine($"foreach(var item in {itemsVar})");
+                                using (sb.BeginBlock())
+                                {
+                                    sb.WriteLine($"size += {typeName}.GetPacketSize(({typeName})item);");
+                                }
+                                sb.WriteLine("break;");
+                            }
+                        }
+                        sb.WriteLineFormat("default: throw new System.IO.InvalidDataException($\"Unknown item type in collection {0}: {{firstItem.GetType().Name}}\");", member.Name);
+                    }
+                }
+                return;
+            }
+
+            // Fallback for IndividualTypeIds or explicit TypeIdProperty
             sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
             using (sb.BeginBlock())
             {

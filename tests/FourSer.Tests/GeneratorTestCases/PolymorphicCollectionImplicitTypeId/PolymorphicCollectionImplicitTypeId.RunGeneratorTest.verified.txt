@@ -22,22 +22,37 @@ public partial class Inventory : ISerializable<Inventory>
         var size = 0;
         size += sizeof(int); // Count size for Items
         size += sizeof(byte); // Size for polymorphic type id
-        foreach(var item in obj.Items)
+        var collectionItems = obj.Items;
+        if (collectionItems is not null && collectionItems.Count > 0)
         {
-            switch (item)
+            var firstItem = collectionItems[0];
+            switch(firstItem)
             {
-                case Sword typedInstance:
-                    size += Sword.GetPacketSize(typedInstance);
+                case Sword:
+                {
+                    foreach(var item in collectionItems)
+                    {
+                        size += Sword.GetPacketSize((Sword)item);
+                    }
                     break;
-                case Shield typedInstance:
-                    size += Shield.GetPacketSize(typedInstance);
+                }
+                case Shield:
+                {
+                    foreach(var item in collectionItems)
+                    {
+                        size += Shield.GetPacketSize((Shield)item);
+                    }
                     break;
-                case Potion typedInstance:
-                    size += Potion.GetPacketSize(typedInstance);
+                }
+                case Potion:
+                {
+                    foreach(var item in collectionItems)
+                    {
+                        size += Potion.GetPacketSize((Potion)item);
+                    }
                     break;
-                case null: break;
-                default:
-                    throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+                }
+                default: throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {firstItem.GetType().Name}");
             }
         }
         return size;
@@ -149,15 +164,15 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.Items.Count);
-            var collectionItems = obj.Items.ToList();
+            var collectionItems = obj.Items;
             if (collectionItems is null || collectionItems.Count == 0)
             {
-                SpanWriter.WriteByte(ref data, (byte)10);
                 SpanWriter.WriteInt32(ref data, (int)0);
+                SpanWriter.WriteByte(ref data, (byte)10);
             }
             else
             {
+                SpanWriter.WriteInt32(ref data, (int)collectionItems.Count);
                 var firstItem = collectionItems[0];
                 var discriminator = firstItem switch
                 {
@@ -166,8 +181,7 @@ public partial class Inventory : ISerializable<Inventory>
                     Potion => (byte)30,
                     _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
                 };
-                SpanWriter.WriteByte(ref data, (byte)discriminator);
-                SpanWriter.WriteInt32(ref data, (int)collectionItems.Count);
+                SpanWriter.WriteByte(ref data, discriminator);
                 switch (discriminator)
                 {
                     case 10:
@@ -211,15 +225,15 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.Items.Count);
-            var collectionItems = obj.Items.ToList();
+            var collectionItems = obj.Items;
             if (collectionItems is null || collectionItems.Count == 0)
             {
-                StreamWriter.WriteByte(stream, (byte)10);
                 StreamWriter.WriteInt32(stream, (int)0);
+                StreamWriter.WriteByte(stream, (byte)10);
             }
             else
             {
+                StreamWriter.WriteInt32(stream, (int)collectionItems.Count);
                 var firstItem = collectionItems[0];
                 var discriminator = firstItem switch
                 {
@@ -228,8 +242,7 @@ public partial class Inventory : ISerializable<Inventory>
                     Potion => (byte)30,
                     _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
                 };
-                StreamWriter.WriteByte(stream, (byte)discriminator);
-                StreamWriter.WriteInt32(stream, (int)collectionItems.Count);
+                StreamWriter.WriteByte(stream, discriminator);
                 switch (discriminator)
                 {
                     case 10:

@@ -187,7 +187,9 @@ public static class SerializationGenerator
 
         sb.WriteLine("else");
         using var _ = sb.BeginBlock();
-        if (collectionInfo is { Unlimited: false } && string.IsNullOrEmpty(collectionInfo.CountSizeReference))
+        var isHandledByPolymorphic = collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId && string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
+
+        if (collectionInfo is { Unlimited: false } && string.IsNullOrEmpty(collectionInfo.CountSizeReference) && !isHandledByPolymorphic)
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
             var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
@@ -276,13 +278,17 @@ public static class SerializationGenerator
                     sb.WriteLine($"if ({itemsVar} is null || {itemsVar}.Count == 0)");
                     using (sb.BeginBlock())
                     {
-                        PolymorphicUtilities.GenerateWriteTypeIdCode(sb, defaultOption, info, target, helper);
                         sb.WriteLineFormat("{0}.{1}({2}{3}, ({4})0);", helper, countWriteMethod, refOrEmpty, target, countType);
+                        PolymorphicUtilities.GenerateWriteTypeIdCode(sb, defaultOption, info, target, helper);
                     }
                     sb.WriteLine("else");
                     using (sb.BeginBlock())
                     {
-                        // Determine discriminator from the first item
+                        // Write count
+                        var countExpression = $"{itemsVar}.Count";
+                        sb.WriteLineFormat("{0}.{1}({2}{3}, ({4}){5});", helper, countWriteMethod, refOrEmpty, target, countType, countExpression);
+
+                        // Determine and write discriminator from the first item
                         sb.WriteLine($"var firstItem = {itemsVar}[0];");
                         sb.WriteLine($"var discriminator = firstItem switch");
                         sb.WriteLine("{");
@@ -296,11 +302,8 @@ public static class SerializationGenerator
                         sb.Unindent();
                         sb.WriteLine("};");
 
-                        PolymorphicUtilities.GenerateWriteTypeIdCode(sb, "discriminator", info, target, helper);
-
-                        // Write count
-                        var countExpression = $"{itemsVar}.Count";
-                        sb.WriteLineFormat("{0}.{1}({2}{3}, ({4}){5});", helper, countWriteMethod, refOrEmpty, target, countType, countExpression);
+                        var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(typeIdType);
+                        sb.WriteLineFormat("{0}.Write{1}({2}{3}, discriminator);", helper, typeIdTypeName, refOrEmpty, target);
 
                         // Serialize items using a for loop
                         sb.WriteLine("switch (discriminator)");
