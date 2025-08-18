@@ -186,7 +186,7 @@ public static class SerializationGenerator
 
         sb.WriteLine("else");
         using var _ = sb.BeginBlock();
-        if (collectionInfo is { Unlimited: false })
+        if (collectionInfo is { Unlimited: false } && string.IsNullOrEmpty(collectionInfo.CountSizeReference))
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
             var countWriteMethod = TypeHelper.GetWriteMethodName(countType);

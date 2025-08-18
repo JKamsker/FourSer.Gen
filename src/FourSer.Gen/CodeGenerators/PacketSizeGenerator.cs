@@ -59,11 +59,12 @@ public static class PacketSizeGenerator
             return;
         }
 
-        // Determine the count type to use
-        var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
-        var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
-
-        sb.WriteLineFormat("size += {0}; // Count size for {1}", countSizeExpression, member.Name);
+        if (string.IsNullOrEmpty(collectionInfo.CountSizeReference))
+        {
+            var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+            var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
+            sb.WriteLineFormat("size += {0}; // Count size for {1}", countSizeExpression, member.Name);
+        }
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
