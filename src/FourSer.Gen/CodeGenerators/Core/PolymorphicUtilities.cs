@@ -13,12 +13,7 @@ public static class PolymorphicUtilities
     {
         if (info.EnumUnderlyingType is not null)
         {
-            return $"({info.TypeIdType}){key}";
-        }
-
-        if (info.TypeIdType.EndsWith("Enum")) // A bit of a heuristic, but covers named enums
-        {
-            return $"{info.TypeIdType}.{key}";
+            return $"({info.EnumUnderlyingType}){info.TypeIdType}.{key}";
         }
 
         return key.ToString();

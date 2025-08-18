@@ -6,7 +6,7 @@ namespace FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable;
 [GenerateSerializer]
 public partial class Inventory
 {
-    [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId)]
+    [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(ItemTypeId))]
     [PolymorphicOption(nameof(ItemTypeId.Sword), typeof(Sword))]
     [PolymorphicOption(nameof(ItemTypeId.Shield), typeof(Shield))]
     [PolymorphicOption(nameof(ItemTypeId.Potion), typeof(Potion))]

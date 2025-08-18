@@ -1,3 +1,4 @@
+using System.Linq;
 using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
@@ -89,7 +90,16 @@ public static class PacketSizeGenerator
                     itemsVar = "collectionItems"; // Avoid conflict
                 }
 
-                sb.WriteLine($"var {itemsVar} = obj.{member.Name};");
+                var isListOrArray = member.IsList || (member.CollectionTypeInfo?.IsArray ?? false);
+                if (isListOrArray)
+                {
+                    sb.WriteLine($"var {itemsVar} = obj.{member.Name};");
+                }
+                else
+                {
+                    sb.WriteLine($"var {itemsVar} = obj.{member.Name}?.ToList();");
+                }
+
                 sb.WriteLine($"if ({itemsVar} is not null && {itemsVar}.Count > 0)");
                 using (sb.BeginBlock())
                 {

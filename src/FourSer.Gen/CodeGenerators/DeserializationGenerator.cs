@@ -280,8 +280,7 @@ public static class DeserializationGenerator
                     typeIdVar = "typeId";
                     var typeToRead = info.EnumUnderlyingType ?? info.TypeIdType;
                     var typeIdReadMethod = TypeHelper.GetReadMethodName(typeToRead);
-                    var cast = info.EnumUnderlyingType is not null ? $"({info.TypeIdType})" : "";
-                    sb.WriteLineFormat("var {0} = {1}{2}.{3}({4}{5});", typeIdVar, cast, helper, typeIdReadMethod, refOrEmpty, source);
+                    sb.WriteLineFormat("var {0} = {1}.{2}({3}{4});", typeIdVar, helper, typeIdReadMethod, refOrEmpty, source);
                 }
                 else
                 {
@@ -292,16 +291,7 @@ public static class DeserializationGenerator
                 using var _ = sb.BeginBlock();
                 foreach (var option in info.Options)
                 {
-                    var key = option.Key.ToString();
-                    if (info.EnumUnderlyingType is not null)
-                    {
-                        key = $"({info.TypeIdType}){key}";
-                    }
-                    else if (info.TypeIdType.EndsWith("Enum"))
-                    {
-                        key = $"{info.TypeIdType}.{key}";
-                    }
-
+                    var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
                     sb.WriteLineFormat("case {0}:", key);
                     using (sb.BeginBlock())
                     {
@@ -446,24 +436,14 @@ public static class DeserializationGenerator
             switchVar = "typeId";
             var typeToRead = info.EnumUnderlyingType ?? info.TypeIdType;
             var typeIdReadMethod = TypeHelper.GetReadMethodName(typeToRead);
-            var cast = info.EnumUnderlyingType is not null ? $"({info.TypeIdType})" : "";
-            sb.WriteLineFormat("var {0} = {1}{2}.{3}({4}{5});", switchVar, cast, helper, typeIdReadMethod, refOrEmpty, source);
+            sb.WriteLineFormat("var {0} = {1}.{2}({3}{4});", switchVar, helper, typeIdReadMethod, refOrEmpty, source);
         }
 
         sb.WriteLineFormat("switch ({0})", switchVar);
         using var _ = sb.BeginBlock();
         foreach (var option in info.Options)
         {
-            var key = option.Key.ToString();
-            if (info.EnumUnderlyingType is not null)
-            {
-                key = $"({info.TypeIdType}){key}";
-            }
-            else if (info.TypeIdType.EndsWith("Enum"))
-            {
-                key = $"{info.TypeIdType}.{key}";
-            }
-
+            var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
             sb.WriteLineFormat("case {0}:", key);
 
             using var __ = sb.BeginBlock();
@@ -490,23 +470,13 @@ public static class DeserializationGenerator
         var switchVar = "typeId";
         var typeToRead = info.EnumUnderlyingType ?? info.TypeIdType;
         var typeIdReadMethod = TypeHelper.GetReadMethodName(typeToRead);
-        var cast = info.EnumUnderlyingType is not null ? $"({info.TypeIdType})" : "";
-        sb.WriteLineFormat("var {0} = {1}{2}.{3}({4}{5});", switchVar, cast, helper, typeIdReadMethod, refOrEmpty, source);
+        sb.WriteLineFormat("var {0} = {1}.{2}({3}{4});", switchVar, helper, typeIdReadMethod, refOrEmpty, source);
 
         sb.WriteLineFormat("switch ({0})", switchVar);
         using var _ = sb.BeginBlock();
         foreach (var option in info.Options)
         {
-            var key = option.Key.ToString();
-            if (info.EnumUnderlyingType is not null)
-            {
-                key = $"({info.TypeIdType}){key}";
-            }
-            else if (info.TypeIdType.EndsWith("Enum"))
-            {
-                key = $"{info.TypeIdType}.{key}";
-            }
-
+            var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
             sb.WriteLineFormat("case {0}:", key);
             using var __ = sb.BeginBlock();
             sb.WriteLineFormat("{0} = {1}.Deserialize({2}{3});", assignmentTarget, TypeHelper.GetSimpleTypeName(option.Type), refOrEmpty, source);
