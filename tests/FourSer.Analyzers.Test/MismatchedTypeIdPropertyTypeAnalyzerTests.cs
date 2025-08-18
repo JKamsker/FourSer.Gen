@@ -13,6 +13,9 @@ using System.Collections.Generic;
 
 namespace FourSer.Contracts
 {
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+    public class GenerateSerializerAttribute : Attribute { }
+
     public enum PolymorphicMode { None, SingleTypeId, IndividualTypeIds }
 
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
@@ -30,6 +33,7 @@ namespace FourSer.Contracts
             var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
+[GenerateSerializer]
 class MyData { [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdProperty = ""P"", TypeIdType = typeof(byte))] public List<int> L {get;set;} public byte P {get;set;} }";
             await new CSharpAnalyzerTest<MismatchedTypeIdPropertyTypeAnalyzer, DefaultVerifier>
             {
@@ -44,6 +48,7 @@ class MyData { [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleType
             var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
+[GenerateSerializer]
 class MyData { [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdProperty = ""P"")] public List<int> L {get;set;} public int P {get;set;} }";
             await new CSharpAnalyzerTest<MismatchedTypeIdPropertyTypeAnalyzer, DefaultVerifier>
             {
@@ -58,6 +63,7 @@ class MyData { [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleType
             var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
+[GenerateSerializer]
 class MyData { [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdProperty = ""P"", TypeIdType = typeof(byte))] public List<int> L {get;set;} public int {|FS0015:P|} {get;set;} }";
             await new CSharpAnalyzerTest<MismatchedTypeIdPropertyTypeAnalyzer, DefaultVerifier>
             {

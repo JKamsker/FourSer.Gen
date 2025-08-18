@@ -32,34 +32,56 @@ namespace FourSer.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.Property, SymbolKind.Field);
+            context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
         }
 
-        private void AnalyzeSymbol(SymbolAnalysisContext context)
+        private void AnalyzeNamedType(SymbolAnalysisContext context)
         {
-            var symbol = context.Symbol;
+            var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            var polymorphicOptionAttributes = symbol.GetAttributes()
-                .Where(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.PolymorphicOptionAttribute")
-                .ToList();
-
-            if (polymorphicOptionAttributes.Count < 2)
+            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            if (generateSerializerAttribute == null)
             {
                 return;
             }
 
-            var seenTypeIds = new HashSet<object?>();
-            foreach (var attribute in polymorphicOptionAttributes)
+            bool hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
+                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
+
+            if (!hasGenerateSerializerAttribute)
             {
-                if (attribute.ConstructorArguments.Length > 0)
+                return;
+            }
+
+            foreach (var symbol in namedTypeSymbol.GetMembers())
+            {
+                if (symbol is not IPropertySymbol && symbol is not IFieldSymbol)
                 {
-                    var typeIdArgument = attribute.ConstructorArguments[0];
-                    if (typeIdArgument.Value != null)
+                    continue;
+                }
+
+                var polymorphicOptionAttributes = symbol.GetAttributes()
+                    .Where(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.PolymorphicOptionAttribute")
+                    .ToList();
+
+                if (polymorphicOptionAttributes.Count < 2)
+                {
+                    continue;
+                }
+
+                var seenTypeIds = new HashSet<object?>();
+                foreach (var attribute in polymorphicOptionAttributes)
+                {
+                    if (attribute.ConstructorArguments.Length > 0)
                     {
-                        if (!seenTypeIds.Add(typeIdArgument.Value))
+                        var typeIdArgument = attribute.ConstructorArguments[0];
+                        if (typeIdArgument.Value != null)
                         {
-                            var diagnostic = Diagnostic.Create(Rule, attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), typeIdArgument.Value);
-                            context.ReportDiagnostic(diagnostic);
+                            if (!seenTypeIds.Add(typeIdArgument.Value))
+                            {
+                                var diagnostic = Diagnostic.Create(Rule, attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), typeIdArgument.Value);
+                                context.ReportDiagnostic(diagnostic);
+                            }
                         }
                     }
                 }

@@ -31,61 +31,83 @@ namespace FourSer.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.Property, SymbolKind.Field);
+            context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
         }
 
-        private void AnalyzeSymbol(SymbolAnalysisContext context)
+        private void AnalyzeNamedType(SymbolAnalysisContext context)
         {
-            var symbol = context.Symbol;
+            var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            var polymorphicOptionAttributes = symbol.GetAttributes()
-                .Where(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.PolymorphicOptionAttribute")
-                .ToList();
-
-            if (polymorphicOptionAttributes.Count == 0)
+            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            if (generateSerializerAttribute == null)
             {
                 return;
             }
 
-            // Check for [SerializePolymorphic]
-            var hasSerializePolymorphic = symbol.GetAttributes()
-                .Any(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializePolymorphicAttribute");
+            bool hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
+                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
 
-            if (hasSerializePolymorphic)
+            if (!hasGenerateSerializerAttribute)
             {
                 return;
             }
 
-            // Check for [SerializeCollection(PolymorphicMode = ...)]
-            var serializeCollectionAttribute = symbol.GetAttributes()
-                .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
-
-            if (serializeCollectionAttribute != null)
+            foreach (var symbol in namedTypeSymbol.GetMembers())
             {
-                var polymorphicModeArgument = serializeCollectionAttribute.NamedArguments
-                    .FirstOrDefault(arg => arg.Key == "PolymorphicMode");
-
-                if (polymorphicModeArgument.Key != null)
+                if (symbol is not IPropertySymbol && symbol is not IFieldSymbol)
                 {
-                    // The enum value for None is 0.
-                    if (polymorphicModeArgument.Value.Value is int mode && mode != 0)
+                    continue;
+                }
+
+                var polymorphicOptionAttributes = symbol.GetAttributes()
+                    .Where(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.PolymorphicOptionAttribute")
+                    .ToList();
+
+                if (polymorphicOptionAttributes.Count == 0)
+                {
+                    continue;
+                }
+
+                // Check for [SerializePolymorphic]
+                var hasSerializePolymorphic = symbol.GetAttributes()
+                    .Any(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializePolymorphicAttribute");
+
+                if (hasSerializePolymorphic)
+                {
+                    continue;
+                }
+
+                // Check for [SerializeCollection(PolymorphicMode = ...)]
+                var serializeCollectionAttribute = symbol.GetAttributes()
+                    .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
+
+                if (serializeCollectionAttribute != null)
+                {
+                    var polymorphicModeArgument = serializeCollectionAttribute.NamedArguments
+                        .FirstOrDefault(arg => arg.Key == "PolymorphicMode");
+
+                    if (polymorphicModeArgument.Key != null)
                     {
-                        return;
+                        // The enum value for None is 0.
+                        if (polymorphicModeArgument.Value.Value is int mode && mode != 0)
+                        {
+                            continue;
+                        }
+                    }
+
+                    var typeIdPropertyArgument = serializeCollectionAttribute.NamedArguments
+                        .FirstOrDefault(arg => arg.Key == "TypeIdProperty");
+
+                    if (typeIdPropertyArgument.Key != null)
+                    {
+                        continue;
                     }
                 }
 
-                var typeIdPropertyArgument = serializeCollectionAttribute.NamedArguments
-                    .FirstOrDefault(arg => arg.Key == "TypeIdProperty");
-
-                if (typeIdPropertyArgument.Key != null)
-                {
-                    return;
-                }
+                // If we reach here, there's no valid context for [PolymorphicOption]
+                var diagnostic = Diagnostic.Create(Rule, symbol.Locations[0], symbol.Name);
+                context.ReportDiagnostic(diagnostic);
             }
-
-            // If we reach here, there's no valid context for [PolymorphicOption]
-            var diagnostic = Diagnostic.Create(Rule, symbol.Locations[0], symbol.Name);
-            context.ReportDiagnostic(diagnostic);
         }
     }
 }

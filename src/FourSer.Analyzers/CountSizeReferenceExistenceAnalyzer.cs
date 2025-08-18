@@ -31,45 +31,67 @@ namespace FourSer.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.Property, SymbolKind.Field);
+            context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
         }
 
-        private void AnalyzeSymbol(SymbolAnalysisContext context)
+        private void AnalyzeNamedType(SymbolAnalysisContext context)
         {
-            var symbol = context.Symbol;
+            var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            var serializeCollectionAttribute = symbol.GetAttributes()
-                .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
-
-            if (serializeCollectionAttribute == null)
+            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            if (generateSerializerAttribute == null)
             {
                 return;
             }
 
-            var countSizeReferenceArgument = serializeCollectionAttribute.NamedArguments
-                .FirstOrDefault(arg => arg.Key == "CountSizeReference");
+            bool hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
+                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
 
-            if (countSizeReferenceArgument.Key == null)
+            if (!hasGenerateSerializerAttribute)
             {
-                // The argument is not present, so there's nothing to check.
                 return;
             }
 
-            var referencedPropertyName = countSizeReferenceArgument.Value.Value as string;
-            if (string.IsNullOrEmpty(referencedPropertyName))
+            foreach (var symbol in namedTypeSymbol.GetMembers())
             {
-                // The argument is empty, which is not valid, but a different analyzer might handle this.
-                // For now, we only care if it points to a non-existent property.
-                return;
-            }
+                if (symbol is not IPropertySymbol && symbol is not IFieldSymbol)
+                {
+                    continue;
+                }
 
-            var containingType = symbol.ContainingType;
-            var referencedProperty = containingType.GetMembers(referencedPropertyName).FirstOrDefault();
+                var serializeCollectionAttribute = symbol.GetAttributes()
+                    .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
 
-            if (referencedProperty == null)
-            {
-                var diagnostic = Diagnostic.Create(Rule, symbol.Locations[0], referencedPropertyName, containingType.Name);
-                context.ReportDiagnostic(diagnostic);
+                if (serializeCollectionAttribute == null)
+                {
+                    continue;
+                }
+
+                var countSizeReferenceArgument = serializeCollectionAttribute.NamedArguments
+                    .FirstOrDefault(arg => arg.Key == "CountSizeReference");
+
+                if (countSizeReferenceArgument.Key == null)
+                {
+                    // The argument is not present, so there's nothing to check.
+                    return;
+                }
+
+                var referencedPropertyName = countSizeReferenceArgument.Value.Value as string;
+                if (string.IsNullOrEmpty(referencedPropertyName))
+                {
+                    // The argument is empty, which is not valid, but a different analyzer might handle this.
+                    // For now, we only care if it points to a non-existent property.
+                    return;
+                }
+
+                var containingType = symbol.ContainingType;
+                var referencedProperty = containingType.GetMembers(referencedPropertyName).FirstOrDefault();
+
+                if (referencedProperty == null)
+                {
+                    var diagnostic = Diagnostic.Create(Rule, symbol.Locations[0], referencedPropertyName, containingType.Name);
+                    context.ReportDiagnostic(diagnostic);
+                }
             }
         }
     }

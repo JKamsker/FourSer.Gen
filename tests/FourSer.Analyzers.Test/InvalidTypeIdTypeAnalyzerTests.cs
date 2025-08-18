@@ -11,6 +11,9 @@ namespace FourSer.Analyzers.Test
 using System;
 namespace FourSer.Contracts
 {
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+    public class GenerateSerializerAttribute : Attribute { }
+
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class SerializePolymorphicAttribute : Attribute { public Type TypeIdType { get; set; } }
 
@@ -25,6 +28,7 @@ namespace FourSer.Contracts
         {
             var testCode = @"
 using FourSer.Contracts;
+[GenerateSerializer]
 class MyData { [SerializePolymorphic(TypeIdType = typeof(int))] public object MyProp { get; set; } }";
             await new CSharpAnalyzerTest<InvalidTypeIdTypeAnalyzer, DefaultVerifier>
             {
@@ -38,6 +42,7 @@ class MyData { [SerializePolymorphic(TypeIdType = typeof(int))] public object My
         {
             var testCode = @"
 using FourSer.Contracts;
+[GenerateSerializer]
 class MyData { [SerializeCollection(TypeIdType = typeof(MyEnum))] public object MyProp { get; set; } }";
             await new CSharpAnalyzerTest<InvalidTypeIdTypeAnalyzer, DefaultVerifier>
             {
@@ -51,6 +56,7 @@ class MyData { [SerializeCollection(TypeIdType = typeof(MyEnum))] public object 
         {
             var testCode = @"
 using FourSer.Contracts;
+[GenerateSerializer]
 class MyData { [{|FS0013:SerializePolymorphic(TypeIdType = typeof(string))|}] public object MyProp { get; set; } }";
             await new CSharpAnalyzerTest<InvalidTypeIdTypeAnalyzer, DefaultVerifier>
             {

@@ -31,45 +31,67 @@ namespace FourSer.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.Property, SymbolKind.Field);
+            context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
         }
 
-        private void AnalyzeSymbol(SymbolAnalysisContext context)
+        private void AnalyzeNamedType(SymbolAnalysisContext context)
         {
-            var symbol = context.Symbol;
+            var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            var serializeCollectionAttribute = symbol.GetAttributes()
-                .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
-
-            if (serializeCollectionAttribute == null)
+            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            if (generateSerializerAttribute == null)
             {
                 return;
             }
 
-            int setCount = 0;
+            bool hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
+                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
 
-            var countSizeArg = serializeCollectionAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSize");
-            if (countSizeArg.Key != null && countSizeArg.Value.Value is int countSize && countSize != -1)
+            if (!hasGenerateSerializerAttribute)
             {
-                setCount++;
+                return;
             }
 
-            var countSizeRefArg = serializeCollectionAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSizeReference");
-            if (countSizeRefArg.Key != null && countSizeRefArg.Value.Value is string)
+            foreach (var symbol in namedTypeSymbol.GetMembers())
             {
-                setCount++;
-            }
+                if (symbol is not IPropertySymbol && symbol is not IFieldSymbol)
+                {
+                    continue;
+                }
 
-            var unlimitedArg = serializeCollectionAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "Unlimited");
-            if (unlimitedArg.Key != null && unlimitedArg.Value.Value is bool unlimited && unlimited)
-            {
-                setCount++;
-            }
+                var serializeCollectionAttribute = symbol.GetAttributes()
+                    .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
 
-            if (setCount > 1)
-            {
-                var diagnostic = Diagnostic.Create(Rule, serializeCollectionAttribute.ApplicationSyntaxReference!.GetSyntax().GetLocation());
-                context.ReportDiagnostic(diagnostic);
+                if (serializeCollectionAttribute == null)
+                {
+                    continue;
+                }
+
+                int setCount = 0;
+
+                var countSizeArg = serializeCollectionAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSize");
+                if (countSizeArg.Key != null && countSizeArg.Value.Value is int countSize && countSize != -1)
+                {
+                    setCount++;
+                }
+
+                var countSizeRefArg = serializeCollectionAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "CountSizeReference");
+                if (countSizeRefArg.Key != null && countSizeRefArg.Value.Value is string)
+                {
+                    setCount++;
+                }
+
+                var unlimitedArg = serializeCollectionAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "Unlimited");
+                if (unlimitedArg.Key != null && unlimitedArg.Value.Value is bool unlimited && unlimited)
+                {
+                    setCount++;
+                }
+
+                if (setCount > 1)
+                {
+                    var diagnostic = Diagnostic.Create(Rule, serializeCollectionAttribute.ApplicationSyntaxReference!.GetSyntax().GetLocation());
+                    context.ReportDiagnostic(diagnostic);
+                }
             }
         }
     }

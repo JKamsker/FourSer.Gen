@@ -31,90 +31,112 @@ namespace FourSer.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.Property, SymbolKind.Field);
+            context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
         }
 
-        private void AnalyzeSymbol(SymbolAnalysisContext context)
+        private void AnalyzeNamedType(SymbolAnalysisContext context)
         {
-            var symbol = context.Symbol;
+            var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            var serializePolymorphicAttribute = symbol.GetAttributes()
-                .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializePolymorphicAttribute");
-
-            if (serializePolymorphicAttribute == null)
+            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            if (generateSerializerAttribute == null)
             {
                 return;
             }
 
-            var polymorphicOptions = symbol.GetAttributes()
-                .Where(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.PolymorphicOptionAttribute")
-                .ToList();
+            bool hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
+                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
 
-            if (polymorphicOptions.Count == 0)
+            if (!hasGenerateSerializerAttribute)
             {
                 return;
             }
 
-            // Determine the expected type
-            ITypeSymbol? expectedType = null;
-            var typeIdTypeArgument = serializePolymorphicAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "TypeIdType").Value;
-            if (typeIdTypeArgument.Value is ITypeSymbol typeSymbol)
+            foreach (var symbol in namedTypeSymbol.GetMembers())
             {
-                expectedType = typeSymbol;
-            }
-            else if (serializePolymorphicAttribute.ConstructorArguments.Any())
-            {
-                var propertyName = serializePolymorphicAttribute.ConstructorArguments.FirstOrDefault().Value as string;
-                if (!string.IsNullOrEmpty(propertyName))
+                if (symbol is not IPropertySymbol && symbol is not IFieldSymbol)
                 {
-                    var containingType = symbol.ContainingType;
-                    var property = containingType.GetMembers(propertyName).FirstOrDefault();
-                    if (property is IPropertySymbol propertySymbol)
+                    continue;
+                }
+
+                var serializePolymorphicAttribute = symbol.GetAttributes()
+                    .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializePolymorphicAttribute");
+
+                if (serializePolymorphicAttribute == null)
+                {
+                    continue;
+                }
+
+                var polymorphicOptions = symbol.GetAttributes()
+                    .Where(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.PolymorphicOptionAttribute")
+                    .ToList();
+
+                if (polymorphicOptions.Count == 0)
+                {
+                    continue;
+                }
+
+                // Determine the expected type
+                ITypeSymbol? expectedType = null;
+                var typeIdTypeArgument = serializePolymorphicAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "TypeIdType").Value;
+                if (typeIdTypeArgument.Value is ITypeSymbol typeSymbol)
+                {
+                    expectedType = typeSymbol;
+                }
+                else if (serializePolymorphicAttribute.ConstructorArguments.Any())
+                {
+                    var propertyName = serializePolymorphicAttribute.ConstructorArguments.FirstOrDefault().Value as string;
+                    if (!string.IsNullOrEmpty(propertyName))
                     {
-                        expectedType = propertySymbol.Type;
-                    }
-                    else if (property is IFieldSymbol fieldSymbol)
-                    {
-                        expectedType = fieldSymbol.Type;
+                        var containingType = symbol.ContainingType;
+                        var property = containingType.GetMembers(propertyName).FirstOrDefault();
+                        if (property is IPropertySymbol propertySymbol)
+                        {
+                            expectedType = propertySymbol.Type;
+                        }
+                        else if (property is IFieldSymbol fieldSymbol)
+                        {
+                            expectedType = fieldSymbol.Type;
+                        }
                     }
                 }
-            }
 
-            if (expectedType == null)
-            {
-                // Default to int if not specified
-                expectedType = context.Compilation.GetSpecialType(SpecialType.System_Int32);
-            }
-
-
-            ITypeSymbol? firstOptionType = null;
-
-            foreach (var option in polymorphicOptions)
-            {
-                if (option.ConstructorArguments.Length > 0)
+                if (expectedType == null)
                 {
-                    var optionId = option.ConstructorArguments[0];
-                    var currentOptionType = optionId.Type;
+                    // Default to int if not specified
+                    expectedType = context.Compilation.GetSpecialType(SpecialType.System_Int32);
+                }
 
-                    if (currentOptionType == null) continue;
 
-                    if (firstOptionType == null)
+                ITypeSymbol? firstOptionType = null;
+
+                foreach (var option in polymorphicOptions)
+                {
+                    if (option.ConstructorArguments.Length > 0)
                     {
-                        firstOptionType = currentOptionType;
-                    }
-                    else if (!SymbolEqualityComparer.Default.Equals(firstOptionType, currentOptionType))
-                    {
-                        var diagnostic = Diagnostic.Create(MismatchedTypesRule, option.ApplicationSyntaxReference!.GetSyntax().GetLocation(), symbol.Name, firstOptionType.Name, currentOptionType.Name);
-                        context.ReportDiagnostic(diagnostic);
-                        return; // Stop after finding the first mismatch
+                        var optionId = option.ConstructorArguments[0];
+                        var currentOptionType = optionId.Type;
+
+                        if (currentOptionType == null) continue;
+
+                        if (firstOptionType == null)
+                        {
+                            firstOptionType = currentOptionType;
+                        }
+                        else if (!SymbolEqualityComparer.Default.Equals(firstOptionType, currentOptionType))
+                        {
+                            var diagnostic = Diagnostic.Create(MismatchedTypesRule, option.ApplicationSyntaxReference!.GetSyntax().GetLocation(), symbol.Name, firstOptionType.Name, currentOptionType.Name);
+                            context.ReportDiagnostic(diagnostic);
+                            return; // Stop after finding the first mismatch
+                        }
                     }
                 }
-            }
 
-            if (firstOptionType != null && !SymbolEqualityComparer.Default.Equals(firstOptionType, expectedType))
-            {
-                 var diagnostic = Diagnostic.Create(Rule, serializePolymorphicAttribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), firstOptionType.Name, expectedType.Name);
-                 context.ReportDiagnostic(diagnostic);
+                if (firstOptionType != null && !SymbolEqualityComparer.Default.Equals(firstOptionType, expectedType))
+                {
+                    var diagnostic = Diagnostic.Create(Rule, serializePolymorphicAttribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), firstOptionType.Name, expectedType.Name);
+                    context.ReportDiagnostic(diagnostic);
+                }
             }
         }
     }

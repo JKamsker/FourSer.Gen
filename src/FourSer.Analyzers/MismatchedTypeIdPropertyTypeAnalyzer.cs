@@ -31,66 +31,88 @@ namespace FourSer.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.Property, SymbolKind.Field);
+            context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
         }
 
-        private void AnalyzeSymbol(SymbolAnalysisContext context)
+        private void AnalyzeNamedType(SymbolAnalysisContext context)
         {
-            var symbol = context.Symbol;
+            var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            var serializeCollectionAttribute = symbol.GetAttributes()
-                .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
-
-            if (serializeCollectionAttribute == null)
+            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            if (generateSerializerAttribute == null)
             {
                 return;
             }
 
-            var polymorphicModeArg = serializeCollectionAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "PolymorphicMode");
-            if (polymorphicModeArg.Key == null || polymorphicModeArg.Value.Value is not int mode || mode != 1) // SingleTypeId
+            bool hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
+                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
+
+            if (!hasGenerateSerializerAttribute)
             {
                 return;
             }
 
-            var typeIdPropertyArg = serializeCollectionAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "TypeIdProperty");
-            if (typeIdPropertyArg.Key == null || typeIdPropertyArg.Value.Value is not string propertyName || string.IsNullOrEmpty(propertyName))
+            foreach (var symbol in namedTypeSymbol.GetMembers())
             {
-                return; // Handled by MissingTypeIdPropertyAnalyzer
-            }
+                if (symbol is not IPropertySymbol && symbol is not IFieldSymbol)
+                {
+                    continue;
+                }
 
-            var containingType = symbol.ContainingType;
-            var typeIdProperty = containingType.GetMembers(propertyName).FirstOrDefault();
-            if (typeIdProperty == null)
-            {
-                return; // Handled by a different analyzer (FS0006 for CountSizeReference, could be a new one for this)
-            }
+                var serializeCollectionAttribute = symbol.GetAttributes()
+                    .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
 
-            ITypeSymbol? actualPropertyType = null;
-            if (typeIdProperty is IPropertySymbol propertySymbol)
-            {
-                actualPropertyType = propertySymbol.Type;
-            }
-            else if (typeIdProperty is IFieldSymbol fieldSymbol)
-            {
-                actualPropertyType = fieldSymbol.Type;
-            }
+                if (serializeCollectionAttribute == null)
+                {
+                    continue;
+                }
 
-            if (actualPropertyType == null)
-            {
-                return;
-            }
+                var polymorphicModeArg = serializeCollectionAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "PolymorphicMode");
+                if (polymorphicModeArg.Key == null || polymorphicModeArg.Value.Value is not int mode || mode != 1) // SingleTypeId
+                {
+                    continue;
+                }
 
-            var typeIdTypeArg = serializeCollectionAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "TypeIdType");
-            ITypeSymbol expectedTypeIdType = context.Compilation.GetSpecialType(SpecialType.System_Int32); // Default
-            if (typeIdTypeArg.Key != null && typeIdTypeArg.Value.Value is ITypeSymbol specifiedType)
-            {
-                expectedTypeIdType = specifiedType;
-            }
+                var typeIdPropertyArg = serializeCollectionAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "TypeIdProperty");
+                if (typeIdPropertyArg.Key == null || typeIdPropertyArg.Value.Value is not string propertyName || string.IsNullOrEmpty(propertyName))
+                {
+                    continue; // Handled by MissingTypeIdPropertyAnalyzer
+                }
 
-            if (!SymbolEqualityComparer.Default.Equals(actualPropertyType, expectedTypeIdType))
-            {
-                var diagnostic = Diagnostic.Create(Rule, typeIdProperty.Locations[0], propertyName, actualPropertyType.Name, expectedTypeIdType.Name);
-                context.ReportDiagnostic(diagnostic);
+                var containingType = symbol.ContainingType;
+                var typeIdProperty = containingType.GetMembers(propertyName).FirstOrDefault();
+                if (typeIdProperty == null)
+                {
+                    continue; // Handled by a different analyzer (FS0006 for CountSizeReference, could be a new one for this)
+                }
+
+                ITypeSymbol? actualPropertyType = null;
+                if (typeIdProperty is IPropertySymbol propertySymbol)
+                {
+                    actualPropertyType = propertySymbol.Type;
+                }
+                else if (typeIdProperty is IFieldSymbol fieldSymbol)
+                {
+                    actualPropertyType = fieldSymbol.Type;
+                }
+
+                if (actualPropertyType == null)
+                {
+                    continue;
+                }
+
+                var typeIdTypeArg = serializeCollectionAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "TypeIdType");
+                ITypeSymbol expectedTypeIdType = context.Compilation.GetSpecialType(SpecialType.System_Int32); // Default
+                if (typeIdTypeArg.Key != null && typeIdTypeArg.Value.Value is ITypeSymbol specifiedType)
+                {
+                    expectedTypeIdType = specifiedType;
+                }
+
+                if (!SymbolEqualityComparer.Default.Equals(actualPropertyType, expectedTypeIdType))
+                {
+                    var diagnostic = Diagnostic.Create(Rule, typeIdProperty.Locations[0], propertyName, actualPropertyType.Name, expectedTypeIdType.Name);
+                    context.ReportDiagnostic(diagnostic);
+                }
             }
         }
     }

@@ -25,15 +25,21 @@ namespace FourSer.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.NamedType);
+            context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
         }
 
-        private static void AnalyzeSymbol(SymbolAnalysisContext context)
+        private static void AnalyzeNamedType(SymbolAnalysisContext context)
         {
             var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            var hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
-                .Any(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute");
+            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            if (generateSerializerAttribute == null)
+            {
+                return;
+            }
+
+            bool hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
+                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
 
             if (!hasGenerateSerializerAttribute)
             {

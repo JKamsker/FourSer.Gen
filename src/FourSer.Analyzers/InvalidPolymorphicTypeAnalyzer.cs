@@ -46,71 +46,93 @@ namespace FourSer.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.Property, SymbolKind.Field);
+            context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
         }
 
-        private void AnalyzeSymbol(SymbolAnalysisContext context)
+        private void AnalyzeNamedType(SymbolAnalysisContext context)
         {
-            var symbol = context.Symbol;
+            var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            var polymorphicOptionAttributes = symbol.GetAttributes()
-                .Where(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.PolymorphicOptionAttribute")
-                .ToList();
-
-            if (polymorphicOptionAttributes.Count == 0)
+            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            if (generateSerializerAttribute == null)
             {
                 return;
             }
 
-            ITypeSymbol? memberType = null;
-            if (symbol is IPropertySymbol propertySymbol)
-            {
-                memberType = propertySymbol.Type;
-            }
-            else if (symbol is IFieldSymbol fieldSymbol)
-            {
-                memberType = fieldSymbol.Type;
-            }
+            bool hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
+                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
 
-            if (memberType == null)
+            if (!hasGenerateSerializerAttribute)
             {
                 return;
             }
 
-            var typeToCheck = memberType;
-            if (memberType is INamedTypeSymbol namedTypeSymbol &&
-                namedTypeSymbol.IsGenericType &&
-                namedTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>" &&
-                namedTypeSymbol.TypeArguments.Length == 1)
+            foreach (var symbol in namedTypeSymbol.GetMembers())
             {
-                typeToCheck = namedTypeSymbol.TypeArguments[0];
-            }
-            else if (memberType is IArrayTypeSymbol arrayTypeSymbol)
-            {
-                typeToCheck = arrayTypeSymbol.ElementType;
-            }
-
-
-            foreach (var attribute in polymorphicOptionAttributes)
-            {
-                if (attribute.ConstructorArguments.Length < 2) continue;
-
-                if (attribute.ConstructorArguments[1].Value is ITypeSymbol attributeType)
+                if (symbol is not IPropertySymbol && symbol is not IFieldSymbol)
                 {
-                    // Check for assignability
-                    if (!IsAssignable(attributeType, typeToCheck))
-                    {
-                        var diagnostic = Diagnostic.Create(AssignabilityRule, attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), attributeType.Name, typeToCheck.Name);
-                        context.ReportDiagnostic(diagnostic);
-                    }
+                    continue;
+                }
 
-                    // Check for [GenerateSerializer]
-                    var hasGenerateSerializer = attributeType.GetAttributes()
-                        .Any(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute");
-                    if (!hasGenerateSerializer)
+                var polymorphicOptionAttributes = symbol.GetAttributes()
+                    .Where(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.PolymorphicOptionAttribute")
+                    .ToList();
+
+                if (polymorphicOptionAttributes.Count == 0)
+                {
+                    continue;
+                }
+
+                ITypeSymbol? memberType = null;
+                if (symbol is IPropertySymbol propertySymbol)
+                {
+                    memberType = propertySymbol.Type;
+                }
+                else if (symbol is IFieldSymbol fieldSymbol)
+                {
+                    memberType = fieldSymbol.Type;
+                }
+
+                if (memberType == null)
+                {
+                    continue;
+                }
+
+                var typeToCheck = memberType;
+                if (memberType is INamedTypeSymbol namedMemberTypeSymbol &&
+                    namedMemberTypeSymbol.IsGenericType &&
+                    namedMemberTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>" &&
+                    namedMemberTypeSymbol.TypeArguments.Length == 1)
+                {
+                    typeToCheck = namedMemberTypeSymbol.TypeArguments[0];
+                }
+                else if (memberType is IArrayTypeSymbol arrayTypeSymbol)
+                {
+                    typeToCheck = arrayTypeSymbol.ElementType;
+                }
+
+
+                foreach (var attribute in polymorphicOptionAttributes)
+                {
+                    if (attribute.ConstructorArguments.Length < 2) continue;
+
+                    if (attribute.ConstructorArguments[1].Value is ITypeSymbol attributeType)
                     {
-                        var diagnostic = Diagnostic.Create(SerializableRule, attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), attributeType.Name);
-                        context.ReportDiagnostic(diagnostic);
+                        // Check for assignability
+                        if (!IsAssignable(attributeType, typeToCheck))
+                        {
+                            var diagnostic = Diagnostic.Create(AssignabilityRule, attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), attributeType.Name, typeToCheck.Name);
+                            context.ReportDiagnostic(diagnostic);
+                        }
+
+                        // Check for [GenerateSerializer]
+                        var hasGenerateSerializer = attributeType.GetAttributes()
+                            .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
+                        if (!hasGenerateSerializer)
+                        {
+                            var diagnostic = Diagnostic.Create(SerializableRule, attribute.ApplicationSyntaxReference!.GetSyntax().GetLocation(), attributeType.Name);
+                            context.ReportDiagnostic(diagnostic);
+                        }
                     }
                 }
             }

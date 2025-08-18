@@ -13,6 +13,9 @@ using System.Collections.Generic;
 
 namespace FourSer.Contracts
 {
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+    public class GenerateSerializerAttribute : Attribute { }
+
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class SerializeCollectionAttribute : Attribute
     {
@@ -27,6 +30,7 @@ namespace FourSer.Contracts
         {
             var testCode = @"
 using FourSer.Contracts;
+[GenerateSerializer]
 class MyData { [SerializeCollection(CountSize = 10)] public int[] MyList { get; set; } }";
             await new CSharpAnalyzerTest<MutuallyExclusiveCollectionSizeAnalyzer, DefaultVerifier>
             {
@@ -40,6 +44,7 @@ class MyData { [SerializeCollection(CountSize = 10)] public int[] MyList { get; 
         {
             var testCode = @"
 using FourSer.Contracts;
+[GenerateSerializer]
 class MyData { [SerializeCollection(CountSizeReference = ""C"")] public int[] MyList { get; set; } public int C {get;set;} }";
             await new CSharpAnalyzerTest<MutuallyExclusiveCollectionSizeAnalyzer, DefaultVerifier>
             {
@@ -53,6 +58,7 @@ class MyData { [SerializeCollection(CountSizeReference = ""C"")] public int[] My
         {
             var testCode = @"
 using FourSer.Contracts;
+[GenerateSerializer]
 class MyData { [SerializeCollection(Unlimited = true)] public int[] MyList { get; set; } }";
             await new CSharpAnalyzerTest<MutuallyExclusiveCollectionSizeAnalyzer, DefaultVerifier>
             {
@@ -66,6 +72,7 @@ class MyData { [SerializeCollection(Unlimited = true)] public int[] MyList { get
         {
             var testCode = @"
 using FourSer.Contracts;
+[GenerateSerializer]
 class MyData { [{|FS0011:SerializeCollection(CountSize = 10, CountSizeReference = ""C"")|}] public int[] MyList { get; set; } public int C {get;set;} }";
             await new CSharpAnalyzerTest<MutuallyExclusiveCollectionSizeAnalyzer, DefaultVerifier>
             {
@@ -79,6 +86,7 @@ class MyData { [{|FS0011:SerializeCollection(CountSize = 10, CountSizeReference 
         {
             var testCode = @"
 using FourSer.Contracts;
+[GenerateSerializer]
 class MyData { [{|FS0011:SerializeCollection(CountSize = 10, Unlimited = true)|}] public int[] MyList { get; set; } }";
             await new CSharpAnalyzerTest<MutuallyExclusiveCollectionSizeAnalyzer, DefaultVerifier>
             {
@@ -92,6 +100,7 @@ class MyData { [{|FS0011:SerializeCollection(CountSize = 10, Unlimited = true)|}
         {
             var testCode = @"
 using FourSer.Contracts;
+[GenerateSerializer]
 class MyData { [{|FS0011:SerializeCollection(CountSize = 10, CountSizeReference = ""C"", Unlimited = true)|}] public int[] MyList { get; set; } public int C {get;set;} }";
             await new CSharpAnalyzerTest<MutuallyExclusiveCollectionSizeAnalyzer, DefaultVerifier>
             {

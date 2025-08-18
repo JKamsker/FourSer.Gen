@@ -39,6 +39,7 @@ namespace FourSer.Contracts
             var testCode = @"
 using FourSer.Contracts;
 
+[GenerateSerializer]
 class MyData
 {
     [PolymorphicOption(1, typeof(DerivedType))]
@@ -63,6 +64,7 @@ class MyData
 using FourSer.Contracts;
 using System.Collections.Generic;
 
+[GenerateSerializer]
 class MyData
 {
     [PolymorphicOption(1, typeof(DerivedType))]
@@ -86,6 +88,7 @@ class MyData
             var testCode = @"
 using FourSer.Contracts;
 
+[GenerateSerializer]
 class MyData
 {
     [{|FS0016:PolymorphicOption(1, typeof(AssignableButNotSerializable))|}]
@@ -109,6 +112,7 @@ class MyData
             var testCode = @"
 using FourSer.Contracts;
 
+[GenerateSerializer]
 class MyData
 {
     [PolymorphicOption(1, typeof(BaseType))]
@@ -132,6 +136,7 @@ class MyData
             var testCode = @"
 using FourSer.Contracts;
 
+[GenerateSerializer]
 class MyData
 {
     [{|FS0009:PolymorphicOption(1, typeof(UnrelatedType))|}]

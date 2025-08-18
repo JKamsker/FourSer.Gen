@@ -12,6 +12,9 @@ using System;
 
 namespace FourSer.Contracts
 {
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+    public class GenerateSerializerAttribute : Attribute { }
+
     public enum PolymorphicMode { None, SingleTypeId, IndividualTypeIds }
 
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
@@ -41,6 +44,7 @@ namespace FourSer.Contracts
 using FourSer.Contracts;
 using System.Collections.Generic;
 
+[GenerateSerializer]
 class MyData
 {
     [SerializePolymorphic]
@@ -66,6 +70,7 @@ class MyData
 using FourSer.Contracts;
 using System.Collections.Generic;
 
+[GenerateSerializer]
 class MyData
 {
     [SerializeCollection(PolymorphicMode = PolymorphicMode.IndividualTypeIds)]
@@ -91,6 +96,7 @@ class MyData
 using FourSer.Contracts;
 using System.Collections.Generic;
 
+[GenerateSerializer]
 class MyData
 {
     [PolymorphicOption(1, typeof(DerivedType))]
@@ -115,6 +121,7 @@ class MyData
 using FourSer.Contracts;
 using System.Collections.Generic;
 
+[GenerateSerializer]
 class MyData
 {
     public int TypeId { get; set; }

@@ -13,6 +13,9 @@ using System.Collections.Generic;
 
 namespace FourSer.Contracts
 {
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+    public class GenerateSerializerAttribute : Attribute { }
+
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class SerializeCollectionAttribute : Attribute
     {
@@ -25,6 +28,7 @@ namespace FourSer.Contracts
         {
             var testCode = @"
 using FourSer.Contracts;
+[GenerateSerializer]
 class MyData { [SerializeCollection(CountType = typeof(int))] public int[] MyList { get; set; } }";
             await new CSharpAnalyzerTest<InvalidCountTypeAnalyzer, DefaultVerifier>
             {
@@ -38,6 +42,7 @@ class MyData { [SerializeCollection(CountType = typeof(int))] public int[] MyLis
         {
             var testCode = @"
 using FourSer.Contracts;
+[GenerateSerializer]
 class MyData { [SerializeCollection(CountType = typeof(byte))] public int[] MyList { get; set; } }";
             await new CSharpAnalyzerTest<InvalidCountTypeAnalyzer, DefaultVerifier>
             {
@@ -51,6 +56,7 @@ class MyData { [SerializeCollection(CountType = typeof(byte))] public int[] MyLi
         {
             var testCode = @"
 using FourSer.Contracts;
+[GenerateSerializer]
 class MyData { [{|FS0012:SerializeCollection(CountType = typeof(string))|}] public int[] MyList { get; set; } }";
             await new CSharpAnalyzerTest<InvalidCountTypeAnalyzer, DefaultVerifier>
             {

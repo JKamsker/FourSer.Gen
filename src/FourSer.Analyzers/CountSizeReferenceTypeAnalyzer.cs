@@ -31,58 +31,80 @@ namespace FourSer.Analyzers
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.Property, SymbolKind.Field);
+            context.RegisterSymbolAction(AnalyzeNamedType, SymbolKind.NamedType);
         }
 
-        private void AnalyzeSymbol(SymbolAnalysisContext context)
+        private void AnalyzeNamedType(SymbolAnalysisContext context)
         {
-            var symbol = context.Symbol;
+            var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
 
-            var serializeCollectionAttribute = symbol.GetAttributes()
-                .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
-
-            if (serializeCollectionAttribute == null)
+            var generateSerializerAttribute = context.Compilation.GetTypeByMetadataName("FourSer.Contracts.GenerateSerializerAttribute");
+            if (generateSerializerAttribute == null)
             {
                 return;
             }
 
-            var countSizeReferenceArgument = serializeCollectionAttribute.NamedArguments
-                .FirstOrDefault(arg => arg.Key == "CountSizeReference");
+            bool hasGenerateSerializerAttribute = namedTypeSymbol.GetAttributes()
+                .Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, generateSerializerAttribute));
 
-            if (countSizeReferenceArgument.Key == null)
+            if (!hasGenerateSerializerAttribute)
             {
                 return;
             }
 
-            var referencedPropertyName = countSizeReferenceArgument.Value.Value as string;
-            if (string.IsNullOrEmpty(referencedPropertyName))
+            foreach (var symbol in namedTypeSymbol.GetMembers())
             {
-                return;
-            }
+                if (symbol is not IPropertySymbol && symbol is not IFieldSymbol)
+                {
+                    continue;
+                }
 
-            var containingType = symbol.ContainingType;
-            var referencedMember = containingType.GetMembers(referencedPropertyName).FirstOrDefault();
+                var serializeCollectionAttribute = symbol.GetAttributes()
+                    .FirstOrDefault(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
 
-            if (referencedMember == null)
-            {
-                // This is handled by the CountSizeReferenceExistenceAnalyzer.
-                return;
-            }
+                if (serializeCollectionAttribute == null)
+                {
+                    continue;
+                }
 
-            ITypeSymbol? referencedType = null;
-            if (referencedMember is IPropertySymbol propertySymbol)
-            {
-                referencedType = propertySymbol.Type;
-            }
-            else if (referencedMember is IFieldSymbol fieldSymbol)
-            {
-                referencedType = fieldSymbol.Type;
-            }
+                var countSizeReferenceArgument = serializeCollectionAttribute.NamedArguments
+                    .FirstOrDefault(arg => arg.Key == "CountSizeReference");
 
-            if (referencedType != null && !IsIntegerType(referencedType))
-            {
-                var diagnostic = Diagnostic.Create(Rule, referencedMember.Locations[0], referencedPropertyName, referencedType.Name);
-                context.ReportDiagnostic(diagnostic);
+                if (countSizeReferenceArgument.Key == null)
+                {
+                    return;
+                }
+
+                var referencedPropertyName = countSizeReferenceArgument.Value.Value as string;
+                if (string.IsNullOrEmpty(referencedPropertyName))
+                {
+                    return;
+                }
+
+                var containingType = symbol.ContainingType;
+                var referencedMember = containingType.GetMembers(referencedPropertyName).FirstOrDefault();
+
+                if (referencedMember == null)
+                {
+                    // This is handled by the CountSizeReferenceExistenceAnalyzer.
+                    return;
+                }
+
+                ITypeSymbol? referencedType = null;
+                if (referencedMember is IPropertySymbol propertySymbol)
+                {
+                    referencedType = propertySymbol.Type;
+                }
+                else if (referencedMember is IFieldSymbol fieldSymbol)
+                {
+                    referencedType = fieldSymbol.Type;
+                }
+
+                if (referencedType != null && !IsIntegerType(referencedType))
+                {
+                    var diagnostic = Diagnostic.Create(Rule, referencedMember.Locations[0], referencedPropertyName, referencedType.Name);
+                    context.ReportDiagnostic(diagnostic);
+                }
             }
         }
 
