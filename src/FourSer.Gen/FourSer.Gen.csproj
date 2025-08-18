@@ -28,7 +28,7 @@
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
 
         <!-- Pack the analyzer dll in the analyzers folder -->
-        <None Include="..\FourSer.Analyzers\FourSer.Analyzers\FourSer.Analyzers\bin\$(Configuration)\netstandard2.0\FourSer.Analyzers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+        <None Include="..\FourSer.Analyzers\bin\$(Configuration)\netstandard2.0\FourSer.Analyzers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
 
         <!-- Pack the contracts dll in the lib folder -->
         <None Include="..\FourSer.Contracts\bin\$(Configuration)\net9.0\FourSer.Contracts.dll" Pack="true" PackagePath="lib\net9.0\" Visible="false"/>
