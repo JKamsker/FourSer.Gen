@@ -1,4 +1,4 @@
-﻿namespace FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable;
+namespace FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable;
 
 [GenerateSerializer]
 public partial class Inventory

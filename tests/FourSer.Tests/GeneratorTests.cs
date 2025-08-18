@@ -261,14 +261,58 @@ public static class SpanWriterExtensions
 
         var generatedCode = string.Join("\n\n", generatedCodes.Select(x => x.ToString()));
 
-        // return Verifier.Verify(driver)
-        //     .UseDirectory(Path.Combine("GeneratorTestCases", testCaseName))
-        //     .UseTypeName("expected");
-
         return Verify(generatedCode)
                 .UseDirectory(Path.Combine("GeneratorTestCases", testCaseName))
                 .UseTypeName(testCaseName)
             ;
+    }
+    
+    /// <summary>
+    /// This test verifies that the source code produced by the generator compiles successfully.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(GetTestCases))]
+    public void GeneratedSource_ShouldCompile(string testCaseName)
+    {
+        // Arrange
+        var source = ReadSource(testCaseName);
+
+        var syntaxTrees = s_contractsSource.Select(s => CSharpSyntaxTree.ParseText(s)).ToList();
+        syntaxTrees.AddRange(s_extensionsSource.Select(s => CSharpSyntaxTree.ParseText(s)));
+        syntaxTrees.Add(CSharpSyntaxTree.ParseText(source));
+
+        var compilation = CSharpCompilation.Create(
+            assemblyName: $"{testCaseName}.TestAssembly",
+            syntaxTrees: syntaxTrees,
+            references: Basic.Reference.Assemblies.Net90.References.All,
+            options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)
+        );
+
+        var generator = new SerializerGenerator();
+        var driver = CSharpGeneratorDriver.Create(generator);
+        
+        // Act
+        driver = (CSharpGeneratorDriver)driver.RunGenerators(compilation);
+        var runResult = driver.GetRunResult();
+        
+        // Add the generated syntax trees to the compilation
+        var finalCompilation = compilation.AddSyntaxTrees(runResult.GeneratedTrees);
+        
+        // Attempt to emit the final assembly
+        using var ms = new MemoryStream();
+        var emitResult = finalCompilation.Emit(ms);
+
+        // Assert
+        if (!emitResult.Success)
+        {
+            var errors = emitResult.Diagnostics
+                .Where(d => d.Severity == DiagnosticSeverity.Error)
+                .Select(d => d.GetMessage())
+                .ToList();
+            
+            // Fail the test with a descriptive message if compilation fails
+            Assert.True(emitResult.Success, $"Compilation failed with errors: \n{string.Join("\n", errors)}");
+        }
     }
 
     [Fact]
