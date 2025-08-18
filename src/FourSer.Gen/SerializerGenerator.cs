@@ -15,7 +15,7 @@ public class SerializerGenerator : IIncrementalGenerator
 {
     private static readonly DiagnosticDescriptor s_invalidCollectionTypeArgument = new
     (
-        "FSSG001",
+        "FS0001",
         "Invalid collection type argument",
         "The type '{0}' in the collection '{1}' must have the [GenerateSerializer] attribute because it is not a primitive type.",
         "Usage",

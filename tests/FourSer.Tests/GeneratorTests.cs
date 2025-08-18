@@ -296,7 +296,7 @@ public static class SpanWriterExtensions
         var result = driver.GetRunResult();
 
         var diagnostic = Assert.Single(result.Diagnostics);
-        Assert.Equal("FSSG001", diagnostic.Id);
+        Assert.Equal("FS0001", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
     }
 

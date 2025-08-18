@@ -8,8 +8,8 @@ namespace FourSer.Analyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class PolymorphicCollectionTypeIdDeclarationOrderAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "FSSG002";
-        public const string MissingTypeIdDiagnosticId = "FSSG018";
+        public const string DiagnosticId = "FS0002";
+        public const string MissingTypeIdDiagnosticId = "FS0018";
 
         private static readonly LocalizableString Title =
             "Polymorphic collection TypeId property must be declared before the collection";
