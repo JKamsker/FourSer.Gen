@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using FourSer.Contracts;
 
 namespace FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable;
