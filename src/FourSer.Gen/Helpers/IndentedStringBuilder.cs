@@ -58,6 +58,16 @@ public class IndentedStringBuilder
         _isAtStartOfLine = true;
     }
 
+    public void Indent()
+    {
+        _indentationLevel++;
+    }
+
+    public void Unindent()
+    {
+        _indentationLevel--;
+    }
+
     public IDisposable BeginBlock()
     {
         WriteLine("{");

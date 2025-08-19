@@ -4,7 +4,7 @@ namespace FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId;
 public partial class PolymorphicSingleTest
 {
     public byte AnimalTypeId { get; set; }
-    
+
     [SerializeCollection(
         PolymorphicMode = PolymorphicMode.SingleTypeId,
         TypeIdProperty = nameof(AnimalTypeId),
