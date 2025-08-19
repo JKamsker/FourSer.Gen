@@ -265,24 +265,21 @@ internal static class TypeInfoProvider
     private static (MemberToGenerate, Location) CreateMemberToGenerate(ISymbol m)
     {
         var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
+        var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(memberTypeSymbol);
         var isList = memberTypeSymbol.OriginalDefinition.ToDisplayString()
-            == "System.Collections.Generic.List<T>";
+                     == "System.Collections.Generic.List<T>";
         ListTypeArgumentInfo? listTypeArgumentInfo = null;
-        if (isList)
+        if (isCollection && collectionTypeInfo.HasValue)
         {
-            var typeArgumentSymbol = ((INamedTypeSymbol)memberTypeSymbol).TypeArguments[0];
-            var listTypeHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(typeArgumentSymbol as INamedTypeSymbol);
-
+            var cti = collectionTypeInfo.Value;
             listTypeArgumentInfo = new ListTypeArgumentInfo
             (
-                typeArgumentSymbol.ToDisplayString(s_typeNameFormat),
-                typeArgumentSymbol.IsUnmanagedType,
-                typeArgumentSymbol.SpecialType == SpecialType.System_String,
-                listTypeHasGenerateSerializerAttribute
+                cti.ElementTypeName,
+                cti.IsElementUnmanagedType,
+                cti.IsElementStringType,
+                cti.HasElementGenerateSerializerAttribute
             );
         }
-
-        var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(memberTypeSymbol);
 
         var polymorphicInfo = GetPolymorphicInfo(m);
 

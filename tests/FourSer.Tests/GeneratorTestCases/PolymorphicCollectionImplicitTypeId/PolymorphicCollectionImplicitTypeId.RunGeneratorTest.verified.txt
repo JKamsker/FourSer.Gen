@@ -22,37 +22,22 @@ public partial class Inventory : ISerializable<Inventory>
         var size = 0;
         size += sizeof(int); // Count size for Items
         size += sizeof(byte); // Size for polymorphic type id
-        var collectionItems = obj.Items;
-        if (collectionItems is not null && collectionItems.Count > 0)
+        foreach(var item in obj.Items)
         {
-            var firstItem = collectionItems[0];
-            switch(firstItem)
+            switch (item)
             {
-                case Sword:
-                {
-                    foreach(var item in collectionItems)
-                    {
-                        size += Sword.GetPacketSize((Sword)item);
-                    }
+                case Sword typedInstance:
+                    size += Sword.GetPacketSize(typedInstance);
                     break;
-                }
-                case Shield:
-                {
-                    foreach(var item in collectionItems)
-                    {
-                        size += Shield.GetPacketSize((Shield)item);
-                    }
+                case Shield typedInstance:
+                    size += Shield.GetPacketSize(typedInstance);
                     break;
-                }
-                case Potion:
-                {
-                    foreach(var item in collectionItems)
-                    {
-                        size += Potion.GetPacketSize((Potion)item);
-                    }
+                case Potion typedInstance:
+                    size += Potion.GetPacketSize(typedInstance);
                     break;
-                }
-                default: throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {firstItem.GetType().Name}");
+                case null: break;
+                default:
+                    throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
             }
         }
         return size;
@@ -164,49 +149,38 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
-            var collectionItems = obj.Items;
-            if (collectionItems is null || collectionItems.Count == 0)
+            SpanWriter.WriteInt32(ref data, (int)obj.Items.Count);
+            var firstItem = obj.Items.FirstOrDefault();
+            if (firstItem is not null)
             {
-                SpanWriter.WriteInt32(ref data, (int)0);
-                SpanWriter.WriteByte(ref data, (byte)10);
-            }
-            else
-            {
-                SpanWriter.WriteInt32(ref data, (int)collectionItems.Count);
-                var firstItem = collectionItems[0];
-                var discriminator = firstItem switch
+                switch(firstItem)
                 {
-                    Sword => (byte)10,
-                    Shield => (byte)20,
-                    Potion => (byte)30,
-                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
-                };
-                SpanWriter.WriteByte(ref data, discriminator);
-                switch (discriminator)
-                {
-                    case 10:
+                    case Sword typedInstance:
                     {
-                        for (int i = 0; i < collectionItems.Count; i++)
+                        SpanWriter.WriteByte(ref data, (byte)10);
+                        foreach(var item in obj.Items)
                         {
-                            var bytesWritten = Sword.Serialize((Sword)collectionItems[i], data);
+                            var bytesWritten = Sword.Serialize((Sword)item, data);
                             data = data.Slice(bytesWritten);
                         }
                         break;
                     }
-                    case 20:
+                    case Shield typedInstance:
                     {
-                        for (int i = 0; i < collectionItems.Count; i++)
+                        SpanWriter.WriteByte(ref data, (byte)20);
+                        foreach(var item in obj.Items)
                         {
-                            var bytesWritten = Shield.Serialize((Shield)collectionItems[i], data);
+                            var bytesWritten = Shield.Serialize((Shield)item, data);
                             data = data.Slice(bytesWritten);
                         }
                         break;
                     }
-                    case 30:
+                    case Potion typedInstance:
                     {
-                        for (int i = 0; i < collectionItems.Count; i++)
+                        SpanWriter.WriteByte(ref data, (byte)30);
+                        foreach(var item in obj.Items)
                         {
-                            var bytesWritten = Potion.Serialize((Potion)collectionItems[i], data);
+                            var bytesWritten = Potion.Serialize((Potion)item, data);
                             data = data.Slice(bytesWritten);
                         }
                         break;
@@ -225,47 +199,36 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
-            var collectionItems = obj.Items;
-            if (collectionItems is null || collectionItems.Count == 0)
+            StreamWriter.WriteInt32(stream, (int)obj.Items.Count);
+            var firstItem = obj.Items.FirstOrDefault();
+            if (firstItem is not null)
             {
-                StreamWriter.WriteInt32(stream, (int)0);
-                StreamWriter.WriteByte(stream, (byte)10);
-            }
-            else
-            {
-                StreamWriter.WriteInt32(stream, (int)collectionItems.Count);
-                var firstItem = collectionItems[0];
-                var discriminator = firstItem switch
+                switch(firstItem)
                 {
-                    Sword => (byte)10,
-                    Shield => (byte)20,
-                    Potion => (byte)30,
-                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
-                };
-                StreamWriter.WriteByte(stream, discriminator);
-                switch (discriminator)
-                {
-                    case 10:
+                    case Sword typedInstance:
                     {
-                        for (int i = 0; i < collectionItems.Count; i++)
+                        StreamWriter.WriteByte(stream, (byte)10);
+                        foreach(var item in obj.Items)
                         {
-                            Sword.Serialize((Sword)collectionItems[i], stream);
+                            Sword.Serialize((Sword)item, stream);
                         }
                         break;
                     }
-                    case 20:
+                    case Shield typedInstance:
                     {
-                        for (int i = 0; i < collectionItems.Count; i++)
+                        StreamWriter.WriteByte(stream, (byte)20);
+                        foreach(var item in obj.Items)
                         {
-                            Shield.Serialize((Shield)collectionItems[i], stream);
+                            Shield.Serialize((Shield)item, stream);
                         }
                         break;
                     }
-                    case 30:
+                    case Potion typedInstance:
                     {
-                        for (int i = 0; i < collectionItems.Count; i++)
+                        StreamWriter.WriteByte(stream, (byte)30);
+                        foreach(var item in obj.Items)
                         {
-                            Potion.Serialize((Potion)collectionItems[i], stream);
+                            Potion.Serialize((Potion)item, stream);
                         }
                         break;
                     }

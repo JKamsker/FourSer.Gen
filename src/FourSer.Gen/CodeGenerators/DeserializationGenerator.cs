@@ -265,7 +265,8 @@ public static class DeserializationGenerator
                     source,
                     helper
                 );
-                sb.WriteLineFormat("{0}.Add(item);", memberName);
+                var addMethod = CollectionUtilities.GetCollectionAddMethod(member.CollectionTypeInfo!.Value.CollectionTypeName);
+                sb.WriteLineFormat("{0}.{1}(item);", memberName, addMethod);
                 return;
             }
 
@@ -338,7 +339,7 @@ public static class DeserializationGenerator
                 helper
             );
         }
-        else if (member.ListTypeArgument is not null)
+        else if (member.IsList)
         {
             GenerateListElementDeserialization
             (
