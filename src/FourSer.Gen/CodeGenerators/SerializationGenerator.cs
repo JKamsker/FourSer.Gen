@@ -173,7 +173,22 @@ public static class SerializationGenerator
         sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
         using (sb.BeginBlock())
         {
-            if (collectionInfo.CountType != null || !string.IsNullOrEmpty(collectionInfo.CountSizeReference))
+            var isListOrArray = member.IsList || (member.CollectionTypeInfo?.IsArray ?? false);
+            var isPolymorphicSingleTypeId = GeneratorUtilities.ShouldUsePolymorphicSerialization(member) &&
+                                            collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId &&
+                                            string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
+
+            if (isPolymorphicSingleTypeId && !isListOrArray)
+            {
+                var info = member.PolymorphicInfo!.Value;
+                var defaultOption = info.Options.FirstOrDefault();
+                var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+                var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
+
+                sb.WriteLineFormat("{0}.{1}({2}{3}, ({4})0);", helper, countWriteMethod, refOrEmpty, target, countType);
+                PolymorphicUtilities.GenerateWriteTypeIdCode(sb, defaultOption, info, target, helper);
+            }
+            else if (collectionInfo.CountType != null || !string.IsNullOrEmpty(collectionInfo.CountSizeReference))
             {
                 var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
                 var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
