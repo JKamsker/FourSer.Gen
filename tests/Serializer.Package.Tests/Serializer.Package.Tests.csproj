@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\FourSer.Gen\FourSer.Gen.csproj" />
+	  <PackageReference Include="FourSer.Gen" Version="*" />
   </ItemGroup>
 
 </Project>
