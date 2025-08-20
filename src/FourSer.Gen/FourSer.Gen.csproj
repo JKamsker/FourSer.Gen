@@ -3,34 +3,17 @@
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-
-        <!-- Properties for NuGet package -->
-        <PackageId>FourSer.Gen</PackageId>
-        <Authors>JKamsker</Authors>
-        <Description>A source generator for serialization.</Description>
-        <PackageTags>source-generator, csharp</PackageTags>
+        <IsPackable>false</IsPackable>
 
         <!-- Roslyn component properties -->
         <IsRoslynComponent>true</IsRoslynComponent>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
-        <IncludeBuildOutput>false</IncludeBuildOutput>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Bcl.HashCode" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <!-- Pack the generator dll in the analyzers folder -->
-        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-
-        <!-- Pack the analyzer dll in the analyzers folder -->
-        <None Include="..\FourSer.Analyzers\bin\$(Configuration)\netstandard2.0\FourSer.Analyzers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-
-        <!-- Pack the contracts dll in the lib folder -->
-        <None Include="..\FourSer.Contracts\bin\$(Configuration)\net9.0\FourSer.Contracts.dll" Pack="true" PackagePath="lib\net9.0\" Visible="false" />
     </ItemGroup>
 
     <ItemGroup>
