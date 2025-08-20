@@ -99,12 +99,17 @@ namespace FourSer.Analyzers
                 }
 
                 var typeToCheck = memberType;
-                if (memberType is INamedTypeSymbol namedMemberTypeSymbol &&
-                    namedMemberTypeSymbol.IsGenericType &&
-                    namedMemberTypeSymbol.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>" &&
-                    namedMemberTypeSymbol.TypeArguments.Length == 1)
+                if (memberType is INamedTypeSymbol namedMemberTypeSymbol && namedMemberTypeSymbol.IsGenericType)
                 {
-                    typeToCheck = namedMemberTypeSymbol.TypeArguments[0];
+                    var originalDefinition = namedMemberTypeSymbol.OriginalDefinition.ToDisplayString();
+                    if (originalDefinition == "System.Collections.Generic.List<T>" ||
+                        originalDefinition == "System.Collections.Generic.IEnumerable<T>")
+                    {
+                        if (namedMemberTypeSymbol.TypeArguments.Length == 1)
+                        {
+                            typeToCheck = namedMemberTypeSymbol.TypeArguments[0];
+                        }
+                    }
                 }
                 else if (memberType is IArrayTypeSymbol arrayTypeSymbol)
                 {

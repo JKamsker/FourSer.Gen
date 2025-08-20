@@ -76,6 +76,14 @@ namespace FourSer.Analyzers
                 // PolymorphicMode.SingleTypeId has a value of 1 in the enum.
                 if (polymorphicModeArg.Value.Value is int mode && mode == 1)
                 {
+                    var hasPolymorphicOptions = symbol.GetAttributes()
+                        .Any(attr => attr.AttributeClass?.ToDisplayString() == "FourSer.Contracts.PolymorphicOptionAttribute");
+
+                    if (hasPolymorphicOptions)
+                    {
+                        return;
+                    }
+
                     var typeIdPropertyArg = serializeCollectionAttribute.NamedArguments.FirstOrDefault(arg => arg.Key == "TypeIdProperty");
                     if (typeIdPropertyArg.Key == null || typeIdPropertyArg.Value.Value is not string value || string.IsNullOrEmpty(value))
                     {
