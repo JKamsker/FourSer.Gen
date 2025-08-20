@@ -10,12 +10,14 @@
     <Authors>JKamsker</Authors>
     <PackageTags>source-generator, csharp</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="FourSer.Gen.props" Pack="true" PackagePath="buildTransitive\" />
     <None Include="../../LICENSE" Pack="true" PackagePath="/" />
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
     <None Include="..\FourSer.Analyzers\bin\$(Configuration)\netstandard2.0\FourSer.Analyzers.dll" Pack="true" PackagePath="analyzers/roslyn4.8/dotnet/cs" Visible="true" />
     <None Include="..\FourSer.Gen\bin\$(Configuration)\netstandard2.0\FourSer.Gen.dll" Pack="true" PackagePath="analyzers/roslyn4.8/dotnet/cs" Visible="true" />
     <None Include="..\FourSer.Contracts\bin\$(Configuration)\net9.0\FourSer.Contracts.dll" Pack="true" PackagePath="lib\net9.0" />
