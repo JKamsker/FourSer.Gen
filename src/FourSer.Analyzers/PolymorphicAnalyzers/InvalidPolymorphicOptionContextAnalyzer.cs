@@ -86,19 +86,16 @@ namespace FourSer.Analyzers
                     var polymorphicModeArgument = serializeCollectionAttribute.NamedArguments
                         .FirstOrDefault(arg => arg.Key == "PolymorphicMode");
 
-                    if (polymorphicModeArgument.Key != null)
-                    {
-                        // The enum value for None is 0.
-                        if (polymorphicModeArgument.Value.Value is int mode && mode != 0)
-                        {
-                            continue;
-                        }
-                    }
+                    bool isPolymorphicModeSet = polymorphicModeArgument.Key != null &&
+                                                polymorphicModeArgument.Value.Value is int mode &&
+                                                mode != 0;
 
                     var typeIdPropertyArgument = serializeCollectionAttribute.NamedArguments
                         .FirstOrDefault(arg => arg.Key == "TypeIdProperty");
 
-                    if (typeIdPropertyArgument.Key != null)
+                    bool isTypeIdPropertySet = typeIdPropertyArgument.Key != null;
+
+                    if (isPolymorphicModeSet || isTypeIdPropertySet)
                     {
                         continue;
                     }

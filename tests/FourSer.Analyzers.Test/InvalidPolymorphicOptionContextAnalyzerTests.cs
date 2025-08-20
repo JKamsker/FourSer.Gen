@@ -64,6 +64,34 @@ class MyData
         }
 
         [Fact]
+        public async Task PolymorphicOption_WithModeAndTypeIdProperty_NoDiagnostic()
+        {
+            var testCode = @"
+using FourSer.Contracts;
+using System.Collections.Generic;
+
+[GenerateSerializer]
+class MyData
+{
+    public int TypeId { get; set; }
+
+    [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdProperty = nameof(TypeId))]
+    [PolymorphicOption(1, typeof(DerivedType))]
+    public List<BaseType> MyList { get; set; }
+}";
+
+            var test = new CSharpAnalyzerTest<InvalidPolymorphicOptionContextAnalyzer, DefaultVerifier>
+            {
+                TestState =
+                {
+                    Sources = { AttributeSource, testCode },
+                },
+                ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            };
+            await test.RunAsync();
+        }
+
+        [Fact]
         public async Task PolymorphicOption_WithSerializeCollection_NoDiagnostic()
         {
             var testCode = @"
