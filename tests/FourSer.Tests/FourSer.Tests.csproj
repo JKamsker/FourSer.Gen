@@ -2,8 +2,6 @@
 
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
@@ -16,17 +14,20 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Basic.Reference.Assemblies.Net90" Version="1.8.3" />
-        <PackageReference Include="coverlet.collector" Version="6.0.2" />
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
-        <PackageReference Include="Verify.DiffPlex" Version="3.1.2" />
-        <PackageReference Include="Verify.SourceGenerators" Version="2.5.0" />
-        <PackageReference Include="Verify.Xunit" Version="30.6.1" />
-        <PackageReference Include="xunit" Version="2.9.2" />
-        <PackageReference Include="xunit.extensibility.core" Version="2.9.3" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
-        <PackageReference Include="FluentAssertions" Version="6.12.0" />
+        <PackageReference Include="Basic.Reference.Assemblies.Net90" />
+        <PackageReference Include="coverlet.collector" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="Verify.DiffPlex" />
+        <PackageReference Include="Verify.SourceGenerators" />
+        <PackageReference Include="Verify.Xunit" />
+        <PackageReference Include="xunit" />
+        <PackageReference Include="xunit.extensibility.core" />
+        <PackageReference Include="xunit.runner.visualstudio">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="FluentAssertions" />
     </ItemGroup>
 
     <ItemGroup>

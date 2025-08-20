@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <PackageId>FourSer.Gen</PackageId>
+    <Title>FourSer.Gen</Title>
+    <Description>A source generator for serialization.</Description>
+    <Authors>JKamsker</Authors>
+    <PackageTags>source-generator, csharp</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../LICENSE" Pack="true" PackagePath="/" />
+    <None Include="..\FourSer.Analyzers\bin\$(Configuration)\netstandard2.0\FourSer.Analyzers.dll" Pack="true" PackagePath="analyzers/roslyn4.8/dotnet/cs" Visible="true" />
+    <None Include="..\FourSer.Gen\bin\$(Configuration)\netstandard2.0\FourSer.Gen.dll" Pack="true" PackagePath="analyzers/roslyn4.8/dotnet/cs" Visible="true" />
+    <None Include="..\FourSer.Contracts\bin\$(Configuration)\net9.0\FourSer.Contracts.dll" Pack="true" PackagePath="lib\net9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FourSer.Analyzers\FourSer.Analyzers.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\FourSer.Gen\FourSer.Gen.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\FourSer.Contracts\FourSer.Contracts.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

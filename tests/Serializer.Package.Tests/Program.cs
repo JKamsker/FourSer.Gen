@@ -15,7 +15,7 @@ var readOnlySpan = new ReadOnlySpan<byte>(buffer);
 // Call the static generated method
 var newPacket = MyTestPacket.Deserialize(readOnlySpan);
 
-Console.WriteLine($"Deserialized packet with Id: {newPacket.Id} and Name: {newPacket.Name}");
+Console.WriteLine($"Deserialized packet with Id: {newPacket.Id} and Name: {newPacket.Name}.");
 
 if (packet.Id != newPacket.Id || packet.Name != newPacket.Name)
 {
