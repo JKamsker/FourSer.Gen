@@ -6,19 +6,19 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using System.Linq;
 using FourSer.Analyzers.Helpers;
 
-namespace FourSer.Analyzers.SerializeCollection
+namespace FourSer.Analyzers.SerializePolymorphic
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class SerializeCollectionTypeIdPropertyAnalyzer : DiagnosticAnalyzer
+    public class SerializePolymorphicPropertyNameAnalyzer : DiagnosticAnalyzer
     {
-        public const string NotFoundDiagnosticId = "FSG1007";
-        public const string WrongTypeDiagnosticId = "FSG1008";
-        public const string DeclaredAfterPropertyDiagnosticId = "FSG1009";
+        public const string NotFoundDiagnosticId = "FSG2000";
+        public const string WrongTypeDiagnosticId = "FSG2001";
+        public const string DeclaredAfterPropertyDiagnosticId = "FSG2002";
 
-        private static readonly LocalizableString Title = "Invalid TypeIdProperty";
-        private static readonly LocalizableString NotFoundMessageFormat = "The property '{0}' specified in 'TypeIdProperty' was not found";
+        private static readonly LocalizableString Title = "Invalid PropertyName";
+        private static readonly LocalizableString NotFoundMessageFormat = "The property '{0}' specified in 'PropertyName' was not found";
         private static readonly LocalizableString WrongTypeMessageFormat = "The property '{0}' must be of an integral, enum or string type";
-        private static readonly LocalizableString DeclaredAfterMessageFormat = "The property '{0}' must be declared before the collection property";
+        private static readonly LocalizableString DeclaredAfterMessageFormat = "The property '{0}' must be declared before the polymorphic property";
         private const string Category = "Usage";
 
         internal static readonly DiagnosticDescriptor NotFoundRule = new DiagnosticDescriptor(NotFoundDiagnosticId, Title, NotFoundMessageFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true);
@@ -38,20 +38,25 @@ namespace FourSer.Analyzers.SerializeCollection
         private void AnalyzeAttribute(SymbolAnalysisContext context)
         {
             var symbol = context.Symbol;
-            var attribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializeCollectionAttribute");
+            var attribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializePolymorphicAttribute");
 
             if (attribute == null || attribute.ApplicationSyntaxReference == null)
             {
                 return;
             }
 
-            var typeIdPropertyArg = attribute.NamedArguments.FirstOrDefault(na => na.Key == "TypeIdProperty");
-            if (typeIdPropertyArg.Key == null)
+            var propertyNameArg = attribute.ConstructorArguments.FirstOrDefault();
+            if (propertyNameArg.IsNull)
+            {
+                propertyNameArg = attribute.NamedArguments.FirstOrDefault(na => na.Key == "PropertyName").Value;
+            }
+
+            if (propertyNameArg.IsNull)
             {
                 return;
             }
 
-            var referenceName = typeIdPropertyArg.Value.Value as string;
+            var referenceName = propertyNameArg.Value as string;
             if (string.IsNullOrEmpty(referenceName))
             {
                 return;
@@ -61,7 +66,7 @@ namespace FourSer.Analyzers.SerializeCollection
             var referencedSymbol = containingType.GetMembers(referenceName).FirstOrDefault();
 
             var attributeSyntax = (AttributeSyntax)attribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
-            var argumentSyntax = attributeSyntax.ArgumentList?.Arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdProperty");
+            var argumentSyntax = attributeSyntax.ArgumentList?.Arguments.FirstOrDefault();
 
             if (argumentSyntax == null)
             {

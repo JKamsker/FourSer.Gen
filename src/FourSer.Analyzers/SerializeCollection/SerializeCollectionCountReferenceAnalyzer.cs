@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Linq;
+using FourSer.Analyzers.Helpers;
 
 namespace FourSer.Analyzers.SerializeCollection
 {
@@ -100,14 +101,6 @@ namespace FourSer.Analyzers.SerializeCollection
         private bool IsValidType(ITypeSymbol type)
         {
             return type.IsIntegralType() || type.TypeKind == TypeKind.Enum;
-        }
-    }
-
-    public static class TypeSymbolExtensions
-    {
-        public static bool IsIntegralType(this ITypeSymbol type)
-        {
-            return type.SpecialType >= SpecialType.System_SByte && type.SpecialType <= SpecialType.System_UInt64;
         }
     }
 }
