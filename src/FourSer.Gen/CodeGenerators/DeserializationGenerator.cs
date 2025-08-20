@@ -254,8 +254,7 @@ public static class DeserializationGenerator
                     false,
                     null,
                     false,
-                    false,
-                    LocationInfo.None
+                    false
                 );
                 GeneratePolymorphicItemDeserialization
                 (

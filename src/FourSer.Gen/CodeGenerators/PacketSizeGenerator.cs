@@ -180,8 +180,7 @@ public static class PacketSizeGenerator
                     false,
                     null,
                     false,
-                    false,
-                    LocationInfo.None
+                    false
                 );
                 GeneratePolymorphicSizeCalculation(sb, itemMember, "item");
             }

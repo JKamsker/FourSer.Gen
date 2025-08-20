@@ -175,7 +175,6 @@ public class SerializerGenerator : IIncrementalGenerator
 
     private static bool HasInvalidCollection(SourceProductionContext context, TypeToGenerate typeToGenerate)
     {
-        var hasError = false;
         foreach (var member in typeToGenerate.Members)
         {
             if (!member.IsCollection || member.CollectionTypeInfo is null)
@@ -190,32 +189,11 @@ public class SerializerGenerator : IIncrementalGenerator
                 continue;
             }
 
-            var location = Location.Create
-            (
-                member.Location.FilePath,
-                new(member.Location.Start, member.Location.End - member.Location.Start),
-                new
-                (
-                    new(member.Location.Start, 0),
-                    new(member.Location.End, 0)
-                )
-            );
 
-            context.ReportDiagnostic
-            (
-                Diagnostic.Create
-                (
-                    s_invalidCollectionTypeArgument,
-                    location,
-                    collectionTypeInfo.ElementTypeName,
-                    member.Name
-                )
-            );
-
-            hasError = true;
+            return true;
         }
 
-        return hasError;
+        return false;
     }
 
     private static void AddHelpers(IncrementalGeneratorPostInitializationContext context)

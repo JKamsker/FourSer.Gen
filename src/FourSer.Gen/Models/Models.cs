@@ -73,8 +73,7 @@ public sealed record MemberToGenerate
     bool IsCollection,
     CollectionTypeInfo? CollectionTypeInfo,
     bool IsReadOnly,
-    bool IsInitOnly,
-    LocationInfo Location
+    bool IsInitOnly
 );
 
 /// <summary>

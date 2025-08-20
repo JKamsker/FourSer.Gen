@@ -298,9 +298,6 @@ internal static class TypeInfoProvider
         var memberHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(memberTypeSymbol as INamedTypeSymbol);
 
         var location = m.Locations.First();
-        var lineSpan = location.GetLineSpan();
-        var locationInfo = new LocationInfo(lineSpan.Path, lineSpan.StartLinePosition.Line, lineSpan.EndLinePosition.Line);
-
         var memberToGenerate = new MemberToGenerate
         (
             m.Name,
@@ -315,8 +312,7 @@ internal static class TypeInfoProvider
             isCollection,
             collectionTypeInfo,
             isReadOnly,
-            isInitOnly,
-            locationInfo
+            isInitOnly
         );
 
         return (memberToGenerate, location);
