@@ -1,9 +1,8 @@
 #nullable enable
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace FourSer.Analyzers
+namespace FourSer.Analyzers.Helpers
 {
     internal static class AnalyzerHelper
     {

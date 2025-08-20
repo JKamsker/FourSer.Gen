@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using FourSer.Analyzers.General;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
