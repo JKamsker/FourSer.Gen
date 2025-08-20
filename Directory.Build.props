@@ -4,7 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <RepositoryUrl>https://github.com/viceroypenguin/FourSourceGen</RepositoryUrl>
+    <RepositoryUrl>https://github.com/JKamsker/FourSer.Gen</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 </Project>
