@@ -333,7 +333,7 @@ internal static class TypeInfoProvider
                 var nestedType = CreateNestedTypeToGenerate(nestedTypeSymbol);
                 if (nestedType is not null)
                 {
-                    nestedTypes.Add(nestedType.Value);
+                    nestedTypes.Add(nestedType);
                 }
             }
         }

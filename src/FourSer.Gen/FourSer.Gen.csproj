@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
@@ -19,25 +19,26 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all"/>
-        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all"/>
+        <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.1" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
     </ItemGroup>
 
     <ItemGroup>
         <!-- Pack the generator dll in the analyzers folder -->
-        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 
         <!-- Pack the analyzer dll in the analyzers folder -->
-        <None Include="..\FourSer.Analyzers\bin\$(Configuration)\netstandard2.0\FourSer.Analyzers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
+        <None Include="..\FourSer.Analyzers\bin\$(Configuration)\netstandard2.0\FourSer.Analyzers.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
 
         <!-- Pack the contracts dll in the lib folder -->
-        <None Include="..\FourSer.Contracts\bin\$(Configuration)\net9.0\FourSer.Contracts.dll" Pack="true" PackagePath="lib\net9.0\" Visible="false"/>
+        <None Include="..\FourSer.Contracts\bin\$(Configuration)\net9.0\FourSer.Contracts.dll" Pack="true" PackagePath="lib\net9.0\" Visible="false" />
     </ItemGroup>
 
     <ItemGroup>
         <!-- These are also embedded to be injected into the consumer's compilation -->
-        <Compile Remove="Resources\**\*.cs"/>
-        <EmbeddedResource Include="Resources\**\*.cs"/>
+        <Compile Remove="Resources\**\*.cs" />
+        <EmbeddedResource Include="Resources\**\*.cs" />
     </ItemGroup>
 
 </Project>

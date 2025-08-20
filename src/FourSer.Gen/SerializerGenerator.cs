@@ -40,7 +40,7 @@ public class SerializerGenerator : IIncrementalGenerator
         context.RegisterSourceOutput
         (
             nonNullableTypes,
-            (spc, source) => Execute(spc, source!.Value)
+            (spc, source) => Execute(spc, source)
         );
     }
 
