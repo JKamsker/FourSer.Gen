@@ -20,7 +20,6 @@ namespace FourSer.Contracts
         public bool Unlimited { get; set; }
         public int CountSize { get; set; }
         public string CountSizeReference { get; set; }
-        public Type CountType { get; set; }
     }
 }";
 
@@ -51,27 +50,9 @@ using System.Collections.Generic;
 
 public class MyData
 {
-    [SerializeCollection(Unlimited = true, {|FSG1001:CountSizeReference = ""Size""|})]
+    [SerializeCollection(Unlimited = true, {|FSG1003:CountSizeReference = ""Size""|})]
     public List<int> A { get; set; }
     public int Size { get; set; }
-}";
-            await new CSharpAnalyzerTest<SerializeCollectionConflictingSizeAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task UnlimitedWithCountType_ReportsDiagnostic()
-        {
-            var testCode = @"
-using FourSer.Contracts;
-using System.Collections.Generic;
-
-public class MyData
-{
-    [SerializeCollection(Unlimited = true, {|FSG1001:CountType = typeof(int)|})]
-    public List<int> A { get; set; }
 }";
             await new CSharpAnalyzerTest<SerializeCollectionConflictingSizeAnalyzer, DefaultVerifier>
             {

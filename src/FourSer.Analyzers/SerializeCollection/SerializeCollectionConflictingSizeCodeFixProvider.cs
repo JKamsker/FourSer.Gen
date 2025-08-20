@@ -16,7 +16,8 @@ namespace FourSer.Analyzers.SerializeCollection
     {
         public sealed override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(
             SerializeCollectionConflictingSizeAnalyzer.UnlimitedConflictDiagnosticId,
-            SerializeCollectionConflictingSizeAnalyzer.CountSizeConflictDiagnosticId);
+            SerializeCollectionConflictingSizeAnalyzer.CountSizeConflictDiagnosticId,
+            SerializeCollectionConflictingSizeAnalyzer.UnlimitedReferenceConflictDiagnosticId);
 
         public sealed override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 

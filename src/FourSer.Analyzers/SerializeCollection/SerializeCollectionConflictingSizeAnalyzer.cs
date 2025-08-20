@@ -12,21 +12,27 @@ namespace FourSer.Analyzers.SerializeCollection
     {
         public const string UnlimitedConflictDiagnosticId = "FSG1001";
         public const string CountSizeConflictDiagnosticId = "FSG1002";
+        public const string UnlimitedReferenceConflictDiagnosticId = "FSG1003";
 
         private static readonly LocalizableString UnlimitedTitle = "Conflicting size settings on [SerializeCollection]";
-        private static readonly LocalizableString UnlimitedMessageFormat = "Cannot use '{0}' when 'Unlimited' is set to true";
-        private static readonly LocalizableString UnlimitedDescription = "The 'Unlimited' property cannot be combined with other size-related properties like 'CountSize', 'CountSizeReference', or 'CountType'.";
+        private static readonly LocalizableString UnlimitedMessageFormat = "Cannot use 'CountSize' when 'Unlimited' is set to true";
+        private static readonly LocalizableString UnlimitedDescription = "The 'Unlimited' property cannot be combined with 'CountSize'.";
 
         private static readonly LocalizableString CountSizeTitle = "Conflicting size settings on [SerializeCollection]";
-        private static readonly LocalizableString CountSizeMessageFormat = "Cannot use '{0}' when 'CountSize' is set";
-        private static readonly LocalizableString CountSizeDescription = "The 'CountSize' property cannot be combined with 'CountSizeReference' or 'CountType'.";
+        private static readonly LocalizableString CountSizeMessageFormat = "Cannot use 'CountSizeReference' when 'CountSize' is set";
+        private static readonly LocalizableString CountSizeDescription = "The 'CountSize' property cannot be combined with 'CountSizeReference'.";
+
+        private static readonly LocalizableString UnlimitedReferenceTitle = "Conflicting size settings on [SerializeCollection]";
+        private static readonly LocalizableString UnlimitedReferenceMessageFormat = "Cannot use 'CountSizeReference' when 'Unlimited' is set to true";
+        private static readonly LocalizableString UnlimitedReferenceDescription = "The 'Unlimited' property cannot be combined with 'CountSizeReference'.";
 
         private const string Category = "Usage";
 
         internal static readonly DiagnosticDescriptor UnlimitedRule = new DiagnosticDescriptor(UnlimitedConflictDiagnosticId, UnlimitedTitle, UnlimitedMessageFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: UnlimitedDescription);
         internal static readonly DiagnosticDescriptor CountSizeRule = new DiagnosticDescriptor(CountSizeConflictDiagnosticId, CountSizeTitle, CountSizeMessageFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: CountSizeDescription);
+        internal static readonly DiagnosticDescriptor UnlimitedReferenceRule = new DiagnosticDescriptor(UnlimitedReferenceConflictDiagnosticId, UnlimitedReferenceTitle, UnlimitedReferenceMessageFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: UnlimitedReferenceDescription);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(UnlimitedRule, CountSizeRule);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(UnlimitedRule, CountSizeRule, UnlimitedReferenceRule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -51,21 +57,18 @@ namespace FourSer.Analyzers.SerializeCollection
             bool isUnlimited = namedArguments.TryGetValue("Unlimited", out var unlimitedValue) && unlimitedValue.Value is true;
             bool hasCountSize = namedArguments.ContainsKey("CountSize");
             bool hasCountSizeReference = namedArguments.ContainsKey("CountSizeReference");
-            bool hasCountType = namedArguments.ContainsKey("CountType");
 
             var attributeSyntax = (AttributeSyntax)attribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
 
             if (isUnlimited)
             {
                 if (hasCountSize) ReportDiagnostic(context, attributeSyntax, "CountSize", UnlimitedRule);
-                if (hasCountSizeReference) ReportDiagnostic(context, attributeSyntax, "CountSizeReference", UnlimitedRule);
-                if (hasCountType) ReportDiagnostic(context, attributeSyntax, "CountType", UnlimitedRule);
+                if (hasCountSizeReference) ReportDiagnostic(context, attributeSyntax, "CountSizeReference", UnlimitedReferenceRule);
             }
 
             if (hasCountSize)
             {
                 if (hasCountSizeReference) ReportDiagnostic(context, attributeSyntax, "CountSizeReference", CountSizeRule);
-                if (hasCountType) ReportDiagnostic(context, attributeSyntax, "CountType", CountSizeRule);
             }
         }
 
