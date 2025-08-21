@@ -60,28 +60,27 @@ namespace FourSer.Analyzers.SerializePolymorphic
             }
 
             // FSG2004
-            if (!string.IsNullOrEmpty(referenceName) && typeIdTypeArg != null)
+            if (!string.IsNullOrEmpty(referenceName) &&
+                namedArguments.TryGetValue("TypeIdType", out var typeIdTypeConstant) &&
+                typeIdTypeConstant.Kind == TypedConstantKind.Type &&
+                typeIdTypeConstant.Value is ITypeSymbol typeIdType)
             {
                 var referencedSymbol = symbol.ContainingType.GetMembers(referenceName!).FirstOrDefault();
                 if (referencedSymbol == null) return;
 
-                if (typeIdTypeArg.Expression is TypeOfExpressionSyntax typeOfExpression)
+                bool mismatch = false;
+                if (referencedSymbol is IPropertySymbol propertySymbol)
                 {
-                    var typeSyntax = typeOfExpression.Type;
-                    var model = context.Compilation.GetSemanticModel(typeSyntax.SyntaxTree);
-                    var typeInfo = model.GetTypeInfo(typeSyntax, context.CancellationToken);
-                    var typeIdType = typeInfo.Type;
+                    mismatch = !SymbolEqualityComparer.Default.Equals(propertySymbol.Type, typeIdType);
+                }
+                else if (referencedSymbol is IFieldSymbol fieldSymbol)
+                {
+                    mismatch = !SymbolEqualityComparer.Default.Equals(fieldSymbol.Type, typeIdType);
+                }
 
-                    if (typeIdType == null) return;
-
-                    if (referencedSymbol is IPropertySymbol propertySymbol && !SymbolEqualityComparer.Default.Equals(propertySymbol.Type, typeIdType))
-                    {
-                        context.ReportDiagnostic(Diagnostic.Create(TypeIdTypeMismatchRule, typeIdTypeArg.GetLocation()));
-                    }
-                    else if (referencedSymbol is IFieldSymbol fieldSymbol && !SymbolEqualityComparer.Default.Equals(fieldSymbol.Type, typeIdType))
-                    {
-                        context.ReportDiagnostic(Diagnostic.Create(TypeIdTypeMismatchRule, typeIdTypeArg.GetLocation()));
-                    }
+                if (mismatch && typeIdTypeArg != null)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(TypeIdTypeMismatchRule, typeIdTypeArg.GetLocation()));
                 }
             }
 
