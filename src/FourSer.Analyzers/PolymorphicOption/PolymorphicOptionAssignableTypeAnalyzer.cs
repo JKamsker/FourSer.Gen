@@ -79,6 +79,15 @@ namespace FourSer.Analyzers.PolymorphicOption
                 return arrayType.ElementType;
             }
 
+            // Check if the type itself is IEnumerable<T>
+            if (memberType is INamedTypeSymbol namedType && 
+                namedType.IsGenericType && 
+                namedType.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T)
+            {
+                return namedType.TypeArguments.FirstOrDefault();
+            }
+
+            // Check if the type implements IEnumerable<T>
             var ienumerable = memberType.AllInterfaces.FirstOrDefault(i =>
                 i.IsGenericType && i.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T);
 

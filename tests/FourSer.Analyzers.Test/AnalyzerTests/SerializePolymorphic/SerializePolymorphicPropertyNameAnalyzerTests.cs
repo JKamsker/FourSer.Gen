@@ -96,5 +96,27 @@ public class MyData
                 TestState = { Sources = { AttributesSource, testCode } },
             }.RunAsync();
         }
+
+        /// <summary>
+        /// Test for issue #59: https://github.com/JKamsker/FourSer.Gen/issues/59
+        /// Verifies that when PropertyName is not found, the diagnostic location 
+        /// is correctly reported on the PropertyName argument, not the TypeIdType argument.
+        /// </summary>
+        [Fact]
+        public async Task Issue59_PropertyNameNotFound_LocationReportedCorrectly()
+        {
+            var testCode = @"
+using FourSer.Contracts;
+
+public class MyData
+{
+    [SerializePolymorphic(TypeIdType = typeof(byte), PropertyName = {|FSG2000:""TypeId""|})]
+    public object A { get; set; }
+}";
+            await new CSharpAnalyzerTest<SerializePolymorphicPropertyNameAnalyzer, DefaultVerifier>
+            {
+                TestState = { Sources = { AttributesSource, testCode } },
+            }.RunAsync();
+        }
     }
 }

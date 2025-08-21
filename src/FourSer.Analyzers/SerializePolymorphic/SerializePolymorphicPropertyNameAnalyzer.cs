@@ -64,7 +64,23 @@ namespace FourSer.Analyzers.SerializePolymorphic
             var referencedSymbol = containingType.GetMembers(referenceName!).FirstOrDefault();
 
             var attributeSyntax = (AttributeSyntax)attribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
-            var argumentSyntax = attributeSyntax?.ArgumentList?.Arguments.FirstOrDefault();
+            
+            // Find the specific argument for PropertyName
+            AttributeArgumentSyntax? argumentSyntax = null;
+            if (attributeSyntax?.ArgumentList != null)
+            {
+                // Check if PropertyName was passed as the first positional argument
+                if (attributeSyntax.ArgumentList.Arguments.Count > 0 && attributeSyntax.ArgumentList.Arguments[0].NameEquals == null)
+                {
+                    argumentSyntax = attributeSyntax.ArgumentList.Arguments[0];
+                }
+                else
+                {
+                    // Look for named PropertyName argument
+                    argumentSyntax = attributeSyntax.ArgumentList.Arguments
+                        .FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "PropertyName");
+                }
+            }
 
             if (argumentSyntax == null)
             {
