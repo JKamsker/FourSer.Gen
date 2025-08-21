@@ -47,34 +47,35 @@ namespace FourSer.Analyzers.SerializeCollection
             var attributeSyntax = (AttributeSyntax)serializeCollectionAttribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
             var arguments = attributeSyntax.ArgumentList?.Arguments ?? new SeparatedSyntaxList<AttributeArgumentSyntax>();
 
-            var polymorphicModeArg = arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "PolymorphicMode");
+            var namedArguments = serializeCollectionAttribute.NamedArguments.ToDictionary(na => na.Key, na => na.Value);
+
             var typeIdPropertyArg = arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdProperty");
             var typeIdTypeArg = arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdType");
 
             // FSG1011
-            if (polymorphicModeArg != null && typeIdPropertyArg != null)
+            if (namedArguments.TryGetValue("PolymorphicMode", out var polymorphicModeValue) && typeIdPropertyArg != null)
             {
-                var polymorphicModeValue = context.Compilation.GetSemanticModel(polymorphicModeArg.SyntaxTree)
-                    .GetConstantValue(polymorphicModeArg.Expression, context.CancellationToken);
-                if (polymorphicModeValue.HasValue && (int)polymorphicModeValue.Value == 2 /* IndividualTypeIds */)
+                if (polymorphicModeValue.Value is int mode && mode == 2 /* IndividualTypeIds */)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(IndividualTypeIdsWithTypeIdPropertyRule, typeIdPropertyArg.GetLocation()));
                 }
             }
 
             // FSG1010
-            if (typeIdPropertyArg != null && typeIdTypeArg != null)
+            if (namedArguments.TryGetValue("TypeIdProperty", out var typeIdPropertyValue) && typeIdTypeArg != null)
             {
-                var referenceName = context.Compilation.GetSemanticModel(typeIdPropertyArg.SyntaxTree)
-                    .GetConstantValue(typeIdPropertyArg.Expression, context.CancellationToken).Value as string;
+                var referenceName = typeIdPropertyValue.Value as string;
+                if (string.IsNullOrEmpty(referenceName)) return;
 
                 var referencedSymbol = symbol.ContainingType.GetMembers(referenceName).FirstOrDefault();
+                if (referencedSymbol == null) return;
 
                 var typeOfExpression = typeIdTypeArg.Expression as TypeOfExpressionSyntax;
                 if (typeOfExpression != null)
                 {
                     var typeSyntax = typeOfExpression.Type;
-                    var typeInfo = context.Compilation.GetSemanticModel(typeSyntax.SyntaxTree).GetTypeInfo(typeSyntax);
+                    var model = context.Compilation.GetSemanticModel(typeSyntax.SyntaxTree);
+                    var typeInfo = model.GetTypeInfo(typeSyntax, context.CancellationToken);
                     var typeIdType = typeInfo.Type;
 
                     if (referencedSymbol is IPropertySymbol propertySymbol && !SymbolEqualityComparer.Default.Equals(propertySymbol.Type, typeIdType))

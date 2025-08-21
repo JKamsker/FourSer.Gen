@@ -37,7 +37,7 @@ namespace FourSer.Analyzers.SerializePolymorphic
             var symbol = context.Symbol;
             var serializePolymorphicAttribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializePolymorphicAttribute");
 
-            if (serializePolymorphicAttribute == null)
+            if (serializePolymorphicAttribute == null || serializePolymorphicAttribute.ApplicationSyntaxReference == null)
             {
                 return;
             }
@@ -45,31 +45,32 @@ namespace FourSer.Analyzers.SerializePolymorphic
             var attributeSyntax = (AttributeSyntax)serializePolymorphicAttribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
             var arguments = attributeSyntax.ArgumentList?.Arguments ?? new SeparatedSyntaxList<AttributeArgumentSyntax>();
 
-            var propertyNameArg = arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "PropertyName");
+            var namedArguments = serializePolymorphicAttribute.NamedArguments.ToDictionary(na => na.Key, na => na.Value);
+
             var typeIdTypeArg = arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdType");
 
-            if (propertyNameArg == null)
+            string referenceName = null;
+            if (namedArguments.TryGetValue("PropertyName", out var propertyNameValue))
             {
-                var constructorArg = arguments.FirstOrDefault();
-                if (constructorArg != null && constructorArg.NameEquals == null)
-                {
-                    propertyNameArg = constructorArg;
-                }
+                referenceName = propertyNameValue.Value as string;
+            }
+            else if (serializePolymorphicAttribute.ConstructorArguments.Any())
+            {
+                referenceName = serializePolymorphicAttribute.ConstructorArguments[0].Value as string;
             }
 
             // FSG2004
-            if (propertyNameArg != null && typeIdTypeArg != null)
+            if (!string.IsNullOrEmpty(referenceName) && typeIdTypeArg != null)
             {
-                var referenceName = context.Compilation.GetSemanticModel(propertyNameArg.SyntaxTree)
-                    .GetConstantValue(propertyNameArg.Expression, context.CancellationToken).Value as string;
-
                 var referencedSymbol = symbol.ContainingType.GetMembers(referenceName).FirstOrDefault();
+                if (referencedSymbol == null) return;
 
                 var typeOfExpression = typeIdTypeArg.Expression as TypeOfExpressionSyntax;
                 if (typeOfExpression != null)
                 {
                     var typeSyntax = typeOfExpression.Type;
-                    var typeInfo = context.Compilation.GetSemanticModel(typeSyntax.SyntaxTree).GetTypeInfo(typeSyntax);
+                    var model = context.Compilation.GetSemanticModel(typeSyntax.SyntaxTree);
+                    var typeInfo = model.GetTypeInfo(typeSyntax, context.CancellationToken);
                     var typeIdType = typeInfo.Type;
 
                     if (referencedSymbol is IPropertySymbol propertySymbol && !SymbolEqualityComparer.Default.Equals(propertySymbol.Type, typeIdType))
@@ -85,13 +86,15 @@ namespace FourSer.Analyzers.SerializePolymorphic
 
             // FSG2005
             var serializeCollectionAttribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializeCollectionAttribute");
-            if (serializeCollectionAttribute != null)
+            if (serializeCollectionAttribute != null && serializeCollectionAttribute.ApplicationSyntaxReference != null)
             {
                 var collectionAttributeSyntax = (AttributeSyntax)serializeCollectionAttribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
                 var collectionArguments = collectionAttributeSyntax.ArgumentList?.Arguments ?? new SeparatedSyntaxList<AttributeArgumentSyntax>();
 
                 var collectionTypeIdPropertyArg = collectionArguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdProperty");
                 var collectionTypeIdTypeArg = collectionArguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdType");
+
+                var propertyNameArg = arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "PropertyName");
 
                 if ((propertyNameArg != null && collectionTypeIdPropertyArg != null) || (typeIdTypeArg != null && collectionTypeIdTypeArg != null))
                 {

@@ -49,11 +49,7 @@ namespace FourSer.Analyzers.PolymorphicOption
                 return;
             }
 
-            var baseType = memberType;
-            if (memberType is INamedTypeSymbol namedType && namedType.IsGenericType && namedType.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T)
-            {
-                baseType = namedType.TypeArguments.First();
-            }
+            var baseType = GetBaseType(memberType);
 
             foreach (var attribute in attributes)
             {
@@ -70,6 +66,24 @@ namespace FourSer.Analyzers.PolymorphicOption
                     }
                 }
             }
+        }
+
+        private ITypeSymbol GetBaseType(ITypeSymbol memberType)
+        {
+            if (memberType is IArrayTypeSymbol arrayType)
+            {
+                return arrayType.ElementType;
+            }
+
+            var ienumerable = memberType.AllInterfaces.FirstOrDefault(i =>
+                i.IsGenericType && i.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T);
+
+            if (ienumerable != null)
+            {
+                return ienumerable.TypeArguments.First();
+            }
+
+            return memberType;
         }
     }
 }
