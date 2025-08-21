@@ -41,21 +41,39 @@ namespace FourSer.Analyzers.SerializeCollection
                 diagnostic);
         }
 
-        private async Task<Solution> RemoveAttributeAsync(Document document, AttributeSyntax attribute, CancellationToken cancellationToken)
+        private async Task<Solution> RemoveAttributeAsync(Document document, AttributeSyntax attributeToRemove, CancellationToken cancellationToken)
         {
             var root = await document.GetSyntaxRootAsync(cancellationToken);
-            var attributeList = attribute.Parent as AttributeListSyntax;
+            var attributeList = attributeToRemove.Parent as AttributeListSyntax;
 
-            if (attributeList != null && attributeList.Attributes.Count == 1)
+            if (attributeList == null) return document.Project.Solution;
+
+            SyntaxNode newRoot;
+
+            if (attributeList.Attributes.Count > 1)
             {
-                var newRoot = root.RemoveNode(attributeList, SyntaxRemoveOptions.KeepExteriorTrivia);
-                return document.WithSyntaxRoot(newRoot).Project.Solution;
+                // Case 1: Multiple attributes in the list. Remove just the target attribute.
+                var newAttributeList = attributeList.WithAttributes(attributeList.Attributes.Remove(attributeToRemove));
+                newRoot = root.ReplaceNode(attributeList, newAttributeList);
             }
             else
             {
-                var newRoot = root.RemoveNode(attribute, SyntaxRemoveOptions.KeepExteriorTrivia);
-                return document.WithSyntaxRoot(newRoot).Project.Solution;
+                // Case 2: Single attribute in the list. Remove the entire attribute list.
+                var member = attributeList.Parent as MemberDeclarationSyntax;
+                if (member != null)
+                {
+                    // This is the robust way to remove the attribute list and its trivia.
+                    var newMember = member.WithAttributeLists(member.AttributeLists.Remove(attributeList));
+                    newRoot = root.ReplaceNode(member, newMember);
+                }
+                else
+                {
+                    // Fallback for a syntax structure we don't expect.
+                    newRoot = root.RemoveNode(attributeList, SyntaxRemoveOptions.KeepExteriorTrivia);
+                }
             }
+
+            return document.WithSyntaxRoot(newRoot).Project.Solution;
         }
 
         private async Task<Solution> ReplaceWithPolymorphicAttributeAsync(Document document, AttributeSyntax attribute, CancellationToken cancellationToken)

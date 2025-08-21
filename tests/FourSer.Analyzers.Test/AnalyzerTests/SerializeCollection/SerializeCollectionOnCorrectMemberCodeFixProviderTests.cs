@@ -35,7 +35,6 @@ using FourSer.Contracts;
 
 public class MyData
 {
-
     public int A { get; set; }
 }";
 
