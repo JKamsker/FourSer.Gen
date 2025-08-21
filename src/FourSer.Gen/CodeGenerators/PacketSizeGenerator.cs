@@ -36,7 +36,8 @@ public static class PacketSizeGenerator
                 sb.WriteLineFormat
                 (
                     "size += {0}.GetPacketSize(obj.{1}); // Size for nested type {1}",
-                    TypeHelper.GetSimpleTypeName(member.TypeName), member.Name
+                    TypeHelper.GetSimpleTypeName(member.TypeName),
+                    member.Name
                 );
             }
             else if (member.IsStringType)
@@ -68,44 +69,7 @@ public static class PacketSizeGenerator
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
-            if (member.PolymorphicInfo is not { } info)
-            {
-                return;
-            }
-
-            if (collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId)
-            {
-                if (string.IsNullOrEmpty(info.TypeIdProperty))
-                {
-                    sb.WriteLineFormat("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
-                }
-            }
-
-            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
-            using (sb.BeginBlock())
-            {
-                sb.WriteLineFormat("foreach (var item in obj.{0})", member.Name);
-                using (sb.BeginBlock())
-                {
-                    if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
-                    {
-                        sb.WriteLineFormat("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
-                    }
-
-                    sb.WriteLine("size += item switch");
-                    sb.WriteLine("{");
-                    sb.Indent();
-                    foreach (var option in info.Options)
-                    {
-                        var typeName = TypeHelper.GetSimpleTypeName(option.Type);
-                        var varName = typeName.ToCamelCase();
-                        sb.WriteLineFormat("{0} {1} => {2}.GetPacketSize({1}),", typeName, varName, typeName);
-                    }
-                    sb.WriteLineFormat("_ => throw new System.IO.InvalidDataException($\"Unknown item type in collection {0}: {{item.GetType().Name}}\")", member.Name);
-                    sb.Unindent();
-                    sb.WriteLine("};");
-                }
-            }
+            AddPolymorphicSerialization(sb, member, collectionInfo);
             return;
         }
 
@@ -145,13 +109,70 @@ public static class PacketSizeGenerator
             {
                 sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
                 using var _ = sb.BeginBlock();
-                sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetSimpleTypeName(collectionTypeValue.ElementTypeName));
+                sb.WriteLineFormat
+                    ("size += {0}.GetPacketSize(item);", TypeHelper.GetSimpleTypeName(collectionTypeValue.ElementTypeName));
             }
         }
     }
 
+    private static void AddPolymorphicSerialization
+    (
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        CollectionInfo collectionInfo
+    )
+    {
+        if (member.PolymorphicInfo is not { } info)
+        {
+            return;
+        }
+
+        if (collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId)
+        {
+            if (string.IsNullOrEmpty(info.TypeIdProperty))
+            {
+                sb.WriteLineFormat
+                    ("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
+            }
+        }
+
+        sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
+        using var _ = sb.BeginBlock();
+
+        sb.WriteLineFormat("foreach (var item in obj.{0})", member.Name);
+        using var __ = sb.BeginBlock();
+
+        if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
+        {
+            sb.WriteLineFormat
+                ("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
+        }
+
+        sb.WriteLine("size += item switch");
+        sb.WriteLine("{");
+        sb.Indent();
+        foreach (var option in info.Options)
+        {
+            var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+            var varName = typeName.ToCamelCase();
+            sb.WriteLineFormat("{0} {1} => {2}.GetPacketSize({1}),", typeName, varName, typeName);
+        }
+
+        sb.WriteLineFormat
+        (
+            "_ => throw new System.IO.InvalidDataException($\"Unknown item type in collection {0}: {{item.GetType().Name}}\")",
+            member.Name
+        );
+        sb.Unindent();
+        sb.WriteLine("};");
+    }
+
     private static void GeneratePolymorphicSizeCalculation
-        (IndentedStringBuilder sb, MemberToGenerate member, string instanceName = "")
+    (
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        string instanceName = ""
+    )
     {
         if (string.IsNullOrEmpty(instanceName))
         {
@@ -178,7 +199,8 @@ public static class PacketSizeGenerator
         sb.WriteLineFormat
         (
             "    throw new System.IO.InvalidDataException($\"Unknown type for {0}: {{{1}?.GetType().FullName}}\");",
-            member.Name, instanceName
+            member.Name,
+            instanceName
         );
     }
 }
