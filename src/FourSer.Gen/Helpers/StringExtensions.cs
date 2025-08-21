@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace FourSer.Gen.Helpers;
 
 public static class StringExtensions

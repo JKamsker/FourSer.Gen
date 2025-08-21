@@ -1,5 +1,3 @@
-using System;
-
 namespace FourSer.Gen.Models;
 
 /// <summary>
