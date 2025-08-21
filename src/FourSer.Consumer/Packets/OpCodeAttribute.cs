@@ -1,5 +1,3 @@
-using System;
-
 namespace FourSer.Consumer.Packets
 {
     [AttributeUsage(AttributeTargets.Class)]

@@ -7,11 +7,8 @@
 // netstandard2.0, which doesn't have access to this type.
 // Source: https://github.com/CommunityToolkit/dotnet/blob/main/src/CommunityToolkit.Mvvm.Source.Generators/Helpers/EquatableArray%7BT%7D.cs
 
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 
 namespace FourSer.Gen.Models;
 

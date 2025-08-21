@@ -1,5 +1,3 @@
-using System;
-
 namespace FourSer.Contracts;
 
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]

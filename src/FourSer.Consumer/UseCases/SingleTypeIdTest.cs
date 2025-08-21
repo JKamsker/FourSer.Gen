@@ -1,5 +1,4 @@
 using FourSer.Contracts;
-using System.Collections.Generic;
 
 namespace FourSer.Consumer.UseCases
 {

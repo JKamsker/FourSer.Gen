@@ -1,5 +1,3 @@
-using FourSer.Contracts;
-
 namespace FourSer.Consumer.UseCases;
 
 /// <summary>

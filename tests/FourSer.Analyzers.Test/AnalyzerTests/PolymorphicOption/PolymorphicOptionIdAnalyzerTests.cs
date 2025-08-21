@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using FourSer.Analyzers.PolymorphicOption;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;

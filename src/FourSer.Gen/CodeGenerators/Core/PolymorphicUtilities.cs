@@ -1,4 +1,3 @@
-using System;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 

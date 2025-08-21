@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using FourSer.Contracts;
 
 namespace FourSer.Consumer.Packets
