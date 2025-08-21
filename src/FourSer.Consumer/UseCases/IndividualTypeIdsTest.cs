@@ -6,7 +6,7 @@ namespace FourSer.Consumer.UseCases
     public partial class IndividualTypeIdsTest
     {
         [SerializeCollection(
-            PolymorphicMode = PolymorphicMode.IndividualTypeIds, 
+            PolymorphicMode = PolymorphicMode.IndividualTypeIds,
             TypeIdType = typeof(byte),
             CountType = typeof(byte)
         )]

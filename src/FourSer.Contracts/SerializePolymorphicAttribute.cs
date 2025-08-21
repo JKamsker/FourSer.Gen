@@ -29,25 +29,25 @@ public class PolymorphicOptionAttribute : Attribute
         Id = id;
         Type = type;
     }
-    
+
     public PolymorphicOptionAttribute(byte id, Type type)
     {
         Id = id;
         Type = type;
     }
-    
+
     public PolymorphicOptionAttribute(ushort id, Type type)
     {
         Id = id;
         Type = type;
     }
-    
+
     public PolymorphicOptionAttribute(long id, Type type)
     {
         Id = id;
         Type = type;
     }
-    
+
     // For enum values
     public PolymorphicOptionAttribute(object id, Type type)
     {

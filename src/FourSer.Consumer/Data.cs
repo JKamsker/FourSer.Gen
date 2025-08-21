@@ -21,7 +21,7 @@ public class User
 
         var buffer = new byte[Data.GetPacketSize(data)];
         Data.Serialize(data, buffer);
-        
+
         var deserializedData = Data.Deserialize(buffer.AsSpan());
     }
 }

@@ -7,7 +7,7 @@ public partial class TestWithListOfNestedReferenceTypes
 {
     [SerializeCollection]
     public List<NestedEntity> MyList { get; set; } = new();
-    
+
     [GenerateSerializer]
     public partial class NestedEntity
     {

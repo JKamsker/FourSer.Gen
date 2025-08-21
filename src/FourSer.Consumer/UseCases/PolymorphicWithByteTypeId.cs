@@ -6,23 +6,23 @@ namespace FourSer.Consumer.UseCases;
 public partial class PolymorphicWithByteTypeId
 {
     public int Id { get; set; }
-    
+
     [SerializePolymorphic(TypeIdType = typeof(byte))]
     [PolymorphicOption((byte)1, typeof(ByteEntityType1))]
     [PolymorphicOption((byte)2, typeof(ByteEntityType2))]
     public BaseByteEntity? Entity { get; set; }
-    
+
     [GenerateSerializer]
     public partial class BaseByteEntity
     {
     }
-    
+
     [GenerateSerializer]
     public partial class ByteEntityType1 : BaseByteEntity
     {
         public string Name { get; set; } = string.Empty;
     }
-    
+
     [GenerateSerializer]
     public partial class ByteEntityType2 : BaseByteEntity
     {
@@ -40,8 +40,8 @@ public class PolymorphicWithByteTypeIdTests
             Id = 100,
             Entity = new PolymorphicWithByteTypeId.ByteEntityType1 { Name = "Byte TypeId Test" }
         };
-        
-        PolymorphicTypeIdTest.TestSerialization(byteEntity, "Byte TypeId", 
+
+        PolymorphicTypeIdTest.TestSerialization(byteEntity, "Byte TypeId",
             () => PolymorphicWithByteTypeId.GetPacketSize(byteEntity),
             (buffer) => PolymorphicWithByteTypeId.Serialize(byteEntity, buffer),
             (buffer) => PolymorphicWithByteTypeId.Deserialize(buffer));

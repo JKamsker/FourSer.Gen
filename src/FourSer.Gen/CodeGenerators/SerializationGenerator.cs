@@ -345,12 +345,12 @@ public static class SerializationGenerator
                                         {
                                             if (target == "data")
                                             {
-                                            sb.WriteLine($"var bytesWritten = {typeName}.Serialize(({typeName}){listItemsVar}[i], data);");
+                                                sb.WriteLine($"var bytesWritten = {typeName}.Serialize(({typeName}){listItemsVar}[i], data);");
                                                 sb.WriteLine("data = data.Slice(bytesWritten);");
                                             }
                                             else
                                             {
-                                            sb.WriteLine($"{typeName}.Serialize(({typeName}){listItemsVar}[i], stream);");
+                                                sb.WriteLine($"{typeName}.Serialize(({typeName}){listItemsVar}[i], stream);");
                                             }
                                         }
                                         sb.WriteLine("break;");

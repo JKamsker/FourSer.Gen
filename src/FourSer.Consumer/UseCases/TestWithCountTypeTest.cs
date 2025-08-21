@@ -5,8 +5,8 @@ namespace FourSer.Consumer.UseCases;
 [GenerateSerializer]
 public partial class TestWithCountType
 {
-   [SerializeCollection(CountType = typeof(ushort))]
-   public List<int> MyList { get; set; } = new();
+    [SerializeCollection(CountType = typeof(ushort))]
+    public List<int> MyList { get; set; } = new();
 }
 
 public class TestWithCountTypeTest

@@ -19,7 +19,7 @@ public class TestRunner
         PolymorphicApproachComparison.RunComparison();
         IndividualTypeIdsTestRunner.RunTest();
         SingleTypeIdTestRunner.RunTest();
-        
+
         var testClasses = new[]
         {
             typeof(MyPacketTest),

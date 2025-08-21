@@ -7,12 +7,12 @@ public class SerializeCollectionAttribute : Attribute
     /// Defines the property type that determines the amount of items in the collection.
     /// </summary>
     public Type? CountType { get; set; }
-    
+
     /// <summary>
     /// The amount of items in the collection.
     /// </summary>
     public int CountSize { get; set; } = -1;
-    
+
     /// <summary>
     /// Reference to a property that contains the size of the collection.
     /// The referenced collection must be of type int, byte, ushort, long or an Enum.

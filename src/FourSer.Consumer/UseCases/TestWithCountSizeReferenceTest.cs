@@ -5,10 +5,10 @@ namespace FourSer.Consumer.UseCases;
 [GenerateSerializer]
 public partial class TestWithCountSizeReference
 {
-   public ushort MyListCount { get; set; }
+    public ushort MyListCount { get; set; }
 
-   [SerializeCollection(CountSizeReference = "MyListCount")]
-   public List<int> MyList { get; set; } = new();
+    [SerializeCollection(CountSizeReference = "MyListCount")]
+    public List<int> MyList { get; set; } = new();
 }
 
 public class TestWithCountSizeReferenceTest

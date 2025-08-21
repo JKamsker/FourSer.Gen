@@ -225,7 +225,7 @@ public static class SpanWriterExtensions
     public Task RunGeneratorTest(string testCaseName)
     {
         var source = ReadSource(testCaseName);
-       
+
 
 
         var syntaxTrees = s_contractsSource.Select(s => CSharpSyntaxTree.ParseText(s)).ToList();
@@ -261,7 +261,7 @@ public static class SpanWriterExtensions
                 .UseTypeName(testCaseName)
             ;
     }
-    
+
     /// <summary>
     /// This test verifies that the source code produced by the generator compiles successfully.
     /// </summary>
@@ -285,14 +285,14 @@ public static class SpanWriterExtensions
 
         var generator = new SerializerGenerator();
         var driver = CSharpGeneratorDriver.Create(generator);
-        
+
         // Act
         driver = (CSharpGeneratorDriver)driver.RunGenerators(compilation);
         var runResult = driver.GetRunResult();
-        
+
         // Add the generated syntax trees to the compilation
         var finalCompilation = compilation.AddSyntaxTrees(runResult.GeneratedTrees);
-        
+
         // Attempt to emit the final assembly
         using var ms = new MemoryStream();
         var emitResult = finalCompilation.Emit(ms);
@@ -304,7 +304,7 @@ public static class SpanWriterExtensions
                 .Where(d => d.Severity == DiagnosticSeverity.Error)
                 .Select(d => d.GetMessage())
                 .ToList();
-            
+
             // Fail the test with a descriptive message if compilation fails
             Assert.True(emitResult.Success, $"Compilation failed with errors: \n{string.Join("\n", errors)}");
         }
@@ -326,14 +326,14 @@ public static class SpanWriterExtensions
         {
             throw new InvalidOperationException($"Resource '{resourceName}' not found or is empty.");
         }
-        
+
         return AddDefaultUsings(source);
     }
 
     private static string AddDefaultUsings(string source)
     {
         var sb = new System.Text.StringBuilder(source);
-        
+
         var requiredUsings = new[]
         {
             "using System;",

@@ -9,23 +9,23 @@ namespace FourSer.Consumer.UseCases;
 public partial class PolymorphicWithUShortTypeId
 {
     public int Id { get; set; }
-    
+
     [SerializePolymorphic(TypeIdType = typeof(ushort))]
     [PolymorphicOption((ushort)1000, typeof(UShortEntityType1))]
     [PolymorphicOption((ushort)2000, typeof(UShortEntityType2))]
     public BaseUShortEntity? Entity { get; set; }
-    
+
     [GenerateSerializer]
     public partial class BaseUShortEntity
     {
     }
-    
+
     [GenerateSerializer]
     public partial class UShortEntityType1 : BaseUShortEntity
     {
         public string Name { get; set; } = string.Empty;
     }
-    
+
     [GenerateSerializer]
     public partial class UShortEntityType2 : BaseUShortEntity
     {
@@ -38,23 +38,23 @@ public partial class PolymorphicWithUShortTypeId
 public partial class PolymorphicWithLongTypeId
 {
     public int Id { get; set; }
-    
+
     [SerializePolymorphic(TypeIdType = typeof(long))]
     [PolymorphicOption(1000000L, typeof(LongEntityType1))]
     [PolymorphicOption(2000000L, typeof(LongEntityType2))]
     public BaseLongEntity? Entity { get; set; }
-    
+
     [GenerateSerializer]
     public partial class BaseLongEntity
     {
     }
-    
+
     [GenerateSerializer]
     public partial class LongEntityType1 : BaseLongEntity
     {
         public string Name { get; set; } = string.Empty;
     }
-    
+
     [GenerateSerializer]
     public partial class LongEntityType2 : BaseLongEntity
     {
@@ -73,23 +73,23 @@ public enum EntityTypeEnum : byte
 public partial class PolymorphicWithEnumTypeId
 {
     public int Id { get; set; }
-    
+
     [SerializePolymorphic(TypeIdType = typeof(EntityTypeEnum))]
     [PolymorphicOption(EntityTypeEnum.Type1, typeof(EnumEntityType1))]
     [PolymorphicOption(EntityTypeEnum.Type2, typeof(EnumEntityType2))]
     public BaseEnumEntity? Entity { get; set; }
-    
+
     [GenerateSerializer]
     public partial class BaseEnumEntity
     {
     }
-    
+
     [GenerateSerializer]
     public partial class EnumEntityType1 : BaseEnumEntity
     {
         public string Name { get; set; } = string.Empty;
     }
-    
+
     [GenerateSerializer]
     public partial class EnumEntityType2 : BaseEnumEntity
     {
@@ -104,7 +104,7 @@ public static class PolymorphicTypeIdTest
         Console.WriteLine("=== Polymorphic Different TypeId Types Test ===");
         // Test byte TypeId
         PolymorphicWithByteTypeIdTests.RunTest();
-        
+
         // Test ushort TypeId
         var ushortEntity = new PolymorphicWithUShortTypeId
         {
@@ -115,7 +115,7 @@ public static class PolymorphicTypeIdTest
             () => PolymorphicWithUShortTypeId.GetPacketSize(ushortEntity),
             (buffer) => PolymorphicWithUShortTypeId.Serialize(ushortEntity, buffer),
             (buffer) => PolymorphicWithUShortTypeId.Deserialize(buffer));
-        
+
         // Test long TypeId
         var longEntity = new PolymorphicWithLongTypeId
         {
@@ -126,7 +126,7 @@ public static class PolymorphicTypeIdTest
             () => PolymorphicWithLongTypeId.GetPacketSize(longEntity),
             (buffer) => PolymorphicWithLongTypeId.Serialize(longEntity, buffer),
             (buffer) => PolymorphicWithLongTypeId.Deserialize(buffer));
-        
+
         // Test enum TypeId
         var enumEntity = new PolymorphicWithEnumTypeId
         {
@@ -137,37 +137,37 @@ public static class PolymorphicTypeIdTest
             () => PolymorphicWithEnumTypeId.GetPacketSize(enumEntity),
             (buffer) => PolymorphicWithEnumTypeId.Serialize(enumEntity, buffer),
             (buffer) => PolymorphicWithEnumTypeId.Deserialize(buffer));
-        
+
         Console.WriteLine("=== Polymorphic Different TypeId Types Test Complete ===\n");
     }
-    
-    public static void TestSerialization<T>(T original, string testName, 
-        System.Func<int> getSize, 
+
+    public static void TestSerialization<T>(T original, string testName,
+        System.Func<int> getSize,
         System.Func<System.Span<byte>, int> serialize,
         System.Func<System.ReadOnlySpan<byte>, T> deserialize) where T : class
     {
         Console.WriteLine($"Testing {testName}:");
-        
+
         // Get packet size
         var size = getSize();
         Console.WriteLine($"  Packet size: {size} bytes");
-        
+
         // Serialize
         var buffer = new byte[size];
         var span = new System.Span<byte>(buffer);
         var bytesWritten = serialize(span);
         Console.WriteLine($"  Bytes written: {bytesWritten}");
-        
+
         // Deserialize
         var readSpan = new System.ReadOnlySpan<byte>(buffer);
         var deserialized = deserialize(readSpan);
-        
+
         // Verify basic properties
         var originalId = original.GetType().GetProperty("Id")?.GetValue(original);
         var deserializedId = deserialized.GetType().GetProperty("Id")?.GetValue(deserialized);
         Console.WriteLine($"  Original ID: {originalId}, Deserialized ID: {deserializedId}");
         Console.WriteLine($"  IDs match: {Equals(originalId, deserializedId)}");
-        
+
         // Check entity types
         var originalEntity = original.GetType().GetProperty("Entity")?.GetValue(original);
         var deserializedEntity = deserialized.GetType().GetProperty("Entity")?.GetValue(deserialized);
@@ -175,7 +175,7 @@ public static class PolymorphicTypeIdTest
         var deserializedEntityType = deserializedEntity?.GetType().Name;
         Console.WriteLine($"  Original Entity Type: {originalEntityType}, Deserialized Entity Type: {deserializedEntityType}");
         Console.WriteLine($"  Entity types match: {originalEntityType == deserializedEntityType}");
-        
+
         Console.WriteLine($"  Test {testName}: PASSED\n");
     }
 }
