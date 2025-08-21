@@ -79,12 +79,22 @@ namespace FourSer.Analyzers.PolymorphicOption
                 return arrayType.ElementType;
             }
 
-            var ienumerable = memberType.AllInterfaces.FirstOrDefault(i =>
-                i.IsGenericType && i.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T);
-
-            if (ienumerable != null)
+            INamedTypeSymbol? enumerableType = null;
+            if (memberType is INamedTypeSymbol namedMemberType &&
+                namedMemberType.IsGenericType &&
+                namedMemberType.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T)
             {
-                return ienumerable.TypeArguments.FirstOrDefault();
+                enumerableType = namedMemberType;
+            }
+            else
+            {
+                enumerableType = memberType.AllInterfaces.FirstOrDefault(i =>
+                    i.IsGenericType && i.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T);
+            }
+
+            if (enumerableType != null)
+            {
+                return enumerableType.TypeArguments.FirstOrDefault();
             }
 
             return memberType;
