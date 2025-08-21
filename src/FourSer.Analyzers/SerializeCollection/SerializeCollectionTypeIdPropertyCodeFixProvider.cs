@@ -73,10 +73,15 @@ namespace FourSer.Analyzers.SerializeCollection
                 if (firstOption.ConstructorArguments.Any())
                 {
                     var typeIdArgument = firstOption.ConstructorArguments[0];
-                    if (typeIdArgument.Type?.SpecialType == SpecialType.System_Byte)
+                    propertyType = typeIdArgument.Type?.SpecialType switch
                     {
-                        propertyType = "byte";
-                    }
+                        SpecialType.System_Byte => "byte",
+                        SpecialType.System_UInt16 => "ushort",
+                        SpecialType.System_Int32 => "int",
+                        SpecialType.System_Int64 => "long",
+                        SpecialType.None => typeIdArgument.Type.Name,
+                        _ => propertyType, // Default to int if not recognized
+                    };
                 }
             }
 
