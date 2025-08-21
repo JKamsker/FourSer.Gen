@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using FourSer.Analyzers.General;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
@@ -7,13 +8,6 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.Basic;
 
 public class MissingPartialCodeFixProviderTests
 {
-    private const string GenerateSerializerAttributeSource = @"
-namespace FourSer.Contracts
-{
-    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct)]
-    public class GenerateSerializerAttribute : System.Attribute { }
-}";
-
     [Fact]
     public async Task ClassWithGenerateSerializer_MissingPartial_AddsPartialModifier()
     {
@@ -37,15 +31,9 @@ partial class MyData
 
         var test = new CSharpCodeFixTest<MissingPartialAnalyzer, MissingPartialCodeFixProvider, DefaultVerifier>
         {
-            TestState =
-            {
-                Sources = { GenerateSerializerAttributeSource, testCode },
-            },
-            FixedState =
-            {
-                Sources = { GenerateSerializerAttributeSource, fixedCode },
-            },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            TestState = { Sources = { testCode } },
+            FixedState = { Sources = { fixedCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         };
         await test.RunAsync();
     }

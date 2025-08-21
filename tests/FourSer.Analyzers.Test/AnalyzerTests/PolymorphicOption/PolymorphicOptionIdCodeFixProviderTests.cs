@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using FourSer.Analyzers.PolymorphicOption;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
@@ -7,19 +8,6 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.PolymorphicOption;
 
 public class PolymorphicOptionIdCodeFixProviderTests
 {
-    private const string AttributesSource = @"
-using System;
-using System.Collections.Generic;
-
-namespace FourSer.Contracts
-{
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = true)]
-    public class PolymorphicOptionAttribute : Attribute
-    {
-        public PolymorphicOptionAttribute(int id, Type type) { }
-    }
-}";
-
     [Fact]
     public async Task DuplicateIds_RemovesDuplicate()
     {
@@ -48,8 +36,9 @@ public class MyData
 
         await new CSharpCodeFixTest<PolymorphicOptionIdAnalyzer, PolymorphicOptionIdCodeFixProvider, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
-            FixedState = { Sources = { AttributesSource, fixedCode } },
+            TestState = { Sources = { testCode } },
+            FixedState = { Sources = { fixedCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using FourSer.Analyzers.SerializeCollection;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
@@ -7,19 +8,6 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
 
 public class SerializeCollectionTypeIdPropertyAnalyzerTests
 {
-    private const string AttributesSource = @"
-using System;
-using System.Collections.Generic;
-
-namespace FourSer.Contracts
-{
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class SerializeCollectionAttribute : Attribute
-    {
-        public string TypeIdProperty { get; set; }
-    }
-}";
-
     [Fact]
     public async Task NotFound_ReportsDiagnostic()
     {
@@ -34,7 +22,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializeCollectionTypeIdPropertyAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 
@@ -59,9 +48,10 @@ public class MyData
         {
             TestState =
             {
-                Sources = { AttributesSource, testCode },
+                Sources = { testCode },
                 ExpectedDiagnostics = { expected1, expected2 }
             },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 
@@ -80,7 +70,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializeCollectionTypeIdPropertyAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 
@@ -99,7 +90,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializeCollectionTypeIdPropertyAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 }

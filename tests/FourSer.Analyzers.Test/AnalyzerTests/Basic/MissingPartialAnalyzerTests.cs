@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using FourSer.Analyzers.General;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
@@ -7,13 +8,6 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.Basic;
 
 public class MissingPartialAnalyzerTests
 {
-    private const string GenerateSerializerAttributeSource = @"
-namespace FourSer.Contracts
-{
-    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct)]
-    public class GenerateSerializerAttribute : System.Attribute { }
-}";
-
     [Fact]
     public async Task ClassWithGenerateSerializer_MissingPartial_ReportsDiagnostic()
     {
@@ -27,11 +21,8 @@ class {|FS0001:MyData|}
 }";
         var test = new CSharpAnalyzerTest<MissingPartialAnalyzer, DefaultVerifier>
         {
-            TestState =
-            {
-                Sources = { GenerateSerializerAttributeSource, testCode },
-            },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         };
         await test.RunAsync();
     }
@@ -50,11 +41,8 @@ partial class MyData
 
         var test = new CSharpAnalyzerTest<MissingPartialAnalyzer, DefaultVerifier>
         {
-            TestState =
-            {
-                Sources = { GenerateSerializerAttributeSource, testCode },
-            },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         };
         await test.RunAsync();
     }

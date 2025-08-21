@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using FourSer.Analyzers.SerializePolymorphic;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
@@ -7,19 +8,6 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.SerializePolymorphic;
 
 public class SerializePolymorphicPropertyNameAnalyzerTests
 {
-    private const string AttributesSource = @"
-using System;
-using System.Collections.Generic;
-
-namespace FourSer.Contracts
-{
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class SerializePolymorphicAttribute : Attribute
-    {
-        public SerializePolymorphicAttribute(string propertyName) { }
-    }
-}";
-
     [Fact]
     public async Task NotFound_ReportsDiagnostic()
     {
@@ -34,7 +22,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializePolymorphicPropertyNameAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 
@@ -55,7 +44,8 @@ public class MyData
         var expected2 = new DiagnosticResult(SerializePolymorphicPropertyNameAnalyzer.DeclaredAfterRule).WithLocation(0).WithArguments("TypeId");
         await new CSharpAnalyzerTest<SerializePolymorphicPropertyNameAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode }, ExpectedDiagnostics = { expected1, expected2 } },
+            TestState = { Sources = { testCode }, ExpectedDiagnostics = { expected1, expected2 } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 
@@ -74,7 +64,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializePolymorphicPropertyNameAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 
@@ -93,7 +84,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializePolymorphicPropertyNameAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 }

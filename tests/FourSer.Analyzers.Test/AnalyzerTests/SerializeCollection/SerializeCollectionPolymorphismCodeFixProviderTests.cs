@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using FourSer.Analyzers.SerializeCollection;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
@@ -7,30 +8,6 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
 
 public class SerializeCollectionPolymorphismCodeFixProviderTests
 {
-    private const string AttributesSource = @"
-using System;
-using System.Collections.Generic;
-
-namespace FourSer.Contracts
-{
-    public enum PolymorphicMode { None, SingleTypeId, IndividualTypeIds }
-
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class SerializeCollectionAttribute : Attribute
-    {
-        public PolymorphicMode PolymorphicMode { get; set; }
-        public string TypeIdProperty { get; set; }
-        public Type TypeIdType { get; set; }
-    }
-
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class SerializePolymorphicAttribute : Attribute
-    {
-        public string PropertyName { get; set; }
-        public Type TypeIdType { get; set; }
-    }
-}";
-
     [Fact]
     public async Task IndividualTypeIdsWithTypeIdProperty_RemovesTypeIdProperty()
     {
@@ -58,8 +35,9 @@ public class MyData
 
         await new CSharpCodeFixTest<SerializeCollectionPolymorphismAnalyzer, SerializeCollectionPolymorphismCodeFixProvider, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
-            FixedState = { Sources = { AttributesSource, fixedCode } },
+            TestState = { Sources = { testCode } },
+            FixedState = { Sources = { fixedCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using FourSer.Analyzers.SerializeCollection;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
@@ -7,67 +8,6 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
 
 public class SerializeCollectionPolymorphismAnalyzerTests
 {
-    private const string AttributesSource = @"
-using System;
-using System.Collections.Generic;
-
-namespace FourSer.Contracts
-{
-    public enum PolymorphicMode { None, SingleTypeId, IndividualTypeIds }
-
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class SerializeCollectionAttribute : Attribute
-    {
-        public PolymorphicMode PolymorphicMode { get; set; }
-        public string TypeIdProperty { get; set; }
-        public Type TypeIdType { get; set; }
-    }
-
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class SerializePolymorphicAttribute : Attribute
-    {
-        public string PropertyName { get; set; }
-        public Type TypeIdType { get; set; }
-    }
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = true)]
-    public class PolymorphicOptionAttribute : Attribute
-    {
-        public object Id { get; }
-        public Type Type { get; }
-
-        public PolymorphicOptionAttribute(int id, Type type)
-        {
-            Id = id;
-            Type = type;
-        }
-        
-        public PolymorphicOptionAttribute(byte id, Type type)
-        {
-            Id = id;
-            Type = type;
-        }
-        
-        public PolymorphicOptionAttribute(ushort id, Type type)
-        {
-            Id = id;
-            Type = type;
-        }
-        
-        public PolymorphicOptionAttribute(long id, Type type)
-        {
-            Id = id;
-            Type = type;
-        }
-        
-        // For enum values
-        public PolymorphicOptionAttribute(object id, Type type)
-        {
-            Id = id;
-            Type = type;
-        }
-    }
-}";
-
     [Fact]
     public async Task TypeIdTypeMismatch_ReportsDiagnostic()
     {
@@ -84,7 +24,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 
@@ -103,7 +44,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 
@@ -123,7 +65,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 
@@ -143,7 +86,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 
@@ -185,7 +129,8 @@ public class MyData
         
         await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
     
@@ -227,7 +172,8 @@ public class MyData
         
         await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 }

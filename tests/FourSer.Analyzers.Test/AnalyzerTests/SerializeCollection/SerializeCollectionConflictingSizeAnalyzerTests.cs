@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using FourSer.Analyzers.SerializeCollection;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
@@ -7,74 +8,36 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
 
 public class SerializeCollectionConflictingSizeAnalyzerTests
 {
-    private const string AttributesSource = @"
-using System;
-using System.Collections.Generic;
-
-namespace FourSer.Contracts
-{
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class SerializeCollectionAttribute : Attribute
-    {
-        public bool Unlimited { get; set; }
-        public int CountSize { get; set; }
-        public string CountSizeReference { get; set; }
-    }
-}";
-
-    [Fact]
-    public async Task UnlimitedWithCountSize_ReportsDiagnostic()
-    {
-        var testCode = @"
-using FourSer.Contracts;
-using System.Collections.Generic;
-
-public class MyData
-{
+    [Theory]
+    [InlineData(@"
     [SerializeCollection(Unlimited = true, {|FSG1001:CountSize = 10|})]
     public List<int> A { get; set; }
-}";
-        await new CSharpAnalyzerTest<SerializeCollectionConflictingSizeAnalyzer, DefaultVerifier>
-        {
-            TestState = { Sources = { AttributesSource, testCode } },
-        }.RunAsync();
-    }
-
-    [Fact]
-    public async Task UnlimitedWithCountSizeReference_ReportsDiagnostic()
-    {
-        var testCode = @"
-using FourSer.Contracts;
-using System.Collections.Generic;
-
-public class MyData
-{
+")]
+    [InlineData(@"
     [SerializeCollection(Unlimited = true, {|FSG1003:CountSizeReference = ""Size""|})]
     public List<int> A { get; set; }
     public int Size { get; set; }
-}";
-        await new CSharpAnalyzerTest<SerializeCollectionConflictingSizeAnalyzer, DefaultVerifier>
-        {
-            TestState = { Sources = { AttributesSource, testCode } },
-        }.RunAsync();
-    }
-
-    [Fact]
-    public async Task CountSizeWithCountSizeReference_ReportsDiagnostic()
+")]
+    [InlineData(@"
+    [SerializeCollection(CountSize = 10, {|FSG1002:CountSizeReference = ""Size""|})]
+    public List<int> A { get; set; }
+    public int Size { get; set; }
+")]
+    public async Task ConflictingSizeAttributes_ReportsDiagnostic(string propertyDeclaration)
     {
-        var testCode = @"
+        var testCode = @$"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
 public class MyData
-{
-    [SerializeCollection(CountSize = 10, {|FSG1002:CountSizeReference = ""Size""|})]
-    public List<int> A { get; set; }
-    public int Size { get; set; }
-}";
+{{
+{propertyDeclaration}
+}}";
+
         await new CSharpAnalyzerTest<SerializeCollectionConflictingSizeAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 
@@ -99,7 +62,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializeCollectionConflictingSizeAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 }

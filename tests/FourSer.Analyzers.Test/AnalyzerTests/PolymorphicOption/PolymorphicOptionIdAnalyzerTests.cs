@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using FourSer.Analyzers.PolymorphicOption;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
@@ -7,57 +8,27 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.PolymorphicOption;
 
 public class PolymorphicOptionIdAnalyzerTests
 {
-    private const string AttributesSource = @"
-using System;
-using System.Collections.Generic;
-
-namespace FourSer.Contracts
-{
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = true)]
-    public class PolymorphicOptionAttribute : Attribute
+    [Theory]
+    [InlineData(@"[PolymorphicOption(10, typeof(int))]
+    [PolymorphicOption({|FSG3000:10|}, typeof(string))]")]
+    [InlineData(@"[PolymorphicOption(10, typeof(int))]
+    [PolymorphicOption({|FSG3001:(byte)20|}, typeof(string))]")]
+    public async Task InvalidIdCombinations_ReportsDiagnostic(string attributes)
     {
-        public PolymorphicOptionAttribute(int id, Type type) { }
-        public PolymorphicOptionAttribute(byte id, Type type) { }
-    }
-}";
-
-    [Fact]
-    public async Task DuplicateIds_ReportsDiagnostic()
-    {
-        var testCode = @"
+        var testCode = @$"
 using System;
 using FourSer.Contracts;
 using System.Collections.Generic;
 
 public class MyData
-{
-    [PolymorphicOption(10, typeof(int))]
-    [PolymorphicOption({|FSG3000:10|}, typeof(string))]
-    public object A { get; set; }
-}";
+{{
+    {attributes}
+    public object A {{ get; set; }}
+}}";
         await new CSharpAnalyzerTest<PolymorphicOptionIdAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
-        }.RunAsync();
-    }
-
-    [Fact]
-    public async Task MixedIdTypes_ReportsDiagnostic()
-    {
-        var testCode = @"
-using System;
-using FourSer.Contracts;
-using System.Collections.Generic;
-
-public class MyData
-{
-    [PolymorphicOption(10, typeof(int))]
-    [PolymorphicOption({|FSG3001:(byte)20|}, typeof(string))]
-    public object A { get; set; }
-}";
-        await new CSharpAnalyzerTest<PolymorphicOptionIdAnalyzer, DefaultVerifier>
-        {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 
@@ -77,7 +48,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<PolymorphicOptionIdAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 }

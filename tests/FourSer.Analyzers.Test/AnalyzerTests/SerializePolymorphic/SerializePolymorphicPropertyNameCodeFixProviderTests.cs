@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using FourSer.Analyzers.SerializePolymorphic;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
@@ -7,19 +8,6 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.SerializePolymorphic;
 
 public class SerializePolymorphicPropertyNameCodeFixProviderTests
 {
-    private const string AttributesSource = @"
-using System;
-using System.Collections.Generic;
-
-namespace FourSer.Contracts
-{
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class SerializePolymorphicAttribute : Attribute
-    {
-        public SerializePolymorphicAttribute(string propertyName) { }
-    }
-}";
-
     [Fact]
     public async Task NotFound_CreatesProperty()
     {
@@ -46,8 +34,9 @@ public class MyData
 
         await new CSharpCodeFixTest<SerializePolymorphicPropertyNameAnalyzer, SerializePolymorphicPropertyNameCodeFixProvider, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
-            FixedState = { Sources = { AttributesSource, fixedCode } },
+            TestState = { Sources = { testCode } },
+            FixedState = { Sources = { fixedCode } },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
         }.RunAsync();
     }
 }
