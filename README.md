@@ -1,4 +1,4 @@
-# ![Four Ser.Gen](resources/logo/logo-long.png)
+# ![FourSer.Gen](resources/logo/logo-long.png)
 [![Build Status](https://github.com/JKamsker/GeminiSerializer.SG/actions/workflows/ci.yml/badge.svg)](https://github.com/JKamsker/GeminiSerializer.SG/actions/workflows/ci.yml)
 [![NuGet Version](https://img.shields.io/nuget/v/FourSer.Gen.svg)](https://www.nuget.org/packages/FourSer.Gen)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/FourSer.Gen.svg)](https://www.nuget.org/packages/FourSer.Gen)
