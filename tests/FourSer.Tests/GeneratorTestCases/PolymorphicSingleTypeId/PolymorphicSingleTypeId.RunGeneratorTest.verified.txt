@@ -121,17 +121,29 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
     public static int Serialize(PolymorphicSingleTest obj, System.Span<byte> data)
     {
         var originalData = data;
+        if (obj.Animals is not null && obj.Animals.Count > 0)
+        {
+            switch (obj.Animals[0])
+            {
+                case Cat:
+                    obj.AnimalTypeId = 1;
+                    break;
+                case Dog:
+                    obj.AnimalTypeId = 2;
+                    break;
+            }
+        }
         SpanWriter.WriteByte(ref data, (Byte)obj.AnimalTypeId);
-        if (obj.Animals is null || obj.Animals.Count == 0)
+        if (obj.Animals is null)
         {
             SpanWriter.WriteUInt16(ref data, (ushort)0);
         }
         else
         {
             SpanWriter.WriteUInt16(ref data, (ushort)obj.Animals.Count);
-            switch (obj.Animals[0])
+            switch (obj.AnimalTypeId)
             {
-                case Cat:
+                case 1:
                 {
                     foreach(var item in obj.Animals)
                     {
@@ -140,7 +152,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
                     }
                     break;
                 }
-                case Dog:
+                case 2:
                 {
                     foreach(var item in obj.Animals)
                     {
@@ -150,7 +162,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
                     break;
                 }
                 default:
-                    throw new System.IO.InvalidDataException($"Unknown type id for item: {obj.Animals[0].GetType().Name}");
+                    throw new System.IO.InvalidDataException($"Unknown type id for Animals: {obj.AnimalTypeId}");
             }
         }
         return originalData.Length - data.Length;
@@ -158,17 +170,29 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
 
     public static void Serialize(PolymorphicSingleTest obj, System.IO.Stream stream)
     {
+        if (obj.Animals is not null && obj.Animals.Count > 0)
+        {
+            switch (obj.Animals[0])
+            {
+                case Cat:
+                    obj.AnimalTypeId = 1;
+                    break;
+                case Dog:
+                    obj.AnimalTypeId = 2;
+                    break;
+            }
+        }
         StreamWriter.WriteByte(stream, (Byte)obj.AnimalTypeId);
-        if (obj.Animals is null || obj.Animals.Count == 0)
+        if (obj.Animals is null)
         {
             StreamWriter.WriteUInt16(stream, (ushort)0);
         }
         else
         {
             StreamWriter.WriteUInt16(stream, (ushort)obj.Animals.Count);
-            switch (obj.Animals[0])
+            switch (obj.AnimalTypeId)
             {
-                case Cat:
+                case 1:
                 {
                     foreach(var item in obj.Animals)
                     {
@@ -176,7 +200,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
                     }
                     break;
                 }
-                case Dog:
+                case 2:
                 {
                     foreach(var item in obj.Animals)
                     {
@@ -185,7 +209,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
                     break;
                 }
                 default:
-                    throw new System.IO.InvalidDataException($"Unknown type id for item: {obj.Animals[0].GetType().Name}");
+                    throw new System.IO.InvalidDataException($"Unknown type id for Animals: {obj.AnimalTypeId}");
             }
         }
     }
