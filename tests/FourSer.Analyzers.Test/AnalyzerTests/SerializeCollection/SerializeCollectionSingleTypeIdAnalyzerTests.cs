@@ -1,37 +1,13 @@
 using FourSer.Analyzers.SerializeCollection;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection
 {
-    public class SerializeCollectionSingleTypeIdAnalyzerTests
+    public class SerializeCollectionSingleTypeIdAnalyzerTests : AnalyzerTestBase
     {
-        private const string AttributesSource = @"
-using System;
-using System.Collections.Generic;
-
-namespace FourSer.Contracts
-{
-    public enum PolymorphicMode { None, SingleTypeId, IndividualTypeIds }
-
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
-    public class SerializeCollectionAttribute : Attribute
-    {
-        public PolymorphicMode PolymorphicMode { get; set; }
-        public Type TypeIdType { get; set; }
-    }
-
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = true, Inherited = true)]
-    public class PolymorphicOptionAttribute : Attribute
-    {
-        public PolymorphicOptionAttribute(object id, Type type) { }
-    }
-
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = true)]
-    public class GenerateSerializerAttribute : Attribute { }
-}";
-
         [Fact]
         public async Task TypeIdType_Matches_OptionIdType_NoDiagnostic()
         {
@@ -52,7 +28,8 @@ namespace FourSer.Contracts
     }";
             await new CSharpAnalyzerTest<SerializeCollectionSingleTypeIdAnalyzer, DefaultVerifier>
             {
-                TestState = { Sources = { AttributesSource, testCode } },
+                TestState = { Sources = { testCode } },
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
 
@@ -76,7 +53,8 @@ namespace FourSer.Contracts
     }";
             await new CSharpAnalyzerTest<SerializeCollectionSingleTypeIdAnalyzer, DefaultVerifier>
             {
-                TestState = { Sources = { AttributesSource, testCode } },
+                TestState = { Sources = { testCode } },
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
 
@@ -100,7 +78,8 @@ namespace FourSer.Contracts
     }";
             await new CSharpAnalyzerTest<SerializeCollectionSingleTypeIdAnalyzer, DefaultVerifier>
             {
-                TestState = { Sources = { AttributesSource, testCode } },
+                TestState = { Sources = { testCode } },
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
 
@@ -128,7 +107,8 @@ namespace FourSer.Contracts
     }";
             await new CSharpAnalyzerTest<SerializeCollectionSingleTypeIdAnalyzer, DefaultVerifier>
             {
-                TestState = { Sources = { AttributesSource, testCode } },
+                TestState = { Sources = { testCode } },
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
 
@@ -152,7 +132,8 @@ namespace FourSer.Contracts
     }";
             await new CSharpAnalyzerTest<SerializeCollectionSingleTypeIdAnalyzer, DefaultVerifier>
             {
-                TestState = { Sources = { AttributesSource, testCode } },
+                TestState = { Sources = { testCode } },
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
     }

@@ -1,25 +1,13 @@
 using FourSer.Analyzers.SerializePolymorphic;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.SerializePolymorphic;
 
-public class SerializePolymorphicPropertyNameAnalyzerTests
+public class SerializePolymorphicPropertyNameAnalyzerTests : AnalyzerTestBase
 {
-    private const string AttributesSource = @"
-using System;
-using System.Collections.Generic;
-
-namespace FourSer.Contracts
-{
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class SerializePolymorphicAttribute : Attribute
-    {
-        public SerializePolymorphicAttribute(string propertyName) { }
-    }
-}";
-
     [Fact]
     public async Task NotFound_ReportsDiagnostic()
     {
@@ -34,7 +22,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializePolymorphicPropertyNameAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -55,7 +44,8 @@ public class MyData
         var expected2 = new DiagnosticResult(SerializePolymorphicPropertyNameAnalyzer.DeclaredAfterRule).WithLocation(0).WithArguments("TypeId");
         await new CSharpAnalyzerTest<SerializePolymorphicPropertyNameAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode }, ExpectedDiagnostics = { expected1, expected2 } },
+            TestState = { Sources = { testCode }, ExpectedDiagnostics = { expected1, expected2 } },
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -74,7 +64,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializePolymorphicPropertyNameAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -93,7 +84,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializePolymorphicPropertyNameAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 }

@@ -1,12 +1,13 @@
-using System.Collections.Immutable;
+using System.IO;
 using FourSer.Analyzers.SerializeCollection;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
 
-public class SerializeCollectionTypeIdPropertyCodeFixProviderTests
+public class SerializeCollectionTypeIdPropertyCodeFixProviderTests : AnalyzerTestBase
 {
     // No need for AttributesSource, use real FourSer.Contracts
 
@@ -33,10 +34,6 @@ public class MyData
     [SerializeCollection(TypeIdProperty = ""TypeId"")]
     public List<int> A { get; set; }
 }";
-        var files = Directory
-                .GetFiles(Environment.CurrentDirectory, "FourSer.Contracts.dll", SearchOption.AllDirectories)
-                .ToImmutableArray()
-            ;
 
         await new
             CSharpCodeFixTest<SerializeCollectionTypeIdPropertyAnalyzer, SerializeCollectionTypeIdPropertyCodeFixProvider,
@@ -44,8 +41,7 @@ public class MyData
             {
                 TestState = { Sources = { testCode } },
                 FixedState = { Sources = { fixedCode } },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages
-                    (ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
     }
 
@@ -99,8 +95,7 @@ public class MyData
             {
                 TestState = { Sources = { testCode, additionalEnum } },
                 FixedState = { Sources = { fixedCode, additionalEnum } },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages
-                    (ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
     }
 }

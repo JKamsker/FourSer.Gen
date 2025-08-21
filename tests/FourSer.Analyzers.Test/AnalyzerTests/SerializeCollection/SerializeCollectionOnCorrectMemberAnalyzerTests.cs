@@ -1,21 +1,13 @@
 using FourSer.Analyzers.SerializeCollection;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
 
-public class SerializeCollectionOnCorrectMemberAnalyzerTests
+public class SerializeCollectionOnCorrectMemberAnalyzerTests : AnalyzerTestBase
 {
-    private const string AttributesSource = @"
-namespace FourSer.Contracts
-{
-    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
-    public class SerializeCollectionAttribute : System.Attribute { }
-
-    public enum PolymorphicMode { None, SingleTypeId, IndividualTypeIds }
-}";
-
     [Fact]
     public async Task OnNonIEnumerable_ReportsDiagnostic()
     {
@@ -25,83 +17,40 @@ using System.Collections.Generic;
 
 public class MyData
 {
-    [SerializeCollection]
+    [{|#0:SerializeCollection|}]
     public int A { get; set; }
 }";
-        var expected = new DiagnosticResult(SerializeCollectionOnCorrectMemberAnalyzer.Rule).WithLocation("/0/Test1.cs", 7, 6);
+        var expected = new DiagnosticResult(SerializeCollectionOnCorrectMemberAnalyzer.Rule).WithLocation(0);
         await new CSharpAnalyzerTest<SerializeCollectionOnCorrectMemberAnalyzer, DefaultVerifier>
         {
             TestState =
             {
-                Sources = { AttributesSource, testCode },
+                Sources = { testCode },
                 ExpectedDiagnostics = { expected },
             },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
-    [Fact]
-    public async Task OnIEnumerable_NoDiagnostic()
+    [Theory]
+    [InlineData("IEnumerable<int>")]
+    [InlineData("List<int>")]
+    [InlineData("int[]")]
+    public async Task OnCollectionTypes_NoDiagnostic(string collectionType)
     {
-        var testCode = @"
+        var testCode = @$"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
 public class MyData
-{
+{{
     [SerializeCollection]
-    public IEnumerable<int> A { get; set; }
-}";
+    public {collectionType} A {{ get; set; }}
+}}";
         await new CSharpAnalyzerTest<SerializeCollectionOnCorrectMemberAnalyzer, DefaultVerifier>
         {
-            TestState =
-            {
-                Sources = { AttributesSource, testCode },
-            },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
-        }.RunAsync();
-    }
-
-    [Fact]
-    public async Task OnListOfT_NoDiagnostic()
-    {
-        var testCode = @"
-using FourSer.Contracts;
-using System.Collections.Generic;
-
-public class MyData
-{
-    [SerializeCollection]
-    public List<int> A { get; set; }
-}";
-        await new CSharpAnalyzerTest<SerializeCollectionOnCorrectMemberAnalyzer, DefaultVerifier>
-        {
-            TestState =
-            {
-                Sources = { AttributesSource, testCode },
-            },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
-        }.RunAsync();
-    }
-
-    [Fact]
-    public async Task OnArray_NoDiagnostic()
-    {
-        var testCode = @"
-using FourSer.Contracts;
-
-public class MyData
-{
-    [SerializeCollection]
-    public int[] A { get; set; }
-}";
-        await new CSharpAnalyzerTest<SerializeCollectionOnCorrectMemberAnalyzer, DefaultVerifier>
-        {
-            TestState =
-            {
-                Sources = { AttributesSource, testCode },
-            },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 }
