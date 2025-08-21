@@ -274,7 +274,7 @@ public static class DeserializationGenerator
 
                 if (string.IsNullOrEmpty(typeIdProperty))
                 {
-                    typeIdVar = "typeId";
+                    typeIdVar = $"{member.Name.ToCamelCase()}TypeId";
                     var typeToRead = info.EnumUnderlyingType ?? info.TypeIdType;
                     var typeIdReadMethod = TypeHelper.GetReadMethodName(typeToRead);
                     var cast = info.EnumUnderlyingType is not null ? $"({info.TypeIdType})" : "";
@@ -440,7 +440,7 @@ public static class DeserializationGenerator
         }
         else
         {
-            switchVar = "typeId";
+            switchVar = $"{member.Name.ToCamelCase()}TypeId";
             var typeToRead = info.EnumUnderlyingType ?? info.TypeIdType;
             var typeIdReadMethod = TypeHelper.GetReadMethodName(typeToRead);
             var cast = info.EnumUnderlyingType is not null ? $"({info.TypeIdType})" : "";
@@ -484,7 +484,7 @@ public static class DeserializationGenerator
         var info = member.PolymorphicInfo!.Value;
         var refOrEmpty = source == "buffer" ? "ref " : "";
 
-        var switchVar = "typeId";
+        var switchVar = $"{member.Name.ToCamelCase()}TypeId";
         var typeToRead = info.EnumUnderlyingType ?? info.TypeIdType;
         var typeIdReadMethod = TypeHelper.GetReadMethodName(typeToRead);
         var cast = info.EnumUnderlyingType is not null ? $"({info.TypeIdType})" : "";
