@@ -47,7 +47,7 @@ public class MyData
         await new CSharpCodeFixTest<SerializePolymorphicPropertyNameAnalyzer, SerializePolymorphicPropertyNameCodeFixProvider, DefaultVerifier>
         {
             TestState = { Sources = { AttributesSource, testCode } },
-            FixedState = { Sources = { AttributesSource, fixedCode } },
+            FixedState = { Sources = { AttributesSource, fixedCode.Replace("\r\n", "\n") } },
         }.RunAsync();
     }
 }
