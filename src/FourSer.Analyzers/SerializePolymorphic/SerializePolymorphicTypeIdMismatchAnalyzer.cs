@@ -4,7 +4,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Linq;
-using FourSer.Analyzers.Helpers;
 
 namespace FourSer.Analyzers.SerializePolymorphic
 {
@@ -37,19 +36,21 @@ namespace FourSer.Analyzers.SerializePolymorphic
             var symbol = context.Symbol;
             var serializePolymorphicAttribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializePolymorphicAttribute");
 
-            if (serializePolymorphicAttribute == null || serializePolymorphicAttribute.ApplicationSyntaxReference == null)
+            if (serializePolymorphicAttribute?.ApplicationSyntaxReference == null)
             {
                 return;
             }
 
             var attributeSyntax = (AttributeSyntax)serializePolymorphicAttribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
+            if (attributeSyntax == null) return;
+
             var arguments = attributeSyntax.ArgumentList?.Arguments ?? new SeparatedSyntaxList<AttributeArgumentSyntax>();
 
             var namedArguments = serializePolymorphicAttribute.NamedArguments.ToDictionary(na => na.Key, na => na.Value);
 
             var typeIdTypeArg = arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdType");
 
-            string referenceName = null;
+            string? referenceName = null;
             if (namedArguments.TryGetValue("PropertyName", out var propertyNameValue))
             {
                 referenceName = propertyNameValue.Value as string;
@@ -62,16 +63,17 @@ namespace FourSer.Analyzers.SerializePolymorphic
             // FSG2004
             if (!string.IsNullOrEmpty(referenceName) && typeIdTypeArg != null)
             {
-                var referencedSymbol = symbol.ContainingType.GetMembers(referenceName).FirstOrDefault();
+                var referencedSymbol = symbol.ContainingType.GetMembers(referenceName!).FirstOrDefault();
                 if (referencedSymbol == null) return;
 
-                var typeOfExpression = typeIdTypeArg.Expression as TypeOfExpressionSyntax;
-                if (typeOfExpression != null)
+                if (typeIdTypeArg.Expression is TypeOfExpressionSyntax typeOfExpression)
                 {
                     var typeSyntax = typeOfExpression.Type;
                     var model = context.Compilation.GetSemanticModel(typeSyntax.SyntaxTree);
                     var typeInfo = model.GetTypeInfo(typeSyntax, context.CancellationToken);
                     var typeIdType = typeInfo.Type;
+
+                    if (typeIdType == null) return;
 
                     if (referencedSymbol is IPropertySymbol propertySymbol && !SymbolEqualityComparer.Default.Equals(propertySymbol.Type, typeIdType))
                     {
@@ -86,19 +88,21 @@ namespace FourSer.Analyzers.SerializePolymorphic
 
             // FSG2005
             var serializeCollectionAttribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializeCollectionAttribute");
-            if (serializeCollectionAttribute != null && serializeCollectionAttribute.ApplicationSyntaxReference != null)
+            if (serializeCollectionAttribute?.ApplicationSyntaxReference != null)
             {
-                var collectionAttributeSyntax = (AttributeSyntax)serializeCollectionAttribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
-                var collectionArguments = collectionAttributeSyntax.ArgumentList?.Arguments ?? new SeparatedSyntaxList<AttributeArgumentSyntax>();
-
-                var collectionTypeIdPropertyArg = collectionArguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdProperty");
-                var collectionTypeIdTypeArg = collectionArguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdType");
-
-                var propertyNameArg = arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "PropertyName");
-
-                if ((propertyNameArg != null && collectionTypeIdPropertyArg != null) || (typeIdTypeArg != null && collectionTypeIdTypeArg != null))
+                if (serializeCollectionAttribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken) is AttributeSyntax collectionAttributeSyntax)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(ConflictingSettingsRule, attributeSyntax.GetLocation()));
+                    var collectionArguments = collectionAttributeSyntax.ArgumentList?.Arguments ?? new SeparatedSyntaxList<AttributeArgumentSyntax>();
+
+                    var collectionTypeIdPropertyArg = collectionArguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdProperty");
+                    var collectionTypeIdTypeArg = collectionArguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdType");
+
+                    var propertyNameArg = arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "PropertyName");
+
+                    if ((propertyNameArg != null && collectionTypeIdPropertyArg != null) || (typeIdTypeArg != null && collectionTypeIdTypeArg != null))
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(ConflictingSettingsRule, attributeSyntax.GetLocation()));
+                    }
                 }
             }
         }

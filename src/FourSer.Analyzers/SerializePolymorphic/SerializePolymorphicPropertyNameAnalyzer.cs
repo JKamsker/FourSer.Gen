@@ -40,7 +40,7 @@ namespace FourSer.Analyzers.SerializePolymorphic
             var symbol = context.Symbol;
             var attribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializePolymorphicAttribute");
 
-            if (attribute == null || attribute.ApplicationSyntaxReference == null)
+            if (attribute?.ApplicationSyntaxReference == null)
             {
                 return;
             }
@@ -63,10 +63,10 @@ namespace FourSer.Analyzers.SerializePolymorphic
             }
 
             var containingType = symbol.ContainingType;
-            var referencedSymbol = containingType.GetMembers(referenceName).FirstOrDefault();
+            var referencedSymbol = containingType.GetMembers(referenceName!).FirstOrDefault();
 
             var attributeSyntax = (AttributeSyntax)attribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
-            var argumentSyntax = attributeSyntax.ArgumentList?.Arguments.FirstOrDefault();
+            var argumentSyntax = attributeSyntax?.ArgumentList?.Arguments.FirstOrDefault();
 
             if (argumentSyntax == null)
             {

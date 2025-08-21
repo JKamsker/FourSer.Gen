@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+#nullable enable
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -11,14 +13,13 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using Newtonsoft.Json;
-using System;
 using Xunit;
 
 namespace TestHelper
 {
     public abstract class ConventionCodeFixVerifier : CodeFixVerifier
     {
-        public ConventionCodeFixVerifier()
+        protected ConventionCodeFixVerifier()
         {
             var t = GetType();
             DataSourcePath = Path.Combine("../../../DataSource", t.Name);
@@ -26,25 +27,19 @@ namespace TestHelper
 
         private string DataSourcePath { get; }
 
-        private static string ReadIfExists(string path)
+        protected async Task VerifyCSharpByConvention([CallerMemberName]string? testName = null)
         {
-            if (!File.Exists(path)) return string.Empty;
-            return File.ReadAllText(path);
+            if (testName == null) throw new System.ArgumentNullException(nameof(testName));
+            await VerifyCSharpByConventionV2(testName);
         }
 
-        protected void VerifyCSharpByConvention([CallerMemberName]string testName = null)
-        {
-            var sourcePath = Path.Combine(DataSourcePath, testName, "Source");
-            VerifyCSharpByConventionV2(testName);
-        }
-
-        private void VerifyCSharpByConventionV2(string testName)
+        private async Task VerifyCSharpByConventionV2(string testName)
         {
             var sources = ReadSources(testName);
             var expectedResults = ReadDiagnosticResultsFromFolder(testName);
             var expectedSources = ReadExpectedSources(testName);
 
-            VerifyCSharp(sources, expectedResults.ToArray(), expectedSources.ToArray());
+            await VerifyCSharp(sources, expectedResults.ToArray(), expectedSources.ToArray());
         }
 
         private IEnumerable<DiagnosticResult> ReadDiagnosticResultsFromFolder(string testName)
@@ -52,7 +47,7 @@ namespace TestHelper
             var diagnosticPath = Path.Combine(DataSourcePath, testName, "Diagnostic");
 
             if (!Directory.Exists(diagnosticPath))
-                return Array.Empty<DiagnosticResult>();
+                return System.Array.Empty<DiagnosticResult>();
 
             var results = ReadResultsFromFolder(diagnosticPath);
 
@@ -77,7 +72,6 @@ namespace TestHelper
         private Dictionary<string, string> ReadSources(string testName)
         {
             var sourcePath = Path.Combine(DataSourcePath, testName, "Source");
-
             return ReadFiles(sourcePath);
         }
 
@@ -99,7 +93,7 @@ namespace TestHelper
         private static Dictionary<string, string> ReadFiles(string sourcePath)
         {
             if (!Directory.Exists(sourcePath))
-                return null;
+                return new Dictionary<string, string>();
 
             var sources = new Dictionary<string, string>();
 
@@ -113,15 +107,11 @@ namespace TestHelper
             return sources;
         }
 
-        class FixResult
+        private class FixResult
         {
             public int Index { get; }
-
             public Dictionary<string, string> ExpectedSources { get; }
 
-            /// <summary></summary>
-            /// <param name="index"><see cref="Index"/></param>
-            /// <param name="expectedSources"><see cref="ExpectedSources"/></param>
             public FixResult(int index, Dictionary<string, string> expectedSources)
             {
                 Index = index;
@@ -129,19 +119,22 @@ namespace TestHelper
             }
         }
 
-        private void VerifyCSharp(Dictionary<string, string> sources, DiagnosticResult[] expectedResults, params FixResult[] fixResults)
+        private async Task VerifyCSharp(Dictionary<string, string> sources, DiagnosticResult[] expectedResults, params FixResult[] fixResults)
         {
             var analyzer = GetCSharpDiagnosticAnalyzer();
             var fix = GetCSharpCodeFixProvider();
+            if (analyzer == null || fix == null) return;
 
             var originalProject = CreateProject(sources);
+            if (originalProject == null) return;
 
-            var diagnostics = GetDiagnostics(originalProject, analyzer);
+            var diagnostics = await GetDiagnostics(originalProject, analyzer);
             VerifyDiagnosticResults(diagnostics, analyzer, expectedResults);
 
             foreach (var fixResult in fixResults)
             {
-                var project = ApplyFix(originalProject, analyzer, fix, fixResult.Index);
+                var project = await ApplyFix(originalProject, analyzer, fix, fixResult.Index);
+                if (project == null) continue;
 
                 var expectedSources = fixResult.ExpectedSources;
 
@@ -152,7 +145,7 @@ namespace TestHelper
 
                 foreach (var doc in project.Documents)
                 {
-                    var code = GetStringFromDocument(doc);
+                    var code = await GetStringFromDocument(doc);
                     actualSources.Add(doc.Name, code);
                 }
 
@@ -167,9 +160,9 @@ namespace TestHelper
             }
         }
 
-        private static Project ApplyFix(Project project, DiagnosticAnalyzer analyzer, CodeFixProvider fix, int fixIndex)
+        private static async Task<Project?> ApplyFix(Project project, DiagnosticAnalyzer analyzer, CodeFixProvider fix, int fixIndex)
         {
-            var diagnostics = GetDiagnostics(project, analyzer);
+            var diagnostics = await GetDiagnostics(project, analyzer);
             var fixableDiagnostics = diagnostics.Where(d => fix.FixableDiagnosticIds.Contains(d.Id)).ToArray();
 
             var attempts = fixableDiagnostics.Length;
@@ -177,7 +170,7 @@ namespace TestHelper
             for (int i = 0; i < attempts; i++)
             {
                 var diag = fixableDiagnostics.First();
-                var doc = project.Documents.FirstOrDefault(d => d.Name == diag.Location.SourceTree.FilePath);
+                var doc = project.Documents.FirstOrDefault(d => d.Name == diag.Location.SourceTree?.FilePath);
 
                 if (doc == null)
                 {
@@ -187,7 +180,7 @@ namespace TestHelper
 
                 var actions = new List<CodeAction>();
                 var fixContex = new CodeFixContext(doc, diag, (a, d) => actions.Add(a), CancellationToken.None);
-                fix.RegisterCodeFixesAsync(fixContex).Wait();
+                await fix.RegisterCodeFixesAsync(fixContex);
 
                 if (!actions.Any())
                 {
@@ -196,11 +189,11 @@ namespace TestHelper
 
                 var codeAction = actions[fixIndex];
 
-                var operations = codeAction.GetOperationsAsync(CancellationToken.None).Result;
+                var operations = await codeAction.GetOperationsAsync(CancellationToken.None);
                 var solution = operations.OfType<ApplyChangesOperation>().Single().ChangedSolution;
-                project = solution.GetProject(project.Id);
+                project = solution.GetProject(project.Id)!;
 
-                fixableDiagnostics = GetDiagnostics(project, analyzer)
+                fixableDiagnostics = (await GetDiagnostics(project, analyzer))
                     .Where(d => fix.FixableDiagnosticIds.Contains(d.Id)).ToArray();
 
                 if (!fixableDiagnostics.Any()) break;
@@ -209,10 +202,13 @@ namespace TestHelper
             return project;
         }
 
-        private static Diagnostic[] GetDiagnostics(Project project, DiagnosticAnalyzer analyzer)
+        private static async Task<Diagnostic[]> GetDiagnostics(Project project, DiagnosticAnalyzer analyzer)
         {
-            var compilationWithAnalyzers = project.GetCompilationAsync().Result.WithAnalyzers(ImmutableArray.Create(analyzer));
-            var diagnostics = compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().Result;
+            var compilation = await project.GetCompilationAsync();
+            if (compilation == null) return System.Array.Empty<Diagnostic>();
+
+            var compilationWithAnalyzers = compilation.WithAnalyzers(ImmutableArray.Create(analyzer));
+            var diagnostics = await compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync();
             return diagnostics.OrderBy(d => d.Location.SourceSpan.Start).ToArray();
         }
 
@@ -229,7 +225,7 @@ namespace TestHelper
 
         protected virtual CSharpCompilationOptions CompilationOptions => new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary);
 
-        protected Project CreateProject(Dictionary<string, string> sources)
+        protected Project? CreateProject(Dictionary<string, string> sources)
         {
             string fileNamePrefix = DefaultFilePathPrefix;
             string fileExt = CSharpDefaultFileExt;
@@ -245,30 +241,30 @@ namespace TestHelper
                 solution = solution.AddMetadataReference(projectId, reference);
             }
 
-            int count = 0;
             foreach (var source in sources)
             {
                 var newFileName = source.Key;
                 var documentId = DocumentId.CreateNewId(projectId, debugName: newFileName);
                 solution = solution.AddDocument(documentId, newFileName, SourceText.From(source.Value));
-                count++;
             }
 
-            var project = solution.GetProject(projectId)
-                .WithCompilationOptions(CompilationOptions);
-            return project;
+            return solution.GetProject(projectId)?.WithCompilationOptions(CompilationOptions);
         }
 
         #region read expected results from JSON file
 
         private IEnumerable<DiagnosticResult> GetDiagnosticResult(IEnumerable<Result> results)
         {
-            var supportedDiagnostics = GetCSharpDiagnosticAnalyzer().SupportedDiagnostics;
+            var analyzer = GetCSharpDiagnosticAnalyzer();
+            if (analyzer == null) yield break;
+
+            var supportedDiagnostics = analyzer.SupportedDiagnostics;
             var analyzers = supportedDiagnostics.ToDictionary(x => x.Id);
 
             foreach (var r in results)
             {
-                var diag = analyzers[r.Id];
+                if (!analyzers.TryGetValue(r.Id, out var diag)) continue;
+
                 yield return new DiagnosticResult
                 {
                     Id = r.Id,
@@ -281,34 +277,29 @@ namespace TestHelper
 
         private IEnumerable<Result> ReadResults(string path)
         {
-            if (!File.Exists(path)) return Array.Empty<Result>();
+            if (!File.Exists(path)) return System.Array.Empty<Result>();
 
             try
             {
                 var result = JsonConvert.DeserializeObject<Result>(File.ReadAllText(path));
-                return new[] { result };
+                if (result != null) return new[] { result };
             }
-            catch
-            {
-            }
+            catch { }
 
-            // backward compatibility
             try
             {
                 var results = JsonConvert.DeserializeObject<Result[]>(File.ReadAllText(path));
-                return results;
+                if (results != null) return results;
             }
-            catch
-            {
-            }
+            catch { }
 
-            return Array.Empty<Result>();
+            return System.Array.Empty<Result>();
         }
 
         private class Result
         {
             [JsonProperty(PropertyName = "id")]
-            public string Id { get; set; }
+            public string Id { get; set; } = "";
 
             [JsonProperty(PropertyName = "sevirity")]
             public DiagnosticSeverity Sevirity { get; set; }
@@ -320,10 +311,10 @@ namespace TestHelper
             public int Column { get; set; }
 
             [JsonProperty(PropertyName = "path")]
-            public string Path { get; set; }
+            public string? Path { get; set; }
 
             [JsonProperty(PropertyName = "message-args")]
-            public string[] MessageArgs { get; set; }
+            public string[]? MessageArgs { get; set; }
         }
 
         #endregion

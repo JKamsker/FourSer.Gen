@@ -23,41 +23,54 @@ namespace FourSer.Analyzers.PolymorphicOption
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+            if (root == null) return;
+
             var diagnostic = context.Diagnostics.First();
             var diagnosticSpan = diagnostic.Location.SourceSpan;
 
             var argument = root.FindNode(diagnosticSpan).FirstAncestorOrSelf<AttributeArgumentSyntax>();
-            var attribute = argument.Parent.Parent as AttributeSyntax;
+            if (argument?.Parent?.Parent is not AttributeSyntax attribute) return;
 
-            if (attribute != null)
+            if (diagnostic.Id == PolymorphicOptionIdAnalyzer.DuplicateIdDiagnosticId)
             {
-                if (diagnostic.Id == PolymorphicOptionIdAnalyzer.DuplicateIdDiagnosticId)
-                {
-                    context.RegisterCodeFix(
-                        CodeAction.Create(
-                            title: "Remove duplicate PolymorphicOption",
-                            createChangedSolution: c => RemoveAttributeAsync(context.Document, attribute, c),
-                            equivalenceKey: "RemoveDuplicate"),
-                        diagnostic);
-                }
+                context.RegisterCodeFix(
+                    CodeAction.Create(
+                        title: "Remove duplicate PolymorphicOption",
+                        createChangedSolution: c => RemoveAttributeAsync(context.Document, attribute, c),
+                        equivalenceKey: "RemoveDuplicate"),
+                    diagnostic);
             }
         }
 
-        private async Task<Solution> RemoveAttributeAsync(Document document, AttributeSyntax attribute, CancellationToken cancellationToken)
+        private async Task<Solution> RemoveAttributeAsync(Document document, AttributeSyntax attributeToRemove, CancellationToken cancellationToken)
         {
             var root = await document.GetSyntaxRootAsync(cancellationToken);
-            var attributeList = attribute.Parent as AttributeListSyntax;
+            if (root == null) return document.Project.Solution;
 
-            if (attributeList != null && attributeList.Attributes.Count == 1)
+            if (attributeToRemove.Parent is not AttributeListSyntax attributeList) return document.Project.Solution;
+
+            SyntaxNode newRoot;
+
+            if (attributeList.Attributes.Count > 1)
             {
-                var newRoot = root.RemoveNode(attributeList, SyntaxRemoveOptions.KeepNoTrivia);
-                return document.WithSyntaxRoot(newRoot).Project.Solution;
+                var newAttributeList = attributeList.WithAttributes(attributeList.Attributes.Remove(attributeToRemove));
+                newRoot = root.ReplaceNode(attributeList, newAttributeList);
             }
             else
             {
-                var newRoot = root.RemoveNode(attribute, SyntaxRemoveOptions.KeepNoTrivia);
-                return document.WithSyntaxRoot(newRoot).Project.Solution;
+                var member = attributeList.Parent as MemberDeclarationSyntax;
+                if (member != null)
+                {
+                    var newMember = member.WithAttributeLists(member.AttributeLists.Remove(attributeList));
+                    newRoot = root.ReplaceNode(member, newMember);
+                }
+                else
+                {
+                    newRoot = root.RemoveNode(attributeList, SyntaxRemoveOptions.KeepExteriorTrivia);
+                }
             }
+
+            return document.WithSyntaxRoot(newRoot).Project.Solution;
         }
     }
 }

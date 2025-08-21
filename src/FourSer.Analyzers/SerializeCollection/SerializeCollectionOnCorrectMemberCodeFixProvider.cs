@@ -21,10 +21,13 @@ namespace FourSer.Analyzers.SerializeCollection
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+            if (root == null) return;
+
             var diagnostic = context.Diagnostics.First();
             var diagnosticSpan = diagnostic.Location.SourceSpan;
 
-            var attribute = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<AttributeSyntax>().First();
+            var attribute = root.FindToken(diagnosticSpan.Start).Parent?.AncestorsAndSelf().OfType<AttributeSyntax>().FirstOrDefault();
+            if (attribute == null) return;
 
             context.RegisterCodeFix(
                 CodeAction.Create(
@@ -44,31 +47,27 @@ namespace FourSer.Analyzers.SerializeCollection
         private async Task<Solution> RemoveAttributeAsync(Document document, AttributeSyntax attributeToRemove, CancellationToken cancellationToken)
         {
             var root = await document.GetSyntaxRootAsync(cancellationToken);
-            var attributeList = attributeToRemove.Parent as AttributeListSyntax;
+            if (root == null) return document.Project.Solution;
 
-            if (attributeList == null) return document.Project.Solution;
+            if (attributeToRemove.Parent is not AttributeListSyntax attributeList) return document.Project.Solution;
 
             SyntaxNode newRoot;
 
             if (attributeList.Attributes.Count > 1)
             {
-                // Case 1: Multiple attributes in the list. Remove just the target attribute.
                 var newAttributeList = attributeList.WithAttributes(attributeList.Attributes.Remove(attributeToRemove));
                 newRoot = root.ReplaceNode(attributeList, newAttributeList);
             }
             else
             {
-                // Case 2: Single attribute in the list. Remove the entire attribute list.
                 var member = attributeList.Parent as MemberDeclarationSyntax;
                 if (member != null)
                 {
-                    // This is the robust way to remove the attribute list and its trivia.
                     var newMember = member.WithAttributeLists(member.AttributeLists.Remove(attributeList));
                     newRoot = root.ReplaceNode(member, newMember);
                 }
                 else
                 {
-                    // Fallback for a syntax structure we don't expect.
                     newRoot = root.RemoveNode(attributeList, SyntaxRemoveOptions.KeepExteriorTrivia);
                 }
             }
@@ -80,6 +79,8 @@ namespace FourSer.Analyzers.SerializeCollection
         {
             var newAttribute = SyntaxFactory.Attribute(SyntaxFactory.IdentifierName("SerializePolymorphic"));
             var oldRoot = await document.GetSyntaxRootAsync(cancellationToken);
+            if (oldRoot == null) return document.Project.Solution;
+
             var newRoot = oldRoot.ReplaceNode(attribute, newAttribute);
             return document.WithSyntaxRoot(newRoot).Project.Solution;
         }

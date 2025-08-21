@@ -40,7 +40,7 @@ namespace FourSer.Analyzers.SerializeCollection
             var symbol = context.Symbol;
             var attribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializeCollectionAttribute");
 
-            if (attribute == null || attribute.ApplicationSyntaxReference == null)
+            if (attribute?.ApplicationSyntaxReference == null)
             {
                 return;
             }
@@ -58,10 +58,10 @@ namespace FourSer.Analyzers.SerializeCollection
             }
 
             var containingType = symbol.ContainingType;
-            var referencedSymbol = containingType.GetMembers(referenceName).FirstOrDefault();
+            var referencedSymbol = containingType.GetMembers(referenceName!).FirstOrDefault();
 
-            var attributeSyntax = (AttributeSyntax)attribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
-            var argumentSyntax = attributeSyntax.ArgumentList?.Arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "CountSizeReference");
+            var attributeSyntax = (AttributeSyntax?)attribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
+            var argumentSyntax = attributeSyntax?.ArgumentList?.Arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "CountSizeReference");
 
             if (argumentSyntax == null)
             {

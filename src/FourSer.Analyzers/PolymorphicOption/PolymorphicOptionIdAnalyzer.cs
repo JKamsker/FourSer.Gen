@@ -54,29 +54,39 @@ namespace FourSer.Analyzers.PolymorphicOption
             }
 
             var ids = new HashSet<object>();
-            ITypeSymbol firstIdType = null;
+            ITypeSymbol? firstIdType = null;
 
             foreach (var attribute in attributes)
             {
                 if (attribute.ConstructorArguments.Length > 0)
                 {
                     var idArg = attribute.ConstructorArguments[0];
-                    if (idArg.IsNull) continue;
+                    if (idArg.IsNull || idArg.Value == null) continue;
 
                     if (firstIdType == null)
                     {
                         firstIdType = idArg.Type;
                     }
-                    else if (!SymbolEqualityComparer.Default.Equals(firstIdType, idArg.Type))
+                    else if (idArg.Type != null && !SymbolEqualityComparer.Default.Equals(firstIdType, idArg.Type))
                     {
-                        var argumentSyntax = (AttributeArgumentSyntax)((AttributeSyntax)attribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken)).ArgumentList.Arguments[0];
-                        context.ReportDiagnostic(Diagnostic.Create(MixedIdTypesRule, argumentSyntax.GetLocation()));
+                        if (attribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken) is AttributeSyntax attrSyntax &&
+                            attrSyntax.ArgumentList != null &&
+                            attrSyntax.ArgumentList.Arguments.Any())
+                        {
+                            var argumentSyntax = attrSyntax.ArgumentList.Arguments[0];
+                            context.ReportDiagnostic(Diagnostic.Create(MixedIdTypesRule, argumentSyntax.GetLocation()));
+                        }
                     }
 
                     if (!ids.Add(idArg.Value))
                     {
-                        var argumentSyntax = (AttributeArgumentSyntax)((AttributeSyntax)attribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken)).ArgumentList.Arguments[0];
-                        context.ReportDiagnostic(Diagnostic.Create(DuplicateIdRule, argumentSyntax.GetLocation(), idArg.Value));
+                        if (attribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken) is AttributeSyntax attrSyntax &&
+                            attrSyntax.ArgumentList != null &&
+                            attrSyntax.ArgumentList.Arguments.Any())
+                        {
+                            var argumentSyntax = attrSyntax.ArgumentList.Arguments[0];
+                            context.ReportDiagnostic(Diagnostic.Create(DuplicateIdRule, argumentSyntax.GetLocation(), idArg.Value));
+                        }
                     }
                 }
             }

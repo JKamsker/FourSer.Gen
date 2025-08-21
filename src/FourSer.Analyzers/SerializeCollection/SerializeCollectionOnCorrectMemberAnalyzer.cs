@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System.Linq;
 
 namespace FourSer.Analyzers.SerializeCollection
 {
@@ -48,7 +49,7 @@ namespace FourSer.Analyzers.SerializeCollection
                 return;
             }
 
-            var attribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass.Equals(serializeCollectionAttribute, SymbolEqualityComparer.Default));
+            var attribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Equals(serializeCollectionAttribute, SymbolEqualityComparer.Default) ?? false);
 
             if (attribute == null)
             {

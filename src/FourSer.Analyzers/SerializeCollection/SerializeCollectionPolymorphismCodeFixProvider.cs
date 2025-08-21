@@ -24,10 +24,13 @@ namespace FourSer.Analyzers.SerializeCollection
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+            if (root == null) return;
+
             var diagnostic = context.Diagnostics.First();
             var diagnosticSpan = diagnostic.Location.SourceSpan;
 
-            var argument = root.FindNode(diagnosticSpan).FirstAncestorOrSelf<AttributeArgumentSyntax>();
+            var node = root.FindNode(diagnosticSpan);
+            var argument = node.FirstAncestorOrSelf<AttributeArgumentSyntax>();
 
             if (argument != null)
             {
@@ -46,8 +49,9 @@ namespace FourSer.Analyzers.SerializeCollection
         private async Task<Solution> RemoveArgumentAsync(Document document, AttributeArgumentSyntax argumentToRemove, CancellationToken cancellationToken)
         {
             var root = await document.GetSyntaxRootAsync(cancellationToken);
-            var attributeArgumentList = argumentToRemove.Parent as AttributeArgumentListSyntax;
-            if (attributeArgumentList == null)
+            if (root == null) return document.Project.Solution;
+
+            if (argumentToRemove.Parent is not AttributeArgumentListSyntax attributeArgumentList)
             {
                 return document.Project.Solution;
             }

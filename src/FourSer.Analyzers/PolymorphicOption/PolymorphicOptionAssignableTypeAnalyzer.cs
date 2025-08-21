@@ -50,6 +50,7 @@ namespace FourSer.Analyzers.PolymorphicOption
             }
 
             var baseType = GetBaseType(memberType);
+            if (baseType == null) return;
 
             foreach (var attribute in attributes)
             {
@@ -60,15 +61,20 @@ namespace FourSer.Analyzers.PolymorphicOption
                     {
                         if (!context.Compilation.HasImplicitConversion(optionType, baseType))
                         {
-                             var argumentSyntax = (AttributeArgumentSyntax)((AttributeSyntax)attribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken)).ArgumentList.Arguments[1];
-                            context.ReportDiagnostic(Diagnostic.Create(Rule, argumentSyntax.GetLocation(), optionType.Name, baseType.Name));
+                            if (attribute.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken) is AttributeSyntax attrSyntax &&
+                                attrSyntax.ArgumentList != null &&
+                                attrSyntax.ArgumentList.Arguments.Count > 1)
+                            {
+                                var argumentSyntax = attrSyntax.ArgumentList.Arguments[1];
+                                context.ReportDiagnostic(Diagnostic.Create(Rule, argumentSyntax.GetLocation(), optionType.Name, baseType.Name));
+                            }
                         }
                     }
                 }
             }
         }
 
-        private ITypeSymbol GetBaseType(ITypeSymbol memberType)
+        private ITypeSymbol? GetBaseType(ITypeSymbol memberType)
         {
             if (memberType is IArrayTypeSymbol arrayType)
             {
@@ -80,7 +86,7 @@ namespace FourSer.Analyzers.PolymorphicOption
 
             if (ienumerable != null)
             {
-                return ienumerable.TypeArguments.First();
+                return ienumerable.TypeArguments.FirstOrDefault();
             }
 
             return memberType;

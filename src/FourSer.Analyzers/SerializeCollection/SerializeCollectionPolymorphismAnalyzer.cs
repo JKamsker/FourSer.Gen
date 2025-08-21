@@ -39,12 +39,14 @@ namespace FourSer.Analyzers.SerializeCollection
             var symbol = context.Symbol;
             var serializeCollectionAttribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializeCollectionAttribute");
 
-            if (serializeCollectionAttribute == null || serializeCollectionAttribute.ApplicationSyntaxReference == null)
+            if (serializeCollectionAttribute?.ApplicationSyntaxReference == null)
             {
                 return;
             }
 
-            var attributeSyntax = (AttributeSyntax)serializeCollectionAttribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
+            var attributeSyntax = (AttributeSyntax?)serializeCollectionAttribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
+            if (attributeSyntax == null) return;
+
             var arguments = attributeSyntax.ArgumentList?.Arguments ?? new SeparatedSyntaxList<AttributeArgumentSyntax>();
 
             var namedArguments = serializeCollectionAttribute.NamedArguments.ToDictionary(na => na.Key, na => na.Value);
@@ -67,16 +69,17 @@ namespace FourSer.Analyzers.SerializeCollection
                 var referenceName = typeIdPropertyValue.Value as string;
                 if (string.IsNullOrEmpty(referenceName)) return;
 
-                var referencedSymbol = symbol.ContainingType.GetMembers(referenceName).FirstOrDefault();
+                var referencedSymbol = symbol.ContainingType.GetMembers(referenceName!).FirstOrDefault();
                 if (referencedSymbol == null) return;
 
-                var typeOfExpression = typeIdTypeArg.Expression as TypeOfExpressionSyntax;
-                if (typeOfExpression != null)
+                if (typeIdTypeArg.Expression is TypeOfExpressionSyntax typeOfExpression)
                 {
                     var typeSyntax = typeOfExpression.Type;
                     var model = context.Compilation.GetSemanticModel(typeSyntax.SyntaxTree);
                     var typeInfo = model.GetTypeInfo(typeSyntax, context.CancellationToken);
                     var typeIdType = typeInfo.Type;
+
+                    if (typeIdType == null) return;
 
                     if (referencedSymbol is IPropertySymbol propertySymbol && !SymbolEqualityComparer.Default.Equals(propertySymbol.Type, typeIdType))
                     {
@@ -91,9 +94,11 @@ namespace FourSer.Analyzers.SerializeCollection
 
             // FSG1013
             var serializePolymorphicAttribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializePolymorphicAttribute");
-            if (serializePolymorphicAttribute != null)
+            if (serializePolymorphicAttribute?.ApplicationSyntaxReference != null)
             {
-                var polyAttributeSyntax = (AttributeSyntax)serializePolymorphicAttribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
+                var polyAttributeSyntax = (AttributeSyntax?)serializePolymorphicAttribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
+                if (polyAttributeSyntax == null) return;
+
                 var polyArguments = polyAttributeSyntax.ArgumentList?.Arguments ?? new SeparatedSyntaxList<AttributeArgumentSyntax>();
 
                 var polyTypeIdPropertyArg = polyArguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "PropertyName");

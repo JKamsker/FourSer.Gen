@@ -24,10 +24,15 @@ namespace FourSer.Analyzers.SerializePolymorphic
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+            if (root == null) return;
+
             var diagnostic = context.Diagnostics.First();
             var diagnosticSpan = diagnostic.Location.SourceSpan;
 
-            var argument = root.FindNode(diagnosticSpan).FirstAncestorOrSelf<AttributeArgumentSyntax>();
+            var node = root.FindNode(diagnosticSpan);
+            if (node == null) return;
+
+            var argument = node.FirstAncestorOrSelf<AttributeArgumentSyntax>();
 
             if (argument != null)
             {
@@ -47,39 +52,36 @@ namespace FourSer.Analyzers.SerializePolymorphic
         private async Task<Solution> CreatePropertyAsync(Document document, AttributeArgumentSyntax argument, string propertyName, CancellationToken cancellationToken)
         {
             var root = await document.GetSyntaxRootAsync(cancellationToken);
+            if (root == null) return document.Project.Solution;
+
             var property = argument.FirstAncestorOrSelf<PropertyDeclarationSyntax>();
-            if (property == null)
+            if (property != null)
             {
-                var field = argument.FirstAncestorOrSelf<FieldDeclarationSyntax>();
-                if (field == null)
-                {
-                    return document.Project.Solution;
-                }
-
-                var newProperty = SyntaxFactory.PropertyDeclaration(SyntaxFactory.ParseTypeName("int"), propertyName)
-                    .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)))
-                    .WithAccessorList(SyntaxFactory.AccessorList(SyntaxFactory.List(new[]
-                    {
-                        SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)),
-                        SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken))
-                    })));
-
-                var newRoot = root.InsertNodesBefore(field, new[] { newProperty });
-                return document.WithSyntaxRoot(newRoot).Project.Solution;
-            }
-            else
-            {
-                var newProperty = SyntaxFactory.PropertyDeclaration(SyntaxFactory.ParseTypeName("int"), propertyName)
-                    .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)))
-                    .WithAccessorList(SyntaxFactory.AccessorList(SyntaxFactory.List(new[]
-                    {
-                        SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)),
-                        SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken))
-                    })));
-
+                var newProperty = CreateNewProperty(propertyName);
                 var newRoot = root.InsertNodesBefore(property, new[] { newProperty });
                 return document.WithSyntaxRoot(newRoot).Project.Solution;
             }
+
+            var field = argument.FirstAncestorOrSelf<FieldDeclarationSyntax>();
+            if (field != null)
+            {
+                var newProperty = CreateNewProperty(propertyName);
+                var newRoot = root.InsertNodesBefore(field, new[] { newProperty });
+                return document.WithSyntaxRoot(newRoot).Project.Solution;
+            }
+
+            return document.Project.Solution;
+        }
+
+        private static PropertyDeclarationSyntax CreateNewProperty(string propertyName)
+        {
+            return SyntaxFactory.PropertyDeclaration(SyntaxFactory.ParseTypeName("int"), propertyName)
+                .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)))
+                .WithAccessorList(SyntaxFactory.AccessorList(SyntaxFactory.List(new[]
+                {
+                    SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken)),
+                    SyntaxFactory.AccessorDeclaration(SyntaxKind.SetAccessorDeclaration).WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken))
+                })));
         }
     }
 }
