@@ -102,5 +102,32 @@ namespace FourSer.Analyzers
                 return ResourceManager.GetString("AnalyzerTitle", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to When using PolymorphicMode.SingleTypeId, the TypeIdType property must match the type of the PolymorphicOption's ID..
+        /// </summary>
+        internal static string SerializeCollectionSingleTypeId_Description {
+            get {
+                return ResourceManager.GetString("SerializeCollectionSingleTypeId_Description", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The type of 'TypeIdType' ({0}) does not match the type of the 'PolymorphicOption' ID ({1}).
+        /// </summary>
+        internal static string SerializeCollectionSingleTypeId_MessageFormat {
+            get {
+                return ResourceManager.GetString("SerializeCollectionSingleTypeId_MessageFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Type of 'TypeIdType' and 'PolymorphicOption' do not match.
+        /// </summary>
+        internal static string SerializeCollectionSingleTypeId_Title {
+            get {
+                return ResourceManager.GetString("SerializeCollectionSingleTypeId_Title", resourceCulture);
+            }
+        }
     }
 }

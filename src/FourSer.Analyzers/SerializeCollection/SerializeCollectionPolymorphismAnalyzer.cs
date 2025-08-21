@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using FourSer.Analyzers.Helpers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -12,18 +13,71 @@ namespace FourSer.Analyzers.SerializeCollection
         public const string TypeIdTypeMismatchDiagnosticId = "FSG1010";
         public const string IndividualTypeIdsWithTypeIdPropertyDiagnosticId = "FSG1011";
         public const string ConflictingPolymorphicSettingsDiagnosticId = "FSG1013";
+        public const string TypeIdTypePolymorphicOptionTypeMismatchDiagnosticId = "FSG1012";
 
         private static readonly LocalizableString Title = "Invalid polymorphic settings";
-        private static readonly LocalizableString TypeIdTypeMismatchMessageFormat = "'TypeIdType' must match the type of the property specified in 'TypeIdProperty'";
-        private static readonly LocalizableString IndividualTypeIdsWithTypeIdPropertyMessageFormat = "'TypeIdProperty' cannot be set when 'PolymorphicMode' is 'IndividualTypeIds'";
-        private static readonly LocalizableString ConflictingPolymorphicSettingsMessageFormat = "Conflicting polymorphic settings on '[SerializeCollection]' and '[SerializePolymorphic]'";
+
+        private static readonly LocalizableString TypeIdTypeMismatchMessageFormat =
+            "'TypeIdType' must match the type of the property specified in 'TypeIdProperty'";
+
+        private static readonly LocalizableString IndividualTypeIdsWithTypeIdPropertyMessageFormat =
+            "'TypeIdProperty' cannot be set when 'PolymorphicMode' is 'IndividualTypeIds'";
+
+        private static readonly LocalizableString ConflictingPolymorphicSettingsMessageFormat =
+            "Conflicting polymorphic settings on '[SerializeCollection]' and '[SerializePolymorphic]'";
+
+        private static readonly LocalizableString TypeIdTypePolymorphicOptionTypeMismatchMessageFormat =
+            "'TypeIdProperty' type must match the type of the first '[PolymorphicOption]' id type";
+
         private const string Category = "Usage";
 
-        internal static readonly DiagnosticDescriptor TypeIdTypeMismatchRule = new DiagnosticDescriptor(TypeIdTypeMismatchDiagnosticId, Title, TypeIdTypeMismatchMessageFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true);
-        internal static readonly DiagnosticDescriptor IndividualTypeIdsWithTypeIdPropertyRule = new DiagnosticDescriptor(IndividualTypeIdsWithTypeIdPropertyDiagnosticId, Title, IndividualTypeIdsWithTypeIdPropertyMessageFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true);
-        internal static readonly DiagnosticDescriptor ConflictingPolymorphicSettingsRule = new DiagnosticDescriptor(ConflictingPolymorphicSettingsDiagnosticId, Title, ConflictingPolymorphicSettingsMessageFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true);
+        internal static readonly DiagnosticDescriptor TypeIdTypeMismatchRule = new DiagnosticDescriptor
+        (
+            TypeIdTypeMismatchDiagnosticId,
+            Title,
+            TypeIdTypeMismatchMessageFormat,
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true
+        );
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(TypeIdTypeMismatchRule, IndividualTypeIdsWithTypeIdPropertyRule, ConflictingPolymorphicSettingsRule);
+        internal static readonly DiagnosticDescriptor IndividualTypeIdsWithTypeIdPropertyRule = new DiagnosticDescriptor
+        (
+            IndividualTypeIdsWithTypeIdPropertyDiagnosticId,
+            Title,
+            IndividualTypeIdsWithTypeIdPropertyMessageFormat,
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true
+        );
+
+        internal static readonly DiagnosticDescriptor ConflictingPolymorphicSettingsRule = new DiagnosticDescriptor
+        (
+            ConflictingPolymorphicSettingsDiagnosticId,
+            Title,
+            ConflictingPolymorphicSettingsMessageFormat,
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true
+        );
+
+        internal static readonly DiagnosticDescriptor TypeIdTypePolymorphicOptionTypeMismatchRule = new DiagnosticDescriptor
+        (
+            TypeIdTypePolymorphicOptionTypeMismatchDiagnosticId,
+            Title,
+            TypeIdTypePolymorphicOptionTypeMismatchMessageFormat,
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true
+        );
+
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create
+        (
+            TypeIdTypeMismatchRule,
+            IndividualTypeIdsWithTypeIdPropertyRule,
+            ConflictingPolymorphicSettingsRule,
+            TypeIdTypePolymorphicOptionTypeMismatchRule
+        );
 
         public override void Initialize(AnalysisContext context)
         {
@@ -36,78 +90,192 @@ namespace FourSer.Analyzers.SerializeCollection
         private void AnalyzeAttribute(SymbolAnalysisContext context)
         {
             var symbol = context.Symbol;
-            var serializeCollectionAttribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializeCollectionAttribute");
+            var serializeCollectionAttribute = symbol.GetAttributes()
+                .FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializeCollectionAttribute");
 
             if (serializeCollectionAttribute?.ApplicationSyntaxReference == null)
             {
                 return;
             }
 
-            var attributeSyntax = (AttributeSyntax?)serializeCollectionAttribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
+            var attributeSyntax = (AttributeSyntax?)serializeCollectionAttribute.ApplicationSyntaxReference.GetSyntax
+                (context.CancellationToken);
             if (attributeSyntax == null) return;
 
-            var arguments = attributeSyntax.ArgumentList?.Arguments ?? new SeparatedSyntaxList<AttributeArgumentSyntax>();
+            var arguments = attributeSyntax.ArgumentList?.Arguments ?? [];
 
             var namedArguments = serializeCollectionAttribute.NamedArguments.ToDictionary(na => na.Key, na => na.Value);
 
             var typeIdPropertyArg = arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdProperty");
             var typeIdTypeArg = arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdType");
 
-            // FSG1011
+            // FSG1011: TypeIdProperty cannot be set when PolymorphicMode is IndividualTypeIds
             if (namedArguments.TryGetValue("PolymorphicMode", out var polymorphicModeValue) && typeIdPropertyArg != null)
             {
                 if (polymorphicModeValue.Value is int mode && mode == 2 /* IndividualTypeIds */)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(IndividualTypeIdsWithTypeIdPropertyRule, typeIdPropertyArg.GetLocation()));
+                    context.ReportDiagnostic
+                        (Diagnostic.Create(IndividualTypeIdsWithTypeIdPropertyRule, typeIdPropertyArg.GetLocation()));
                 }
             }
 
-            // FSG1010
-            if (namedArguments.TryGetValue("TypeIdProperty", out var typeIdPropertyValue) && typeIdTypeArg != null)
+
+            if (namedArguments.TryGetValue("TypeIdProperty", out var typeIdPropertyValue))
             {
                 var referenceName = typeIdPropertyValue.Value as string;
                 if (string.IsNullOrEmpty(referenceName)) return;
 
                 var referencedSymbol = symbol.ContainingType.GetMembers(referenceName!).FirstOrDefault();
                 if (referencedSymbol == null) return;
-
-                if (typeIdTypeArg.Expression is TypeOfExpressionSyntax typeOfExpression)
+                var fieldOrPropertyType = referencedSymbol switch
                 {
-                    var typeSyntax = typeOfExpression.Type;
-                    var model = context.Compilation.GetSemanticModel(typeSyntax.SyntaxTree);
-                    var typeInfo = model.GetTypeInfo(typeSyntax, context.CancellationToken);
-                    var typeIdType = typeInfo.Type;
+                    IPropertySymbol propertySymbol => propertySymbol.Type,
+                    IFieldSymbol fieldSymbol => fieldSymbol.Type,
+                    _ => null
+                };
 
-                    if (typeIdType == null) return;
+                // FSG1010
+                AnalyzeTypeIdType(context, namedArguments, fieldOrPropertyType, arguments);
 
-                    if (referencedSymbol is IPropertySymbol propertySymbol && !SymbolEqualityComparer.Default.Equals(propertySymbol.Type, typeIdType))
-                    {
-                        context.ReportDiagnostic(Diagnostic.Create(TypeIdTypeMismatchRule, typeIdTypeArg.GetLocation()));
-                    }
-                    else if (referencedSymbol is IFieldSymbol fieldSymbol && !SymbolEqualityComparer.Default.Equals(fieldSymbol.Type, typeIdType))
-                    {
-                        context.ReportDiagnostic(Diagnostic.Create(TypeIdTypeMismatchRule, typeIdTypeArg.GetLocation()));
-                    }
-                }
+                // FSG1012: TypeId property type must match the type of the option type
+                AnalyzeOptionsMatchPropertyType
+                (
+                    context,
+                    symbol,
+                    fieldOrPropertyType,
+                    typeIdPropertyArg,
+                    referencedSymbol
+                );
             }
 
-            // FSG1013
-            var serializePolymorphicAttribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializePolymorphicAttribute");
+            // FSG1013: Check for conflicting polymorphic settings
+            var serializePolymorphicAttribute = symbol.GetAttributes()
+                .FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializePolymorphicAttribute");
             if (serializePolymorphicAttribute?.ApplicationSyntaxReference != null)
             {
-                var polyAttributeSyntax = (AttributeSyntax?)serializePolymorphicAttribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
-                if (polyAttributeSyntax == null) return;
+                AnalyzePolymorphicOptionTypeUniformness(context, serializePolymorphicAttribute, typeIdPropertyArg, typeIdTypeArg);
+            }
+        }
 
-                var polyArguments = polyAttributeSyntax.ArgumentList?.Arguments ?? new SeparatedSyntaxList<AttributeArgumentSyntax>();
+        private static void AnalyzePolymorphicOptionTypeUniformness
+        (
+            SymbolAnalysisContext context,
+            AttributeData serializePolymorphicAttribute,
+            AttributeArgumentSyntax? typeIdPropertyArg,
+            AttributeArgumentSyntax? typeIdTypeArg
+        )
+        {
+            var polyAttributeSyntax = serializePolymorphicAttribute
+                .ApplicationSyntaxReference
+                ?.GetSyntax(context.CancellationToken) as AttributeSyntax;
+            
+            if (polyAttributeSyntax == null) return;
 
-                var polyTypeIdPropertyArg = polyArguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "PropertyName");
-                var polyTypeIdTypeArg = polyArguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdType");
+            var polyArguments = polyAttributeSyntax.ArgumentList?.Arguments
+                ?? new SeparatedSyntaxList<AttributeArgumentSyntax>();
 
-                if ((typeIdPropertyArg != null && polyTypeIdPropertyArg != null) || (typeIdTypeArg != null && polyTypeIdTypeArg != null))
+            var polyTypeIdPropertyArg = polyArguments.FirstOrDefault
+                (a => a.NameEquals?.Name.Identifier.ValueText == "PropertyName");
+            
+            var polyTypeIdTypeArg = polyArguments.FirstOrDefault
+                (a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdType");
+
+            if ((typeIdPropertyArg != null && polyTypeIdPropertyArg != null)
+                || (typeIdTypeArg != null && polyTypeIdTypeArg != null))
+            {
+                context.ReportDiagnostic
+                    (Diagnostic.Create(ConflictingPolymorphicSettingsRule, polyAttributeSyntax.GetLocation()));
+            }
+        }
+
+        // FSG1012: TypeIdProperty type must match the type of the first PolymorphicOption id type
+        private static void AnalyzeOptionsMatchPropertyType
+        (
+            SymbolAnalysisContext context,
+            ISymbol symbol,
+            ITypeSymbol? fieldOrPropertyType,
+            AttributeArgumentSyntax? typeIdPropertyArg,
+            ISymbol referencedSymbol
+        )
+        {
+            var optionType = GetPolymorphicOptionType(symbol);
+            if (optionType == null)
+            {
+                return;
+            }
+
+            if (SymbolEqualityComparer.Default.Equals(optionType, fieldOrPropertyType))
+            {
+                return;
+            }
+
+            context.ReportDiagnostic
+            (
+                Diagnostic.Create
+                (
+                    TypeIdTypePolymorphicOptionTypeMismatchRule,
+                    typeIdPropertyArg?.GetLocation()
+                )
+            );
+            
+            context.ReportDiagnostic
+            (
+                Diagnostic.Create
+                (
+                    TypeIdTypePolymorphicOptionTypeMismatchRule,
+                    referencedSymbol?.GetLocation(context.CancellationToken)
+                )
+            );
+        }
+
+        // FSG1010: TypeIdType must match the type of the property specified in TypeIdProperty
+        private static void AnalyzeTypeIdType
+        (
+            SymbolAnalysisContext context,
+            Dictionary<string, TypedConstant> namedArguments,
+            ITypeSymbol? fieldOrPropertyType,
+            SeparatedSyntaxList<AttributeArgumentSyntax> arguments
+        )
+        {
+            if (!namedArguments.TryGetValue("TypeIdType", out var typeIdTypeConstant))
+            {
+                return;
+            }
+
+            if (typeIdTypeConstant is not { Kind: TypedConstantKind.Type, Value: ITypeSymbol typeIdType })
+            {
+                return;
+            }
+
+            if (fieldOrPropertyType == null || SymbolEqualityComparer.Default.Equals(fieldOrPropertyType, typeIdType))
+            {
+                return;
+            }
+
+            // Find the syntax for the location of the diagnostic
+            var typeIdTypeArg = arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "TypeIdType");
+            if (typeIdTypeArg != null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(TypeIdTypeMismatchRule, typeIdTypeArg.GetLocation()));
+            }
+        }
+
+        // Gets first ``[PolymorphicOption((byte)1, typeof(CatBase))]`` id type from property or field
+        private static ITypeSymbol? GetPolymorphicOptionType(ISymbol symbol)
+        {
+            var polymorphicOptionAttributes = symbol.GetAttributes()
+                .Where(ad => ad.AttributeClass?.Name == "PolymorphicOptionAttribute");
+
+            foreach (var attribute in polymorphicOptionAttributes)
+            {
+                if (attribute.ConstructorArguments.Length > 1 &&
+                    attribute.ConstructorArguments[0].Type is { } type)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(ConflictingPolymorphicSettingsRule, polyAttributeSyntax.GetLocation()));
+                    return type;
                 }
             }
+
+            return null;
         }
     }
 }
