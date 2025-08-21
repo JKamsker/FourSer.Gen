@@ -8,8 +8,8 @@ namespace FourSer.Consumer.UseCases
         public byte AnimalType { get; set; }
 
         [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte), TypeIdProperty = nameof(AnimalType))]
-        [PolymorphicOption(1, typeof(CatBase))]
-        [PolymorphicOption(2, typeof(DogBase))]
+        [PolymorphicOption((byte)1, typeof(CatBase))]
+        [PolymorphicOption((byte)2, typeof(DogBase))]
         public List<AnimalBase> Animals { get; set; } = new();
     }
 
