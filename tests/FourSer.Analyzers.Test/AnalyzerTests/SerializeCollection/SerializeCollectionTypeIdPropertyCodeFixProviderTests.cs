@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using FourSer.Analyzers.SerializeCollection;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
@@ -7,18 +8,7 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
 
 public class SerializeCollectionTypeIdPropertyCodeFixProviderTests
 {
-    private const string AttributesSource = @"
-using System;
-using System.Collections.Generic;
-
-namespace FourSer.Contracts
-{
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class SerializeCollectionAttribute : Attribute
-    {
-        public string TypeIdProperty { get; set; }
-    }
-}";
+    // No need for AttributesSource, use real FourSer.Contracts
 
     [Fact]
     public async Task NotFound_CreatesProperty()
@@ -43,11 +33,74 @@ public class MyData
     [SerializeCollection(TypeIdProperty = ""TypeId"")]
     public List<int> A { get; set; }
 }";
+        var files = Directory
+                .GetFiles(Environment.CurrentDirectory, "FourSer.Contracts.dll", SearchOption.AllDirectories)
+                .ToImmutableArray()
+            ;
 
-        await new CSharpCodeFixTest<SerializeCollectionTypeIdPropertyAnalyzer, SerializeCollectionTypeIdPropertyCodeFixProvider, DefaultVerifier>
-        {
-            TestState = { Sources = { AttributesSource, testCode } },
-            FixedState = { Sources = { AttributesSource, fixedCode } },
-        }.RunAsync();
+        await new
+            CSharpCodeFixTest<SerializeCollectionTypeIdPropertyAnalyzer, SerializeCollectionTypeIdPropertyCodeFixProvider,
+                DefaultVerifier>
+            {
+                TestState = { Sources = { testCode } },
+                FixedState = { Sources = { fixedCode } },
+                ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages
+                    (ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            }.RunAsync();
+    }
+
+    [Theory]
+    [InlineData("(byte)", "byte")]
+    [InlineData("(long)", "long")]
+    [InlineData("(EnumYolo)", "EnumYolo")]
+    public async Task NotFound_WithPolymorphicOptions_CreatesCorrectPropertyType(string typeCast, string typeName)
+    {
+        var testCode = @$"
+using FourSer.Contracts;
+using System.Collections.Generic;
+using System;
+
+public class MyData
+{{
+    [SerializeCollection({{|FSG1007:TypeIdProperty = ""TypeId""|}}, PolymorphicMode = PolymorphicMode.SingleTypeId)]
+    [PolymorphicOption({typeCast}1, typeof(string))]
+    public List<string> A {{ get; set; }}
+}}";
+
+        var fixedCode = @$"
+using FourSer.Contracts;
+using System.Collections.Generic;
+using System;
+
+public class MyData
+{{
+    public {typeName} TypeId {{ get; set; }}
+    [SerializeCollection(TypeIdProperty = ""TypeId"", PolymorphicMode = PolymorphicMode.SingleTypeId)]
+    [PolymorphicOption({typeCast}1, typeof(string))]
+    public List<string> A {{ get; set; }}
+}}";
+
+        var additionalEnum =
+            // lang=cs
+            """
+            namespace FourSer.Contracts;
+
+            public enum EnumYolo
+            {
+                None,
+                OneOption,
+                AnotherOption
+            }
+            """;
+
+        await new
+            CSharpCodeFixTest<SerializeCollectionTypeIdPropertyAnalyzer, SerializeCollectionTypeIdPropertyCodeFixProvider,
+                DefaultVerifier>
+            {
+                TestState = { Sources = { testCode, additionalEnum } },
+                FixedState = { Sources = { fixedCode, additionalEnum } },
+                ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages
+                    (ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            }.RunAsync();
     }
 }

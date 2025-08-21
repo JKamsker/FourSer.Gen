@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\FourSer.Analyzers\FourSer.Analyzers.csproj" />
+    <ProjectReference Include="..\..\src\FourSer.Contracts\FourSer.Contracts.csproj" />
   </ItemGroup>
 
 </Project>
