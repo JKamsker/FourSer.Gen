@@ -324,49 +324,111 @@ public static class SerializationGenerator
         string typeIdProperty
     )
     {
-        sb.WriteLineFormat("switch (obj.{0})", typeIdProperty);
-        using var __ = sb.BeginBlock();
-        foreach (var option in info.Options)
-        {
-            var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+        var isListOrArray = member.IsList || member.CollectionTypeInfo?.IsArray == true;
 
-            sb.WriteLineFormat("case {0}:", key);
-            using (sb.BeginBlock())
+        if (!isListOrArray)
+        {
+            // Fallback to original logic for non-indexable collections
+            sb.WriteLineFormat("switch (obj.{0})", typeIdProperty);
+            using var __ = sb.BeginBlock();
+            foreach (var option in info.Options)
             {
-                sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+
+                sb.WriteLineFormat("case {0}:", key);
                 using (sb.BeginBlock())
                 {
-                    if (target == "data")
+                    sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                    using (sb.BeginBlock())
                     {
-                        sb.WriteLineFormat
-                        (
-                            "var bytesWritten = {0}.Serialize(({0})item, data);",
-                            TypeHelper.GetSimpleTypeName(option.Type)
-                        );
-                        sb.WriteLine("data = data.Slice(bytesWritten);");
+                        if (target == "data")
+                        {
+                            sb.WriteLineFormat
+                            (
+                                "var bytesWritten = {0}.Serialize(({0})item, data);",
+                                TypeHelper.GetSimpleTypeName(option.Type)
+                            );
+                            sb.WriteLine("data = data.Slice(bytesWritten);");
+                        }
+                        else
+                        {
+                            sb.WriteLineFormat
+                            (
+                                "{0}.Serialize(({0})item, stream);",
+                                TypeHelper.GetSimpleTypeName(option.Type)
+                            );
+                        }
                     }
-                    else
-                    {
-                        sb.WriteLineFormat
-                        (
-                            "{0}.Serialize(({0})item, stream);",
-                            TypeHelper.GetSimpleTypeName(option.Type)
-                        );
-                    }
-                }
 
-                sb.WriteLine("break;");
+                    sb.WriteLine("break;");
+                }
             }
+
+            sb.WriteLine("default:");
+            var localTypeIdProperty = typeIdProperty;
+            sb.WriteLineFormat
+            (
+                "    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{obj.{1}}}\");",
+                member.Name,
+                localTypeIdProperty
+            );
+
+            return;
         }
 
-        sb.WriteLine("default:");
-        var localTypeIdProperty = typeIdProperty;
-        sb.WriteLineFormat
-        (
-            "    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{obj.{1}}}\");",
-            member.Name,
-            localTypeIdProperty
-        );
+        var collectionName = $"obj.{member.Name}";
+        var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
+
+        sb.WriteLineFormat("if ({0} is null || {1} == 0)", collectionName, countExpression);
+        using (sb.BeginBlock())
+        {
+            // Nothing to do. The count is already written.
+        }
+        sb.WriteLine("else");
+        using (sb.BeginBlock())
+        {
+            sb.WriteLineFormat("switch ({0}[0])", collectionName);
+            using (sb.BeginBlock())
+            {
+                foreach (var option in info.Options)
+                {
+                    var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+                    sb.WriteLineFormat("case {0}:", typeName);
+                    using (sb.BeginBlock())
+                    {
+                        sb.WriteLineFormat("foreach(var item in {0})", collectionName);
+                        using (sb.BeginBlock())
+                        {
+                            if (target == "data")
+                            {
+                                sb.WriteLineFormat
+                                (
+                                    "var bytesWritten = {0}.Serialize(({0})item, data);",
+                                    typeName
+                                );
+                                sb.WriteLine("data = data.Slice(bytesWritten);");
+                            }
+                            else
+                            {
+                                sb.WriteLineFormat
+                                (
+                                    "{0}.Serialize(({0})item, stream);",
+                                    typeName
+                                );
+                            }
+                        }
+                        sb.WriteLine("break;");
+                    }
+                }
+                sb.WriteLine("default:");
+                sb.WriteLineFormat
+                (
+                    "    throw new System.IO.InvalidDataException($\"Unknown item type in collection {0}: {{{1}[0].GetType().Name}}\");",
+                    member.Name,
+                    collectionName
+                );
+            }
+        }
     }
 
     private static void GenerateSingleTypeIdPolymorphicCollectionImplicit
