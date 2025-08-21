@@ -44,7 +44,9 @@ namespace FourSer.Analyzers.SerializePolymorphic
             }
 
             var propertyNameArg = attribute.ConstructorArguments.FirstOrDefault();
-            if (propertyNameArg.IsNull)
+            var isPositional = !propertyNameArg.IsNull;
+
+            if (!isPositional)
             {
                 propertyNameArg = attribute.NamedArguments.FirstOrDefault(na => na.Key == "PropertyName").Value;
             }
@@ -64,16 +66,25 @@ namespace FourSer.Analyzers.SerializePolymorphic
             var referencedSymbol = containingType.GetMembers(referenceName!).FirstOrDefault();
 
             var attributeSyntax = (AttributeSyntax)attribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
-            var argumentSyntax = attributeSyntax?.ArgumentList?.Arguments.FirstOrDefault();
-
-            if (argumentSyntax == null)
+            AttributeArgumentSyntax? argumentSyntax = null;
+            if (attributeSyntax.ArgumentList is not null)
             {
-                return;
+                if (isPositional)
+                {
+                    argumentSyntax = attributeSyntax.ArgumentList.Arguments.FirstOrDefault();
+                }
+                else
+                {
+                    argumentSyntax = attributeSyntax.ArgumentList.Arguments
+                        .FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "PropertyName");
+                }
             }
+
+            var location = argumentSyntax?.Expression.GetLocation() ?? attributeSyntax.GetLocation();
 
             if (referencedSymbol == null)
             {
-                context.ReportDiagnostic(Diagnostic.Create(NotFoundRule, argumentSyntax.GetLocation(), referenceName));
+                context.ReportDiagnostic(Diagnostic.Create(NotFoundRule, location, referenceName));
                 return;
             }
 
@@ -81,14 +92,14 @@ namespace FourSer.Analyzers.SerializePolymorphic
             {
                 if (!IsValidType(propertySymbol.Type))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(WrongTypeRule, argumentSyntax.GetLocation(), referenceName));
+                    context.ReportDiagnostic(Diagnostic.Create(WrongTypeRule, location, referenceName));
                 }
             }
             else if (referencedSymbol is IFieldSymbol fieldSymbol)
             {
                 if (!IsValidType(fieldSymbol.Type))
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(WrongTypeRule, argumentSyntax.GetLocation(), referenceName));
+                    context.ReportDiagnostic(Diagnostic.Create(WrongTypeRule, location, referenceName));
                 }
             }
 
@@ -97,7 +108,7 @@ namespace FourSer.Analyzers.SerializePolymorphic
 
             if (symbolDeclaration != null && referencedSymbolDeclaration != null && symbolDeclaration.Span.Start < referencedSymbolDeclaration.Span.Start)
             {
-                context.ReportDiagnostic(Diagnostic.Create(DeclaredAfterRule, argumentSyntax.GetLocation(), referenceName));
+                context.ReportDiagnostic(Diagnostic.Create(DeclaredAfterRule, location, referenceName));
             }
         }
 
