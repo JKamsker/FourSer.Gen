@@ -3,11 +3,11 @@ using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
-namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection
+namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
+
+public class SerializeCollectionCountReferenceAnalyzerTests
 {
-    public class SerializeCollectionCountReferenceAnalyzerTests
-    {
-        private const string AttributesSource = @"
+    private const string AttributesSource = @"
 using System;
 using System.Collections.Generic;
 
@@ -20,10 +20,10 @@ namespace FourSer.Contracts
     }
 }";
 
-        [Fact]
-        public async Task NotFound_ReportsDiagnostic()
-        {
-            var testCode = @"
+    [Fact]
+    public async Task NotFound_ReportsDiagnostic()
+    {
+        var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
@@ -32,16 +32,16 @@ public class MyData
     [SerializeCollection({|FSG1004:CountSizeReference = ""NonExistent""|})]
     public List<int> A { get; set; }
 }";
-            await new CSharpAnalyzerTest<SerializeCollectionCountReferenceAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task WrongType_ReportsDiagnostic()
+        await new CSharpAnalyzerTest<SerializeCollectionCountReferenceAnalyzer, DefaultVerifier>
         {
-            var testCode = @"
+            TestState = { Sources = { AttributesSource, testCode } },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task WrongType_ReportsDiagnostic()
+    {
+        var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
@@ -52,23 +52,23 @@ public class MyData
     public string Size { get; set; }
 }";
 
-            var expected1 = new DiagnosticResult(SerializeCollectionCountReferenceAnalyzer.WrongTypeRule).WithLocation(0).WithArguments("Size");
-            var expected2 = new DiagnosticResult(SerializeCollectionCountReferenceAnalyzer.DeclaredAfterRule).WithLocation(0).WithArguments("Size");
+        var expected1 = new DiagnosticResult(SerializeCollectionCountReferenceAnalyzer.WrongTypeRule).WithLocation(0).WithArguments("Size");
+        var expected2 = new DiagnosticResult(SerializeCollectionCountReferenceAnalyzer.DeclaredAfterRule).WithLocation(0).WithArguments("Size");
 
-            await new CSharpAnalyzerTest<SerializeCollectionCountReferenceAnalyzer, DefaultVerifier>
-            {
-                TestState =
-                {
-                    Sources = { AttributesSource, testCode },
-                    ExpectedDiagnostics = { expected1, expected2 }
-                },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task DeclaredAfter_ReportsDiagnostic()
+        await new CSharpAnalyzerTest<SerializeCollectionCountReferenceAnalyzer, DefaultVerifier>
         {
-            var testCode = @"
+            TestState =
+            {
+                Sources = { AttributesSource, testCode },
+                ExpectedDiagnostics = { expected1, expected2 }
+            },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task DeclaredAfter_ReportsDiagnostic()
+    {
+        var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
@@ -78,16 +78,16 @@ public class MyData
     public List<int> A { get; set; }
     public int Size { get; set; }
 }";
-            await new CSharpAnalyzerTest<SerializeCollectionCountReferenceAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task ValidUsage_NoDiagnostic()
+        await new CSharpAnalyzerTest<SerializeCollectionCountReferenceAnalyzer, DefaultVerifier>
         {
-            var testCode = @"
+            TestState = { Sources = { AttributesSource, testCode } },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task ValidUsage_NoDiagnostic()
+    {
+        var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
@@ -97,10 +97,9 @@ public class MyData
     [SerializeCollection(CountSizeReference = ""Size"")]
     public List<int> A { get; set; }
 }";
-            await new CSharpAnalyzerTest<SerializeCollectionCountReferenceAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
+        await new CSharpAnalyzerTest<SerializeCollectionCountReferenceAnalyzer, DefaultVerifier>
+        {
+            TestState = { Sources = { AttributesSource, testCode } },
+        }.RunAsync();
     }
 }

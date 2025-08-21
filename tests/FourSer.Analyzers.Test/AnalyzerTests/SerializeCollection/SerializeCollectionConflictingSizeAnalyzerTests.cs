@@ -3,11 +3,11 @@ using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
-namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection
+namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
+
+public class SerializeCollectionConflictingSizeAnalyzerTests
 {
-    public class SerializeCollectionConflictingSizeAnalyzerTests
-    {
-        private const string AttributesSource = @"
+    private const string AttributesSource = @"
 using System;
 using System.Collections.Generic;
 
@@ -22,10 +22,10 @@ namespace FourSer.Contracts
     }
 }";
 
-        [Fact]
-        public async Task UnlimitedWithCountSize_ReportsDiagnostic()
-        {
-            var testCode = @"
+    [Fact]
+    public async Task UnlimitedWithCountSize_ReportsDiagnostic()
+    {
+        var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
@@ -34,16 +34,16 @@ public class MyData
     [SerializeCollection(Unlimited = true, {|FSG1001:CountSize = 10|})]
     public List<int> A { get; set; }
 }";
-            await new CSharpAnalyzerTest<SerializeCollectionConflictingSizeAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task UnlimitedWithCountSizeReference_ReportsDiagnostic()
+        await new CSharpAnalyzerTest<SerializeCollectionConflictingSizeAnalyzer, DefaultVerifier>
         {
-            var testCode = @"
+            TestState = { Sources = { AttributesSource, testCode } },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task UnlimitedWithCountSizeReference_ReportsDiagnostic()
+    {
+        var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
@@ -53,16 +53,16 @@ public class MyData
     public List<int> A { get; set; }
     public int Size { get; set; }
 }";
-            await new CSharpAnalyzerTest<SerializeCollectionConflictingSizeAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task CountSizeWithCountSizeReference_ReportsDiagnostic()
+        await new CSharpAnalyzerTest<SerializeCollectionConflictingSizeAnalyzer, DefaultVerifier>
         {
-            var testCode = @"
+            TestState = { Sources = { AttributesSource, testCode } },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task CountSizeWithCountSizeReference_ReportsDiagnostic()
+    {
+        var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
@@ -72,16 +72,16 @@ public class MyData
     public List<int> A { get; set; }
     public int Size { get; set; }
 }";
-            await new CSharpAnalyzerTest<SerializeCollectionConflictingSizeAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task ValidUsage_NoDiagnostic()
+        await new CSharpAnalyzerTest<SerializeCollectionConflictingSizeAnalyzer, DefaultVerifier>
         {
-            var testCode = @"
+            TestState = { Sources = { AttributesSource, testCode } },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task ValidUsage_NoDiagnostic()
+    {
+        var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
@@ -97,10 +97,9 @@ public class MyData
     [SerializeCollection(Unlimited = true)]
     public List<int> C { get; set; }
 }";
-            await new CSharpAnalyzerTest<SerializeCollectionConflictingSizeAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
+        await new CSharpAnalyzerTest<SerializeCollectionConflictingSizeAnalyzer, DefaultVerifier>
+        {
+            TestState = { Sources = { AttributesSource, testCode } },
+        }.RunAsync();
     }
 }

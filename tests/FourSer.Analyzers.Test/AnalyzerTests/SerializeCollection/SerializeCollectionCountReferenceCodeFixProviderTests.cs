@@ -3,11 +3,11 @@ using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
-namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection
+namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
+
+public class SerializeCollectionCountReferenceCodeFixProviderTests
 {
-    public class SerializeCollectionCountReferenceCodeFixProviderTests
-    {
-        private const string AttributesSource = @"
+    private const string AttributesSource = @"
 using System;
 using System.Collections.Generic;
 
@@ -20,10 +20,10 @@ namespace FourSer.Contracts
     }
 }";
 
-        [Fact]
-        public async Task NotFound_CreatesProperty()
-        {
-            var testCode = @"
+    [Fact]
+    public async Task NotFound_CreatesProperty()
+    {
+        var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
@@ -33,7 +33,7 @@ public class MyData
     public List<int> A { get; set; }
 }";
 
-            var fixedCode = @"
+        var fixedCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
@@ -44,11 +44,10 @@ public class MyData
     public List<int> A { get; set; }
 }";
 
-            await new CSharpCodeFixTest<SerializeCollectionCountReferenceAnalyzer, SerializeCollectionCountReferenceCodeFixProvider, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-                FixedState = { Sources = { AttributesSource, fixedCode } },
-            }.RunAsync();
-        }
+        await new CSharpCodeFixTest<SerializeCollectionCountReferenceAnalyzer, SerializeCollectionCountReferenceCodeFixProvider, DefaultVerifier>
+        {
+            TestState = { Sources = { AttributesSource, testCode } },
+            FixedState = { Sources = { AttributesSource, fixedCode } },
+        }.RunAsync();
     }
 }

@@ -3,11 +3,11 @@ using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
-namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection
+namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
+
+public class SerializeCollectionPolymorphismCodeFixProviderTests
 {
-    public class SerializeCollectionPolymorphismCodeFixProviderTests
-    {
-        private const string AttributesSource = @"
+    private const string AttributesSource = @"
 using System;
 using System.Collections.Generic;
 
@@ -31,10 +31,10 @@ namespace FourSer.Contracts
     }
 }";
 
-        [Fact]
-        public async Task IndividualTypeIdsWithTypeIdProperty_RemovesTypeIdProperty()
-        {
-            var testCode = @"
+    [Fact]
+    public async Task IndividualTypeIdsWithTypeIdProperty_RemovesTypeIdProperty()
+    {
+        var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
@@ -45,7 +45,7 @@ public class MyData
     public int TypeId { get; set; }
 }";
 
-            var fixedCode = @"
+        var fixedCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
@@ -56,11 +56,10 @@ public class MyData
     public int TypeId { get; set; }
 }";
 
-            await new CSharpCodeFixTest<SerializeCollectionPolymorphismAnalyzer, SerializeCollectionPolymorphismCodeFixProvider, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-                FixedState = { Sources = { AttributesSource, fixedCode } },
-            }.RunAsync();
-        }
+        await new CSharpCodeFixTest<SerializeCollectionPolymorphismAnalyzer, SerializeCollectionPolymorphismCodeFixProvider, DefaultVerifier>
+        {
+            TestState = { Sources = { AttributesSource, testCode } },
+            FixedState = { Sources = { AttributesSource, fixedCode } },
+        }.RunAsync();
     }
 }

@@ -3,11 +3,11 @@ using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
-namespace FourSer.Analyzers.Test.AnalyzerTests.PolymorphicOption
+namespace FourSer.Analyzers.Test.AnalyzerTests.PolymorphicOption;
+
+public class PolymorphicOptionIdAnalyzerTests
 {
-    public class PolymorphicOptionIdAnalyzerTests
-    {
-        private const string AttributesSource = @"
+    private const string AttributesSource = @"
 using System;
 using System.Collections.Generic;
 
@@ -21,10 +21,10 @@ namespace FourSer.Contracts
     }
 }";
 
-        [Fact]
-        public async Task DuplicateIds_ReportsDiagnostic()
-        {
-            var testCode = @"
+    [Fact]
+    public async Task DuplicateIds_ReportsDiagnostic()
+    {
+        var testCode = @"
 using System;
 using FourSer.Contracts;
 using System.Collections.Generic;
@@ -35,16 +35,16 @@ public class MyData
     [PolymorphicOption({|FSG3000:10|}, typeof(string))]
     public object A { get; set; }
 }";
-            await new CSharpAnalyzerTest<PolymorphicOptionIdAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task MixedIdTypes_ReportsDiagnostic()
+        await new CSharpAnalyzerTest<PolymorphicOptionIdAnalyzer, DefaultVerifier>
         {
-            var testCode = @"
+            TestState = { Sources = { AttributesSource, testCode } },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task MixedIdTypes_ReportsDiagnostic()
+    {
+        var testCode = @"
 using System;
 using FourSer.Contracts;
 using System.Collections.Generic;
@@ -55,16 +55,16 @@ public class MyData
     [PolymorphicOption({|FSG3001:(byte)20|}, typeof(string))]
     public object A { get; set; }
 }";
-            await new CSharpAnalyzerTest<PolymorphicOptionIdAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task ValidUsage_NoDiagnostic()
+        await new CSharpAnalyzerTest<PolymorphicOptionIdAnalyzer, DefaultVerifier>
         {
-            var testCode = @"
+            TestState = { Sources = { AttributesSource, testCode } },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task ValidUsage_NoDiagnostic()
+    {
+        var testCode = @"
 using System;
 using FourSer.Contracts;
 using System.Collections.Generic;
@@ -75,10 +75,9 @@ public class MyData
     [PolymorphicOption(20, typeof(string))]
     public object A { get; set; }
 }";
-            await new CSharpAnalyzerTest<PolymorphicOptionIdAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
+        await new CSharpAnalyzerTest<PolymorphicOptionIdAnalyzer, DefaultVerifier>
+        {
+            TestState = { Sources = { AttributesSource, testCode } },
+        }.RunAsync();
     }
 }

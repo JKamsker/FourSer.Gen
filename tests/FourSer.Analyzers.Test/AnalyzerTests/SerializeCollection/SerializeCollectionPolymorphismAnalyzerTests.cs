@@ -3,11 +3,11 @@ using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
-namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection
+namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
+
+public class SerializeCollectionPolymorphismAnalyzerTests
 {
-    public class SerializeCollectionPolymorphismAnalyzerTests
-    {
-        private const string AttributesSource = @"
+    private const string AttributesSource = @"
 using System;
 using System.Collections.Generic;
 
@@ -31,10 +31,10 @@ namespace FourSer.Contracts
     }
 }";
 
-        [Fact]
-        public async Task TypeIdTypeMismatch_ReportsDiagnostic()
-        {
-            var testCode = @"
+    [Fact]
+    public async Task TypeIdTypeMismatch_ReportsDiagnostic()
+    {
+        var testCode = @"
 using System;
 using FourSer.Contracts;
 using System.Collections.Generic;
@@ -45,16 +45,16 @@ public class MyData
     [SerializeCollection(TypeIdProperty = ""TypeId"", {|FSG1010:TypeIdType = typeof(int)|})]
     public List<int> A { get; set; }
 }";
-            await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task IndividualTypeIdsWithTypeIdProperty_ReportsDiagnostic()
+        await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
-            var testCode = @"
+            TestState = { Sources = { AttributesSource, testCode } },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task IndividualTypeIdsWithTypeIdProperty_ReportsDiagnostic()
+    {
+        var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
@@ -64,16 +64,16 @@ public class MyData
     public List<int> A { get; set; }
     public int TypeId { get; set; }
 }";
-            await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task ConflictingPolymorphicSettings_ReportsDiagnostic()
+        await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
-            var testCode = @"
+            TestState = { Sources = { AttributesSource, testCode } },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task ConflictingPolymorphicSettings_ReportsDiagnostic()
+    {
+        var testCode = @"
 using FourSer.Contracts;
 using System.Collections.Generic;
 
@@ -84,16 +84,16 @@ public class MyData
     public List<int> A { get; set; }
     public int TypeId { get; set; }
 }";
-            await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task ValidUsage_NoDiagnostic()
+        await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
-            var testCode = @"
+            TestState = { Sources = { AttributesSource, testCode } },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task ValidUsage_NoDiagnostic()
+    {
+        var testCode = @"
 using System;
 using FourSer.Contracts;
 using System.Collections.Generic;
@@ -104,10 +104,9 @@ public class MyData
     [SerializeCollection(TypeIdProperty = ""TypeId"", TypeIdType = typeof(int))]
     public List<int> A { get; set; }
 }";
-            await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
-            {
-                TestState = { Sources = { AttributesSource, testCode } },
-            }.RunAsync();
-        }
+        await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
+        {
+            TestState = { Sources = { AttributesSource, testCode } },
+        }.RunAsync();
     }
 }
