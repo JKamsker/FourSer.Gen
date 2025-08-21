@@ -144,49 +144,44 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
         var originalData = data;
         SpanWriter.WriteInt32(ref data, (Int32)obj.TypeId);
         SpanWriter.WriteInt32(ref data, (Int32)obj.Count);
-        if (obj.Items is null)
+        if (obj.Items is null || obj.Items.Count == 0)
         {
             SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
-            if (obj.Items is null || obj.Items.Count == 0)
+            SpanWriter.WriteInt32(ref data, (int)obj.Items.Count);
+            switch (obj.Items[0])
             {
-            }
-            else
-            {
-                switch (obj.Items[0])
+                case Sword:
                 {
-                    case Sword:
+                    foreach(var item in obj.Items)
                     {
-                        foreach(var item in obj.Items)
-                        {
-                            var bytesWritten = Sword.Serialize((Sword)item, data);
-                            data = data.Slice(bytesWritten);
-                        }
-                        break;
+                        var bytesWritten = Sword.Serialize((Sword)item, data);
+                        data = data.Slice(bytesWritten);
                     }
-                    case Shield:
-                    {
-                        foreach(var item in obj.Items)
-                        {
-                            var bytesWritten = Shield.Serialize((Shield)item, data);
-                            data = data.Slice(bytesWritten);
-                        }
-                        break;
-                    }
-                    case Potion:
-                    {
-                        foreach(var item in obj.Items)
-                        {
-                            var bytesWritten = Potion.Serialize((Potion)item, data);
-                            data = data.Slice(bytesWritten);
-                        }
-                        break;
-                    }
-                    default:
-                        throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {obj.Items[0].GetType().Name}");
+                    break;
                 }
+                case Shield:
+                {
+                    foreach(var item in obj.Items)
+                    {
+                        var bytesWritten = Shield.Serialize((Shield)item, data);
+                        data = data.Slice(bytesWritten);
+                    }
+                    break;
+                }
+                case Potion:
+                {
+                    foreach(var item in obj.Items)
+                    {
+                        var bytesWritten = Potion.Serialize((Potion)item, data);
+                        data = data.Slice(bytesWritten);
+                    }
+                    break;
+                }
+                default:
+                    throw new System.IO.InvalidDataException($"Unknown type id for item: {obj.Items[0].GetType().Name}");
             }
         }
         return originalData.Length - data.Length;
@@ -196,46 +191,41 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
     {
         StreamWriter.WriteInt32(stream, (Int32)obj.TypeId);
         StreamWriter.WriteInt32(stream, (Int32)obj.Count);
-        if (obj.Items is null)
+        if (obj.Items is null || obj.Items.Count == 0)
         {
             StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
-            if (obj.Items is null || obj.Items.Count == 0)
+            StreamWriter.WriteInt32(stream, (int)obj.Items.Count);
+            switch (obj.Items[0])
             {
-            }
-            else
-            {
-                switch (obj.Items[0])
+                case Sword:
                 {
-                    case Sword:
+                    foreach(var item in obj.Items)
                     {
-                        foreach(var item in obj.Items)
-                        {
-                            Sword.Serialize((Sword)item, stream);
-                        }
-                        break;
+                        Sword.Serialize((Sword)item, stream);
                     }
-                    case Shield:
-                    {
-                        foreach(var item in obj.Items)
-                        {
-                            Shield.Serialize((Shield)item, stream);
-                        }
-                        break;
-                    }
-                    case Potion:
-                    {
-                        foreach(var item in obj.Items)
-                        {
-                            Potion.Serialize((Potion)item, stream);
-                        }
-                        break;
-                    }
-                    default:
-                        throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {obj.Items[0].GetType().Name}");
+                    break;
                 }
+                case Shield:
+                {
+                    foreach(var item in obj.Items)
+                    {
+                        Shield.Serialize((Shield)item, stream);
+                    }
+                    break;
+                }
+                case Potion:
+                {
+                    foreach(var item in obj.Items)
+                    {
+                        Potion.Serialize((Potion)item, stream);
+                    }
+                    break;
+                }
+                default:
+                    throw new System.IO.InvalidDataException($"Unknown type id for item: {obj.Items[0].GetType().Name}");
             }
         }
     }
