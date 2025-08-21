@@ -1,19 +1,13 @@
 using FourSer.Analyzers.General;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.Basic;
 
-public class MissingPartialAnalyzerTests
+public class MissingPartialAnalyzerTests : AnalyzerTestBase
 {
-    private const string GenerateSerializerAttributeSource = @"
-namespace FourSer.Contracts
-{
-    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct)]
-    public class GenerateSerializerAttribute : System.Attribute { }
-}";
-
     [Fact]
     public async Task ClassWithGenerateSerializer_MissingPartial_ReportsDiagnostic()
     {
@@ -27,11 +21,8 @@ class {|FS0001:MyData|}
 }";
         var test = new CSharpAnalyzerTest<MissingPartialAnalyzer, DefaultVerifier>
         {
-            TestState =
-            {
-                Sources = { GenerateSerializerAttributeSource, testCode },
-            },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies
         };
         await test.RunAsync();
     }
@@ -50,11 +41,8 @@ partial class MyData
 
         var test = new CSharpAnalyzerTest<MissingPartialAnalyzer, DefaultVerifier>
         {
-            TestState =
-            {
-                Sources = { GenerateSerializerAttributeSource, testCode },
-            },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies
         };
         await test.RunAsync();
     }

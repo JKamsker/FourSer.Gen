@@ -5,11 +5,10 @@ namespace FourSer.Consumer.UseCases
     [GenerateSerializer]
     public partial class SingleTypeIdTest
     {
-        public byte AnimalType { get; set; }
-
-        [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte), TypeIdProperty = nameof(AnimalType))]
-        [PolymorphicOption(1, typeof(CatBase))]
-        [PolymorphicOption(2, typeof(DogBase))]
+        public long AnimalType { get; set; }
+        [SerializeCollection(TypeIdProperty = "AnimalType", PolymorphicMode = PolymorphicMode.SingleTypeId)]
+        [PolymorphicOption((long)1, typeof(CatBase))]
+        [PolymorphicOption((long)2, typeof(DogBase))]
         public List<AnimalBase> Animals { get; set; } = new();
     }
 

@@ -1,25 +1,13 @@
 using FourSer.Analyzers.SerializeCollection;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
 
-public class SerializeCollectionTypeIdPropertyAnalyzerTests
+public class SerializeCollectionTypeIdPropertyAnalyzerTests : AnalyzerTestBase
 {
-    private const string AttributesSource = @"
-using System;
-using System.Collections.Generic;
-
-namespace FourSer.Contracts
-{
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class SerializeCollectionAttribute : Attribute
-    {
-        public string TypeIdProperty { get; set; }
-    }
-}";
-
     [Fact]
     public async Task NotFound_ReportsDiagnostic()
     {
@@ -34,7 +22,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializeCollectionTypeIdPropertyAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -59,9 +48,10 @@ public class MyData
         {
             TestState =
             {
-                Sources = { AttributesSource, testCode },
+                Sources = { testCode },
                 ExpectedDiagnostics = { expected1, expected2 }
             },
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -80,7 +70,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializeCollectionTypeIdPropertyAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -99,7 +90,8 @@ public class MyData
 }";
         await new CSharpAnalyzerTest<SerializeCollectionTypeIdPropertyAnalyzer, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
+            TestState = { Sources = { testCode } },
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 }

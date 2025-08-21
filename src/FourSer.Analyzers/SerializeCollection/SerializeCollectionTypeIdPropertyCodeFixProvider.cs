@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Composition;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -48,13 +49,47 @@ namespace FourSer.Analyzers.SerializeCollection
 
         private async Task<Solution> CreatePropertyAsync(Document document, AttributeArgumentSyntax argument, string propertyName, CancellationToken cancellationToken)
         {
-            var root = await document.GetSyntaxRootAsync(cancellationToken);
+            var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
             if (root == null) return document.Project.Solution;
+
+            var semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+            if (semanticModel == null) return document.Project.Solution;
+
+            var memberDeclaration = argument.FirstAncestorOrSelf<MemberDeclarationSyntax>();
+            if (memberDeclaration == null) return document.Project.Solution;
+
+            var symbol = semanticModel.GetDeclaredSymbol(memberDeclaration, cancellationToken);
+            if (symbol == null) return document.Project.Solution;
+
+            var propertyType = "int"; // Default
+
+            var polymorphicOptionAttributes = symbol.GetAttributes()
+                .Where(ad => ad.AttributeClass?.Name == "PolymorphicOptionAttribute")
+                .ToList();
+
+            if (polymorphicOptionAttributes.Any())
+            {
+                var firstOption = polymorphicOptionAttributes.First();
+                if (firstOption.ConstructorArguments.Any())
+                {
+                    var typeIdArgument = firstOption.ConstructorArguments[0];
+                    propertyType = typeIdArgument.Type?.SpecialType switch
+                    {
+                        SpecialType.System_Byte => "byte",
+                        SpecialType.System_UInt16 => "ushort",
+                        SpecialType.System_Int32 => "int",
+                        SpecialType.System_Int64 => "long",
+                        SpecialType.None => typeIdArgument.Type.Name,
+                        _ => propertyType, // Default to int if not recognized
+                    };
+                }
+            }
+
 
             var property = argument.FirstAncestorOrSelf<PropertyDeclarationSyntax>();
             if (property != null)
             {
-                var newProperty = CreateNewProperty(propertyName);
+                var newProperty = CreateNewProperty(propertyName, propertyType);
                 var newRoot = root.InsertNodesBefore(property, new[] { newProperty });
                 return document.WithSyntaxRoot(newRoot).Project.Solution;
             }
@@ -62,7 +97,7 @@ namespace FourSer.Analyzers.SerializeCollection
             var field = argument.FirstAncestorOrSelf<FieldDeclarationSyntax>();
             if (field != null)
             {
-                var newProperty = CreateNewProperty(propertyName);
+                var newProperty = CreateNewProperty(propertyName, propertyType);
                 var newRoot = root.InsertNodesBefore(field, new[] { newProperty });
                 return document.WithSyntaxRoot(newRoot).Project.Solution;
             }
@@ -70,9 +105,9 @@ namespace FourSer.Analyzers.SerializeCollection
             return document.Project.Solution;
         }
 
-        private static PropertyDeclarationSyntax CreateNewProperty(string propertyName)
+        private static PropertyDeclarationSyntax CreateNewProperty(string propertyName, string propertyType)
         {
-            return SyntaxFactory.PropertyDeclaration(SyntaxFactory.ParseTypeName("int"), propertyName)
+            return SyntaxFactory.PropertyDeclaration(SyntaxFactory.ParseTypeName(propertyType), propertyName)
                 .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)))
                 .WithAccessorList(SyntaxFactory.AccessorList(SyntaxFactory.List(new[]
                 {

@@ -1,25 +1,13 @@
 using FourSer.Analyzers.PolymorphicOption;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.PolymorphicOption;
 
-public class PolymorphicOptionIdCodeFixProviderTests
+public class PolymorphicOptionIdCodeFixProviderTests : AnalyzerTestBase
 {
-    private const string AttributesSource = @"
-using System;
-using System.Collections.Generic;
-
-namespace FourSer.Contracts
-{
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = true)]
-    public class PolymorphicOptionAttribute : Attribute
-    {
-        public PolymorphicOptionAttribute(int id, Type type) { }
-    }
-}";
-
     [Fact]
     public async Task DuplicateIds_RemovesDuplicate()
     {
@@ -48,8 +36,9 @@ public class MyData
 
         await new CSharpCodeFixTest<PolymorphicOptionIdAnalyzer, PolymorphicOptionIdCodeFixProvider, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
-            FixedState = { Sources = { AttributesSource, fixedCode } },
+            TestState = { Sources = { testCode } },
+            FixedState = { Sources = { fixedCode } },
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 }

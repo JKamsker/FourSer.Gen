@@ -1,5 +1,6 @@
 using FourSer.Analyzers.PolymorphicOption;
 using FourSer.Analyzers.SerializePolymorphic;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
@@ -8,63 +9,7 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.Issues;
 
 public class Issue59Tests
 {
-    private const string AttributesSource =
-        // language=csharp
-        """
-
-        using System;
-        using System.Collections.Generic;
-
-        namespace FourSer.Contracts
-        {
-            [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-            public class GenerateSerializerAttribute : Attribute
-            {
-            }
-
-            public enum PolymorphicMode
-            {
-                None,
-                SingleTypeId,
-                IndividualTypeIds
-            }
-
-            [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-            public class SerializeCollectionAttribute : Attribute
-            {
-                public PolymorphicMode PolymorphicMode { get; set; } = PolymorphicMode.None;
-                public Type? TypeIdType { get; set; }
-                public string? TypeIdProperty { get; set; }
-            }
-
-            [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-            public class SerializePolymorphicAttribute : Attribute
-            {
-                public string? PropertyName { get; set; }
-                public Type? TypeIdType { get; set; }
-
-                public SerializePolymorphicAttribute(string? propertyName = null)
-                {
-                    PropertyName = propertyName;
-                }
-            }
-
-            [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = true)]
-            public class PolymorphicOptionAttribute : Attribute
-            {
-                public object Id { get; }
-                public Type Type { get; }
-
-                public PolymorphicOptionAttribute(int id, Type type) { Id = id; Type = type; }
-                public PolymorphicOptionAttribute(byte id, Type type) { Id = id; Type = type; }
-                public PolymorphicOptionAttribute(ushort id, Type type) { Id = id; Type = type; }
-                public PolymorphicOptionAttribute(long id, Type type) { Id = id; Type = type; }
-                public PolymorphicOptionAttribute(object id, Type type) { Id = id; Type = type; }
-            }
-        }
-        """;
-
-    public class PolymorphicOptionAssignableTypeAnalyzerTests
+    public class PolymorphicOptionAssignableTypeAnalyzerTests : AnalyzerTestBase
     {
         /// <summary>
         /// This integration test verifies fixes for issue #59.
@@ -108,19 +53,13 @@ public class Issue59Tests
 
             await new CSharpAnalyzerTest<PolymorphicOptionAssignableTypeAnalyzer, DefaultVerifier>
             {
-                TestState =
-                {
-                    Sources =
-                    {
-                        AttributesSource,
-                        testCode
-                    }
-                },
+                TestState = { Sources = { testCode } },
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
     }
 
-    public class SerializePolymorphicPropertyNameAnalyzerTests
+    public class SerializePolymorphicPropertyNameAnalyzerTests : AnalyzerTestBase
     {
         /// <summary>
         /// This integration test verifies fixes for issue #59.
@@ -170,13 +109,10 @@ public class Issue59Tests
             {
                 TestState =
                 {
-                    Sources =
-                    {
-                        AttributesSource,
-                        testCode
-                    },
+                    Sources = { testCode },
                     ExpectedDiagnostics = { expected }
                 },
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
     }

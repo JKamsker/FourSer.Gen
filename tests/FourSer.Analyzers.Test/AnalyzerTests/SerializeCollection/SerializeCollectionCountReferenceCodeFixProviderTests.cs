@@ -1,25 +1,13 @@
 using FourSer.Analyzers.SerializeCollection;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
 
-public class SerializeCollectionCountReferenceCodeFixProviderTests
+public class SerializeCollectionCountReferenceCodeFixProviderTests : AnalyzerTestBase
 {
-    private const string AttributesSource = @"
-using System;
-using System.Collections.Generic;
-
-namespace FourSer.Contracts
-{
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class SerializeCollectionAttribute : Attribute
-    {
-        public string CountSizeReference { get; set; }
-    }
-}";
-
     [Fact]
     public async Task NotFound_CreatesProperty()
     {
@@ -46,8 +34,9 @@ public class MyData
 
         await new CSharpCodeFixTest<SerializeCollectionCountReferenceAnalyzer, SerializeCollectionCountReferenceCodeFixProvider, DefaultVerifier>
         {
-            TestState = { Sources = { AttributesSource, testCode } },
-            FixedState = { Sources = { AttributesSource, fixedCode } },
+            TestState = { Sources = { testCode } },
+            FixedState = { Sources = { fixedCode } },
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 }
