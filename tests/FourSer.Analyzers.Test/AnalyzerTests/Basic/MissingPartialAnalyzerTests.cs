@@ -1,12 +1,12 @@
-using System.Collections.Immutable;
 using FourSer.Analyzers.General;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.Basic;
 
-public class MissingPartialAnalyzerTests
+public class MissingPartialAnalyzerTests : AnalyzerTestBase
 {
     [Fact]
     public async Task ClassWithGenerateSerializer_MissingPartial_ReportsDiagnostic()
@@ -22,7 +22,7 @@ class {|FS0001:MyData|}
         var test = new CSharpAnalyzerTest<MissingPartialAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         };
         await test.RunAsync();
     }
@@ -42,7 +42,7 @@ partial class MyData
         var test = new CSharpAnalyzerTest<MissingPartialAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         };
         await test.RunAsync();
     }

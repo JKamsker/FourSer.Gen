@@ -1,12 +1,12 @@
-using System.Collections.Immutable;
 using FourSer.Analyzers.SerializePolymorphic;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.SerializePolymorphic;
 
-public class SerializePolymorphicPropertyNameAnalyzerTests
+public class SerializePolymorphicPropertyNameAnalyzerTests : AnalyzerTestBase
 {
     [Fact]
     public async Task NotFound_ReportsDiagnostic()
@@ -23,7 +23,7 @@ public class MyData
         await new CSharpAnalyzerTest<SerializePolymorphicPropertyNameAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -45,7 +45,7 @@ public class MyData
         await new CSharpAnalyzerTest<SerializePolymorphicPropertyNameAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode }, ExpectedDiagnostics = { expected1, expected2 } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -65,7 +65,7 @@ public class MyData
         await new CSharpAnalyzerTest<SerializePolymorphicPropertyNameAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -85,7 +85,7 @@ public class MyData
         await new CSharpAnalyzerTest<SerializePolymorphicPropertyNameAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 }

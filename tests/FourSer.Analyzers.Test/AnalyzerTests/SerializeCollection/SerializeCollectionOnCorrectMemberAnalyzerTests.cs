@@ -1,12 +1,12 @@
-using System.Collections.Immutable;
 using FourSer.Analyzers.SerializeCollection;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
 
-public class SerializeCollectionOnCorrectMemberAnalyzerTests
+public class SerializeCollectionOnCorrectMemberAnalyzerTests : AnalyzerTestBase
 {
     [Fact]
     public async Task OnNonIEnumerable_ReportsDiagnostic()
@@ -28,7 +28,7 @@ public class MyData
                 Sources = { testCode },
                 ExpectedDiagnostics = { expected },
             },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -50,7 +50,7 @@ public class MyData
         await new CSharpAnalyzerTest<SerializeCollectionOnCorrectMemberAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 }

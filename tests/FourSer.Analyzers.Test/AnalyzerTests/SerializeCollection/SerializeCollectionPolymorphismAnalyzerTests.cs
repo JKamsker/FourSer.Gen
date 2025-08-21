@@ -1,12 +1,12 @@
-using System.Collections.Immutable;
 using FourSer.Analyzers.SerializeCollection;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection;
 
-public class SerializeCollectionPolymorphismAnalyzerTests
+public class SerializeCollectionPolymorphismAnalyzerTests : AnalyzerTestBase
 {
     [Fact]
     public async Task TypeIdTypeMismatch_ReportsDiagnostic()
@@ -25,7 +25,7 @@ public class MyData
         await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -45,7 +45,7 @@ public class MyData
         await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -66,7 +66,7 @@ public class MyData
         await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -87,7 +87,7 @@ public class MyData
         await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -130,7 +130,7 @@ public class MyData
         await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
     
@@ -173,7 +173,7 @@ public class MyData
         await new CSharpAnalyzerTest<SerializeCollectionPolymorphismAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 }

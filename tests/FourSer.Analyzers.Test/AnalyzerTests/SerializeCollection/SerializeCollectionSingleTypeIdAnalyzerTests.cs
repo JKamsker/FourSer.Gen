@@ -1,12 +1,12 @@
-using System.Collections.Immutable;
 using FourSer.Analyzers.SerializeCollection;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection
 {
-    public class SerializeCollectionSingleTypeIdAnalyzerTests
+    public class SerializeCollectionSingleTypeIdAnalyzerTests : AnalyzerTestBase
     {
         [Fact]
         public async Task TypeIdType_Matches_OptionIdType_NoDiagnostic()
@@ -29,7 +29,7 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection
             await new CSharpAnalyzerTest<SerializeCollectionSingleTypeIdAnalyzer, DefaultVerifier>
             {
                 TestState = { Sources = { testCode } },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
 
@@ -54,7 +54,7 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection
             await new CSharpAnalyzerTest<SerializeCollectionSingleTypeIdAnalyzer, DefaultVerifier>
             {
                 TestState = { Sources = { testCode } },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
 
@@ -79,7 +79,7 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection
             await new CSharpAnalyzerTest<SerializeCollectionSingleTypeIdAnalyzer, DefaultVerifier>
             {
                 TestState = { Sources = { testCode } },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
 
@@ -108,7 +108,7 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection
             await new CSharpAnalyzerTest<SerializeCollectionSingleTypeIdAnalyzer, DefaultVerifier>
             {
                 TestState = { Sources = { testCode } },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
 
@@ -133,7 +133,7 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.SerializeCollection
             await new CSharpAnalyzerTest<SerializeCollectionSingleTypeIdAnalyzer, DefaultVerifier>
             {
                 TestState = { Sources = { testCode } },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
     }

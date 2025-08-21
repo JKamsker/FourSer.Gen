@@ -1,12 +1,12 @@
-using System.Collections.Immutable;
 using FourSer.Analyzers.PolymorphicOption;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.PolymorphicOption;
 
-public class PolymorphicOptionIdAnalyzerTests
+public class PolymorphicOptionIdAnalyzerTests : AnalyzerTestBase
 {
     [Theory]
     [InlineData(@"[PolymorphicOption(10, typeof(int))]
@@ -28,7 +28,7 @@ public class MyData
         await new CSharpAnalyzerTest<PolymorphicOptionIdAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 
@@ -49,7 +49,7 @@ public class MyData
         await new CSharpAnalyzerTest<PolymorphicOptionIdAnalyzer, DefaultVerifier>
         {
             TestState = { Sources = { testCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 }

@@ -1,6 +1,6 @@
-using System.Collections.Immutable;
 using FourSer.Analyzers.PolymorphicOption;
 using FourSer.Analyzers.SerializePolymorphic;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
@@ -9,7 +9,7 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.Issues;
 
 public class Issue59Tests
 {
-    public class PolymorphicOptionAssignableTypeAnalyzerTests
+    public class PolymorphicOptionAssignableTypeAnalyzerTests : AnalyzerTestBase
     {
         /// <summary>
         /// This integration test verifies fixes for issue #59.
@@ -54,12 +54,12 @@ public class Issue59Tests
             await new CSharpAnalyzerTest<PolymorphicOptionAssignableTypeAnalyzer, DefaultVerifier>
             {
                 TestState = { Sources = { testCode } },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
     }
 
-    public class SerializePolymorphicPropertyNameAnalyzerTests
+    public class SerializePolymorphicPropertyNameAnalyzerTests : AnalyzerTestBase
     {
         /// <summary>
         /// This integration test verifies fixes for issue #59.
@@ -112,7 +112,7 @@ public class Issue59Tests
                     Sources = { testCode },
                     ExpectedDiagnostics = { expected }
                 },
-                ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+                ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
     }

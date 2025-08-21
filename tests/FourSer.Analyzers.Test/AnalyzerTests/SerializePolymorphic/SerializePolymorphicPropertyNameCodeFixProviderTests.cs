@@ -1,12 +1,12 @@
-using System.Collections.Immutable;
 using FourSer.Analyzers.SerializePolymorphic;
+using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace FourSer.Analyzers.Test.AnalyzerTests.SerializePolymorphic;
 
-public class SerializePolymorphicPropertyNameCodeFixProviderTests
+public class SerializePolymorphicPropertyNameCodeFixProviderTests : AnalyzerTestBase
 {
     [Fact]
     public async Task NotFound_CreatesProperty()
@@ -36,7 +36,7 @@ public class MyData
         {
             TestState = { Sources = { testCode } },
             FixedState = { Sources = { fixedCode } },
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90.AddPackages(ImmutableArray.Create(new PackageIdentity("FourSer.Gen", "0.0.164")))
+            ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
 }
