@@ -167,17 +167,35 @@ public static class SerializationGenerator
             return;
         }
 
+        var isNotListOrArray = !member.IsList && member.CollectionTypeInfo?.IsArray != true;
+        if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member) &&
+            collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId &&
+            string.IsNullOrEmpty(collectionInfo.TypeIdProperty) &&
+            isNotListOrArray)
+        {
+            if (member.PolymorphicInfo is not { } info) return;
+
+            if (target == "data")
+            {
+                GenerateSpanPolymorphicCollectionSerialization(sb, member, info, collectionInfo);
+            }
+            else
+            {
+                GenerateStreamPolymorphicCollectionSerialization(sb, member, info, collectionInfo);
+            }
+            return;
+        }
+
         var refOrEmpty = target == "data" ? "ref " : "";
 
         sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
         using (sb.BeginBlock())
         {
-            var isListOrArray = member.IsList || (member.CollectionTypeInfo?.IsArray ?? false);
             var isPolymorphicSingleTypeId = GeneratorUtilities.ShouldUsePolymorphicSerialization(member) &&
                                             collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId &&
                                             string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
 
-            if (isPolymorphicSingleTypeId && !isListOrArray)
+            if (isPolymorphicSingleTypeId && !isNotListOrArray)
             {
                 var info = member.PolymorphicInfo!.Value;
                 var defaultOption = info.Options.FirstOrDefault();
@@ -200,85 +218,64 @@ public static class SerializationGenerator
         }
 
         sb.WriteLine("else");
-        using var _ = sb.BeginBlock();
-        var isHandledByPolymorphic = collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId && string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
-
-        if (collectionInfo is { Unlimited: false } && string.IsNullOrEmpty(collectionInfo.CountSizeReference) && !isHandledByPolymorphic)
+        using (sb.BeginBlock())
         {
-            var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
-            var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
+            var isHandledByPolymorphic = collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId && string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
 
-            var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
-            sb.WriteLineFormat
-                ("{0}.{1}({2}{3}, ({4}){5});", helper, countWriteMethod, refOrEmpty, target, countType, countExpression);
-        }
-
-        if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
-        {
-            if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
+            if (collectionInfo is { Unlimited: false } && string.IsNullOrEmpty(collectionInfo.CountSizeReference) && !isHandledByPolymorphic)
             {
-                sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
-                using var __ = sb.BeginBlock();
-                var itemMember = new MemberToGenerate
-                (
-                    "item",
-                    member.ListTypeArgument!.Value.TypeName,
-                    member.ListTypeArgument.Value.IsUnmanagedType,
-                    member.ListTypeArgument.Value.IsStringType,
-                    member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
-                    false,
-                    null,
-                    null,
-                    member.PolymorphicInfo,
-                    false,
-                    null,
-                    false,
-                    false
-                );
+                var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+                var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
 
-                GeneratePolymorphicItemSerialization
-                (
-                    sb,
-                    itemMember,
-                    "item",
-                    target,
-                    helper
-                );
-                return;
+                var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
+                sb.WriteLineFormat
+                    ("{0}.{1}({2}{3}, ({4}){5});", helper, countWriteMethod, refOrEmpty, target, countType, countExpression);
             }
 
-            if (collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId)
+            if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
             {
-                if (member.PolymorphicInfo is not { } info)
+                if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
                 {
+                    sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                    using var __ = sb.BeginBlock();
+                    var itemMember = new MemberToGenerate
+                    (
+                        "item",
+                        member.ListTypeArgument!.Value.TypeName,
+                        member.ListTypeArgument.Value.IsUnmanagedType,
+                        member.ListTypeArgument.Value.IsStringType,
+                        member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
+                        false,
+                        null,
+                        null,
+                        member.PolymorphicInfo,
+                        false,
+                        null,
+                        false,
+                        false
+                    );
+
+                    GeneratePolymorphicItemSerialization
+                    (
+                        sb,
+                        itemMember,
+                        "item",
+                        target,
+                        helper
+                    );
                     return;
                 }
 
-                var typeIdProperty = collectionInfo.TypeIdProperty;
-
-                if (string.IsNullOrEmpty(typeIdProperty))
+                if (collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId)
                 {
-                    // New logic: derive type from the first element
-                    var memberName = $"obj.{member.Name}";
-                    var itemsVar = member.Name.ToCamelCase();
-                    if (itemsVar == "items")
+                    if (member.PolymorphicInfo is not { } info)
                     {
-                        itemsVar = "collectionItems"; // Avoid conflict with loop variable
+                        return;
                     }
 
-                    var isListOrArray = member.IsList || (member.CollectionTypeInfo?.IsArray ?? false);
-                    if (!isListOrArray)
-                    {
-                        if (target == "data")
-                        {
-                            GenerateSpanPolymorphicCollectionSerialization(sb, member, info, collectionInfo);
-                        }
-                        else
-                        {
-                            GenerateStreamPolymorphicCollectionSerialization(sb, member, info, collectionInfo);
-                        }
-                    }
-                    else
+                    var typeIdProperty = collectionInfo.TypeIdProperty;
+
+                    if (string.IsNullOrEmpty(typeIdProperty))
                     {
                         var listItemsVar = member.Name.ToCamelCase();
                         if (listItemsVar == "items")
@@ -287,11 +284,9 @@ public static class SerializationGenerator
                         }
                         sb.WriteLine($"var {listItemsVar} = obj.{member.Name};");
 
-                        // Handle null or empty list
                         var defaultOption = info.Options.FirstOrDefault();
                         if (defaultOption.Equals(default(PolymorphicOption)))
                         {
-                            // No options to serialize, this is an error case but we should handle it gracefully
                             return;
                         }
 
@@ -308,11 +303,9 @@ public static class SerializationGenerator
                         sb.WriteLine("else");
                         using (sb.BeginBlock())
                         {
-                            // Write count
                             var countExpression = $"{listItemsVar}.Count";
                             sb.WriteLineFormat("{0}.{1}({2}{3}, ({4}){5});", helper, countWriteMethod, refOrEmpty, target, countType, countExpression);
 
-                            // Determine and write discriminator from the first item
                             sb.WriteLine($"var firstItem = {listItemsVar}[0];");
                             sb.WriteLine($"var discriminator = firstItem switch");
                             sb.WriteLine("{");
@@ -329,7 +322,6 @@ public static class SerializationGenerator
                             var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(typeIdType);
                             sb.WriteLineFormat("{0}.Write{1}({2}{3}, discriminator);", helper, typeIdTypeName, refOrEmpty, target);
 
-                            // Serialize items using a for loop
                             sb.WriteLine("switch (discriminator)");
                             using (sb.BeginBlock())
                             {
@@ -345,12 +337,12 @@ public static class SerializationGenerator
                                         {
                                             if (target == "data")
                                             {
-                                            sb.WriteLine($"var bytesWritten = {typeName}.Serialize(({typeName}){listItemsVar}[i], data);");
+                                                sb.WriteLine($"var bytesWritten = {typeName}.Serialize(({typeName}){listItemsVar}[i], data);");
                                                 sb.WriteLine("data = data.Slice(bytesWritten);");
                                             }
                                             else
                                             {
-                                            sb.WriteLine($"{typeName}.Serialize(({typeName}){listItemsVar}[i], stream);");
+                                                sb.WriteLine($"{typeName}.Serialize(({typeName}){listItemsVar}[i], stream);");
                                             }
                                         }
                                         sb.WriteLine("break;");
@@ -359,107 +351,107 @@ public static class SerializationGenerator
                             }
                         }
                     }
-                }
-                else
-                {
-                    sb.WriteLineFormat("switch (obj.{0})", typeIdProperty);
-                    using var __ = sb.BeginBlock();
-                    foreach (var option in info.Options)
+                    else
                     {
-                        var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-
-                        sb.WriteLineFormat("case {0}:", key);
-                        using (sb.BeginBlock())
+                        sb.WriteLineFormat("switch (obj.{0})", typeIdProperty);
+                        using var __ = sb.BeginBlock();
+                        foreach (var option in info.Options)
                         {
-                            sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                            var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+
+                            sb.WriteLineFormat("case {0}:", key);
                             using (sb.BeginBlock())
                             {
-                                if (target == "data")
+                                sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                                using (sb.BeginBlock())
                                 {
-                                    sb.WriteLineFormat
-                                    (
-                                        "var bytesWritten = {0}.Serialize(({0})item, data);",
-                                        TypeHelper.GetSimpleTypeName(option.Type)
-                                    );
-                                    sb.WriteLine("data = data.Slice(bytesWritten);");
+                                    if (target == "data")
+                                    {
+                                        sb.WriteLineFormat
+                                        (
+                                            "var bytesWritten = {0}.Serialize(({0})item, data);",
+                                            TypeHelper.GetSimpleTypeName(option.Type)
+                                        );
+                                        sb.WriteLine("data = data.Slice(bytesWritten);");
+                                    }
+                                    else
+                                    {
+                                        sb.WriteLineFormat
+                                        (
+                                            "{0}.Serialize(({0})item, stream);",
+                                            TypeHelper.GetSimpleTypeName(option.Type)
+                                        );
+                                    }
                                 }
-                                else
-                                {
-                                    sb.WriteLineFormat
-                                    (
-                                        "{0}.Serialize(({0})item, stream);",
-                                        TypeHelper.GetSimpleTypeName(option.Type)
-                                    );
-                                }
+
+                                sb.WriteLine("break;");
                             }
-
-                            sb.WriteLine("break;");
                         }
+
+                        sb.WriteLine("default:");
+                        var localTypeIdProperty = typeIdProperty;
+                        sb.WriteLineFormat
+                        (
+                            "    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{obj.{1}}}\");",
+                            member.Name, localTypeIdProperty
+                        );
                     }
-
-                    sb.WriteLine("default:");
-                    var localTypeIdProperty = typeIdProperty;
-                    sb.WriteLineFormat
-                    (
-                        "    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{obj.{1}}}\");",
-                        member.Name, localTypeIdProperty
-                    );
+                    return;
                 }
-                return;
             }
-        }
 
-        var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
-        var isByteCollection = TypeHelper.IsByteCollection(elementTypeName);
+            var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
+            var isByteCollection = TypeHelper.IsByteCollection(elementTypeName);
 
-        if (isByteCollection)
-        {
-            sb.WriteLineFormat("{0}.WriteBytes({1}{2}, obj.{3});", helper, refOrEmpty, target, member.Name);
-        }
-        else
-        {
-            if (member.CollectionTypeInfo?.IsArray == true || member.IsList)
+            if (isByteCollection)
             {
-                var loopCountExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
-                sb.WriteLineFormat("for (int i = 0; i < {0}; i++)", loopCountExpression);
-                using var __ = sb.BeginBlock();
-                if (member.ListTypeArgument is not null)
-                {
-                    GenerateListElementSerialization
-                    (
-                        sb,
-                        member.ListTypeArgument.Value,
-                        $"obj.{member.Name}[i]",
-                        target,
-                        helper
-                    );
-                }
-                else if (member.CollectionTypeInfo is not null)
-                {
-                    GenerateCollectionElementSerialization
-                    (
-                        sb,
-                        member.CollectionTypeInfo.Value,
-                        $"obj.{member.Name}[i]",
-                        target,
-                        helper
-                    );
-                }
+                sb.WriteLineFormat("{0}.WriteBytes({1}{2}, obj.{3});", helper, refOrEmpty, target, member.Name);
             }
             else
             {
-                sb.WriteLineFormat("foreach (var item in obj.{0})", member.Name);
-                using var __ = sb.BeginBlock();
-                if (member.CollectionTypeInfo is not null)
+                if (member.CollectionTypeInfo?.IsArray == true || member.IsList)
                 {
-                    GenerateCollectionElementSerialization
-                    (
-                        sb,
-                        member.CollectionTypeInfo.Value,
-                        "item",
-                        target,
-                        helper
-                    );
+                    var loopCountExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
+                    sb.WriteLineFormat("for (int i = 0; i < {0}; i++)", loopCountExpression);
+                    using var __ = sb.BeginBlock();
+                    if (member.ListTypeArgument is not null)
+                    {
+                        GenerateListElementSerialization
+                        (
+                            sb,
+                            member.ListTypeArgument.Value,
+                            $"obj.{member.Name}[i]",
+                            target,
+                            helper
+                        );
+                    }
+                    else if (member.CollectionTypeInfo is not null)
+                    {
+                        GenerateCollectionElementSerialization
+                        (
+                            sb,
+                            member.CollectionTypeInfo.Value,
+                            $"obj.{member.Name}[i]",
+                            target,
+                            helper
+                        );
+                    }
+                }
+                else
+                {
+                    sb.WriteLineFormat("foreach (var item in obj.{0})", member.Name);
+                    using var __ = sb.BeginBlock();
+                    if (member.CollectionTypeInfo is not null)
+                    {
+                        GenerateCollectionElementSerialization
+                        (
+                            sb,
+                            member.CollectionTypeInfo.Value,
+                            "item",
+                            target,
+                            helper
+                        );
+                    }
                 }
             }
         }

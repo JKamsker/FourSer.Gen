@@ -81,108 +81,30 @@ public static class PacketSizeGenerator
                 }
             }
 
-            if (collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId && string.IsNullOrEmpty(collectionInfo.TypeIdProperty))
-            {
-                var isListOrArray = member.IsList || (member.CollectionTypeInfo?.IsArray ?? false);
-                if (!isListOrArray)
-                {
-                    sb.WriteLineFormat("var collectionItems = obj.{0};", member.Name);
-                    sb.WriteLine("if (collectionItems is null)");
-                    sb.WriteLine("{");
-                    sb.WriteLine("    return size;");
-                    sb.WriteLine("}");
-
-                    sb.WriteLine("using var enumerator = collectionItems.GetEnumerator();");
-                    sb.WriteLine("if (!enumerator.MoveNext())");
-                    sb.WriteLine("{");
-                    sb.WriteLine("    return size;");
-                    sb.WriteLine("}");
-
-                    sb.WriteLine("var firstItem = enumerator.Current;");
-                    sb.WriteLine("switch (firstItem)");
-                    using (sb.BeginBlock())
-                    {
-                        foreach (var option in info.Options)
-                        {
-                            var typeName = TypeHelper.GetSimpleTypeName(option.Type);
-                            sb.WriteLine($"case {typeName}:");
-                            using (sb.BeginBlock())
-                            {
-                                sb.WriteLine("do");
-                                using (sb.BeginBlock())
-                                {
-                                    sb.WriteLine($"size += {typeName}.GetPacketSize(({typeName})enumerator.Current);");
-                                }
-                                sb.WriteLine("while (enumerator.MoveNext());");
-                                sb.WriteLine("break;");
-                            }
-                        }
-                        sb.WriteLineFormat("default: throw new System.IO.InvalidDataException($\"Unknown item type in collection {0}: {{firstItem.GetType().Name}}\");", member.Name);
-                    }
-                }
-                else
-                {
-                    var listItemsVar = member.Name.ToCamelCase();
-                    if (listItemsVar == "items")
-                    {
-                        listItemsVar = "collectionItems"; // Avoid conflict
-                    }
-
-                    sb.WriteLine($"var {listItemsVar} = obj.{member.Name};");
-                    sb.WriteLine($"if ({listItemsVar} is not null && {listItemsVar}.Count > 0)");
-                    using (sb.BeginBlock())
-                    {
-                        sb.WriteLine($"var firstItem = {listItemsVar}[0];");
-                        sb.WriteLine("switch(firstItem)");
-                        using (sb.BeginBlock())
-                        {
-                            foreach (var option in info.Options)
-                            {
-                                var typeName = TypeHelper.GetSimpleTypeName(option.Type);
-                                sb.WriteLine($"case {typeName}:");
-                                using (sb.BeginBlock())
-                                {
-                                    sb.WriteLine($"foreach(var item in {listItemsVar})");
-                                    using (sb.BeginBlock())
-                                    {
-                                        sb.WriteLine($"size += {typeName}.GetPacketSize(({typeName})item);");
-                                    }
-                                    sb.WriteLine("break;");
-                                }
-                            }
-                            sb.WriteLineFormat("default: throw new System.IO.InvalidDataException($\"Unknown item type in collection {0}: {{firstItem.GetType().Name}}\");", member.Name);
-                        }
-                    }
-                }
-                return;
-            }
-
-            // Fallback for IndividualTypeIds or explicit TypeIdProperty
-            sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
             using (sb.BeginBlock())
             {
-                if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
+                sb.WriteLineFormat("foreach (var item in obj.{0})", member.Name);
+                using (sb.BeginBlock())
                 {
-                    sb.WriteLineFormat("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
-                }
+                    if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
+                    {
+                        sb.WriteLineFormat("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
+                    }
 
-                var itemMember = new MemberToGenerate
-                (
-                    "item",
-                    member.ListTypeArgument!.Value.TypeName,
-                    member.ListTypeArgument.Value.IsUnmanagedType,
-                    member.ListTypeArgument.Value.IsStringType,
-                    member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
-                    false,
-                    null,
-                    null,
-                    member.PolymorphicInfo,
-                    false,
-                    null,
-                    false,
-                    false
-                );
-                GeneratePolymorphicSizeCalculation(sb, itemMember, "item");
+                    sb.WriteLine("size += item switch");
+                    sb.WriteLine("{");
+                    sb.Indent();
+                    foreach (var option in info.Options)
+                    {
+                        var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+                        var varName = typeName.ToCamelCase();
+                        sb.WriteLineFormat("{0} {1} => {2}.GetPacketSize({1}),", typeName, varName, typeName);
+                    }
+                    sb.WriteLineFormat("_ => throw new System.IO.InvalidDataException($\"Unknown item type in collection {0}: {{item.GetType().Name}}\")", member.Name);
+                    sb.Unindent();
+                    sb.WriteLine("};");
+                }
             }
             return;
         }

@@ -22,22 +22,17 @@ public partial class Inventory : ISerializable<Inventory>
         var size = 0;
         size += sizeof(int); // Size for unmanaged type TypeId
         size += sizeof(int); // Count size for Items
-        foreach(var item in obj.Items)
+        if (obj.Items is not null)
         {
-            switch (item)
+            foreach (var item in obj.Items)
             {
-                case Sword typedInstance:
-                    size += Sword.GetPacketSize(typedInstance);
-                    break;
-                case Shield typedInstance:
-                    size += Shield.GetPacketSize(typedInstance);
-                    break;
-                case Potion typedInstance:
-                    size += Potion.GetPacketSize(typedInstance);
-                    break;
-                case null: break;
-                default:
-                    throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+                size += item switch
+                {
+                    Sword sword => Sword.GetPacketSize(sword),
+                    Shield shield => Shield.GetPacketSize(shield),
+                    Potion potion => Potion.GetPacketSize(potion),
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
+                };
             }
         }
         return size;
