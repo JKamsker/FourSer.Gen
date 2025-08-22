@@ -130,6 +130,8 @@ public readonly record struct CollectionInfo
     string? CountType,
     int? CountSize,
     string? CountSizeReference,
+    int? CountSizeReferenceIndex,
+    int? CountTypeSizeInBytes,
     bool Unlimited = false
 );
 
@@ -155,5 +157,7 @@ public readonly record struct PolymorphicInfo
     string? TypeIdProperty,
     string TypeIdType,
     EquatableArray<PolymorphicOption> Options,
-    string? EnumUnderlyingType
+    string? EnumUnderlyingType,
+    int? TypeIdPropertyIndex,
+    int? TypeIdSizeInBytes
 );

@@ -49,6 +49,26 @@ public static class TypeHelper
         };
     }
 
+    public static int GetSizeOf(string typeName)
+    {
+        return typeName switch
+        {
+            "byte" => sizeof(byte),
+            "sbyte" => sizeof(sbyte),
+            "short" => sizeof(short),
+            "ushort" => sizeof(ushort),
+            "int" => sizeof(int),
+            "uint" => sizeof(uint),
+            "long" => sizeof(long),
+            "ulong" => sizeof(ulong),
+            "float" => sizeof(float),
+            "double" => sizeof(double),
+            "bool" => sizeof(bool),
+            "char" => sizeof(char),
+            _ => 0
+        };
+    }
+
     /// <summary>
     ///     Gets the sizeof expression for a type
     /// </summary>
