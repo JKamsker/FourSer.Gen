@@ -44,28 +44,14 @@ public static class SerializationGenerator
     {
         GenerateTypeIdPrePass(sb, typeToGenerate);
 
-        var countRefMap = new Dictionary<int, MemberToGenerate>();
-        var typeIdRefMap = new Dictionary<int, MemberToGenerate>();
-        for (var i = 0; i < typeToGenerate.Members.Count; i++)
-        {
-            var m = typeToGenerate.Members[i];
-            if (m.CollectionInfo is { CountSizeReferenceIndex: not null } cInfo)
-            {
-                countRefMap[cInfo.CountSizeReferenceIndex.Value] = m;
-            }
-            if (m.PolymorphicInfo is { TypeIdPropertyIndex: not null } polyInfo)
-            {
-                typeIdRefMap[polyInfo.TypeIdPropertyIndex.Value] = m;
-            }
-        }
-
         for (var i = 0; i < typeToGenerate.Members.Count; i++)
         {
             var member = typeToGenerate.Members[i];
-            if (countRefMap.TryGetValue(i, out var collectionForCount))
+            if (member.IsCountSizeReferenceFor is not null)
             {
+                var collectionMember = typeToGenerate.Members[member.IsCountSizeReferenceFor.Value];
                 var refOrEmpty = target == "data" ? "ref " : "";
-                var collectionName = collectionForCount.Name;
+                var collectionName = collectionMember.Name;
                 var countExpression = $"obj.{collectionName}?.Count ?? 0";
                 var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
                 var writeMethod = $"Write{typeName}";
@@ -80,11 +66,12 @@ public static class SerializationGenerator
                     countExpression
                 );
             }
-            else if (typeIdRefMap.TryGetValue(i, out var collectionForTypeId))
+            else if (member.IsTypeIdPropertyFor is not null)
             {
+                var collectionMember = typeToGenerate.Members[member.IsTypeIdPropertyFor.Value];
                 var refOrEmpty = target == "data" ? "ref " : "";
-                var collectionName = collectionForTypeId.Name;
-                var info = collectionForTypeId.PolymorphicInfo.Value;
+                var collectionName = collectionMember.Name;
+                var info = collectionMember.PolymorphicInfo.Value;
                 var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
                 var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(typeIdType);
                 var writeMethod = $"Write{typeIdTypeName}";
@@ -603,7 +590,9 @@ public static class SerializationGenerator
             false,
             null,
             false,
-            false
+            false,
+            null,
+            null
         );
 
         GeneratePolymorphicItemSerialization

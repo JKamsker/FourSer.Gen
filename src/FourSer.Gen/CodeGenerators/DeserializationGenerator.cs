@@ -251,7 +251,9 @@ public static class DeserializationGenerator
                     false,
                     null,
                     false,
-                    false
+                    false,
+                    null,
+                    null
                 );
                 GeneratePolymorphicItemDeserialization
                 (

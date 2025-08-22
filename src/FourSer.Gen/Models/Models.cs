@@ -71,7 +71,9 @@ public sealed record MemberToGenerate
     bool IsCollection,
     CollectionTypeInfo? CollectionTypeInfo,
     bool IsReadOnly,
-    bool IsInitOnly
+    bool IsInitOnly,
+    int? IsCountSizeReferenceFor,
+    int? IsTypeIdPropertyFor
 );
 
 /// <summary>

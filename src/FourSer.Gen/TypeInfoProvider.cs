@@ -267,9 +267,10 @@ internal static class TypeInfoProvider
             memberMap[members[i].Name] = i;
         }
 
-        var newMembers = new List<MemberToGenerate>();
-        foreach (var member in members)
+        var newMembers = members.ToList();
+        for (var i = 0; i < newMembers.Count; i++)
         {
+            var member = newMembers[i];
             var newCollectionInfo = member.CollectionInfo;
             if (member.CollectionInfo is { } collectionInfo)
             {
@@ -279,6 +280,8 @@ internal static class TypeInfoProvider
                     if (memberMap.TryGetValue(countRef, out var index))
                     {
                         countRefIndex = index;
+                        var oldMember = newMembers[index];
+                        newMembers[index] = oldMember with { IsCountSizeReferenceFor = i };
                     }
                 }
 
@@ -302,6 +305,8 @@ internal static class TypeInfoProvider
                     if (memberMap.TryGetValue(typeIdRef, out var index))
                     {
                         typeIdRefIndex = index;
+                        var oldMember = newMembers[index];
+                        newMembers[index] = oldMember with { IsTypeIdPropertyFor = i };
                     }
                 }
 
@@ -314,11 +319,11 @@ internal static class TypeInfoProvider
                 };
             }
 
-            newMembers.Add(member with
+            newMembers[i] = member with
             {
                 CollectionInfo = newCollectionInfo,
                 PolymorphicInfo = newPolymorphicInfo
-            });
+            };
         }
 
         return newMembers;
@@ -374,7 +379,9 @@ internal static class TypeInfoProvider
             isCollection,
             collectionTypeInfo,
             isReadOnly,
-            isInitOnly
+            isInitOnly,
+            null,
+            null
         );
 
         return (memberToGenerate, location);
