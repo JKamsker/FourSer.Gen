@@ -138,4 +138,13 @@
   <data name="SerializeCollectionSingleTypeId_Description" xml:space="preserve">
     <value>When using PolymorphicMode.SingleTypeId, the TypeIdType property must match the type of the PolymorphicOption's ID.</value>
   </data>
+  <data name="FSER009_Title" xml:space="preserve">
+    <value>Conflicting property reference</value>
+  </data>
+  <data name="FSER009_MessageFormat" xml:space="preserve">
+    <value>The property '{0}' is used as a reference for both '{1}' and '{2}'</value>
+  </data>
+  <data name="FSER009_Description" xml:space="preserve">
+    <value>A property cannot be used as a reference for multiple different kinds of references (e.g. CountSizeReference and TypeIdProperty).</value>
+  </data>
 </root>

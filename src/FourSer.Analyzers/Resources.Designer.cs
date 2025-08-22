@@ -129,5 +129,32 @@ namespace FourSer.Analyzers
                 return ResourceManager.GetString("SerializeCollectionSingleTypeId_Title", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to A property cannot be used as a reference for multiple different kinds of references (e.g. CountSizeReference and TypeIdProperty)..
+        /// </summary>
+        internal static string FSER009_Description {
+            get {
+                return ResourceManager.GetString("FSER009_Description", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The property '{0}' is used as a reference for both '{1}' and '{2}'.
+        /// </summary>
+        internal static string FSER009_MessageFormat {
+            get {
+                return ResourceManager.GetString("FSER009_MessageFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Conflicting property reference.
+        /// </summary>
+        internal static string FSER009_Title {
+            get {
+                return ResourceManager.GetString("FSER009_Title", resourceCulture);
+            }
+        }
     }
 }
