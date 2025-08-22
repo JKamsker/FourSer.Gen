@@ -193,9 +193,9 @@ public static class DeserializationGenerator
         var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
         var countReadMethod = TypeHelper.GetReadMethodName(countType);
 
-        if (collectionInfo.CountSizeReference is string countSizeReference)
+        if (collectionInfo.CountSizeReferenceIndex is not null)
         {
-            countVar = countSizeReference.ToCamelCase();
+            countVar = collectionInfo.CountSizeReference.ToCamelCase();
         }
         else
         {
@@ -269,10 +269,9 @@ public static class DeserializationGenerator
             if (collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId)
             {
                 var info = member.PolymorphicInfo!.Value;
-                var typeIdProperty = collectionInfo.TypeIdProperty;
                 string typeIdVar;
 
-                if (string.IsNullOrEmpty(typeIdProperty))
+                if (info.TypeIdPropertyIndex is null)
                 {
                     typeIdVar = $"{member.Name.ToCamelCase()}TypeId";
                     var typeToRead = info.EnumUnderlyingType ?? info.TypeIdType;
@@ -282,7 +281,7 @@ public static class DeserializationGenerator
                 }
                 else
                 {
-                    typeIdVar = typeIdProperty.ToCamelCase();
+                    typeIdVar = collectionInfo.TypeIdProperty.ToCamelCase();
                 }
 
                 sb.WriteLineFormat("switch ({0})", typeIdVar);
@@ -434,7 +433,7 @@ public static class DeserializationGenerator
         var refOrEmpty = source == "buffer" ? "ref " : "";
 
         string switchVar;
-        if (info.TypeIdProperty is not null)
+        if (info.TypeIdPropertyIndex is not null)
         {
             switchVar = info.TypeIdProperty.ToCamelCase();
         }

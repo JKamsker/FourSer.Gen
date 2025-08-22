@@ -25,7 +25,7 @@ public static class PacketSizeGenerator
             {
                 if (info.TypeIdPropertyIndex is null)
                 {
-                    sb.WriteLineFormat("size += {0};", info.TypeIdSizeInBytes);
+                    sb.WriteLineFormat("size += {0};", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
                 }
 
                 GeneratePolymorphicSizeCalculation(sb, member);
@@ -61,7 +61,9 @@ public static class PacketSizeGenerator
 
         if (collectionInfo.CountSizeReferenceIndex is null)
         {
-            sb.WriteLineFormat("size += {0}; // Count size for {1}", collectionInfo.CountTypeSizeInBytes, member.Name);
+            var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+            var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
+            sb.WriteLineFormat("size += {0}; // Count size for {1}", countSizeExpression, member.Name);
         }
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
@@ -129,7 +131,7 @@ public static class PacketSizeGenerator
             if (info.TypeIdPropertyIndex is null)
             {
                 sb.WriteLineFormat
-                    ("size += {0}; // Size for polymorphic type id", info.TypeIdSizeInBytes);
+                    ("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
             }
         }
 
@@ -142,7 +144,7 @@ public static class PacketSizeGenerator
         if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
         {
             sb.WriteLineFormat
-                ("size += {0}; // Size for polymorphic type id", info.TypeIdSizeInBytes);
+                ("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
         }
 
         sb.WriteLine("size += item switch");
