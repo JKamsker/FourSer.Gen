@@ -68,58 +68,65 @@ public static class SerializationGenerator
             }
             else if (member.IsTypeIdPropertyFor is not null)
             {
-                var collectionMember = typeToGenerate.Members[member.IsTypeIdPropertyFor.Value];
-                var refOrEmpty = target == "data" ? "ref " : "";
-                var collectionName = collectionMember.Name;
-                var info = collectionMember.PolymorphicInfo.Value;
-                var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
-                var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(typeIdType);
-                var writeMethod = $"Write{typeIdTypeName}";
-
-                var defaultOption = info.Options.FirstOrDefault();
-                var defaultKey = PolymorphicUtilities.FormatTypeIdKey(defaultOption.Key, info);
-
-                sb.WriteLineFormat($"if (obj.{collectionName} is null || obj.{collectionName}.Count == 0)");
-                using (sb.BeginBlock())
+                var referencedMember = typeToGenerate.Members[member.IsTypeIdPropertyFor.Value];
+                if (referencedMember.IsList || referencedMember.IsCollection)
                 {
-                    sb.WriteLineFormat
-                    (
-                        "{0}.{1}({2}{3}, ({4}){5});",
-                        helper,
-                        writeMethod,
-                        refOrEmpty,
-                        target,
-                        typeIdType,
-                        defaultKey
-                    );
-                }
-                sb.WriteLine("else");
-                using (sb.BeginBlock())
-                {
-                    sb.WriteLine($"var firstItem = obj.{collectionName}[0];");
-                    sb.WriteLine("var discriminator = firstItem switch");
-                    sb.WriteLine("{");
-                    sb.Indent();
-                    foreach (var option in info.Options)
+                    var refOrEmpty = target == "data" ? "ref " : "";
+                    var collectionName = referencedMember.Name;
+                    var info = referencedMember.PolymorphicInfo.Value;
+                    var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
+                    var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(typeIdType);
+                    var writeMethod = $"Write{typeIdTypeName}";
+
+                    var defaultOption = info.Options.FirstOrDefault();
+                    var defaultKey = PolymorphicUtilities.FormatTypeIdKey(defaultOption.Key, info);
+
+                    sb.WriteLineFormat($"if (obj.{collectionName} is null || obj.{collectionName}.Count == 0)");
+                    using (sb.BeginBlock())
                     {
-                        var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
                         sb.WriteLineFormat
-                            ("{0} => ({1}){2},", TypeHelper.GetSimpleTypeName(option.Type), typeIdType, key);
+                        (
+                            "{0}.{1}({2}{3}, ({4}){5});",
+                            helper,
+                            writeMethod,
+                            refOrEmpty,
+                            target,
+                            typeIdType,
+                            defaultKey
+                        );
                     }
+                    sb.WriteLine("else");
+                    using (sb.BeginBlock())
+                    {
+                        sb.WriteLine($"var firstItem = obj.{collectionName}[0];");
+                        sb.WriteLine("var discriminator = firstItem switch");
+                        sb.WriteLine("{");
+                        sb.Indent();
+                        foreach (var option in info.Options)
+                        {
+                            var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+                            sb.WriteLineFormat
+                                ("{0} => ({1}){2},", TypeHelper.GetSimpleTypeName(option.Type), typeIdType, key);
+                        }
 
-                    sb.WriteLine
-                        ($"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")");
-                    sb.Unindent();
-                    sb.WriteLine("};");
+                        sb.WriteLine
+                            ($"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")");
+                        sb.Unindent();
+                        sb.WriteLine("};");
 
-                    sb.WriteLineFormat
-                    (
-                        "{0}.{1}({2}{3}, discriminator);",
-                        helper,
-                        writeMethod,
-                        refOrEmpty,
-                        target
-                    );
+                        sb.WriteLineFormat
+                        (
+                            "{0}.{1}({2}{3}, discriminator);",
+                            helper,
+                            writeMethod,
+                            refOrEmpty,
+                            target
+                        );
+                    }
+                }
+                else
+                {
+                    GenerateMemberSerialization(sb, member, target, helper);
                 }
             }
             else
@@ -204,6 +211,23 @@ public static class SerializationGenerator
     {
         if (member.CollectionInfo is not { } collectionInfo)
         {
+            return;
+        }
+
+        if (collectionInfo.CountSizeReferenceIndex is not null)
+        {
+            sb.WriteLineFormat("if (obj.{0} is not null && obj.{0}.Count > 0)", member.Name);
+            using (sb.BeginBlock())
+            {
+                if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+                {
+                    GeneratePolymorphicCollectionBody(sb, member, target, helper, collectionInfo);
+                }
+                else
+                {
+                    GenerateStandardCollectionBody(sb, member, target, helper);
+                }
+            }
             return;
         }
 
