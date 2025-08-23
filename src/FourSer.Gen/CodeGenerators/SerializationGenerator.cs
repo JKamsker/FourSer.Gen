@@ -53,7 +53,8 @@ public static class SerializationGenerator
                 if (collectionMember.CollectionTypeInfo?.IsPureEnumerable != true)
                 {
                     var refOrEmpty = target == "data" ? "ref " : "";
-                    var countExpression = $"obj.{member.Name}";
+                    var collectionName = collectionMember.Name;
+                    var countExpression =  $"obj.{collectionName}?.Count ?? 0";
                     var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
                     var writeMethod = $"Write{typeName}";
                     sb.WriteLineFormat

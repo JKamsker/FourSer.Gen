@@ -20,7 +20,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
     public static int GetPacketSize(EnumerableOfReferenceTypes obj)
     {
         var size = 0;
-        size += sizeof(int); // Count size for MyList
+        size += sizeof(int); // Size for unmanaged type Count
         if (obj.MyList is not null)
         {
             foreach(var item in obj.MyList)
@@ -31,25 +31,27 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         return size;
     }
 
-    private EnumerableOfReferenceTypes(System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity> myList)
+    private EnumerableOfReferenceTypes(int count, System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity> myList)
     {
+        this.Count = count;
         this.MyList = myList;
     }
 
     public EnumerableOfReferenceTypes()
     {
+        this.Count = default;
         this.MyList = default;
     }
 
     public static EnumerableOfReferenceTypes Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var myListCount = SpanReader.ReadInt32(ref buffer);
-        var myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity>(myListCount);
-        for (int i = 0; i < myListCount; i++)
+        var count = SpanReader.ReadInt32(ref buffer);
+        var myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity>(count);
+        for (int i = 0; i < count; i++)
         {
             myList.Add(Entity.Deserialize(ref buffer));
         }
-        var obj = new EnumerableOfReferenceTypes(myList);
+        var obj = new EnumerableOfReferenceTypes(count, myList);
         return obj;
     }
 
@@ -60,13 +62,13 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
 
     public static EnumerableOfReferenceTypes Deserialize(System.IO.Stream stream)
     {
-        var myListCount = StreamReader.ReadInt32(stream);
-        var myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity>(myListCount);
-        for (int i = 0; i < myListCount; i++)
+        var count = StreamReader.ReadInt32(stream);
+        var myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity>(count);
+        for (int i = 0; i < count; i++)
         {
             myList.Add(Entity.Deserialize(stream));
         }
-        var obj = new EnumerableOfReferenceTypes(myList);
+        var obj = new EnumerableOfReferenceTypes(count, myList);
         return obj;
     }
 
