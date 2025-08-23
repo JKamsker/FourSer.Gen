@@ -94,7 +94,7 @@ public static class SerializationGenerator
                     var defaultKey = PolymorphicUtilities.FormatTypeIdKey(defaultOption.Key, info);
 
                     // Emits: if (obj.MyItems is null || obj.MyItems.Count == 0)
-                    sb.WriteLineFormat($"if (obj.{collectionName} is null || obj.{collectionName}.Count == 0)");
+                    sb.WriteLineFormat("if (obj.{0} is null || obj.{0}.Count == 0)", collectionName);
                     using (sb.BeginBlock())
                     {
                         // Emits: SpanWriter.WriteByte(ref data, (byte)10);
@@ -114,7 +114,7 @@ public static class SerializationGenerator
                     using (sb.BeginBlock())
                     {
                         // Emits: var firstItem = obj.MyItems[0];
-                        sb.WriteLine($"var firstItem = obj.{collectionName}[0];");
+                        sb.WriteLineFormat("var firstItem = obj.{0}[0];", collectionName);
                         sb.WriteLine("var discriminator = firstItem switch");
                         sb.WriteLine("{");
                         sb.Indent();
@@ -127,7 +127,7 @@ public static class SerializationGenerator
 
                         // Emits: _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
                         sb.WriteLine(
-                            $"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")"
+                            "_ => throw new System.IO.InvalidDataException($\"Unknown item type: {firstItem.GetType().Name}\")"
                         );
                         sb.Unindent();
                         sb.WriteLine("};");
@@ -503,7 +503,7 @@ public static class SerializationGenerator
     )
     {
         // Emits: if (obj.MyItems.Count > 0)
-        sb.WriteLineFormat($"if (obj.{member.Name}.Count > 0)");
+        sb.WriteLineFormat("if (obj.{0}.Count > 0)", member.Name);
         using (sb.BeginBlock())
         {
             // Emits: switch (obj.MyItems[0])
@@ -572,7 +572,7 @@ public static class SerializationGenerator
         }
 
         // Emits: var myItems = obj.MyItems;
-        sb.WriteLine($"var {listItemsVar} = obj.{member.Name};");
+        sb.WriteLineFormat("var {0} = obj.{1};", listItemsVar, member.Name);
 
         var defaultOption = info.Options.FirstOrDefault();
         if (defaultOption.Equals(default(PolymorphicOption)))
@@ -585,7 +585,7 @@ public static class SerializationGenerator
         var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
 
         // Emits: if (myItems is null || myItems.Count == 0)
-        sb.WriteLine($"if ({listItemsVar} is null || {listItemsVar}.Count == 0)");
+        sb.WriteLineFormat("if ({0} is null || {0}.Count == 0)", listItemsVar);
         using (sb.BeginBlock())
         {
             sb.WriteLineFormat
@@ -629,7 +629,7 @@ public static class SerializationGenerator
             );
 
             // Emits: var firstItem = myItems[0];
-            sb.WriteLine($"var firstItem = {listItemsVar}[0];");
+            sb.WriteLineFormat("var firstItem = {0}[0];", listItemsVar);
             sb.WriteLine("var discriminator = firstItem switch");
             sb.WriteLine("{");
             sb.Indent();
@@ -641,7 +641,7 @@ public static class SerializationGenerator
             }
 
             // Emits: _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
-            sb.WriteLine($"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")");
+            sb.WriteLine("_ => throw new System.IO.InvalidDataException($\"Unknown item type: {firstItem.GetType().Name}\")");
             sb.Unindent();
             sb.WriteLine("};");
 
@@ -664,23 +664,23 @@ public static class SerializationGenerator
                     var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
                     var typeName = TypeHelper.GetSimpleTypeName(option.Type);
                     // Emits: case 10:
-                    sb.WriteLine($"case {key}:");
+                    sb.WriteLineFormat("case {0}:", key);
                     using (sb.BeginBlock())
                     {
                         // Emits: for (int i = 0; i < myItems.Count; i++)
-                        sb.WriteLine($"for (int i = 0; i < {countExpression}; i++)");
+                        sb.WriteLineFormat("for (int i = 0; i < {0}; i++)", countExpression);
                         using (sb.BeginBlock())
                         {
                             if (sink == Sink.Span)
                             {
                                 // Emits: var bytesWritten = Sword.Serialize((Sword)myItems[i], data);
-                                sb.WriteLine($"var bytesWritten = {typeName}.Serialize(({typeName}){listItemsVar}[i], data);");
+                                sb.WriteLineFormat("var bytesWritten = {0}.Serialize(({0}){1}[i], data);", typeName, listItemsVar);
                                 sb.WriteLine("data = data.Slice(bytesWritten);");
                             }
                             else
                             {
                                 // Emits: Sword.Serialize((Sword)myItems[i], stream);
-                                sb.WriteLine($"{typeName}.Serialize(({typeName}){listItemsVar}[i], stream);");
+                                sb.WriteLineFormat("{0}.Serialize(({0}){1}[i], stream);", typeName, listItemsVar);
                             }
                         }
 
@@ -929,9 +929,10 @@ public static class SerializationGenerator
         sb.WriteLine("    throw new System.NullReferenceException($\"Item in collection cannot be null.\");");
         sb.WriteLine("default:");
         // Emits:     throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
-        sb.WriteLine
+        sb.WriteLineFormat
         (
-            $"    throw new System.IO.InvalidDataException($\"Unknown type for {instanceName}: {{{instanceName}?.GetType().FullName}}\");"
+            "    throw new System.IO.InvalidDataException($\"Unknown type for {0}: {{{0}?.GetType().FullName}}\");",
+            instanceName
         );
     }
 
@@ -1140,7 +1141,7 @@ public static class SerializationGenerator
         using (sb.BeginBlock())
         {
             // Emits: using var enumerator = obj.MyItems.GetEnumerator();
-            sb.WriteLine($"using var enumerator = obj.{member.Name}.GetEnumerator();");
+        sb.WriteLineFormat("using var enumerator = obj.{0}.GetEnumerator();", member.Name);
             sb.WriteLine("while (enumerator.MoveNext())");
             using (sb.BeginBlock())
             {
@@ -1176,7 +1177,7 @@ public static class SerializationGenerator
 
         sb.WriteLine("int count = 0;");
         // Emits: using var enumerator = obj.MyItems.GetEnumerator();
-        sb.WriteLine($"using var enumerator = obj.{member.Name}.GetEnumerator();");
+        sb.WriteLineFormat("using var enumerator = obj.{0}.GetEnumerator();", member.Name);
 
         // Emits: if (!enumerator.MoveNext())
         sb.WriteLine("if (!enumerator.MoveNext())");
@@ -1212,19 +1213,20 @@ public static class SerializationGenerator
             {
                 var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
                 // Emits: Sword => (byte)10,
-                sb.WriteLineFormat($"{TypeHelper.GetSimpleTypeName(option.Type)} => ({typeIdType}){key},");
+                sb.WriteLineFormat("{0} => ({1}){2},", TypeHelper.GetSimpleTypeName(option.Type), typeIdType, key);
             }
 
             // Emits: _ => throw new System.IO.InvalidDataException($"Unknown item type: {enumerator.Current.GetType().Name}")
             sb.WriteLine(
-                $"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{enumerator.Current.GetType().Name}}\")"
+                "_ => throw new System.IO.InvalidDataException($\"Unknown item type: {enumerator.Current.GetType().Name}\")"
             );
             sb.Unindent();
             sb.WriteLine("};");
 
             var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(typeIdType);
             // Emits: SpanWriter.WriteByte(ref data, discriminator);
-            sb.WriteLineFormat(
+            sb.WriteLineFormat
+            (
                 "{0}.Write{1}({2}{3}, discriminator);",
                 WriterType(sink),
                 typeIdTypeName,
@@ -1240,7 +1242,7 @@ public static class SerializationGenerator
                     var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
                     var typeName = TypeHelper.GetSimpleTypeName(option.Type);
                     // Emits: case 10:
-                    sb.WriteLine($"case {key}:");
+                    sb.WriteLineFormat("case {0}:", key);
                     using (sb.BeginBlock())
                     {
                         sb.WriteLine("do");
@@ -1249,15 +1251,17 @@ public static class SerializationGenerator
                             if (sink == Sink.Span)
                             {
                                 // Emits: var bytesWritten = Sword.Serialize((Sword)enumerator.Current, data);
-                                sb.WriteLine(
-                                    $"var bytesWritten = {typeName}.Serialize(({typeName})enumerator.Current, data);"
+                                sb.WriteLineFormat
+                                (
+                                    "var bytesWritten = {0}.Serialize(({0})enumerator.Current, data);",
+                                    typeName
                                 );
                                 sb.WriteLine("data = data.Slice(bytesWritten);");
                             }
                             else
                             {
                                 // Emits: Sword.Serialize((Sword)enumerator.Current, stream);
-                                sb.WriteLine($"{typeName}.Serialize(({typeName})enumerator.Current, stream);");
+                                sb.WriteLineFormat("{0}.Serialize(({0})enumerator.Current, stream);", typeName);
                             }
 
                             sb.WriteLine("count++;");
@@ -1336,7 +1340,7 @@ public static class SerializationGenerator
             }
 
             // Emits: var countPosition = stream.Position;
-            sb.WriteLine($"var {cookieVar} = stream.Position;");
+            sb.WriteLineFormat("var {0} = stream.Position;", cookieVar);
             var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
             // Emits: StreamWriter.WriteInt32(stream, (Int32)0); // Placeholder for count
             sb.WriteLineFormat(
@@ -1349,9 +1353,9 @@ public static class SerializationGenerator
         else
         {
             // Emits: var countSpan = data;
-            sb.WriteLine($"var {cookieVar} = data;");
+            sb.WriteLineFormat("var {0} = data;", cookieVar);
             // Emits: data = data.Slice(sizeof(int));
-            sb.WriteLine($"data = data.Slice(sizeof({countType}));");
+            sb.WriteLineFormat("data = data.Slice(sizeof({0}));", countType);
         }
     }
 
@@ -1367,7 +1371,7 @@ public static class SerializationGenerator
         if (sink == Sink.Stream)
         {
             sb.WriteLine("var endPosition = stream.Position;");
-            sb.WriteLine($"stream.Position = {cookieVar};");
+            sb.WriteLineFormat("stream.Position = {0};", cookieVar);
             // Emits: StreamWriter.WriteInt32(stream, (Int32)count);
             sb.WriteLineFormat(
                 "{0}.{1}(stream, ({2}){3});",
