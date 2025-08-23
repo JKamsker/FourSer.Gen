@@ -54,7 +54,7 @@ public static class SerializationGenerator
                 {
                     var refOrEmpty = target == "data" ? "ref " : "";
                     var collectionName = collectionMember.Name;
-                    var countExpression =  $"obj.{collectionName}?.Count ?? 0";
+                    var countExpression = $"obj.{collectionName}?.Count ?? 0";
                     var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
                     var writeMethod = $"Write{typeName}";
                     sb.WriteLineFormat
@@ -98,6 +98,7 @@ public static class SerializationGenerator
                             defaultKey
                         );
                     }
+
                     sb.WriteLine("else");
                     using (sb.BeginBlock())
                     {
@@ -108,12 +109,13 @@ public static class SerializationGenerator
                         foreach (var option in info.Options)
                         {
                             var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                            sb.WriteLineFormat
-                                ("{0} => ({1}){2},", TypeHelper.GetSimpleTypeName(option.Type), typeIdType, key);
+                            sb.WriteLineFormat("{0} => ({1}){2},", TypeHelper.GetSimpleTypeName(option.Type), typeIdType, key);
                         }
 
                         sb.WriteLine
-                            ($"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")");
+                        (
+                            $"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")"
+                        );
                         sb.Unindent();
                         sb.WriteLine("};");
 
@@ -224,7 +226,14 @@ public static class SerializationGenerator
         {
             if (!isByteCollection)
             {
-                GenerateEnumerableCollection(sb, member, target, helper, collectionInfo);
+                GenerateEnumerableCollection
+                (
+                    sb,
+                    member,
+                    target,
+                    helper,
+                    collectionInfo
+                );
                 return;
             }
         }
@@ -236,13 +245,21 @@ public static class SerializationGenerator
             {
                 if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
                 {
-                    GeneratePolymorphicCollectionBody(sb, member, target, helper, collectionInfo);
+                    GeneratePolymorphicCollectionBody
+                    (
+                        sb,
+                        member,
+                        target,
+                        helper,
+                        collectionInfo
+                    );
                 }
                 else
                 {
                     GenerateStandardCollectionBody(sb, member, target, helper);
                 }
             }
+
             return;
         }
 
@@ -273,7 +290,28 @@ public static class SerializationGenerator
 
         if (isNotListOrArray && member.CollectionTypeInfo?.IsPureEnumerable == true && !isByteCollection)
         {
-            GenerateEnumerableCollection(sb, member, target, helper, collectionInfo);
+            GenerateEnumerableCollection
+            (
+                sb,
+                member,
+                target,
+                helper,
+                collectionInfo
+            );
+            return;
+        }
+        
+        // No need to store the Count if we have a fixed size collection
+        if (member.CollectionInfo?.CountSize is > 0)
+        {
+            HandleNonNullCollection
+            (
+                sb,
+                member,
+                target,
+                helper,
+                collectionInfo
+            );
             return;
         }
 
@@ -324,7 +362,8 @@ public static class SerializationGenerator
             sb.WriteLineFormat("if ({0} != {1})", countExpression, collectionInfo.CountSize);
             using (sb.BeginBlock())
             {
-                sb.WriteLineFormat(
+                sb.WriteLineFormat
+                (
                     "throw new System.InvalidOperationException($\"Collection '{0}' must have a size of {1} but was {{{2}}}.\");",
                     member.Name,
                     collectionInfo.CountSize,
@@ -751,8 +790,8 @@ public static class SerializationGenerator
     )
     {
         var refOrEmpty = target == "data" ? "ref " : "";
-        var isPolymorphicSingleTypeId = GeneratorUtilities.ShouldUsePolymorphicSerialization(member) 
-            && collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId 
+        var isPolymorphicSingleTypeId = GeneratorUtilities.ShouldUsePolymorphicSerialization(member)
+            && collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId
             && string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
 
         if (isPolymorphicSingleTypeId && !isNotListOrArray)
@@ -807,7 +846,7 @@ public static class SerializationGenerator
                 target,
                 countType
             );
-            
+
             // sb.WriteLineFormat
             //     ("throw new System.NullReferenceException($\"Collection \\\"{0}\\\" cannot be null.\");", member.Name);
         }
@@ -1013,12 +1052,14 @@ public static class SerializationGenerator
         }
     }
 
-    private static void GenerateEnumerableCollection(
+    private static void GenerateEnumerableCollection
+    (
         IndentedStringBuilder sb,
         MemberToGenerate member,
         string target,
         string helper,
-        CollectionInfo collectionInfo)
+        CollectionInfo collectionInfo
+    )
     {
         var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
         var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
