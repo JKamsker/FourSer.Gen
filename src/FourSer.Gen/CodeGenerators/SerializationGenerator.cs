@@ -52,7 +52,9 @@ public static class SerializationGenerator
                 var collectionMember = typeToGenerate.Members[member.IsCountSizeReferenceFor.Value];
                 var refOrEmpty = target == "data" ? "ref " : "";
                 var collectionName = collectionMember.Name;
-                var countExpression = $"obj.{collectionName}?.Count ?? 0";
+                var countExpression = collectionMember.CollectionTypeInfo?.IsPureEnumerable == true
+                    ? $"obj.{collectionName}?.Count() ?? 0"
+                    : $"obj.{collectionName}?.Count ?? 0";
                 var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
                 var writeMethod = $"Write{typeName}";
                 sb.WriteLineFormat
