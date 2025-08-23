@@ -296,13 +296,22 @@ public static class SerializationGenerator
         // No need to store the Count if we have a fixed size collection
         if (member.CollectionInfo?.CountSize is > 0)
         {
-            HandleNonNullCollection
-            (
-                sb,
-                member,
-                sink,
-                collectionInfo
-            );
+            sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
+            using (sb.BeginBlock())
+            {
+                sb.WriteLineFormat("throw new System.ArgumentNullException(nameof(obj.{0}), \"Fixed-size collections cannot be null.\");", member.Name);
+            }
+            sb.WriteLine("else");
+            using (sb.BeginBlock())
+            {
+                HandleNonNullCollection
+                (
+                    sb,
+                    member,
+                    sink,
+                    collectionInfo
+                );
+            }
             return;
         }
 
