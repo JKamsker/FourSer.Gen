@@ -39,6 +39,18 @@ public readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnume
     public bool IsEmpty => array.IsDefaultOrEmpty;
 
     /// <summary>
+    ///     Gets the number of items in the current array.
+    /// </summary>
+    public int Count => array.Length;
+
+    /// <summary>
+    ///     Gets the item at a given index.
+    /// </summary>
+    /// <param name="index">The index of the item to get.</param>
+    /// <returns>The item at the specified index.</returns>
+    public T this[int index] => array[index];
+
+    /// <summary>
     ///     Implicitly converts an <see cref="ImmutableArray{T}" /> to <see cref="EquatableArray{T}" />.
     /// </summary>
     /// <param name="array">The <see cref="ImmutableArray{T}" /> to wrap.</param>

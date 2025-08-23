@@ -61,7 +61,7 @@ public partial class MyPacket : ISerializable<MyPacket>
         var originalData = data;
         if (obj.Data is null)
         {
-            throw new System.NullReferenceException($"Collection \"Data\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -75,7 +75,7 @@ public partial class MyPacket : ISerializable<MyPacket>
     {
         if (obj.Data is null)
         {
-            throw new System.NullReferenceException($"Collection \"Data\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {

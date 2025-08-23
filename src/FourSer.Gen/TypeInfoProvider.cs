@@ -255,7 +255,78 @@ internal static class TypeInfoProvider
             currentType = currentType.BaseType;
         }
 
-        return new(members.ToImmutableArray());
+        var resolvedMembers = ResolveMemberReferences(members);
+        return new(resolvedMembers.ToImmutableArray());
+    }
+
+    private static List<MemberToGenerate> ResolveMemberReferences(List<MemberToGenerate> members)
+    {
+        var memberMap = new Dictionary<string, int>();
+        for (var i = 0; i < members.Count; i++)
+        {
+            memberMap[members[i].Name] = i;
+        }
+
+        var newMembers = members.ToList();
+        for (var i = 0; i < newMembers.Count; i++)
+        {
+            var member = newMembers[i];
+            var newCollectionInfo = member.CollectionInfo;
+            if (member.CollectionInfo is { } collectionInfo)
+            {
+                int? countRefIndex = null;
+                if (collectionInfo.CountSizeReference is { } countRef)
+                {
+                    if (memberMap.TryGetValue(countRef, out var index))
+                    {
+                        countRefIndex = index;
+                        var oldMember = newMembers[index];
+                        newMembers[index] = oldMember with { IsCountSizeReferenceFor = i };
+                    }
+                }
+
+                var countTypeSize = collectionInfo.CountType is null
+                    ? (int?)null
+                    : TypeHelper.GetSizeOf(collectionInfo.CountType);
+
+                newCollectionInfo = collectionInfo with
+                {
+                    CountSizeReferenceIndex = countRefIndex,
+                    CountTypeSizeInBytes = countTypeSize,
+                };
+            }
+
+            var newPolymorphicInfo = member.PolymorphicInfo;
+            if (member.PolymorphicInfo is { } polyInfo)
+            {
+                int? typeIdRefIndex = null;
+                if (polyInfo.TypeIdProperty is { } typeIdRef)
+                {
+                    if (memberMap.TryGetValue(typeIdRef, out var index))
+                    {
+                        typeIdRefIndex = index;
+                        var oldMember = newMembers[index];
+                        newMembers[index] = oldMember with { IsTypeIdPropertyFor = i };
+                    }
+                }
+
+                var typeIdSize = TypeHelper.GetSizeOf(polyInfo.TypeIdType);
+
+                newPolymorphicInfo = polyInfo with
+                {
+                    TypeIdPropertyIndex = typeIdRefIndex,
+                    TypeIdSizeInBytes = typeIdSize
+                };
+            }
+
+            newMembers[i] = member with
+            {
+                CollectionInfo = newCollectionInfo,
+                PolymorphicInfo = newPolymorphicInfo
+            };
+        }
+
+        return newMembers;
     }
 
     private static (MemberToGenerate, Location) CreateMemberToGenerate(ISymbol m)
@@ -308,7 +379,9 @@ internal static class TypeInfoProvider
             isCollection,
             collectionTypeInfo,
             isReadOnly,
-            isInitOnly
+            isInitOnly,
+            null,
+            null
         );
 
         return (memberToGenerate, location);
@@ -392,7 +465,8 @@ internal static class TypeInfoProvider
                 elementType.SpecialType == SpecialType.System_String,
                 arrayElementHasGenerateSerializerAttribute,
                 true,
-                null
+                null,
+                false
             ));
         }
 
@@ -411,6 +485,7 @@ internal static class TypeInfoProvider
 
         string? concreteTypeName = null;
         var isCollection = false;
+        var isPureEnumerable = false;
 
         switch (originalDefinition)
         {
@@ -420,8 +495,12 @@ internal static class TypeInfoProvider
                 break;
             case "System.Collections.Generic.IList<T>":
             case "System.Collections.Generic.ICollection<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Generic.List";
+                break;
             case "System.Collections.Generic.IEnumerable<T>":
                 isCollection = true;
+                isPureEnumerable = true;
                 concreteTypeName = "System.Collections.Generic.List";
                 break;
             case "System.Collections.ObjectModel.Collection<T>":
@@ -473,7 +552,8 @@ internal static class TypeInfoProvider
             genericElementType.SpecialType == SpecialType.System_String,
             hasGenerateSerializerAttribute,
             false,
-            concreteTypeName
+            concreteTypeName,
+            isPureEnumerable
         ));
     }
 
@@ -491,6 +571,8 @@ internal static class TypeInfoProvider
                 return new CollectionInfo
                 (
                     PolymorphicMode.None,
+                    null,
+                    null,
                     null,
                     null,
                     null,
@@ -521,6 +603,8 @@ internal static class TypeInfoProvider
             countType,
             countSize,
             countSizeReference,
+            null,
+            null,
             unlimited
         );
     }
@@ -556,7 +640,9 @@ internal static class TypeInfoProvider
             typeIdProperty,
             typeIdType?.ToDisplayString() ?? "int",
             new(polymorphicOptions),
-            enumUnderlyingType
+            enumUnderlyingType,
+            null,
+            null
         );
     }
 

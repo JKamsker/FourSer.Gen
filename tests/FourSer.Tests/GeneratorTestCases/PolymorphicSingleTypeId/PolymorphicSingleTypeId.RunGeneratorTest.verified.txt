@@ -121,7 +121,21 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
     public static int Serialize(PolymorphicSingleTest obj, System.Span<byte> data)
     {
         var originalData = data;
-        SpanWriter.WriteByte(ref data, (Byte)obj.AnimalTypeId);
+        if (obj.Animals is null || obj.Animals.Count == 0)
+        {
+            SpanWriter.WriteByte(ref data, (byte)1);
+        }
+        else
+        {
+            var firstItem = obj.Animals[0];
+            var discriminator = firstItem switch
+            {
+                Cat => (byte)1,
+                Dog => (byte)2,
+                _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
+            };
+            SpanWriter.WriteByte(ref data, discriminator);
+        }
         if (obj.Animals is null)
         {
             SpanWriter.WriteUInt16(ref data, (ushort)0);
@@ -129,28 +143,31 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
         else
         {
             SpanWriter.WriteUInt16(ref data, (ushort)obj.Animals.Count);
-            switch (obj.AnimalTypeId)
+            if (obj.Animals.Count > 0)
             {
-                case 1:
+                switch (obj.Animals[0])
                 {
-                    foreach(var item in obj.Animals)
+                    case Cat:
                     {
-                        var bytesWritten = Cat.Serialize((Cat)item, data);
-                        data = data.Slice(bytesWritten);
+                        foreach(var item in obj.Animals)
+                        {
+                            var bytesWritten = Cat.Serialize((Cat)item, data);
+                            data = data.Slice(bytesWritten);
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 2:
-                {
-                    foreach(var item in obj.Animals)
+                    case Dog:
                     {
-                        var bytesWritten = Dog.Serialize((Dog)item, data);
-                        data = data.Slice(bytesWritten);
+                        foreach(var item in obj.Animals)
+                        {
+                            var bytesWritten = Dog.Serialize((Dog)item, data);
+                            data = data.Slice(bytesWritten);
+                        }
+                        break;
                     }
-                    break;
+                    default:
+                        throw new System.IO.InvalidDataException($"Unknown type for item in Animals: {obj.Animals[0].GetType().Name}");
                 }
-                default:
-                    throw new System.IO.InvalidDataException($"Unknown type id for Animals: {obj.AnimalTypeId}");
             }
         }
         return originalData.Length - data.Length;
@@ -158,7 +175,21 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
 
     public static void Serialize(PolymorphicSingleTest obj, System.IO.Stream stream)
     {
-        StreamWriter.WriteByte(stream, (Byte)obj.AnimalTypeId);
+        if (obj.Animals is null || obj.Animals.Count == 0)
+        {
+            StreamWriter.WriteByte(stream, (byte)1);
+        }
+        else
+        {
+            var firstItem = obj.Animals[0];
+            var discriminator = firstItem switch
+            {
+                Cat => (byte)1,
+                Dog => (byte)2,
+                _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
+            };
+            StreamWriter.WriteByte(stream, discriminator);
+        }
         if (obj.Animals is null)
         {
             StreamWriter.WriteUInt16(stream, (ushort)0);
@@ -166,26 +197,29 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
         else
         {
             StreamWriter.WriteUInt16(stream, (ushort)obj.Animals.Count);
-            switch (obj.AnimalTypeId)
+            if (obj.Animals.Count > 0)
             {
-                case 1:
+                switch (obj.Animals[0])
                 {
-                    foreach(var item in obj.Animals)
+                    case Cat:
                     {
-                        Cat.Serialize((Cat)item, stream);
+                        foreach(var item in obj.Animals)
+                        {
+                            Cat.Serialize((Cat)item, stream);
+                        }
+                        break;
                     }
-                    break;
-                }
-                case 2:
-                {
-                    foreach(var item in obj.Animals)
+                    case Dog:
                     {
-                        Dog.Serialize((Dog)item, stream);
+                        foreach(var item in obj.Animals)
+                        {
+                            Dog.Serialize((Dog)item, stream);
+                        }
+                        break;
                     }
-                    break;
+                    default:
+                        throw new System.IO.InvalidDataException($"Unknown type for item in Animals: {obj.Animals[0].GetType().Name}");
                 }
-                default:
-                    throw new System.IO.InvalidDataException($"Unknown type id for Animals: {obj.AnimalTypeId}");
             }
         }
     }

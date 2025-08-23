@@ -21,10 +21,9 @@ public static class PacketSizeGenerator
             {
                 GenerateCollectionSizeCalculation(sb, member);
             }
-            else if (member.PolymorphicInfo is not null)
+            else if (member.PolymorphicInfo is { } info)
             {
-                var info = member.PolymorphicInfo.Value;
-                if (string.IsNullOrEmpty(info.TypeIdProperty))
+                if (info.TypeIdPropertyIndex is null)
                 {
                     sb.WriteLineFormat("size += {0};", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
                 }
@@ -60,7 +59,7 @@ public static class PacketSizeGenerator
             return;
         }
 
-        if (string.IsNullOrEmpty(collectionInfo.CountSizeReference))
+        if ((collectionInfo.CountSize is null or < 0) && collectionInfo.CountSizeReferenceIndex is null)
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
             var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
@@ -79,8 +78,12 @@ public static class PacketSizeGenerator
             var typeArg = member.ListTypeArgument.Value;
             if (typeArg.HasGenerateSerializerAttribute)
             {
-                sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                // if not null
+                sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
                 using var _ = sb.BeginBlock();
+                
+                sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                using var __ = sb.BeginBlock();
                 sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetSimpleTypeName(typeArg.TypeName));
             }
             else if (typeArg.IsUnmanagedType)
@@ -129,7 +132,7 @@ public static class PacketSizeGenerator
 
         if (collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId)
         {
-            if (string.IsNullOrEmpty(info.TypeIdProperty))
+            if (info.TypeIdPropertyIndex is null)
             {
                 sb.WriteLineFormat
                     ("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));

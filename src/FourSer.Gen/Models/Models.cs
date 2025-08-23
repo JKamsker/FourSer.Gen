@@ -71,7 +71,9 @@ public sealed record MemberToGenerate
     bool IsCollection,
     CollectionTypeInfo? CollectionTypeInfo,
     bool IsReadOnly,
-    bool IsInitOnly
+    bool IsInitOnly,
+    int? IsCountSizeReferenceFor,
+    int? IsTypeIdPropertyFor
 );
 
 /// <summary>
@@ -111,7 +113,8 @@ public readonly record struct CollectionTypeInfo
     bool IsElementStringType,
     bool HasElementGenerateSerializerAttribute,
     bool IsArray,
-    string? ConcreteTypeName
+    string? ConcreteTypeName,
+    bool IsPureEnumerable
 );
 
 /// <summary>
@@ -130,6 +133,8 @@ public readonly record struct CollectionInfo
     string? CountType,
     int? CountSize,
     string? CountSizeReference,
+    int? CountSizeReferenceIndex,
+    int? CountTypeSizeInBytes,
     bool Unlimited = false
 );
 
@@ -155,5 +160,7 @@ public readonly record struct PolymorphicInfo
     string? TypeIdProperty,
     string TypeIdType,
     EquatableArray<PolymorphicOption> Options,
-    string? EnumUnderlyingType
+    string? EnumUnderlyingType,
+    int? TypeIdPropertyIndex,
+    int? TypeIdSizeInBytes
 );

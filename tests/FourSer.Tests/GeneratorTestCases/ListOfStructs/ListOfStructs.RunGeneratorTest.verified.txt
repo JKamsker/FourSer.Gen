@@ -86,9 +86,12 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
     {
         var size = 0;
         size += sizeof(int); // Count size for Structs
-        foreach(var item in obj.Structs)
+        if (obj.Structs is not null)
         {
-            size += MyStruct.GetPacketSize(item);
+            foreach(var item in obj.Structs)
+            {
+                size += MyStruct.GetPacketSize(item);
+            }
         }
         return size;
     }
@@ -137,7 +140,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         var originalData = data;
         if (obj.Structs is null)
         {
-            throw new System.NullReferenceException($"Collection \"Structs\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -155,7 +158,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
     {
         if (obj.Structs is null)
         {
-            throw new System.NullReferenceException($"Collection \"Structs\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
