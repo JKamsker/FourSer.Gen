@@ -18,7 +18,8 @@ public sealed record TypeToGenerate
     EquatableArray<MemberToGenerate> Members,
     EquatableArray<TypeToGenerate> NestedTypes,
     bool HasSerializableBaseType,
-    ConstructorInfo? Constructor
+    ConstructorInfo? Constructor,
+    int GenerationMode
 ) : IEquatable<TypeToGenerate>;
 
 /// <summary>
