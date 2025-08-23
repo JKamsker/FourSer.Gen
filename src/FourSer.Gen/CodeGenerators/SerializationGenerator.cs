@@ -293,7 +293,6 @@ public static class SerializationGenerator
             return;
         }
 
-        // No need to store the Count if we have a fixed size collection
         if (member.CollectionInfo?.CountSize is > 0)
         {
             sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
@@ -566,13 +565,17 @@ public static class SerializationGenerator
                 TargetVar(sink),
                 countType
             );
-            PolymorphicUtilities.GenerateWriteTypeIdCode
-            (
-                sb,
-                defaultOption,
-                info,
-                sink == Sink.Span ? "data" : "stream",
-                WriterType(sink)
+            var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(typeIdType);
+            var defaultKey = PolymorphicUtilities.FormatTypeIdKey(defaultOption.Key, info);
+
+            sb.WriteLineFormat(
+                "{0}.Write{1}({2}{3}, ({4}){5});",
+                WriterType(sink),
+                typeIdTypeName,
+                Ref(sink),
+                TargetVar(sink),
+                typeIdType,
+                defaultKey
             );
         }
 
@@ -777,13 +780,18 @@ public static class SerializationGenerator
                 TargetVar(sink),
                 countType
             );
-            PolymorphicUtilities.GenerateWriteTypeIdCode
-            (
-                sb,
-                defaultOption,
-                info,
+            var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
+            var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(typeIdType);
+            var defaultKey = PolymorphicUtilities.FormatTypeIdKey(defaultOption.Key, info);
+
+            sb.WriteLineFormat(
+                "{0}.Write{1}({2}{3}, ({4}){5});",
+                WriterType(sink),
+                typeIdTypeName,
+                Ref(sink),
                 TargetVar(sink),
-                WriterType(sink)
+                typeIdType,
+                defaultKey
             );
         }
         else if (collectionInfo.CountType != null || collectionInfo.CountSizeReferenceIndex is not null)
@@ -888,13 +896,18 @@ public static class SerializationGenerator
             using var __ = sb.BeginBlock();
             if (info.TypeIdPropertyIndex is null)
             {
-                PolymorphicUtilities.GenerateWriteTypeIdCode
-                (
-                    sb,
-                    option,
-                    info,
+                var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
+                var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(typeIdType);
+                var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+
+                sb.WriteLineFormat(
+                    "{0}.Write{1}({2}{3}, ({4}){5});",
+                    WriterType(sink),
+                    typeIdTypeName,
+                    Ref(sink),
                     TargetVar(sink),
-                    WriterType(sink)
+                    typeIdType,
+                    key
                 );
             }
 
@@ -1091,22 +1104,7 @@ public static class SerializationGenerator
         var defaultOption = info.Options.FirstOrDefault();
         var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
 
-        if (sink == Sink.Stream)
-        {
-            sb.WriteLine("if (!stream.CanSeek)");
-            using (sb.BeginBlock())
-            {
-                sb.WriteLine("throw new NotSupportedException(\"Stream must be seekable to serialize this collection.\");");
-            }
-
-            sb.WriteLine("var countPosition = stream.Position;");
-            sb.WriteLine("StreamWriter.WriteInt32(stream, 0); // Placeholder for count");
-        }
-        else
-        {
-            sb.WriteLine("var countSpan = data;");
-            sb.WriteLine("data = data.Slice(sizeof(int));");
-        }
+        EmitCountHeader(sb, sink, "int", out var cookieVar);
 
         sb.WriteLine("int count = 0;");
         sb.WriteLine($"using var enumerator = obj.{member.Name}.GetEnumerator();");
@@ -1116,19 +1114,22 @@ public static class SerializationGenerator
         {
             if (sink == Sink.Span)
             {
-                sb.WriteLine("SpanWriter.WriteInt32(ref countSpan, 0); // Write count as 0");
+                EmitCountCommit(sb, sink, "int", "0", cookieVar);
             }
 
-            PolymorphicUtilities.GenerateWriteTypeIdCode
-            (
-                sb,
-                defaultOption,
-                info,
+            var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(typeIdType);
+            var defaultKey = PolymorphicUtilities.FormatTypeIdKey(defaultOption.Key, info);
+
+            sb.WriteLineFormat(
+                "{0}.Write{1}({2}{3}, ({4}){5});",
+                WriterType(sink),
+                typeIdTypeName,
+                Ref(sink),
                 TargetVar(sink),
-                WriterType(sink)
+                typeIdType,
+                defaultKey
             );
         }
-
         sb.WriteLine("else");
         using (sb.BeginBlock())
         {
@@ -1190,17 +1191,7 @@ public static class SerializationGenerator
                 }
             }
 
-            if (sink == Sink.Stream)
-            {
-                sb.WriteLine("var endPosition = stream.Position;");
-                sb.WriteLine("stream.Position = countPosition;");
-                sb.WriteLine("StreamWriter.WriteInt32(stream, count);");
-                sb.WriteLine("stream.Position = endPosition;");
-            }
-            else
-            {
-                sb.WriteLine("SpanWriter.WriteInt32(ref countSpan, count);");
-            }
+            EmitCountCommit(sb, sink, "int", "count", cookieVar);
         }
     }
 
