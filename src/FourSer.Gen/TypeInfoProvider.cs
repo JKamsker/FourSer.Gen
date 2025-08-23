@@ -465,7 +465,8 @@ internal static class TypeInfoProvider
                 elementType.SpecialType == SpecialType.System_String,
                 arrayElementHasGenerateSerializerAttribute,
                 true,
-                null
+                null,
+                false
             ));
         }
 
@@ -484,6 +485,7 @@ internal static class TypeInfoProvider
 
         string? concreteTypeName = null;
         var isCollection = false;
+        var isPureEnumerable = false;
 
         switch (originalDefinition)
         {
@@ -493,8 +495,12 @@ internal static class TypeInfoProvider
                 break;
             case "System.Collections.Generic.IList<T>":
             case "System.Collections.Generic.ICollection<T>":
+                isCollection = true;
+                concreteTypeName = "System.Collections.Generic.List";
+                break;
             case "System.Collections.Generic.IEnumerable<T>":
                 isCollection = true;
+                isPureEnumerable = true;
                 concreteTypeName = "System.Collections.Generic.List";
                 break;
             case "System.Collections.ObjectModel.Collection<T>":
@@ -546,7 +552,8 @@ internal static class TypeInfoProvider
             genericElementType.SpecialType == SpecialType.System_String,
             hasGenerateSerializerAttribute,
             false,
-            concreteTypeName
+            concreteTypeName,
+            isPureEnumerable
         ));
     }
 

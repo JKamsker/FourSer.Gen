@@ -256,6 +256,15 @@ public static class SerializationGenerator
             return;
         }
 
+        var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
+        var isByteCollection = TypeHelper.IsByteCollection(elementTypeName);
+
+        if (isNotListOrArray && member.CollectionTypeInfo?.IsPureEnumerable == true && !isByteCollection)
+        {
+            GenerateEnumerableCollection(sb, member, target, helper, collectionInfo);
+            return;
+        }
+
         sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
         using (sb.BeginBlock())
         {
@@ -989,6 +998,71 @@ public static class SerializationGenerator
                 target,
                 elementAccess
             );
+        }
+    }
+
+    private static void GenerateEnumerableCollection(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        string target,
+        string helper,
+        CollectionInfo collectionInfo)
+    {
+        var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+        var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
+        var refOrEmpty = target == "data" ? "ref " : "";
+
+        if (target == "stream")
+        {
+            sb.WriteLine("if (!stream.CanSeek)");
+            using (sb.BeginBlock())
+            {
+                sb.WriteLine("throw new NotSupportedException(\"Stream must be seekable to serialize this collection.\");");
+            }
+
+            sb.WriteLine("var countPosition = stream.Position;");
+            sb.WriteLineFormat("{0}.{1}(stream, ({2})0); // Placeholder for count", helper, countWriteMethod, countType);
+        }
+        else
+        {
+            sb.WriteLine("var countSpan = data;");
+            sb.WriteLine($"data = data.Slice(sizeof({countType}));");
+        }
+
+        sb.WriteLine("int count = 0;");
+        sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
+        using (sb.BeginBlock())
+        {
+            sb.WriteLine($"using var enumerator = obj.{member.Name}.GetEnumerator();");
+            sb.WriteLine("while (enumerator.MoveNext())");
+            using (sb.BeginBlock())
+            {
+                var elementInfo = member.CollectionTypeInfo!.Value;
+                GenerateElementSerialization
+                (
+                    sb,
+                    "enumerator.Current",
+                    target,
+                    helper,
+                    elementInfo.ElementTypeName,
+                    elementInfo.HasElementGenerateSerializerAttribute,
+                    elementInfo.IsElementUnmanagedType,
+                    elementInfo.IsElementStringType
+                );
+                sb.WriteLine("count++;");
+            }
+        }
+
+        if (target == "stream")
+        {
+            sb.WriteLine("var endPosition = stream.Position;");
+            sb.WriteLine("stream.Position = countPosition;");
+            sb.WriteLineFormat("{0}.{1}(stream, ({2})count);", helper, countWriteMethod, countType);
+            sb.WriteLine("stream.Position = endPosition;");
+        }
+        else
+        {
+            sb.WriteLineFormat("{0}.{1}(ref countSpan, ({2})count);", helper, countWriteMethod, countType);
         }
     }
 
