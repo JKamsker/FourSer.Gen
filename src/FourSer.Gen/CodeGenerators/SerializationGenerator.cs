@@ -716,9 +716,9 @@ public static class SerializationGenerator
     )
     {
         var refOrEmpty = target == "data" ? "ref " : "";
-        var isPolymorphicSingleTypeId = GeneratorUtilities.ShouldUsePolymorphicSerialization(member) &&
-            collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId &&
-            string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
+        var isPolymorphicSingleTypeId = GeneratorUtilities.ShouldUsePolymorphicSerialization(member) 
+            && collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId 
+            && string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
 
         if (isPolymorphicSingleTypeId && !isNotListOrArray)
         {
@@ -761,8 +761,20 @@ public static class SerializationGenerator
         }
         else
         {
+            var countType = TypeHelper.GetDefaultCountType();
+            var countWriteMethod = TypeHelper.GetWriteMethodName(countType);
             sb.WriteLineFormat
-                ("throw new System.NullReferenceException($\"Collection \\\"{0}\\\" cannot be null.\");", member.Name);
+            (
+                "{0}.{1}({2}{3}, ({4})0);",
+                helper,
+                countWriteMethod,
+                refOrEmpty,
+                target,
+                countType
+            );
+            
+            // sb.WriteLineFormat
+            //     ("throw new System.NullReferenceException($\"Collection \\\"{0}\\\" cannot be null.\");", member.Name);
         }
     }
 

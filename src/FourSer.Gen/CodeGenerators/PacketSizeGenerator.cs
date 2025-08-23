@@ -78,8 +78,12 @@ public static class PacketSizeGenerator
             var typeArg = member.ListTypeArgument.Value;
             if (typeArg.HasGenerateSerializerAttribute)
             {
-                sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                // if not null
+                sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
                 using var _ = sb.BeginBlock();
+                
+                sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                using var __ = sb.BeginBlock();
                 sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetSimpleTypeName(typeArg.TypeName));
             }
             else if (typeArg.IsUnmanagedType)

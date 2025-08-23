@@ -21,9 +21,12 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
     {
         var size = 0;
         size += sizeof(ushort); // Count size for Cats
-        foreach(var item in obj.Cats)
+        if (obj.Cats is not null)
         {
-            size += Cat.GetPacketSize(item);
+            foreach(var item in obj.Cats)
+            {
+                size += Cat.GetPacketSize(item);
+            }
         }
         return size;
     }

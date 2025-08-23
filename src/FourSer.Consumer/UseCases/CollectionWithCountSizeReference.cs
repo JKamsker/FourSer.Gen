@@ -6,7 +6,6 @@ namespace FourSer.Consumer.UseCases;
 public partial class InventoryWithCountSizeRef
 {
     // public int Count { get; set; }
-    // public string TestString { get; set; }
     // public byte TypeId { get; set; }
     
     public byte TypeId { get; set; }
@@ -21,6 +20,7 @@ public partial class InventoryWithCountSizeRef
     [PolymorphicOption((byte)20, typeof(Shield))]
     [PolymorphicOption((byte)30, typeof(Potion))]
     public List<Item> Items { get; set; }
+    
 }
 
 [GenerateSerializer]

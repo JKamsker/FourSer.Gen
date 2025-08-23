@@ -21,9 +21,12 @@ public partial class UIntCountTest : ISerializable<UIntCountTest>
     {
         var size = 0;
         size += sizeof(uint); // Count size for Cats
-        foreach(var item in obj.Cats)
+        if (obj.Cats is not null)
         {
-            size += Cat.GetPacketSize(item);
+            foreach(var item in obj.Cats)
+            {
+                size += Cat.GetPacketSize(item);
+            }
         }
         return size;
     }

@@ -21,9 +21,12 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
     {
         var size = 0;
         size += sizeof(int); // Count size for Dogs
-        foreach(var item in obj.Dogs)
+        if (obj.Dogs is not null)
         {
-            size += Dog.GetPacketSize(item);
+            foreach(var item in obj.Dogs)
+            {
+                size += Dog.GetPacketSize(item);
+            }
         }
         return size;
     }
@@ -72,7 +75,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
         var originalData = data;
         if (obj.Dogs is null)
         {
-            throw new System.NullReferenceException($"Collection \"Dogs\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -90,7 +93,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
     {
         if (obj.Dogs is null)
         {
-            throw new System.NullReferenceException($"Collection \"Dogs\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {

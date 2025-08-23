@@ -158,7 +158,7 @@ public partial class Inventory : ISerializable<Inventory>
         }
         if (obj.Items is null)
         {
-            throw new System.NullReferenceException($"Collection \"Items\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -222,7 +222,7 @@ public partial class Inventory : ISerializable<Inventory>
         }
         if (obj.Items is null)
         {
-            throw new System.NullReferenceException($"Collection \"Items\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {

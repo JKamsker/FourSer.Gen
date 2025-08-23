@@ -309,7 +309,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         var originalData = data;
         if (obj.Numbers is null)
         {
-            throw new System.NullReferenceException($"Collection \"Numbers\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -321,7 +321,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Names is null)
         {
-            throw new System.NullReferenceException($"Collection \"Names\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -333,7 +333,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Data is null)
         {
-            throw new System.NullReferenceException($"Collection \"Data\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -342,7 +342,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Data1 is null)
         {
-            throw new System.NullReferenceException($"Collection \"Data1\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -351,7 +351,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Values is null)
         {
-            throw new System.NullReferenceException($"Collection \"Values\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -363,7 +363,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.UniqueIds is null)
         {
-            throw new System.NullReferenceException($"Collection \"UniqueIds\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -375,7 +375,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.ProcessingQueue is null)
         {
-            throw new System.NullReferenceException($"Collection \"ProcessingQueue\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -387,7 +387,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.ProcessingStack is null)
         {
-            throw new System.NullReferenceException($"Collection \"ProcessingStack\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -399,7 +399,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.ArrayData is null)
         {
-            throw new System.NullReferenceException($"Collection \"ArrayData\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -411,7 +411,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Measurements is null)
         {
-            throw new System.NullReferenceException($"Collection \"Measurements\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -423,7 +423,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Flags is null)
         {
-            throw new System.NullReferenceException($"Collection \"Flags\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -435,7 +435,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.ObservableData is null)
         {
-            throw new System.NullReferenceException($"Collection \"ObservableData\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -447,7 +447,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Characters is null)
         {
-            throw new System.NullReferenceException($"Collection \"Characters\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -459,7 +459,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.SortedValues is null)
         {
-            throw new System.NullReferenceException($"Collection \"SortedValues\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -495,7 +495,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.LargeBag is null)
         {
-            throw new System.NullReferenceException($"Collection \"LargeBag\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -512,7 +512,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
     {
         if (obj.Numbers is null)
         {
-            throw new System.NullReferenceException($"Collection \"Numbers\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
@@ -524,7 +524,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Names is null)
         {
-            throw new System.NullReferenceException($"Collection \"Names\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
@@ -536,7 +536,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Data is null)
         {
-            throw new System.NullReferenceException($"Collection \"Data\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
@@ -545,7 +545,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Data1 is null)
         {
-            throw new System.NullReferenceException($"Collection \"Data1\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
@@ -554,7 +554,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Values is null)
         {
-            throw new System.NullReferenceException($"Collection \"Values\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
@@ -566,7 +566,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.UniqueIds is null)
         {
-            throw new System.NullReferenceException($"Collection \"UniqueIds\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
@@ -578,7 +578,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.ProcessingQueue is null)
         {
-            throw new System.NullReferenceException($"Collection \"ProcessingQueue\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
@@ -590,7 +590,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.ProcessingStack is null)
         {
-            throw new System.NullReferenceException($"Collection \"ProcessingStack\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
@@ -602,7 +602,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.ArrayData is null)
         {
-            throw new System.NullReferenceException($"Collection \"ArrayData\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
@@ -614,7 +614,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Measurements is null)
         {
-            throw new System.NullReferenceException($"Collection \"Measurements\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
@@ -626,7 +626,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Flags is null)
         {
-            throw new System.NullReferenceException($"Collection \"Flags\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
@@ -638,7 +638,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.ObservableData is null)
         {
-            throw new System.NullReferenceException($"Collection \"ObservableData\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
@@ -650,7 +650,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Characters is null)
         {
-            throw new System.NullReferenceException($"Collection \"Characters\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
@@ -662,7 +662,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.SortedValues is null)
         {
-            throw new System.NullReferenceException($"Collection \"SortedValues\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
@@ -698,7 +698,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.LargeBag is null)
         {
-            throw new System.NullReferenceException($"Collection \"LargeBag\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {
