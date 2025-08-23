@@ -21,9 +21,12 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
     {
         var size = 0;
         size += sizeof(int); // Count size for Cats
-        foreach(var item in obj.Cats)
+        if (obj.Cats is not null)
         {
-            size += Cat.GetPacketSize(item);
+            foreach(var item in obj.Cats)
+            {
+                size += Cat.GetPacketSize(item);
+            }
         }
         return size;
     }
@@ -72,7 +75,7 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
         var originalData = data;
         if (obj.Cats is null)
         {
-            throw new System.NullReferenceException($"Collection \"Cats\" cannot be null.");
+            SpanWriter.WriteInt32(ref data, (int)0);
         }
         else
         {
@@ -90,7 +93,7 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
     {
         if (obj.Cats is null)
         {
-            throw new System.NullReferenceException($"Collection \"Cats\" cannot be null.");
+            StreamWriter.WriteInt32(stream, (int)0);
         }
         else
         {

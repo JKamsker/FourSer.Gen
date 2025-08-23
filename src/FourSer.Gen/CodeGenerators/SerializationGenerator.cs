@@ -216,7 +216,7 @@ public static class SerializationGenerator
 
         if (collectionInfo.CountSizeReferenceIndex is not null)
         {
-            sb.WriteLineFormat("if (obj.{0} is not null && obj.{0}.Count > 0)", member.Name);
+            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
             using (sb.BeginBlock())
             {
                 if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
@@ -1026,7 +1026,7 @@ public static class SerializationGenerator
             }
 
             sb.WriteLine("var countPosition = stream.Position;");
-            sb.WriteLine("StreamWriter.WriteInt32(stream, 0);");
+            sb.WriteLine("StreamWriter.WriteInt32(stream, 0); // Placeholder for count");
         }
         else
         {
@@ -1042,7 +1042,7 @@ public static class SerializationGenerator
         {
             if (target == "data")
             {
-                sb.WriteLine("SpanWriter.WriteInt32(ref countSpan, 0);");
+                sb.WriteLine("SpanWriter.WriteInt32(ref countSpan, 0); // Write count as 0");
             }
 
             PolymorphicUtilities.GenerateWriteTypeIdCode

@@ -90,9 +90,12 @@ public partial class MainObject : ISerializable<MainObject>
     {
         var size = 0;
         size += sizeof(byte); // Count size for Items
-        foreach(var item in obj.Items)
+        if (obj.Items is not null)
         {
-            size += Item.GetPacketSize(item);
+            foreach(var item in obj.Items)
+            {
+                size += Item.GetPacketSize(item);
+            }
         }
         return size;
     }
