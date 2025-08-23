@@ -50,23 +50,23 @@ public static class SerializationGenerator
             if (member.IsCountSizeReferenceFor is not null)
             {
                 var collectionMember = typeToGenerate.Members[member.IsCountSizeReferenceFor.Value];
-                var refOrEmpty = target == "data" ? "ref " : "";
-                var collectionName = collectionMember.Name;
-                var countExpression = collectionMember.CollectionTypeInfo?.IsPureEnumerable == true
-                    ? $"obj.{collectionName}?.Count() ?? 0"
-                    : $"obj.{collectionName}?.Count ?? 0";
-                var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
-                var writeMethod = $"Write{typeName}";
-                sb.WriteLineFormat
-                (
-                    "{0}.{1}({2}{3}, ({4})({5}));",
-                    helper,
-                    writeMethod,
-                    refOrEmpty,
-                    target,
-                    typeName,
-                    countExpression
-                );
+                if (collectionMember.CollectionTypeInfo?.IsPureEnumerable != true)
+                {
+                    var refOrEmpty = target == "data" ? "ref " : "";
+                    var countExpression = $"obj.{member.Name}";
+                    var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
+                    var writeMethod = $"Write{typeName}";
+                    sb.WriteLineFormat
+                    (
+                        "{0}.{1}({2}{3}, ({4})({5}));",
+                        helper,
+                        writeMethod,
+                        refOrEmpty,
+                        target,
+                        typeName,
+                        countExpression
+                    );
+                }
             }
             else if (member.IsTypeIdPropertyFor is not null)
             {
@@ -216,6 +216,18 @@ public static class SerializationGenerator
             return;
         }
 
+        var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
+        var isByteCollection = TypeHelper.IsByteCollection(elementTypeName);
+
+        if (member.CollectionTypeInfo?.IsPureEnumerable == true && !GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+        {
+            if (!isByteCollection)
+            {
+                GenerateEnumerableCollection(sb, member, target, helper, collectionInfo);
+                return;
+            }
+        }
+
         if (collectionInfo.CountSizeReferenceIndex is not null)
         {
             sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
@@ -257,9 +269,6 @@ public static class SerializationGenerator
 
             return;
         }
-
-        var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
-        var isByteCollection = TypeHelper.IsByteCollection(elementTypeName);
 
         if (isNotListOrArray && member.CollectionTypeInfo?.IsPureEnumerable == true && !isByteCollection)
         {

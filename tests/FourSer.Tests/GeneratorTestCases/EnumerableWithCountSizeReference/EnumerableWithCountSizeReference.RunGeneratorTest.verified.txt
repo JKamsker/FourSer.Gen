@@ -20,7 +20,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
     public static int GetPacketSize(EnumerableOfReferenceTypes obj)
     {
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type Count
+        size += sizeof(int); // Count size for MyList
         if (obj.MyList is not null)
         {
             foreach(var item in obj.MyList)
@@ -31,27 +31,25 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         return size;
     }
 
-    private EnumerableOfReferenceTypes(int count, System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity> myList)
+    private EnumerableOfReferenceTypes(System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity> myList)
     {
-        this.Count = count;
         this.MyList = myList;
     }
 
     public EnumerableOfReferenceTypes()
     {
-        this.Count = default;
         this.MyList = default;
     }
 
     public static EnumerableOfReferenceTypes Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var count = SpanReader.ReadInt32(ref buffer);
-        var myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity>(count);
-        for (int i = 0; i < count; i++)
+        var myListCount = SpanReader.ReadInt32(ref buffer);
+        var myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity>(myListCount);
+        for (int i = 0; i < myListCount; i++)
         {
             myList.Add(Entity.Deserialize(ref buffer));
         }
-        var obj = new EnumerableOfReferenceTypes(count, myList);
+        var obj = new EnumerableOfReferenceTypes(myList);
         return obj;
     }
 
@@ -62,41 +60,58 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
 
     public static EnumerableOfReferenceTypes Deserialize(System.IO.Stream stream)
     {
-        var count = StreamReader.ReadInt32(stream);
-        var myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity>(count);
-        for (int i = 0; i < count; i++)
+        var myListCount = StreamReader.ReadInt32(stream);
+        var myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity>(myListCount);
+        for (int i = 0; i < myListCount; i++)
         {
             myList.Add(Entity.Deserialize(stream));
         }
-        var obj = new EnumerableOfReferenceTypes(count, myList);
+        var obj = new EnumerableOfReferenceTypes(myList);
         return obj;
     }
 
     public static int Serialize(EnumerableOfReferenceTypes obj, System.Span<byte> data)
     {
         var originalData = data;
-        SpanWriter.WriteInt32(ref data, (Int32)(obj.MyList?.Count() ?? 0));
+        var countSpan = data;
+        data = data.Slice(sizeof(int));
+        int count = 0;
         if (obj.MyList is not null)
         {
-            foreach (var item in obj.MyList)
+            using var enumerator = obj.MyList.GetEnumerator();
+            while (enumerator.MoveNext())
             {
-                var bytesWritten = Entity.Serialize(item, data);
+                var bytesWritten = Entity.Serialize(enumerator.Current, data);
                 data = data.Slice(bytesWritten);
+                count++;
             }
         }
+        SpanWriter.WriteInt32(ref countSpan, (int)count);
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(EnumerableOfReferenceTypes obj, System.IO.Stream stream)
     {
-        StreamWriter.WriteInt32(stream, (Int32)(obj.MyList?.Count() ?? 0));
+        if (!stream.CanSeek)
+        {
+            throw new NotSupportedException("Stream must be seekable to serialize this collection.");
+        }
+        var countPosition = stream.Position;
+        StreamWriter.WriteInt32(stream, (int)0); // Placeholder for count
+        int count = 0;
         if (obj.MyList is not null)
         {
-            foreach (var item in obj.MyList)
+            using var enumerator = obj.MyList.GetEnumerator();
+            while (enumerator.MoveNext())
             {
-                Entity.Serialize(item, stream);
+                Entity.Serialize(enumerator.Current, stream);
+                count++;
             }
         }
+        var endPosition = stream.Position;
+        stream.Position = countPosition;
+        StreamWriter.WriteInt32(stream, (int)count);
+        stream.Position = endPosition;
     }
 }
 
