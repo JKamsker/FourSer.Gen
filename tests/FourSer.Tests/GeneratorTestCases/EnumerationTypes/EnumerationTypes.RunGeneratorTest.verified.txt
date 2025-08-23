@@ -52,7 +52,6 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         foreach(var item in obj.SmallSet) { size += StringEx.MeasureSize(item); }
         size += sizeof(ushort); // Count size for MediumQueue
         size += obj.MediumQueue.Count * sizeof(int);
-        size += sizeof(int); // Count size for LargeBag
         size += obj.LargeBag.Count * sizeof(long);
         return size;
     }
@@ -189,9 +188,8 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         {
             mediumQueue.Enqueue(SpanReader.ReadInt32(ref buffer));
         }
-        var largeBagCount = SpanReader.ReadInt32(ref buffer);
         var largeBag = new System.Collections.Concurrent.ConcurrentBag<long>();
-        for (int i = 0; i < largeBagCount; i++)
+        for (int i = 0; i < 8; i++)
         {
             largeBag.Add(SpanReader.ReadInt64(ref buffer));
         }
@@ -294,9 +292,8 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         {
             mediumQueue.Enqueue(StreamReader.ReadInt32(stream));
         }
-        var largeBagCount = StreamReader.ReadInt32(stream);
         var largeBag = new System.Collections.Concurrent.ConcurrentBag<long>();
-        for (int i = 0; i < largeBagCount; i++)
+        for (int i = 0; i < 8; i++)
         {
             largeBag.Add(StreamReader.ReadInt64(stream));
         }
@@ -499,7 +496,10 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.LargeBag.Count);
+            if (obj.LargeBag.Count != 8)
+            {
+                throw new System.InvalidOperationException($"Collection 'LargeBag' must have a size of 8 but was {obj.LargeBag.Count}.");
+            }
             foreach (var item in obj.LargeBag)
             {
                 SpanWriter.WriteInt64(ref data, (Int64)item);
@@ -702,7 +702,10 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.LargeBag.Count);
+            if (obj.LargeBag.Count != 8)
+            {
+                throw new System.InvalidOperationException($"Collection 'LargeBag' must have a size of 8 but was {obj.LargeBag.Count}.");
+            }
             foreach (var item in obj.LargeBag)
             {
                 StreamWriter.WriteInt64(stream, (Int64)item);

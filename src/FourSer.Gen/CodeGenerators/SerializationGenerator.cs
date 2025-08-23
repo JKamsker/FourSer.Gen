@@ -297,7 +297,21 @@ public static class SerializationGenerator
         var isHandledByPolymorphic = collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId &&
             string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
 
-        if (collectionInfo is { Unlimited: false, CountSizeReferenceIndex: null } && !isHandledByPolymorphic)
+        if (collectionInfo.CountSize >= 0)
+        {
+            var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
+            sb.WriteLineFormat("if ({0} != {1})", countExpression, collectionInfo.CountSize);
+            using (sb.BeginBlock())
+            {
+                sb.WriteLineFormat(
+                    "throw new System.InvalidOperationException($\"Collection '{0}' must have a size of {1} but was {{{2}}}.\");",
+                    member.Name,
+                    collectionInfo.CountSize,
+                    countExpression
+                );
+            }
+        }
+        else if (collectionInfo is { Unlimited: false, CountSizeReferenceIndex: null } && !isHandledByPolymorphic)
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
             var countWriteMethod = TypeHelper.GetWriteMethodName(countType);

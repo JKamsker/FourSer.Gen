@@ -189,16 +189,22 @@ public static class DeserializationGenerator
 
         var memberName = member.Name.ToCamelCase();
         string countVar;
+        string countType;
 
-        var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
-        var countReadMethod = TypeHelper.GetReadMethodName(countType);
-
-        if (collectionInfo.CountSizeReferenceIndex is not null)
+        if (collectionInfo.CountSize >= 0)
+        {
+            countVar = collectionInfo.CountSize.ToString();
+            countType = "int";
+        }
+        else if (collectionInfo.CountSizeReferenceIndex is not null)
         {
             countVar = collectionInfo.CountSizeReference.ToCamelCase();
+            countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
         }
         else
         {
+            countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+            var countReadMethod = TypeHelper.GetReadMethodName(countType);
             countVar = $"{memberName}Count";
             sb.WriteLineFormat("var {0} = {1}.{2}({3}{4});", countVar, helper, countReadMethod, refOrEmpty, source);
         }

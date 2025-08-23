@@ -59,7 +59,7 @@ public static class PacketSizeGenerator
             return;
         }
 
-        if (collectionInfo.CountSizeReferenceIndex is null)
+        if ((collectionInfo.CountSize is null or < 0) && collectionInfo.CountSizeReferenceIndex is null)
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
             var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
