@@ -74,17 +74,14 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         {
             throw new System.ArgumentNullException(nameof(obj.MyList), "Fixed-size collections cannot be null.");
         }
-        else
+        if (obj.MyList.Count != 10)
         {
-            if (obj.MyList.Count != 10)
-            {
-                throw new System.InvalidOperationException($"Collection 'MyList' must have a size of 10 but was {obj.MyList.Count}.");
-            }
-            for (int i = 0; i < obj.MyList.Count; i++)
-            {
-                var bytesWritten = Entity.Serialize(obj.MyList[i], data);
-                data = data.Slice(bytesWritten);
-            }
+            throw new System.InvalidOperationException($"Collection 'MyList' must have a size of 10 but was {obj.MyList.Count}.");
+        }
+        for (int i = 0; i < obj.MyList.Count; i++)
+        {
+            var bytesWritten = Entity.Serialize(obj.MyList[i], data);
+            data = data.Slice(bytesWritten);
         }
         return originalData.Length - data.Length;
     }
@@ -95,16 +92,13 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         {
             throw new System.ArgumentNullException(nameof(obj.MyList), "Fixed-size collections cannot be null.");
         }
-        else
+        if (obj.MyList.Count != 10)
         {
-            if (obj.MyList.Count != 10)
-            {
-                throw new System.InvalidOperationException($"Collection 'MyList' must have a size of 10 but was {obj.MyList.Count}.");
-            }
-            for (int i = 0; i < obj.MyList.Count; i++)
-            {
-                Entity.Serialize(obj.MyList[i], stream);
-            }
+            throw new System.InvalidOperationException($"Collection 'MyList' must have a size of 10 but was {obj.MyList.Count}.");
+        }
+        for (int i = 0; i < obj.MyList.Count; i++)
+        {
+            Entity.Serialize(obj.MyList[i], stream);
         }
     }
 }

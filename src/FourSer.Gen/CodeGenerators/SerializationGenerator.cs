@@ -1238,18 +1238,15 @@ public static class SerializationGenerator
                 {
                     sb.WriteLineFormat("throw new System.ArgumentNullException(nameof(obj.{0}), \"Fixed-size collections cannot be null.\");", member.Name);
                 }
-                sb.WriteLine("else");
-                using (sb.BeginBlock())
-                {
-                    HandleNonNullCollection
-                    (
-                        sb,
-                        member,
-                        target,
-                        helper,
-                        member.CollectionInfo.Value
-                    );
-                }
+
+                HandleNonNullCollection
+                (
+                    sb,
+                    member,
+                    target,
+                    helper,
+                    member.CollectionInfo.Value
+                );
                 break;
             case CollMode.Count:
                 if (member.CollectionInfo is not { } collectionInfo)

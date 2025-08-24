@@ -494,16 +494,13 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         {
             throw new System.ArgumentNullException(nameof(obj.LargeBag), "Fixed-size collections cannot be null.");
         }
-        else
+        if (obj.LargeBag.Count != 8)
         {
-            if (obj.LargeBag.Count != 8)
-            {
-                throw new System.InvalidOperationException($"Collection 'LargeBag' must have a size of 8 but was {obj.LargeBag.Count}.");
-            }
-            foreach (var item in obj.LargeBag)
-            {
-                SpanWriter.WriteInt64(ref data, (Int64)item);
-            }
+            throw new System.InvalidOperationException($"Collection 'LargeBag' must have a size of 8 but was {obj.LargeBag.Count}.");
+        }
+        foreach (var item in obj.LargeBag)
+        {
+            SpanWriter.WriteInt64(ref data, (Int64)item);
         }
         return originalData.Length - data.Length;
     }
@@ -700,16 +697,13 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         {
             throw new System.ArgumentNullException(nameof(obj.LargeBag), "Fixed-size collections cannot be null.");
         }
-        else
+        if (obj.LargeBag.Count != 8)
         {
-            if (obj.LargeBag.Count != 8)
-            {
-                throw new System.InvalidOperationException($"Collection 'LargeBag' must have a size of 8 but was {obj.LargeBag.Count}.");
-            }
-            foreach (var item in obj.LargeBag)
-            {
-                StreamWriter.WriteInt64(stream, (Int64)item);
-            }
+            throw new System.InvalidOperationException($"Collection 'LargeBag' must have a size of 8 but was {obj.LargeBag.Count}.");
+        }
+        foreach (var item in obj.LargeBag)
+        {
+            StreamWriter.WriteInt64(stream, (Int64)item);
         }
     }
 }
