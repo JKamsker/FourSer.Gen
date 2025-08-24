@@ -20,8 +20,7 @@ public static class SerializationGenerator
     private enum CollMode
     {
         Fixed,
-        Count,
-        Terminated
+        Count
     }
 
     private static CollMode GetCollectionMode(MemberToGenerate member)
@@ -667,8 +666,7 @@ public static class SerializationGenerator
         (
             sb,
             ctx,
-            info,
-            false
+            info
         );
 
         sb.WriteLine("case null:");
@@ -699,8 +697,7 @@ public static class SerializationGenerator
         (
             sb,
             ctx,
-            info,
-            true
+            info
         );
 
         sb.WriteLine("case null:");
@@ -733,8 +730,7 @@ public static class SerializationGenerator
     (
         IndentedStringBuilder sb,
         WriterCtx ctx,
-        PolymorphicInfo info,
-        bool isItem
+        PolymorphicInfo info
     )
     {
         GeneratePolymorphicSwitch(sb, info, (s, option) =>
@@ -905,29 +901,6 @@ public static class SerializationGenerator
         EndCountReservation(sb, ctx, countType, "count");
     }
 
-    private static void GenerateSpanPolymorphicCollectionSerialization
-        (IndentedStringBuilder sb, MemberToGenerate member, PolymorphicInfo info, CollectionInfo collectionInfo)
-    {
-        GeneratePolymorphicCollection
-        (
-            sb,
-            member,
-            info,
-            SpanCtx
-        );
-    }
-
-    private static void GenerateStreamPolymorphicCollectionSerialization
-        (IndentedStringBuilder sb, MemberToGenerate member, PolymorphicInfo info, CollectionInfo collectionInfo)
-    {
-        GeneratePolymorphicCollection
-        (
-            sb,
-            member,
-            info,
-            StreamCtx
-        );
-    }
 
     private static void GeneratePolymorphicCollection
     (
@@ -1014,6 +987,29 @@ public static class SerializationGenerator
         sb.WriteLine("}");
     }
 
+    private static void GenerateTypeResolutionSwitch(
+        IndentedStringBuilder sb,
+        string switchExpression,
+        string assignmentTarget,
+        PolymorphicInfo info)
+    {
+        sb.WriteLineFormat("switch ({0})", switchExpression);
+        using (sb.BeginBlock())
+        {
+            foreach (var option in info.Options)
+            {
+                var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+                var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+                sb.WriteLineFormat("case {0}:", typeName);
+                sb.WriteLineFormat("    {0} = {1};", assignmentTarget, key);
+                sb.WriteLine("    break;");
+            }
+
+            sb.WriteLine("case null:");
+            sb.WriteLine("    break;");
+        }
+    }
+
     private static void GenerateTypeIdPrePass(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
     {
         for (var i = 0; i < typeToGenerate.Members.Count; i++)
@@ -1031,29 +1027,7 @@ public static class SerializationGenerator
             }
 
             var referencedMember = typeToGenerate.Members[info.TypeIdPropertyIndex.Value];
-
-            sb.WriteLineFormat("switch (obj.{0})", member.Name);
-            using var __ = sb.BeginBlock();
-            foreach (var option in info.Options)
-            {
-                var typeName = TypeHelper.GetSimpleTypeName(option.Type);
-                var key = option.Key.ToString();
-                if (info.EnumUnderlyingType is not null)
-                {
-                    key = $"({info.TypeIdType}){key}";
-                }
-                else if (info.TypeIdType.EndsWith("Enum"))
-                {
-                    key = $"{info.TypeIdType}.{key}";
-                }
-
-                sb.WriteLineFormat("case {0}:", typeName);
-                sb.WriteLineFormat("    obj.{0} = {1};", referencedMember.Name, key);
-                sb.WriteLine("    break;");
-            }
-
-            sb.WriteLine("case null:");
-            sb.WriteLine("    break;");
+            GenerateTypeResolutionSwitch(sb, $"obj.{member.Name}", $"obj.{referencedMember.Name}", info);
         }
     }
 
@@ -1162,14 +1136,7 @@ public static class SerializationGenerator
                 return true; // it was handled, but did nothing.
             }
 
-            if (ctx.IsSpan)
-            {
-                GenerateSpanPolymorphicCollectionSerialization(sb, member, info, collectionInfo);
-            }
-            else
-            {
-                GenerateStreamPolymorphicCollectionSerialization(sb, member, info, collectionInfo);
-            }
+            GeneratePolymorphicCollection(sb, member, info, ctx);
 
             return true;
         }
