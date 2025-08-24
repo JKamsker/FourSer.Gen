@@ -414,7 +414,10 @@ internal static class PolymorphicSerializer
         sb.WriteLine("{");
         sb.Indent();
         SerializationWriterEmitter.EmitWriteTypeId(sb, ctx, defaultOption, info);
+    if (ctx.IsSpan)
+    {
         EndCountReservation(sb, ctx, "int", "0");
+    }
         sb.Unindent();
         sb.WriteLine("}");
     }
