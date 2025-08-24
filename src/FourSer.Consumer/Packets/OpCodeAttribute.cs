@@ -1,4 +1,4 @@
-namespace FourSer.Consumer.Packets
+namespace FourSer.Tests.Behavioural.Packets
 {
     [AttributeUsage(AttributeTargets.Class)]
     public class OpCodeAttribute : Attribute

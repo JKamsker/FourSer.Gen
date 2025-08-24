@@ -1,4 +1,4 @@
-namespace FourSer.Consumer.Packets
+namespace FourSer.Tests.Behavioural.Packets
 {
     public enum OpCode
     {

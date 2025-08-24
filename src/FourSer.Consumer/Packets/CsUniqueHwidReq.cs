@@ -1,6 +1,6 @@
 using FourSer.Contracts;
 
-namespace FourSer.Consumer.Packets
+namespace FourSer.Tests.Behavioural.Packets
 {
     [GenerateSerializer]
     [OpCode(OpCode.CS_UNIQUE_HWID_REQ)]

@@ -1,6 +1,6 @@
 using FourSer.Contracts;
 
-namespace FourSer.Consumer.Packets
+namespace FourSer.Tests.Behavioural.Packets
 {
     [GenerateSerializer]
     public partial class CharacterInfo
