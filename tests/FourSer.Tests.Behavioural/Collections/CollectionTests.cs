@@ -93,9 +93,6 @@ public class CollectionTests
         Assert.Empty(deserialized.Scores);
     }
 
-    /*
-    // This test is commented out because of a bug in the source generator.
-    // It deserializes a null collection into an empty collection, failing the round-trip assertion.
     [Fact]
     public void NullList_ShouldRoundtripCorrectly()
     {
@@ -110,5 +107,4 @@ public class CollectionTests
         // Assert
         Assert.Null(deserialized.Names);
     }
-    */
 }

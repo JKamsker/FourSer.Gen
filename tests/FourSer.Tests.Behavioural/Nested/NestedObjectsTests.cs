@@ -39,10 +39,6 @@ public class NestedObjectsTests
         Assert.Equal(original.Child.Name, deserialized.Child.Name);
     }
 
-    /*
-    // This test is commented out because of a bug in the source generator.
-    // The generated GetPacketSize method does not handle null nested objects,
-    // causing a NullReferenceException.
     [Fact]
     public void NullNestedObject_ShouldRoundtripCorrectly()
     {
@@ -63,5 +59,4 @@ public class NestedObjectsTests
         Assert.Equal(original.Id, deserialized.Id);
         Assert.Null(deserialized.Child);
     }
-    */
 }

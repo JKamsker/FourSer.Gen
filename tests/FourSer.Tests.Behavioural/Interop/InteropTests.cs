@@ -1,6 +1,6 @@
 using FourSer.Contracts;
-using System.IO;
-using System.Text;
+using FourSer.Gen.Helpers;
+using System;
 
 namespace FourSer.Tests.Behavioural.Interop;
 
@@ -13,35 +13,21 @@ public partial class SimplePacket
 
 public class InteropTests
 {
-    /*
-    // These tests are commented out because of a suspected bug in the source generator's
-    // string serialization logic. The null-flag for strings seems to be handled incorrectly,
-    // which makes it impossible to create a predictable byte layout for interoperability testing.
-
     [Fact]
-    public void SimplePacket_CanDeserialize_FromManualBinaryWriter()
+    public void SimplePacket_CanDeserialize_FromManualWriter()
     {
         // Arrange: Manually create the byte stream
-        byte[] manualBuffer;
         var expectedPlayerId = 456;
         var expectedPlayerName = "Aragorn";
 
-        using (var ms = new MemoryStream())
-        using (var writer = new BinaryWriter(ms, Encoding.UTF8))
-        {
-            // Write PlayerId (4 bytes)
-            writer.Write(expectedPlayerId);
+        var buffer = new byte[sizeof(int) + StringEx.MeasureSize(expectedPlayerName)];
+        var span = buffer.AsSpan();
 
-            // Write PlayerName (custom format: null-flag byte, length int, then bytes)
-            writer.Write((byte)1); // 1 = not null
-            var nameBytes = Encoding.UTF8.GetBytes(expectedPlayerName);
-            writer.Write(nameBytes.Length);
-            writer.Write(nameBytes);
-            manualBuffer = ms.ToArray();
-        }
+        SpanWriterHelpers.WriteInt32(ref span, expectedPlayerId);
+        StringEx.WriteString(ref span, expectedPlayerName);
 
         // Act: Use the generated deserializer on our manual buffer
-        var deserialized = SimplePacket.Deserialize(manualBuffer);
+        var deserialized = SimplePacket.Deserialize(buffer);
 
         // Assert
         Assert.Equal(expectedPlayerId, deserialized.PlayerId);
@@ -49,37 +35,36 @@ public class InteropTests
     }
 
     [Fact]
-    public void SimplePacket_SerializedOutput_CanBeReadByManualBinaryReader()
+    public void SimplePacket_SerializedOutput_CanBeReadByManualReader()
     {
         // Arrange: Generate the byte stream using the source generator
         var original = new SimplePacket { PlayerId = 789, PlayerName = "Legolas" };
         var buffer = new byte[SimplePacket.GetPacketSize(original)];
         SimplePacket.Serialize(original, buffer);
 
-        // Act: Use a manual BinaryReader to parse the generated buffer
-        int actualPlayerId;
-        string? actualPlayerName;
-
-        using (var ms = new MemoryStream(buffer))
-        using (var reader = new BinaryReader(ms, Encoding.UTF8))
-        {
-            actualPlayerId = reader.ReadInt32();
-            var isNull = reader.ReadByte();
-            if (isNull == 1)
-            {
-                var length = reader.ReadInt32();
-                var bytes = reader.ReadBytes(length);
-                actualPlayerName = Encoding.UTF8.GetString(bytes);
-            }
-            else
-            {
-                actualPlayerName = null;
-            }
-        }
+        // Act: Use a manual reader to parse the generated buffer
+        var span = new ReadOnlySpan<byte>(buffer);
+        var actualPlayerId = RoSpanReaderHelpers.ReadInt32(ref span);
+        var actualPlayerName = StringEx.ReadString(ref span);
 
         // Assert
         Assert.Equal(original.PlayerId, actualPlayerId);
         Assert.Equal(original.PlayerName, actualPlayerName);
     }
-    */
+
+    [Fact]
+    public void SimplePacket_NullPlayerName_ShouldRoundtripCorrectly()
+    {
+        // Arrange
+        var original = new SimplePacket { PlayerId = 123, PlayerName = null };
+
+        // Act
+        var buffer = new byte[SimplePacket.GetPacketSize(original)];
+        SimplePacket.Serialize(original, buffer);
+        var deserialized = SimplePacket.Deserialize(buffer);
+
+        // Assert
+        Assert.Equal(original.PlayerId, deserialized.PlayerId);
+        Assert.Equal(original.PlayerName, deserialized.PlayerName);
+    }
 }

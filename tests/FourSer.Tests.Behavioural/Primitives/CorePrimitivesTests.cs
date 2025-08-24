@@ -83,9 +83,6 @@ public class CorePrimitivesTests
         Assert.Equal(original.StringValue, deserialized.StringValue);
     }
 
-    /*
-    // This test is commented out because of a bug in the source generator.
-    // It deserializes a null string into an empty string, failing the round-trip assertion.
     [Fact]
     public void PrimitivesPacket_NullString_ShouldRoundtripCorrectly()
     {
@@ -104,5 +101,4 @@ public class CorePrimitivesTests
         // Assert
         Assert.Equal(original.StringValue, deserialized.StringValue);
     }
-    */
 }
