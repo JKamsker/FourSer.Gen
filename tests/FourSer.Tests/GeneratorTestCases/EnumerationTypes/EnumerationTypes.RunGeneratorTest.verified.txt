@@ -325,10 +325,6 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             SpanWriter.WriteInt32(ref data, (int)obj.Names.Count());
             foreach (var item in obj.Names)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("An item in a collection was null.");
-                }
                 SpanWriter.WriteString(ref data, item);
             }
         }
@@ -479,10 +475,6 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             SpanWriter.WriteByte(ref data, (byte)obj.SmallSet.Count);
             foreach (var item in obj.SmallSet)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("An item in a collection was null.");
-                }
                 SpanWriter.WriteString(ref data, item);
             }
         }
@@ -536,10 +528,6 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             StreamWriter.WriteInt32(stream, (int)obj.Names.Count());
             foreach (var item in obj.Names)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("An item in a collection was null.");
-                }
                 StreamWriter.WriteString(stream, item);
             }
         }
@@ -690,10 +678,6 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             StreamWriter.WriteByte(stream, (byte)obj.SmallSet.Count);
             foreach (var item in obj.SmallSet)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("An item in a collection was null.");
-                }
                 StreamWriter.WriteString(stream, item);
             }
         }

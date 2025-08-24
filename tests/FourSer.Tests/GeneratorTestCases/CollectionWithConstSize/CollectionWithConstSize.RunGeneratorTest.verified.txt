@@ -82,10 +82,6 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         {
             if (obj.MyList[i] is null)
             {
-                throw new System.NullReferenceException("An item in a collection was null.");
-            }
-            if (obj.MyList[i] is null)
-            {
                 throw new System.NullReferenceException($"Member 'obj.MyList[i]' cannot be null.");
             }
             var bytesWritten = Entity.Serialize(obj.MyList[i], data);
@@ -106,10 +102,6 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         }
         for (int i = 0; i < obj.MyList.Count; i++)
         {
-            if (obj.MyList[i] is null)
-            {
-                throw new System.NullReferenceException("An item in a collection was null.");
-            }
             if (obj.MyList[i] is null)
             {
                 throw new System.NullReferenceException($"Member 'obj.MyList[i]' cannot be null.");

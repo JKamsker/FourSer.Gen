@@ -1186,15 +1186,6 @@ public static class SerializationGenerator
         PolymorphicInfo? polymorphicInfo,
         bool isReferenceType)
     {
-        if (isReferenceType)
-        {
-            sb.WriteLineFormat("if ({0} is null)", elementExpr);
-            using (sb.BeginBlock())
-            {
-                sb.WriteLine("throw new System.NullReferenceException(\"An item in a collection was null.\");");
-            }
-        }
-        
         if (polymorphicInfo is not null)
         {
             var itemMember = new MemberToGenerate(

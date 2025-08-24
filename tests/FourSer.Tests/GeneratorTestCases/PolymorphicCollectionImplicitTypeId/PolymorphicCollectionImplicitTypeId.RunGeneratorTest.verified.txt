@@ -170,10 +170,6 @@ public partial class Inventory : ISerializable<Inventory>
                         {
                             if ((Sword)obj.Items[i] is null)
                             {
-                                throw new System.NullReferenceException("An item in a collection was null.");
-                            }
-                            if ((Sword)obj.Items[i] is null)
-                            {
                                 throw new System.NullReferenceException($"Member '(Sword)obj.Items[i]' cannot be null.");
                             }
                             var bytesWritten = Sword.Serialize((Sword)obj.Items[i], data);
@@ -187,10 +183,6 @@ public partial class Inventory : ISerializable<Inventory>
                         {
                             if ((Shield)obj.Items[i] is null)
                             {
-                                throw new System.NullReferenceException("An item in a collection was null.");
-                            }
-                            if ((Shield)obj.Items[i] is null)
-                            {
                                 throw new System.NullReferenceException($"Member '(Shield)obj.Items[i]' cannot be null.");
                             }
                             var bytesWritten = Shield.Serialize((Shield)obj.Items[i], data);
@@ -202,10 +194,6 @@ public partial class Inventory : ISerializable<Inventory>
                     {
                         for (int i = 0; i < obj.Items.Count; i++)
                         {
-                            if ((Potion)obj.Items[i] is null)
-                            {
-                                throw new System.NullReferenceException("An item in a collection was null.");
-                            }
                             if ((Potion)obj.Items[i] is null)
                             {
                                 throw new System.NullReferenceException($"Member '(Potion)obj.Items[i]' cannot be null.");
@@ -255,10 +243,6 @@ public partial class Inventory : ISerializable<Inventory>
                         {
                             if ((Sword)obj.Items[i] is null)
                             {
-                                throw new System.NullReferenceException("An item in a collection was null.");
-                            }
-                            if ((Sword)obj.Items[i] is null)
-                            {
                                 throw new System.NullReferenceException($"Member '(Sword)obj.Items[i]' cannot be null.");
                             }
                             Sword.Serialize((Sword)obj.Items[i], stream);
@@ -271,10 +255,6 @@ public partial class Inventory : ISerializable<Inventory>
                         {
                             if ((Shield)obj.Items[i] is null)
                             {
-                                throw new System.NullReferenceException("An item in a collection was null.");
-                            }
-                            if ((Shield)obj.Items[i] is null)
-                            {
                                 throw new System.NullReferenceException($"Member '(Shield)obj.Items[i]' cannot be null.");
                             }
                             Shield.Serialize((Shield)obj.Items[i], stream);
@@ -285,10 +265,6 @@ public partial class Inventory : ISerializable<Inventory>
                     {
                         for (int i = 0; i < obj.Items.Count; i++)
                         {
-                            if ((Potion)obj.Items[i] is null)
-                            {
-                                throw new System.NullReferenceException("An item in a collection was null.");
-                            }
                             if ((Potion)obj.Items[i] is null)
                             {
                                 throw new System.NullReferenceException($"Member '(Potion)obj.Items[i]' cannot be null.");

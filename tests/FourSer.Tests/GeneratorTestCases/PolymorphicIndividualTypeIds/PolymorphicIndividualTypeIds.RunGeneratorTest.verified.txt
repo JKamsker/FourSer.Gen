@@ -124,10 +124,6 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
             {
                 if (item is null)
                 {
-                    throw new System.NullReferenceException("An item in a collection was null.");
-                }
-                if (item is null)
-                {
                     throw new System.NullReferenceException("Item in collection cannot be null.");
                 }
 
@@ -183,10 +179,6 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
             StreamWriter.WriteByte(stream, (byte)obj.Animals.Count);
             foreach (var item in obj.Animals)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("An item in a collection was null.");
-                }
                 if (item is null)
                 {
                     throw new System.NullReferenceException("Item in collection cannot be null.");

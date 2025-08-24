@@ -84,10 +84,6 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
             {
                 if (obj.Cats[i] is null)
                 {
-                    throw new System.NullReferenceException("An item in a collection was null.");
-                }
-                if (obj.Cats[i] is null)
-                {
                     throw new System.NullReferenceException($"Member 'obj.Cats[i]' cannot be null.");
                 }
                 var bytesWritten = Cat.Serialize(obj.Cats[i], data);
@@ -108,10 +104,6 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
             StreamWriter.WriteUInt16(stream, (ushort)obj.Cats.Count);
             for (int i = 0; i < obj.Cats.Count; i++)
             {
-                if (obj.Cats[i] is null)
-                {
-                    throw new System.NullReferenceException("An item in a collection was null.");
-                }
                 if (obj.Cats[i] is null)
                 {
                     throw new System.NullReferenceException($"Member 'obj.Cats[i]' cannot be null.");

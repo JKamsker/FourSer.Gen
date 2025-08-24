@@ -153,10 +153,6 @@ public partial class MainObject : ISerializable<MainObject>
             {
                 if (obj.Items[i] is null)
                 {
-                    throw new System.NullReferenceException("An item in a collection was null.");
-                }
-                if (obj.Items[i] is null)
-                {
                     throw new System.NullReferenceException($"Member 'obj.Items[i]' cannot be null.");
                 }
                 var bytesWritten = Item.Serialize(obj.Items[i], data);
@@ -177,10 +173,6 @@ public partial class MainObject : ISerializable<MainObject>
             StreamWriter.WriteInt32(stream, (int)obj.Items.Count);
             for (int i = 0; i < obj.Items.Count; i++)
             {
-                if (obj.Items[i] is null)
-                {
-                    throw new System.NullReferenceException("An item in a collection was null.");
-                }
                 if (obj.Items[i] is null)
                 {
                     throw new System.NullReferenceException($"Member 'obj.Items[i]' cannot be null.");
