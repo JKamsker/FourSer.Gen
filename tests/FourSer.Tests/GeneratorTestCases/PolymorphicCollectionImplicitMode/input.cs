@@ -7,7 +7,7 @@ namespace FourSer.TestUser
     [GenerateSerializer]
     public partial class Inventory
     {
-        public int TypeId { get; set; }
+        public long TypeId { get; set; }
 
         [SerializeCollection(TypeIdProperty = nameof(TypeId))]
         [PolymorphicOption((byte)10, typeof(Sword))]

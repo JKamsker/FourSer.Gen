@@ -21,7 +21,7 @@ public partial class Inventory : ISerializable<Inventory>
     {
         var size = 0;
         size += sizeof(int); // Count size for Items
-        size += sizeof(int); // Size for polymorphic type id
+        size += sizeof(Byte); // Size for polymorphic type id
         if (obj.Items is not null)
         {
             foreach (var item in obj.Items)
@@ -52,7 +52,7 @@ public partial class Inventory : ISerializable<Inventory>
     {
         var itemsCount = SpanReader.ReadInt32(ref buffer);
         var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Item>(itemsCount);
-        var itemsTypeId = SpanReader.ReadInt32(ref buffer);
+        var itemsTypeId = SpanReader.ReadByte(ref buffer);
         switch (itemsTypeId)
         {
             case 10:
@@ -98,7 +98,7 @@ public partial class Inventory : ISerializable<Inventory>
     {
         var itemsCount = StreamReader.ReadInt32(stream);
         var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Item>(itemsCount);
-        var itemsTypeId = StreamReader.ReadInt32(stream);
+        var itemsTypeId = StreamReader.ReadByte(stream);
         switch (itemsTypeId)
         {
             case 10:
@@ -144,19 +144,19 @@ public partial class Inventory : ISerializable<Inventory>
         using var enumerator = obj.Items.GetEnumerator();
         if (!enumerator.MoveNext())
         {
-            SpanWriter.WriteInt32(ref data, (int)(10));
+            SpanWriter.WriteByte(ref data, (Byte)(10));
             SpanWriter.WriteInt32(ref countSpan, (int)(0));
         }
         else
         {
             var discriminator = enumerator.Current switch
             {
-                Sword => (int)10,
-                Shield => (int)20,
-                Potion => (int)30,
+                Sword => (Byte)10,
+                Shield => (Byte)20,
+                Potion => (Byte)30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {enumerator.Current.GetType().Name}")
             };
-            SpanWriter.WriteInt32(ref data, (int)(discriminator));
+            SpanWriter.WriteByte(ref data, (Byte)(discriminator));
             switch (discriminator)
             {
                 case 10:
@@ -210,18 +210,18 @@ public partial class Inventory : ISerializable<Inventory>
         using var enumerator = obj.Items.GetEnumerator();
         if (!enumerator.MoveNext())
         {
-            StreamWriter.WriteInt32(stream, (int)(10));
+            StreamWriter.WriteByte(stream, (Byte)(10));
         }
         else
         {
             var discriminator = enumerator.Current switch
             {
-                Sword => (int)10,
-                Shield => (int)20,
-                Potion => (int)30,
+                Sword => (Byte)10,
+                Shield => (Byte)20,
+                Potion => (Byte)30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {enumerator.Current.GetType().Name}")
             };
-            StreamWriter.WriteInt32(stream, (int)(discriminator));
+            StreamWriter.WriteByte(stream, (Byte)(discriminator));
             switch (discriminator)
             {
                 case 10:

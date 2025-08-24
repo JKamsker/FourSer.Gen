@@ -20,7 +20,7 @@ public partial class Inventory : ISerializable<Inventory>
     public static int GetPacketSize(Inventory obj)
     {
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type TypeId
+        size += sizeof(long); // Size for unmanaged type TypeId
         size += sizeof(int); // Count size for Items
         if (obj.Items is not null)
         {
@@ -38,7 +38,7 @@ public partial class Inventory : ISerializable<Inventory>
         return size;
     }
 
-    private Inventory(int typeId, System.Collections.Generic.List<FourSer.TestUser.Item> items)
+    private Inventory(long typeId, System.Collections.Generic.List<FourSer.TestUser.Item> items)
     {
         this.TypeId = typeId;
         this.Items = items;
@@ -52,7 +52,7 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var typeId = SpanReader.ReadInt32(ref buffer);
+        var typeId = SpanReader.ReadInt64(ref buffer);
         var itemsCount = SpanReader.ReadInt32(ref buffer);
         var items = new System.Collections.Generic.List<FourSer.TestUser.Item>(itemsCount);
         switch (typeId)
@@ -98,7 +98,7 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static Inventory Deserialize(System.IO.Stream stream)
     {
-        var typeId = StreamReader.ReadInt32(stream);
+        var typeId = StreamReader.ReadInt64(stream);
         var itemsCount = StreamReader.ReadInt32(stream);
         var items = new System.Collections.Generic.List<FourSer.TestUser.Item>(itemsCount);
         switch (typeId)
@@ -142,19 +142,19 @@ public partial class Inventory : ISerializable<Inventory>
         var originalData = data;
         if (obj.Items is null || obj.Items.Count == 0)
         {
-            SpanWriter.WriteInt32(ref data, (int)(10));
+            SpanWriter.WriteInt64(ref data, (long)(10));
         }
         else
         {
             var firstItem = obj.Items[0];
             var discriminator = firstItem switch
             {
-                Sword => (int)10,
-                Shield => (int)20,
-                Potion => (int)30,
+                Sword => (long)10,
+                Shield => (long)20,
+                Potion => (long)30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
-            SpanWriter.WriteInt32(ref data, (int)(discriminator));
+            SpanWriter.WriteInt64(ref data, (long)(discriminator));
         }
         if (obj.Items is null)
         {
@@ -206,19 +206,19 @@ public partial class Inventory : ISerializable<Inventory>
     {
         if (obj.Items is null || obj.Items.Count == 0)
         {
-            StreamWriter.WriteInt32(stream, (int)(10));
+            StreamWriter.WriteInt64(stream, (long)(10));
         }
         else
         {
             var firstItem = obj.Items[0];
             var discriminator = firstItem switch
             {
-                Sword => (int)10,
-                Shield => (int)20,
-                Potion => (int)30,
+                Sword => (long)10,
+                Shield => (long)20,
+                Potion => (long)30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
-            StreamWriter.WriteInt32(stream, (int)(discriminator));
+            StreamWriter.WriteInt64(stream, (long)(discriminator));
         }
         if (obj.Items is null)
         {

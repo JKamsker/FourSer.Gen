@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 using Microsoft.CodeAnalysis;
@@ -334,7 +335,7 @@ internal static class TypeInfoProvider
         var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
         var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(memberTypeSymbol);
         var isList = memberTypeSymbol.OriginalDefinition.ToDisplayString()
-                     == "System.Collections.Generic.List<T>";
+            == "System.Collections.Generic.List<T>";
         ListTypeArgumentInfo? listTypeArgumentInfo = null;
         if (isCollection && collectionTypeInfo.HasValue)
         {
@@ -365,23 +366,26 @@ internal static class TypeInfoProvider
         var memberHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(memberTypeSymbol as INamedTypeSymbol);
 
         var location = m.Locations.First();
+        var collectionInfo = GetCollectionInfo(m);
+
+
         var memberToGenerate = new MemberToGenerate
         (
-            m.Name,
-            memberTypeSymbol.ToDisplayString(s_typeNameFormat),
-            memberTypeSymbol.IsUnmanagedType,
-            memberTypeSymbol.SpecialType == SpecialType.System_String,
-            memberHasGenerateSerializerAttribute,
-            isList,
-            listTypeArgumentInfo,
-            GetCollectionInfo(m),
-            polymorphicInfo,
-            isCollection,
-            collectionTypeInfo,
-            isReadOnly,
-            isInitOnly,
-            null,
-            null
+            Name: m.Name,
+            TypeName: memberTypeSymbol.ToDisplayString(s_typeNameFormat),
+            IsUnmanagedType: memberTypeSymbol.IsUnmanagedType,
+            IsStringType: memberTypeSymbol.SpecialType == SpecialType.System_String,
+            HasGenerateSerializerAttribute: memberHasGenerateSerializerAttribute,
+            IsList: isList,
+            ListTypeArgument: listTypeArgumentInfo,
+            CollectionInfo: collectionInfo,
+            PolymorphicInfo: polymorphicInfo,
+            IsCollection: isCollection,
+            CollectionTypeInfo: collectionTypeInfo,
+            IsReadOnly: isReadOnly,
+            IsInitOnly: isInitOnly,
+            IsCountSizeReferenceFor: null,
+            IsTypeIdPropertyFor: null
         );
 
         return (memberToGenerate, location);
@@ -625,9 +629,11 @@ internal static class TypeInfoProvider
             return null;
         }
 
-        var typeIdProperty = AttributeHelper.GetTypeIdProperty(attribute) ?? AttributeHelper.GetCollectionTypeIdProperty
-            (collectionAttribute);
-        var typeIdType = AttributeHelper.GetTypeIdType(attribute) ?? AttributeHelper.GetCollectionTypeIdType(collectionAttribute);
+        var typeIdProperty = AttributeHelper.GetTypeIdProperty(attribute)
+            ?? AttributeHelper.GetCollectionTypeIdProperty(collectionAttribute);
+
+        var typeIdType = AttributeHelper.GetTypeIdType(attribute)
+            ?? AttributeHelper.GetCollectionTypeIdType(collectionAttribute);
 
         var polymorphicOptions = GetPolymorphicOptions(options);
 
@@ -635,15 +641,61 @@ internal static class TypeInfoProvider
             ? ((INamedTypeSymbol)typeIdType).EnumUnderlyingType!.ToDisplayString()
             : null;
 
+        var typeIdTypeString = GetTypeIdType(member, typeIdType, typeIdProperty, polymorphicOptions);
+
         return new PolymorphicInfo
         (
-            typeIdProperty,
-            typeIdType?.ToDisplayString() ?? "int",
-            new(polymorphicOptions),
-            enumUnderlyingType,
-            null,
-            null
+            TypeIdProperty: typeIdProperty,
+            TypeIdType: typeIdTypeString,
+            Options: new(polymorphicOptions),
+            EnumUnderlyingType: enumUnderlyingType,
+            TypeIdPropertyIndex: null,
+            TypeIdSizeInBytes: null
         );
+    }
+
+    private static string GetTypeIdType
+    (
+        ISymbol member,
+        ITypeSymbol? typeIdType,
+        string? typeIdProperty,
+        ImmutableArray<PolymorphicOption> polymorphicOptions
+    )
+    {
+        // Determine type ID type string in order of precedence:
+        // 1. Take whatever is specified explicitly as typeIdType
+        // 2. If previous null: take the type of the property "typeIdProperty"
+        // 3. If previous null: polymorphicOptions.FirstOrDefault().Key.GetType().Name 
+        // 4. If previous null: int
+        var typeIdTypeString = typeIdType?.ToDisplayString();
+        if (!string.IsNullOrEmpty(typeIdTypeString))
+        {
+            return typeIdTypeString!;
+        }
+
+        // Try to get the type from the typeIdProperty
+        var containingType = member.ContainingType;
+        var referencedSymbol = containingType.GetMembers(typeIdProperty!).FirstOrDefault();
+
+        typeIdTypeString = referencedSymbol switch
+        {
+            IPropertySymbol propertySymbol => propertySymbol.Type.ToDisplayString(s_typeNameFormat),
+            IFieldSymbol fieldSymbol => fieldSymbol.Type.ToDisplayString(s_typeNameFormat),
+            _ => typeIdTypeString
+        };
+        
+        if(!string.IsNullOrEmpty(typeIdTypeString))
+        {
+            return typeIdTypeString!;
+        }
+
+        typeIdTypeString = polymorphicOptions.FirstOrDefault().Key.GetType().Name;
+        if(!string.IsNullOrEmpty(typeIdTypeString))
+        {
+            return typeIdTypeString!;
+        }
+        
+        return "int";
     }
 
     private static ImmutableArray<PolymorphicOption> GetPolymorphicOptions(List<AttributeData> options)
