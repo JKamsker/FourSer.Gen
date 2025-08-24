@@ -344,7 +344,8 @@ internal static class TypeInfoProvider
                 cti.ElementTypeName,
                 cti.IsElementUnmanagedType,
                 cti.IsElementStringType,
-                cti.HasElementGenerateSerializerAttribute
+                cti.HasElementGenerateSerializerAttribute,
+                cti.IsElementValueType
             );
         }
 
@@ -369,6 +370,7 @@ internal static class TypeInfoProvider
         (
             m.Name,
             memberTypeSymbol.ToDisplayString(s_typeNameFormat),
+            memberTypeSymbol.IsValueType,
             memberTypeSymbol.IsUnmanagedType,
             memberTypeSymbol.SpecialType == SpecialType.System_String,
             memberHasGenerateSerializerAttribute,
@@ -466,7 +468,8 @@ internal static class TypeInfoProvider
                 arrayElementHasGenerateSerializerAttribute,
                 true,
                 null,
-                false
+                false,
+                elementType.IsValueType
             ));
         }
 
@@ -553,7 +556,8 @@ internal static class TypeInfoProvider
             hasGenerateSerializerAttribute,
             false,
             concreteTypeName,
-            isPureEnumerable
+            isPureEnumerable,
+            genericElementType.IsValueType
         ));
     }
 
@@ -652,7 +656,7 @@ internal static class TypeInfoProvider
         foreach (var optionAttribute in options)
         {
             var (key, type) = AttributeHelper.GetPolymorphicOption(optionAttribute);
-            polymorphicOptionsBuilder.Add(new(key, type.ToDisplayString()));
+            polymorphicOptionsBuilder.Add(new(key, type.ToDisplayString(), type.IsValueType));
         }
 
         return polymorphicOptionsBuilder.ToImmutable();

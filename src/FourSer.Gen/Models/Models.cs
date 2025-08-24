@@ -61,6 +61,7 @@ public sealed record MemberToGenerate
 (
     string Name,
     string TypeName,
+    bool IsValueType,
     bool IsUnmanagedType,
     bool IsStringType,
     bool HasGenerateSerializerAttribute,
@@ -88,7 +89,8 @@ public readonly record struct ListTypeArgumentInfo
     string TypeName,
     bool IsUnmanagedType,
     bool IsStringType,
-    bool HasGenerateSerializerAttribute
+    bool HasGenerateSerializerAttribute,
+    bool IsValueType
 );
 
 /// <summary>
@@ -114,7 +116,8 @@ public readonly record struct CollectionTypeInfo
     bool HasElementGenerateSerializerAttribute,
     bool IsArray,
     string? ConcreteTypeName,
-    bool IsPureEnumerable
+    bool IsPureEnumerable,
+    bool IsElementValueType
 );
 
 /// <summary>
@@ -146,7 +149,8 @@ public readonly record struct CollectionInfo
 public readonly record struct PolymorphicOption
 (
     object Key,
-    string Type
+    string Type,
+    bool IsValueType
 );
 
 /// <summary>

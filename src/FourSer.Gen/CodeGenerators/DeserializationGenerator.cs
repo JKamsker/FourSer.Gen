@@ -247,6 +247,7 @@ public static class DeserializationGenerator
                 (
                     "item",
                     member.ListTypeArgument!.Value.TypeName,
+                    member.ListTypeArgument.Value.IsValueType,
                     member.ListTypeArgument.Value.IsUnmanagedType,
                     member.ListTypeArgument.Value.IsStringType,
                     member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
@@ -395,7 +396,8 @@ public static class DeserializationGenerator
                 elementType,
                 collectionTypeInfo.IsElementUnmanagedType,
                 collectionTypeInfo.IsElementStringType,
-                collectionTypeInfo.HasElementGenerateSerializerAttribute
+                collectionTypeInfo.HasElementGenerateSerializerAttribute,
+                collectionTypeInfo.IsElementValueType
             );
         }
         else
@@ -404,7 +406,7 @@ public static class DeserializationGenerator
             // Adding a comment to reflect that this is an undesirable state.
             sb.WriteLineFormat("// Fallback for unlimited collection {0} - element type could not be determined.", member.Name);
             elementType = "object"; // Fallback to object to avoid breaking compilation, though this is not ideal.
-            listTypeInfo = new(elementType, false, false, false);
+            listTypeInfo = new(elementType, false, false, false, false);
         }
 
 
