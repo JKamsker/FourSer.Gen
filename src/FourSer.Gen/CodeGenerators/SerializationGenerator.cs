@@ -173,8 +173,16 @@ public static class SerializationGenerator
         sb.WriteLineFormat("if ({0} is null)", instanceName);
         using (sb.BeginBlock())
         {
-            sb.WriteLineFormat
-                ("throw new System.NullReferenceException($\"Instance of type \\\"{0}\\\" cannot be null.\");", typeName);
+            // Item of list?
+            if(instanceName == "typedInstance")
+            {
+                sb.WriteLineFormat("throw new System.NullReferenceException($\"Instance of type \\\"{0}\\\" cannot be null.\");", typeName);
+            }
+            else
+            {
+                sb.WriteLineFormat
+                    ("throw new System.NullReferenceException($\"Member \\\"{0}\\\" cannot be null.\");", instanceName);
+            }
         }
 
         if (target == "data")
