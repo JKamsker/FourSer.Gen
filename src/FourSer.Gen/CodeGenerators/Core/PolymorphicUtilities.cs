@@ -23,31 +23,6 @@ public static class PolymorphicUtilities
         return key.ToString();
     }
 
-    public static void GenerateWriteTypeIdCode
-    (
-        IndentedStringBuilder sb,
-        PolymorphicOption option,
-        PolymorphicInfo info,
-        string target = "data",
-        string helper = "SpanWriter"
-    )
-    {
-        var key = FormatTypeIdKey(option.Key, info);
-        var underlyingType = info.EnumUnderlyingType ?? info.TypeIdType;
-        var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(underlyingType);
-        var refOrEmpty = target == "data" ? "ref " : "";
-        sb.WriteLineFormat
-        (
-            "{0}.Write{1}({2}{3}, ({4}){5});",
-            helper,
-            typeIdTypeName,
-            refOrEmpty,
-            target,
-            underlyingType,
-            key
-        );
-    }
-
     public static string GenerateTypeIdSizeExpression(PolymorphicInfo info)
     {
         var underlyingType = info.EnumUnderlyingType ?? info.TypeIdType;
@@ -110,48 +85,5 @@ public static class PolymorphicUtilities
 
         sb.WriteLine("default:");
         defaultCaseHandler();
-    }
-
-    public static void GenerateTypeIdPrePass(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
-    {
-        for (var i = 0; i < typeToGenerate.Members.Count; i++)
-        {
-            var member = typeToGenerate.Members[i];
-            if (member.PolymorphicInfo is not { TypeIdPropertyIndex: not null } info)
-            {
-                continue;
-            }
-
-            if ((member.IsList || member.IsCollection) &&
-                member.CollectionInfo?.PolymorphicMode == PolymorphicMode.SingleTypeId)
-            {
-                continue;
-            }
-
-            var referencedMember = typeToGenerate.Members[info.TypeIdPropertyIndex.Value];
-
-            sb.WriteLineFormat("switch (obj.{0})", member.Name);
-            using var __ = sb.BeginBlock();
-            foreach (var option in info.Options)
-            {
-                var typeName = TypeHelper.GetSimpleTypeName(option.Type);
-                var key = option.Key.ToString();
-                if (info.EnumUnderlyingType is not null)
-                {
-                    key = $"({info.TypeIdType}){key}";
-                }
-                else if (info.TypeIdType.EndsWith("Enum"))
-                {
-                    key = $"{info.TypeIdType}.{key}";
-                }
-
-                sb.WriteLineFormat("case {0}:", typeName);
-                sb.WriteLineFormat("    obj.{0} = {1};", referencedMember.Name, key);
-                sb.WriteLine("    break;");
-            }
-
-            sb.WriteLine("case null:");
-            sb.WriteLine("    break;");
-        }
     }
 }

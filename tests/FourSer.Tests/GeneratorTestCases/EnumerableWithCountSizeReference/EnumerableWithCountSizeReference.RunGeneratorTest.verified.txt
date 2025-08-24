@@ -88,7 +88,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
                 count++;
             }
         }
-        SpanWriter.WriteInt32(ref countSpan, count);
+        SpanWriter.WriteInt32(ref countSpan, (int)count);
         return originalData.Length - data.Length;
     }
 

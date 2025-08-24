@@ -99,23 +99,4 @@ public static class GeneratorUtilities
     {
         return member.HasGenerateSerializerAttribute;
     }
-
-    public static string NormalizeToKeyword(string typeName)
-    {
-        return typeName switch
-        {
-            "System.Byte" => "byte",
-            "System.SByte" => "sbyte",
-            "System.Int16" => "short",
-            "System.UInt16" => "ushort",
-            "System.Int32" => "int",
-            "System.UInt32" => "uint",
-            "System.Int64" => "long",
-            "System.UInt64" => "ulong",
-            "Single" => "float",
-            "Boolean" => "bool",
-            "Double" => "double",
-            _ => typeName
-        };
-    }
 }
