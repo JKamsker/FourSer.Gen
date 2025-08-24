@@ -77,65 +77,83 @@ public static class SerializationGenerator
             var member = typeToGenerate.Members[i];
             if (member.IsCountSizeReferenceFor is not null)
             {
-                var collectionMember = typeToGenerate.Members[member.IsCountSizeReferenceFor.Value];
-                if (collectionMember.CollectionTypeInfo?.IsPureEnumerable != true)
-                {
-                    var collectionName = collectionMember.Name;
-                    var countExpression = $"obj.{collectionName}?.Count ?? 0";
-                    var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
-                    EmitWrite(sb, ctx, ctx.Target, member.TypeName, countExpression, ctx.IsSpan);
-                }
+                GenerateCountSizeReferenceSerialization(sb, typeToGenerate, member, ctx);
             }
             else if (member.IsTypeIdPropertyFor is not null)
             {
-                var referencedMember = typeToGenerate.Members[member.IsTypeIdPropertyFor.Value];
-                if (referencedMember.IsList || referencedMember.IsCollection)
-                {
-                    var collectionName = referencedMember.Name;
-                    var info = referencedMember.PolymorphicInfo.Value;
-                    var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
-
-                    var defaultOption = info.Options.FirstOrDefault();
-                    var defaultKey = PolymorphicUtilities.FormatTypeIdKey(defaultOption.Key, info);
-
-                    sb.WriteLineFormat($"if (obj.{collectionName} is null || obj.{collectionName}.Count == 0)");
-                    using (sb.BeginBlock())
-                    {
-                        EmitWrite(sb, ctx, ctx.Target, typeIdType, defaultKey, ctx.IsSpan);
-                    }
-
-                    sb.WriteLine("else");
-                    using (sb.BeginBlock())
-                    {
-                        sb.WriteLine($"var firstItem = obj.{collectionName}[0];");
-                        sb.WriteLine("var discriminator = firstItem switch");
-                        sb.WriteLine("{");
-                        sb.Indent();
-                        foreach (var option in info.Options)
-                        {
-                            var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                            sb.WriteLineFormat("{0} => ({1}){2},", TypeHelper.GetSimpleTypeName(option.Type), typeIdType, key);
-                        }
-
-                        sb.WriteLine
-                        (
-                            $"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")"
-                        );
-                        sb.Unindent();
-                        sb.WriteLine("};");
-
-                        EmitWrite(sb, ctx, ctx.Target, typeIdType, "discriminator", ctx.IsSpan);
-                    }
-                }
-                else
-                {
-                GenerateMemberSerialization(sb, member, ctx);
-                }
+                GenerateTypeIdPropertySerialization(sb, typeToGenerate, member, ctx);
             }
             else
             {
             GenerateMemberSerialization(sb, member, ctx);
             }
+        }
+    }
+
+    private static void GenerateCountSizeReferenceSerialization(
+        IndentedStringBuilder sb,
+        TypeToGenerate typeToGenerate,
+        MemberToGenerate member,
+        WriterCtx ctx)
+    {
+        var collectionMember = typeToGenerate.Members[member.IsCountSizeReferenceFor.Value];
+        if (collectionMember.CollectionTypeInfo?.IsPureEnumerable != true)
+        {
+            var collectionName = collectionMember.Name;
+            var countExpression = $"obj.{collectionName}?.Count ?? 0";
+            var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
+            EmitWrite(sb, ctx, ctx.Target, member.TypeName, countExpression, ctx.IsSpan);
+        }
+    }
+
+    private static void GenerateTypeIdPropertySerialization(
+        IndentedStringBuilder sb,
+        TypeToGenerate typeToGenerate,
+        MemberToGenerate member,
+        WriterCtx ctx)
+    {
+        var referencedMember = typeToGenerate.Members[member.IsTypeIdPropertyFor.Value];
+        if (referencedMember.IsList || referencedMember.IsCollection)
+        {
+            var collectionName = referencedMember.Name;
+            var info = referencedMember.PolymorphicInfo.Value;
+            var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
+
+            var defaultOption = info.Options.FirstOrDefault();
+            var defaultKey = PolymorphicUtilities.FormatTypeIdKey(defaultOption.Key, info);
+
+            sb.WriteLineFormat($"if (obj.{collectionName} is null || obj.{collectionName}.Count == 0)");
+            using (sb.BeginBlock())
+            {
+                EmitWrite(sb, ctx, ctx.Target, typeIdType, defaultKey, ctx.IsSpan);
+            }
+
+            sb.WriteLine("else");
+            using (sb.BeginBlock())
+            {
+                sb.WriteLine($"var firstItem = obj.{collectionName}[0];");
+                sb.WriteLine("var discriminator = firstItem switch");
+                sb.WriteLine("{");
+                sb.Indent();
+                foreach (var option in info.Options)
+                {
+                    var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+                    sb.WriteLineFormat("{0} => ({1}){2},", TypeHelper.GetSimpleTypeName(option.Type), typeIdType, key);
+                }
+
+                sb.WriteLine
+                (
+                    $"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")"
+                );
+                sb.Unindent();
+                sb.WriteLine("};");
+
+                EmitWrite(sb, ctx, ctx.Target, typeIdType, "discriminator", ctx.IsSpan);
+            }
+        }
+        else
+        {
+            GenerateMemberSerialization(sb, member, ctx);
         }
     }
 
@@ -183,7 +201,8 @@ public static class SerializationGenerator
     {
         if (member.IsList || member.IsCollection)
         {
-            GenerateCollectionSerialization(sb, member, ctx);
+            var mode = GetCollectionMode(member);
+            EmitSerializeForCollection(sb, member, ctx, mode);
         }
         else if (member.PolymorphicInfo is not null)
         {
@@ -203,16 +222,6 @@ public static class SerializationGenerator
         }
     }
 
-    private static void GenerateCollectionSerialization
-    (
-        IndentedStringBuilder sb,
-        MemberToGenerate member,
-        WriterCtx ctx
-    )
-    {
-        var mode = GetCollectionMode(member);
-        EmitSerializeForCollection(sb, member, ctx, mode);
-    }
 
     private static void HandleNonNullCollection
     (
@@ -902,35 +911,33 @@ public static class SerializationGenerator
     }
 
 
-    private static void GeneratePolymorphicCollection
-    (
-        IndentedStringBuilder sb,
-        MemberToGenerate member,
-        PolymorphicInfo info,
-        WriterCtx ctx
-    )
+    private static void EmitPolymorphicCollectionEnumerator(IndentedStringBuilder sb, MemberToGenerate member)
     {
-        var defaultOption = info.Options.FirstOrDefault();
-        var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
-
-        BeginCountReservation(sb, ctx, "int");
-
         sb.WriteLine("int count = 0;");
         sb.WriteLine($"using var enumerator = obj.{member.Name}.GetEnumerator();");
+    }
 
+    private static void EmitPolymorphicCollectionEmptyCase(
+        IndentedStringBuilder sb,
+        WriterCtx ctx,
+        PolymorphicInfo info)
+    {
+        var defaultOption = info.Options.FirstOrDefault();
         sb.WriteLine("if (!enumerator.MoveNext())");
         sb.WriteLine("{");
         sb.Indent();
-        EmitWriteTypeId
-        (
-            sb,
-            ctx,
-            defaultOption,
-            info
-        );
+        EmitWriteTypeId(sb, ctx, defaultOption, info);
         EndCountReservation(sb, ctx, "int", "0");
         sb.Unindent();
         sb.WriteLine("}");
+    }
+
+    private static void EmitPolymorphicCollectionNonEmptyCase(
+        IndentedStringBuilder sb,
+        WriterCtx ctx,
+        PolymorphicInfo info)
+    {
+        var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
         sb.WriteLine("else");
         sb.WriteLine("{");
         sb.Indent();
@@ -985,6 +992,20 @@ public static class SerializationGenerator
         EndCountReservation(sb, ctx, "int", "count");
         sb.Unindent();
         sb.WriteLine("}");
+    }
+
+    private static void GeneratePolymorphicCollection
+    (
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        PolymorphicInfo info,
+        WriterCtx ctx
+    )
+    {
+        BeginCountReservation(sb, ctx, "int");
+        EmitPolymorphicCollectionEnumerator(sb, member);
+        EmitPolymorphicCollectionEmptyCase(sb, ctx, info);
+        EmitPolymorphicCollectionNonEmptyCase(sb, ctx, info);
     }
 
     private static void GenerateTypeResolutionSwitch(
