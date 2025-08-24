@@ -211,10 +211,6 @@ public partial class Inventory : ISerializable<Inventory>
         if (!enumerator.MoveNext())
         {
             StreamWriter.WriteInt32(stream, (int)(10));
-            var endPosition = stream.Position;
-            stream.Position = countPosition;
-            StreamWriter.WriteInt32(stream, (int)(0));
-            stream.Position = endPosition;
         }
         else
         {
