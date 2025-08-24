@@ -50,7 +50,7 @@ public class TestRunner
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Test failed: {testClass.Name}.{testMethod.Name}");
-                    Console.WriteLine(ex.InnerException?.Message);
+                    Console.WriteLine(ex.ToString());
                 }
                 Console.WriteLine();
             }

@@ -46,12 +46,12 @@ internal static class ModelRefiner
 
     private static ImmutableArray<MemberToGenerate> RefineMembers(EquatableArray<RawMemberToGenerate> rawMembers)
     {
-        var members = rawMembers.Select(CreateMemberToGenerate).ToImmutableArray();
+        var members = rawMembers.Select(rawMember => CreateMemberToGenerate(rawMember, rawMembers)).ToImmutableArray();
         var resolvedMembers = ResolveMemberReferences(members);
         return resolvedMembers;
     }
 
-    private static MemberToGenerate CreateMemberToGenerate(RawMemberToGenerate rawMember)
+    private static MemberToGenerate CreateMemberToGenerate(RawMemberToGenerate rawMember, EquatableArray<RawMemberToGenerate> allMembers)
     {
         var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(rawMember.MemberTypeSymbol);
 
@@ -81,7 +81,7 @@ internal static class ModelRefiner
             isList,
             listTypeArgumentInfo,
             GetCollectionInfo(rawMember),
-            GetPolymorphicInfo(rawMember),
+            GetPolymorphicInfo(rawMember, allMembers),
             isCollection,
             collectionTypeInfo,
             rawMember.IsReadOnly,
@@ -269,7 +269,7 @@ internal static class ModelRefiner
         );
     }
 
-    private static PolymorphicInfo? GetPolymorphicInfo(RawMemberToGenerate member)
+    private static PolymorphicInfo? GetPolymorphicInfo(RawMemberToGenerate member, EquatableArray<RawMemberToGenerate> allMembers)
     {
         var attribute = member.PolymorphicAttribute;
         var collectionAttribute = member.CollectionAttribute;
@@ -286,6 +286,15 @@ internal static class ModelRefiner
 
         var typeIdProperty = AttributeHelper.GetTypeIdProperty(attribute) ?? AttributeHelper.GetCollectionTypeIdProperty(collectionAttribute);
         var typeIdType = AttributeHelper.GetTypeIdType(attribute) ?? AttributeHelper.GetCollectionTypeIdType(collectionAttribute);
+
+        if (typeIdType is null && typeIdProperty is not null)
+        {
+            var typeIdMember = allMembers.FirstOrDefault(m => m.Name == typeIdProperty);
+            if (typeIdMember is not null)
+            {
+                typeIdType = typeIdMember.MemberTypeSymbol;
+            }
+        }
 
         var polymorphicOptions = GetPolymorphicOptions(options);
 

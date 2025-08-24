@@ -83,6 +83,12 @@ internal static class CollectionSerializer
         }
 
         var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
+        if (elementTypeName is null)
+        {
+            // This should not happen for a valid collection.
+            // Returning to avoid a NullReferenceException and let the build process report other errors if any.
+            return;
+        }
         var isByteCollection = TypeHelper.IsByteCollection(elementTypeName);
 
         if (isByteCollection)
