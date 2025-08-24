@@ -57,7 +57,7 @@ public class SerializerGenerator : IIncrementalGenerator
 
         using (sb.BeginBlock())
         {
-            PacketSizeGenerator.GenerateGetPacketSize(sb, typeToGenerate);
+            PacketSizeGenerator.GenerateGetSize(sb, typeToGenerate);
             sb.WriteLine();
 
             if (typeToGenerate.Constructor is { ShouldGenerate: true } ctor && !typeToGenerate.IsRecord)

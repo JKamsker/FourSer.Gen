@@ -23,7 +23,10 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         size += sizeof(int); // Count size for Numbers
         size += obj.Numbers.Count * sizeof(int);
         size += sizeof(int); // Count size for Names
-        foreach(var item in obj.Names) { size += StringEx.MeasureSize(item); }
+        if (obj.Names is not null)
+        {
+            foreach(var item in obj.Names) { size += StringEx.MeasureSize(item); }
+        }
         size += sizeof(int); // Count size for Data
         size += obj.Data.Count() * sizeof(byte);
         size += sizeof(int); // Count size for Data1
@@ -49,7 +52,10 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         size += sizeof(int); // Count size for SortedValues
         size += obj.SortedValues.Count * sizeof(long);
         size += sizeof(byte); // Count size for SmallSet
-        foreach(var item in obj.SmallSet) { size += StringEx.MeasureSize(item); }
+        if (obj.SmallSet is not null)
+        {
+            foreach(var item in obj.SmallSet) { size += StringEx.MeasureSize(item); }
+        }
         size += sizeof(ushort); // Count size for MediumQueue
         size += obj.MediumQueue.Count * sizeof(int);
         size += obj.LargeBag.Count * sizeof(long);
@@ -306,23 +312,23 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         var originalData = data;
         if (obj.Numbers is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.Numbers.Count);
+            SpanWriter.WriteInt32(ref data, (int)(obj.Numbers.Count));
             for (int i = 0; i < obj.Numbers.Count; i++)
             {
-                SpanWriter.WriteInt32(ref data, (Int32)obj.Numbers[i]);
+                SpanWriter.WriteInt32(ref data, (int)(obj.Numbers[i]));
             }
         }
         if (obj.Names is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.Names.Count());
+            SpanWriter.WriteInt32(ref data, (int)(obj.Names.Count()));
             foreach (var item in obj.Names)
             {
                 SpanWriter.WriteString(ref data, item);
@@ -330,149 +336,149 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Data is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.Data.Count());
+            SpanWriter.WriteInt32(ref data, (int)(obj.Data.Count()));
             SpanWriter.WriteBytes(ref data, obj.Data);
         }
         if (obj.Data1 is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.Data1.Count);
+            SpanWriter.WriteInt32(ref data, (int)(obj.Data1.Count));
             SpanWriter.WriteBytes(ref data, obj.Data1);
         }
         if (obj.Values is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.Values.Count);
+            SpanWriter.WriteInt32(ref data, (int)(obj.Values.Count));
             foreach (var item in obj.Values)
             {
-                SpanWriter.WriteSingle(ref data, (Single)item);
+                SpanWriter.WriteSingle(ref data, (float)(item));
             }
         }
         if (obj.UniqueIds is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.UniqueIds.Count);
+            SpanWriter.WriteInt32(ref data, (int)(obj.UniqueIds.Count));
             foreach (var item in obj.UniqueIds)
             {
-                SpanWriter.WriteInt64(ref data, (Int64)item);
+                SpanWriter.WriteInt64(ref data, (long)(item));
             }
         }
         if (obj.ProcessingQueue is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.ProcessingQueue.Count);
+            SpanWriter.WriteInt32(ref data, (int)(obj.ProcessingQueue.Count));
             foreach (var item in obj.ProcessingQueue)
             {
-                SpanWriter.WriteUInt16(ref data, (UInt16)item);
+                SpanWriter.WriteUInt16(ref data, (ushort)(item));
             }
         }
         if (obj.ProcessingStack is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.ProcessingStack.Count);
+            SpanWriter.WriteInt32(ref data, (int)(obj.ProcessingStack.Count));
             foreach (var item in obj.ProcessingStack)
             {
-                SpanWriter.WriteUInt32(ref data, (UInt32)item);
+                SpanWriter.WriteUInt32(ref data, (uint)(item));
             }
         }
         if (obj.ArrayData is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.ArrayData.Length);
+            SpanWriter.WriteInt32(ref data, (int)(obj.ArrayData.Length));
             for (int i = 0; i < obj.ArrayData.Length; i++)
             {
-                SpanWriter.WriteInt32(ref data, (Int32)obj.ArrayData[i]);
+                SpanWriter.WriteInt32(ref data, (int)(obj.ArrayData[i]));
             }
         }
         if (obj.Measurements is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.Measurements.Count());
+            SpanWriter.WriteInt32(ref data, (int)(obj.Measurements.Count()));
             foreach (var item in obj.Measurements)
             {
-                SpanWriter.WriteDouble(ref data, (Double)item);
+                SpanWriter.WriteDouble(ref data, (double)(item));
             }
         }
         if (obj.Flags is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.Flags.Count);
+            SpanWriter.WriteInt32(ref data, (int)(obj.Flags.Count));
             foreach (var item in obj.Flags)
             {
-                SpanWriter.WriteBoolean(ref data, (Boolean)item);
+                SpanWriter.WriteBoolean(ref data, (bool)(item));
             }
         }
         if (obj.ObservableData is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.ObservableData.Count);
+            SpanWriter.WriteInt32(ref data, (int)(obj.ObservableData.Count));
             foreach (var item in obj.ObservableData)
             {
-                SpanWriter.WriteInt16(ref data, (Int16)item);
+                SpanWriter.WriteInt16(ref data, (short)(item));
             }
         }
         if (obj.Characters is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.Characters.Count);
+            SpanWriter.WriteInt32(ref data, (int)(obj.Characters.Count));
             foreach (var item in obj.Characters)
             {
-                SpanWriter.WriteUInt16(ref data, (UInt16)item);
+                SpanWriter.WriteUInt16(ref data, (ushort)(item));
             }
         }
         if (obj.SortedValues is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.SortedValues.Count);
+            SpanWriter.WriteInt32(ref data, (int)(obj.SortedValues.Count));
             foreach (var item in obj.SortedValues)
             {
-                SpanWriter.WriteInt64(ref data, (Int64)item);
+                SpanWriter.WriteInt64(ref data, (long)(item));
             }
         }
         if (obj.SmallSet is null)
         {
-            SpanWriter.WriteByte(ref data, (byte)0);
+            SpanWriter.WriteByte(ref data, (byte)(0));
         }
         else
         {
-            SpanWriter.WriteByte(ref data, (byte)obj.SmallSet.Count);
+            SpanWriter.WriteByte(ref data, (byte)(obj.SmallSet.Count));
             foreach (var item in obj.SmallSet)
             {
                 SpanWriter.WriteString(ref data, item);
@@ -480,14 +486,14 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.MediumQueue is null)
         {
-            SpanWriter.WriteUInt16(ref data, (ushort)0);
+            SpanWriter.WriteUInt16(ref data, (ushort)(0));
         }
         else
         {
-            SpanWriter.WriteUInt16(ref data, (ushort)obj.MediumQueue.Count);
+            SpanWriter.WriteUInt16(ref data, (ushort)(obj.MediumQueue.Count));
             foreach (var item in obj.MediumQueue)
             {
-                SpanWriter.WriteInt32(ref data, (Int32)item);
+                SpanWriter.WriteInt32(ref data, (int)(item));
             }
         }
         if (obj.LargeBag is null)
@@ -500,7 +506,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         foreach (var item in obj.LargeBag)
         {
-            SpanWriter.WriteInt64(ref data, (Int64)item);
+            SpanWriter.WriteInt64(ref data, (long)(item));
         }
         return originalData.Length - data.Length;
     }
@@ -509,23 +515,23 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
     {
         if (obj.Numbers is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.Numbers.Count);
+            StreamWriter.WriteInt32(stream, (int)(obj.Numbers.Count));
             for (int i = 0; i < obj.Numbers.Count; i++)
             {
-                StreamWriter.WriteInt32(stream, (Int32)obj.Numbers[i]);
+                StreamWriter.WriteInt32(stream, (int)(obj.Numbers[i]));
             }
         }
         if (obj.Names is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.Names.Count());
+            StreamWriter.WriteInt32(stream, (int)(obj.Names.Count()));
             foreach (var item in obj.Names)
             {
                 StreamWriter.WriteString(stream, item);
@@ -533,149 +539,149 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.Data is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.Data.Count());
+            StreamWriter.WriteInt32(stream, (int)(obj.Data.Count()));
             StreamWriter.WriteBytes(stream, obj.Data);
         }
         if (obj.Data1 is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.Data1.Count);
+            StreamWriter.WriteInt32(stream, (int)(obj.Data1.Count));
             StreamWriter.WriteBytes(stream, obj.Data1);
         }
         if (obj.Values is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.Values.Count);
+            StreamWriter.WriteInt32(stream, (int)(obj.Values.Count));
             foreach (var item in obj.Values)
             {
-                StreamWriter.WriteSingle(stream, (Single)item);
+                StreamWriter.WriteSingle(stream, (float)(item));
             }
         }
         if (obj.UniqueIds is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.UniqueIds.Count);
+            StreamWriter.WriteInt32(stream, (int)(obj.UniqueIds.Count));
             foreach (var item in obj.UniqueIds)
             {
-                StreamWriter.WriteInt64(stream, (Int64)item);
+                StreamWriter.WriteInt64(stream, (long)(item));
             }
         }
         if (obj.ProcessingQueue is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.ProcessingQueue.Count);
+            StreamWriter.WriteInt32(stream, (int)(obj.ProcessingQueue.Count));
             foreach (var item in obj.ProcessingQueue)
             {
-                StreamWriter.WriteUInt16(stream, (UInt16)item);
+                StreamWriter.WriteUInt16(stream, (ushort)(item));
             }
         }
         if (obj.ProcessingStack is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.ProcessingStack.Count);
+            StreamWriter.WriteInt32(stream, (int)(obj.ProcessingStack.Count));
             foreach (var item in obj.ProcessingStack)
             {
-                StreamWriter.WriteUInt32(stream, (UInt32)item);
+                StreamWriter.WriteUInt32(stream, (uint)(item));
             }
         }
         if (obj.ArrayData is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.ArrayData.Length);
+            StreamWriter.WriteInt32(stream, (int)(obj.ArrayData.Length));
             for (int i = 0; i < obj.ArrayData.Length; i++)
             {
-                StreamWriter.WriteInt32(stream, (Int32)obj.ArrayData[i]);
+                StreamWriter.WriteInt32(stream, (int)(obj.ArrayData[i]));
             }
         }
         if (obj.Measurements is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.Measurements.Count());
+            StreamWriter.WriteInt32(stream, (int)(obj.Measurements.Count()));
             foreach (var item in obj.Measurements)
             {
-                StreamWriter.WriteDouble(stream, (Double)item);
+                StreamWriter.WriteDouble(stream, (double)(item));
             }
         }
         if (obj.Flags is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.Flags.Count);
+            StreamWriter.WriteInt32(stream, (int)(obj.Flags.Count));
             foreach (var item in obj.Flags)
             {
-                StreamWriter.WriteBoolean(stream, (Boolean)item);
+                StreamWriter.WriteBoolean(stream, (bool)(item));
             }
         }
         if (obj.ObservableData is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.ObservableData.Count);
+            StreamWriter.WriteInt32(stream, (int)(obj.ObservableData.Count));
             foreach (var item in obj.ObservableData)
             {
-                StreamWriter.WriteInt16(stream, (Int16)item);
+                StreamWriter.WriteInt16(stream, (short)(item));
             }
         }
         if (obj.Characters is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.Characters.Count);
+            StreamWriter.WriteInt32(stream, (int)(obj.Characters.Count));
             foreach (var item in obj.Characters)
             {
-                StreamWriter.WriteUInt16(stream, (UInt16)item);
+                StreamWriter.WriteUInt16(stream, (ushort)(item));
             }
         }
         if (obj.SortedValues is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.SortedValues.Count);
+            StreamWriter.WriteInt32(stream, (int)(obj.SortedValues.Count));
             foreach (var item in obj.SortedValues)
             {
-                StreamWriter.WriteInt64(stream, (Int64)item);
+                StreamWriter.WriteInt64(stream, (long)(item));
             }
         }
         if (obj.SmallSet is null)
         {
-            StreamWriter.WriteByte(stream, (byte)0);
+            StreamWriter.WriteByte(stream, (byte)(0));
         }
         else
         {
-            StreamWriter.WriteByte(stream, (byte)obj.SmallSet.Count);
+            StreamWriter.WriteByte(stream, (byte)(obj.SmallSet.Count));
             foreach (var item in obj.SmallSet)
             {
                 StreamWriter.WriteString(stream, item);
@@ -683,14 +689,14 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         if (obj.MediumQueue is null)
         {
-            StreamWriter.WriteUInt16(stream, (ushort)0);
+            StreamWriter.WriteUInt16(stream, (ushort)(0));
         }
         else
         {
-            StreamWriter.WriteUInt16(stream, (ushort)obj.MediumQueue.Count);
+            StreamWriter.WriteUInt16(stream, (ushort)(obj.MediumQueue.Count));
             foreach (var item in obj.MediumQueue)
             {
-                StreamWriter.WriteInt32(stream, (Int32)item);
+                StreamWriter.WriteInt32(stream, (int)(item));
             }
         }
         if (obj.LargeBag is null)
@@ -703,7 +709,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         foreach (var item in obj.LargeBag)
         {
-            StreamWriter.WriteInt64(stream, (Int64)item);
+            StreamWriter.WriteInt64(stream, (long)(item));
         }
     }
 }

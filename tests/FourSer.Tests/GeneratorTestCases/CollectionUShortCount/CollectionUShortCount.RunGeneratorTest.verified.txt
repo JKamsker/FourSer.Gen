@@ -75,11 +75,11 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         var originalData = data;
         if (obj.Cats is null)
         {
-            SpanWriter.WriteUInt16(ref data, (ushort)0);
+            SpanWriter.WriteUInt16(ref data, (ushort)(0));
         }
         else
         {
-            SpanWriter.WriteUInt16(ref data, (ushort)obj.Cats.Count);
+            SpanWriter.WriteUInt16(ref data, (ushort)(obj.Cats.Count));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 var bytesWritten = Cat.Serialize(obj.Cats[i], data);
@@ -93,11 +93,11 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
     {
         if (obj.Cats is null)
         {
-            StreamWriter.WriteUInt16(stream, (ushort)0);
+            StreamWriter.WriteUInt16(stream, (ushort)(0));
         }
         else
         {
-            StreamWriter.WriteUInt16(stream, (ushort)obj.Cats.Count);
+            StreamWriter.WriteUInt16(stream, (ushort)(obj.Cats.Count));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 Cat.Serialize(obj.Cats[i], stream);
@@ -170,14 +170,14 @@ public partial class Cat : ISerializable<Cat>
     public static int Serialize(Cat obj, System.Span<byte> data)
     {
         var originalData = data;
-        SpanWriter.WriteInt32(ref data, (Int32)obj.Id);
+        SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         SpanWriter.WriteString(ref data, obj.Name);
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(Cat obj, System.IO.Stream stream)
     {
-        StreamWriter.WriteInt32(stream, (Int32)obj.Id);
+        StreamWriter.WriteInt32(stream, (int)(obj.Id));
         StreamWriter.WriteString(stream, obj.Name);
     }
 }

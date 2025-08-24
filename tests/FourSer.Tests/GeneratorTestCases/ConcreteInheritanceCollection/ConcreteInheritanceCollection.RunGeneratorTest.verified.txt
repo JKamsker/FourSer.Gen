@@ -75,11 +75,11 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
         var originalData = data;
         if (obj.Dogs is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.Dogs.Count);
+            SpanWriter.WriteInt32(ref data, (int)(obj.Dogs.Count));
             for (int i = 0; i < obj.Dogs.Count; i++)
             {
                 var bytesWritten = Dog.Serialize(obj.Dogs[i], data);
@@ -93,11 +93,11 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
     {
         if (obj.Dogs is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.Dogs.Count);
+            StreamWriter.WriteInt32(stream, (int)(obj.Dogs.Count));
             for (int i = 0; i < obj.Dogs.Count; i++)
             {
                 Dog.Serialize(obj.Dogs[i], stream);
@@ -176,7 +176,7 @@ public partial class Dog : ISerializable<Dog>
     {
         var originalData = data;
         SpanWriter.WriteString(ref data, obj.Name);
-        SpanWriter.WriteInt32(ref data, (Int32)obj.Age);
+        SpanWriter.WriteInt32(ref data, (int)(obj.Age));
         SpanWriter.WriteString(ref data, obj.Breed);
         return originalData.Length - data.Length;
     }
@@ -184,7 +184,7 @@ public partial class Dog : ISerializable<Dog>
     public static void Serialize(Dog obj, System.IO.Stream stream)
     {
         StreamWriter.WriteString(stream, obj.Name);
-        StreamWriter.WriteInt32(stream, (Int32)obj.Age);
+        StreamWriter.WriteInt32(stream, (int)(obj.Age));
         StreamWriter.WriteString(stream, obj.Breed);
     }
 }
@@ -254,13 +254,13 @@ public partial class Pet : ISerializable<Pet>
     {
         var originalData = data;
         SpanWriter.WriteString(ref data, obj.Name);
-        SpanWriter.WriteInt32(ref data, (Int32)obj.Age);
+        SpanWriter.WriteInt32(ref data, (int)(obj.Age));
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(Pet obj, System.IO.Stream stream)
     {
         StreamWriter.WriteString(stream, obj.Name);
-        StreamWriter.WriteInt32(stream, (Int32)obj.Age);
+        StreamWriter.WriteInt32(stream, (int)(obj.Age));
     }
 }
