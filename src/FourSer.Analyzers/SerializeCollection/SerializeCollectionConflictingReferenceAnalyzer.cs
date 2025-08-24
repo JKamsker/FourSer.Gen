@@ -20,7 +20,7 @@ namespace FourSer.Analyzers.SerializeCollection
         /// <summary>
         /// The diagnostic identifier.
         /// </summary>
-        public const string DiagnosticId = "FSER009";
+        public const string DiagnosticId = "FSG1015";
 
         private const string Category = "Serialization";
 
