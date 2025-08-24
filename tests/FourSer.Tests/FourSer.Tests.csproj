@@ -21,6 +21,7 @@
         <PackageReference Include="Verify.DiffPlex" />
         <PackageReference Include="Verify.SourceGenerators" />
         <PackageReference Include="Verify.Xunit" />
+        <PackageReference Include="WildPath" />
         <PackageReference Include="xunit" />
         <PackageReference Include="xunit.extensibility.core" />
         <PackageReference Include="xunit.runner.visualstudio">
@@ -42,6 +43,10 @@
     <ItemGroup>
       <Compile Remove="GeneratorTestCases\**\*.cs" />
       <EmbeddedResource Include="GeneratorTestCases\**\*.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="TestExtensions.cs" />
     </ItemGroup>
 
 </Project>
