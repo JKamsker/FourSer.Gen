@@ -333,6 +333,50 @@ public static class SerializationGenerator
         }
     }
 
+    private static void EmitDiscriminatorFromFirstItem(
+        IndentedStringBuilder sb,
+        WriterCtx ctx,
+        string collectionName,
+        PolymorphicInfo info,
+        string discriminatorVarName)
+    {
+        var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
+        sb.WriteLine($"var firstItem = {collectionName}[0];");
+        sb.WriteLine($"var {discriminatorVarName} = firstItem switch");
+        sb.WriteLine("{");
+        sb.Indent();
+        foreach (var option in info.Options)
+        {
+            var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+            sb.WriteLineFormat("{0} => ({1}){2},", TypeHelper.GetSimpleTypeName(option.Type), typeIdType, key);
+        }
+
+        sb.WriteLine($"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")");
+        sb.Unindent();
+        sb.WriteLine("};");
+
+        EmitWrite(sb, ctx, ctx.Target, typeIdType, discriminatorVarName, ctx.IsSpan);
+    }
+
+    private static void EmitNullOrEmptyCollectionHeader(
+        IndentedStringBuilder sb,
+        WriterCtx ctx,
+        CollectionInfo collectionInfo,
+        PolymorphicInfo polymorphicInfo)
+    {
+        var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+        EmitWrite(sb, ctx, ctx.Target, countType, "0", ctx.IsSpan);
+
+        if (polymorphicInfo.TypeIdPropertyIndex is null)
+        {
+            var defaultOption = polymorphicInfo.Options.FirstOrDefault();
+            if (!defaultOption.Equals(default(PolymorphicOption)))
+            {
+                EmitWriteTypeId(sb, ctx, defaultOption, polymorphicInfo);
+            }
+        }
+    }
+
     private static void GenerateSingleTypeIdPolymorphicCollectionWithProperty
     (
         IndentedStringBuilder sb,
@@ -420,14 +464,7 @@ public static class SerializationGenerator
         sb.WriteLine($"if ({listItemsVar} is null || {listItemsVar}.Count == 0)");
         using (sb.BeginBlock())
         {
-            EmitWrite(sb, ctx, ctx.Target, countType, "0", ctx.IsSpan);
-            EmitWriteTypeId
-            (
-                sb,
-                ctx,
-                defaultOption,
-                info
-            );
+            EmitNullOrEmptyCollectionHeader(sb, ctx, collectionInfo, info);
         }
 
         sb.WriteLine("else");
@@ -436,22 +473,7 @@ public static class SerializationGenerator
             var countExpression = $"{listItemsVar}.Count";
             EmitWrite(sb, ctx, ctx.Target, countType, countExpression, ctx.IsSpan);
 
-            sb.WriteLine($"var firstItem = {listItemsVar}[0];");
-            // Determine the type ID from the first item in the collection.
-            sb.WriteLine("var discriminator = firstItem switch");
-            sb.WriteLine("{");
-            sb.Indent();
-            foreach (var option in info.Options)
-            {
-                var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                sb.WriteLineFormat("{0} => ({1}){2},", TypeHelper.GetSimpleTypeName(option.Type), typeIdType, key);
-            }
-
-            sb.WriteLine($"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")");
-            sb.Unindent();
-            sb.WriteLine("};");
-
-            EmitWrite(sb, ctx, ctx.Target, typeIdType, "discriminator", ctx.IsSpan);
+            EmitDiscriminatorFromFirstItem(sb, ctx, listItemsVar, info, "discriminator");
 
             sb.WriteLine("switch (discriminator)");
             using (sb.BeginBlock())
