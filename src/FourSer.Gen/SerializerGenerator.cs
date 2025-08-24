@@ -26,19 +26,20 @@ public class SerializerGenerator : IIncrementalGenerator
     {
         context.RegisterPostInitializationOutput(AddHelpers);
 
-        var typesToGenerate = context.SyntaxProvider
+        var rawTypesProvider = context.SyntaxProvider
             .ForAttributeWithMetadataName
             (
                 "FourSer.Contracts.GenerateSerializerAttribute",
                 (node, _) => node is ClassDeclarationSyntax or StructDeclarationSyntax or RecordDeclarationSyntax,
-                TypeInfoProvider.GetSemanticTargetForGeneration
-            );
+                TypeInfoProvider.GetRawSemanticTargetForGeneration
+            )
+            .Where(static m => m is not null);
 
-        var nonNullableTypes = typesToGenerate.Where(static m => m is not null);
+        var refinedTypesProvider = rawTypesProvider.Select((type, _) => ModelRefiner.Refine(type!));
 
         context.RegisterSourceOutput
         (
-            nonNullableTypes,
+            refinedTypesProvider,
             (spc, source) => Execute(spc, source)
         );
     }
