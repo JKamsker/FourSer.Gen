@@ -175,7 +175,7 @@ internal static class PolymorphicSerializer
             return;
         }
 
-        if (info.TypeIdPropertyIndex is null)
+        if (collectionInfo.TypeIdPropertyIndex is null)
         {
             GenerateSingleTypeIdPolymorphicCollectionImplicit
             (

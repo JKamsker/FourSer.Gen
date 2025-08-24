@@ -279,7 +279,7 @@ public static class DeserializationGenerator
                 var info = member.PolymorphicInfo!.Value;
                 string typeIdVar;
 
-                if (info.TypeIdPropertyIndex is null)
+                if (collectionInfo.TypeIdPropertyIndex is null)
                 {
                     typeIdVar = $"{member.Name.ToCamelCase()}TypeId";
                     var typeToRead = info.EnumUnderlyingType ?? info.TypeIdType;
@@ -289,7 +289,7 @@ public static class DeserializationGenerator
                 }
                 else
                 {
-                    typeIdVar = collectionInfo.TypeIdProperty.ToCamelCase();
+                    typeIdVar = collectionInfo.TypeIdProperty!.ToCamelCase();
                 }
 
                 sb.WriteLineFormat("switch ({0})", typeIdVar);

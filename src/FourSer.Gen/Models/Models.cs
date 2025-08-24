@@ -135,6 +135,7 @@ public readonly record struct CollectionInfo
     string? CountSizeReference,
     int? CountSizeReferenceIndex,
     int? CountTypeSizeInBytes,
+    int? TypeIdPropertyIndex,
     bool Unlimited = false
 );
 
