@@ -80,10 +80,17 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         int count = 0;
         if (obj.MyList is not null)
         {
-            using var enumerator = obj.MyList.GetEnumerator();
-            while (enumerator.MoveNext())
+            foreach (var item in obj.MyList)
             {
-                var bytesWritten = Entity.Serialize(enumerator.Current, data);
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("An item in a collection was null.");
+                }
+                if (item is null)
+                {
+                    throw new System.NullReferenceException($"Member 'item' cannot be null.");
+                }
+                var bytesWritten = Entity.Serialize(item, data);
                 data = data.Slice(bytesWritten);
                 count++;
             }
@@ -103,10 +110,17 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         int count = 0;
         if (obj.MyList is not null)
         {
-            using var enumerator = obj.MyList.GetEnumerator();
-            while (enumerator.MoveNext())
+            foreach (var item in obj.MyList)
             {
-                Entity.Serialize(enumerator.Current, stream);
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("An item in a collection was null.");
+                }
+                if (item is null)
+                {
+                    throw new System.NullReferenceException($"Member 'item' cannot be null.");
+                }
+                Entity.Serialize(item, stream);
                 count++;
             }
         }

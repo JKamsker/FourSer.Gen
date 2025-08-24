@@ -151,6 +151,14 @@ public partial class MainObject : ISerializable<MainObject>
             SpanWriter.WriteByte(ref data, (byte)obj.Items.Count);
             for (int i = 0; i < obj.Items.Count; i++)
             {
+                if (obj.Items[i] is null)
+                {
+                    throw new System.NullReferenceException("An item in a collection was null.");
+                }
+                if (obj.Items[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member 'obj.Items[i]' cannot be null.");
+                }
                 var bytesWritten = Item.Serialize(obj.Items[i], data);
                 data = data.Slice(bytesWritten);
             }
@@ -169,6 +177,14 @@ public partial class MainObject : ISerializable<MainObject>
             StreamWriter.WriteByte(stream, (byte)obj.Items.Count);
             for (int i = 0; i < obj.Items.Count; i++)
             {
+                if (obj.Items[i] is null)
+                {
+                    throw new System.NullReferenceException("An item in a collection was null.");
+                }
+                if (obj.Items[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member 'obj.Items[i]' cannot be null.");
+                }
                 Item.Serialize(obj.Items[i], stream);
             }
         }

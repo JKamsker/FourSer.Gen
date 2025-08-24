@@ -1048,9 +1048,39 @@ public static class SerializationGenerator
             return false;
         }
 
+    if (member.CollectionTypeInfo?.IsPureEnumerable == true)
+        {
+        var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+        if (!ctx.IsSpan)
+            {
+            sb.WriteLine("if (!stream.CanSeek)");
+            using (sb.BeginBlock())
+            {
+                EmitThrowSeekableStreamRequired(sb);
+            }
+        }
+
+        BeginCountReservation(sb, ctx, countType);
+
+        sb.WriteLine("int count = 0;");
         sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
         using (sb.BeginBlock())
         {
+            var elementInfo = member.CollectionTypeInfo!.Value;
+            EmitForeach(sb, $"obj.{member.Name}", loopBody =>
+            {
+                var isReferenceType = !elementInfo.IsElementValueType;
+                EmitElement(loopBody, "item", ctx, elementInfo.ElementTypeName, elementInfo.IsElementUnmanagedType, elementInfo.IsElementStringType, elementInfo.HasElementGenerateSerializerAttribute, null, isReferenceType);
+                loopBody.WriteLine("count++;");
+            });
+            }
+        EndCountReservation(sb, ctx, countType, "count");
+    }
+    else
+    {
+        sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
+        using (sb.BeginBlock())
+            {
             if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
             {
                 GeneratePolymorphicCollectionBody(sb, member, ctx, collectionInfo);
@@ -1058,6 +1088,7 @@ public static class SerializationGenerator
             else
             {
                 GenerateStandardCollectionBody(sb, member, ctx);
+            }
             }
         }
         return true;

@@ -82,6 +82,14 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
             SpanWriter.WriteInt32(ref data, (int)obj.Dogs.Count);
             for (int i = 0; i < obj.Dogs.Count; i++)
             {
+                if (obj.Dogs[i] is null)
+                {
+                    throw new System.NullReferenceException("An item in a collection was null.");
+                }
+                if (obj.Dogs[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member 'obj.Dogs[i]' cannot be null.");
+                }
                 var bytesWritten = Dog.Serialize(obj.Dogs[i], data);
                 data = data.Slice(bytesWritten);
             }
@@ -100,6 +108,14 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
             StreamWriter.WriteInt32(stream, (int)obj.Dogs.Count);
             for (int i = 0; i < obj.Dogs.Count; i++)
             {
+                if (obj.Dogs[i] is null)
+                {
+                    throw new System.NullReferenceException("An item in a collection was null.");
+                }
+                if (obj.Dogs[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member 'obj.Dogs[i]' cannot be null.");
+                }
                 Dog.Serialize(obj.Dogs[i], stream);
             }
         }
