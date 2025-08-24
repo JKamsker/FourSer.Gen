@@ -517,6 +517,7 @@ public static class SerializationGenerator
             );
 
             sb.WriteLine($"var firstItem = {listItemsVar}[0];");
+            // Determine the type ID from the first item in the collection.
             sb.WriteLine("var discriminator = firstItem switch");
             sb.WriteLine("{");
             sb.Indent();
@@ -1208,6 +1209,7 @@ public static class SerializationGenerator
         var refOrEmpty = useRef ? "ref " : "";
         var friendlyTypeName = TypeHelper.GetMethodFriendlyTypeName(typeName);
         var writeMethod = $"Write{friendlyTypeName}";
+        // Generates a call to the appropriate writer method, e.g., SpanWriter.WriteInt32(ref data, (int)myValue);
         sb.WriteLineFormat
         (
             "{0}.{1}({2}{3}, ({4}){5});{6}",
