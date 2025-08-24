@@ -29,12 +29,14 @@ public static class GeneratorUtilities
     /// <summary>
     ///     Unified count expression generation (consolidates 4 duplicate implementations)
     /// </summary>
-    public static string GetCountExpression(MemberToGenerate member, string memberName)
+    public static string GetCountExpression(MemberToGenerate member, string memberName, bool nullable = false)
     {
         // Arrays use .Length property
         if (member.CollectionTypeInfo?.IsArray == true)
         {
-            return $"obj.{memberName}.Length";
+            return nullable
+                ? $"(obj.{memberName}?.Length ?? 0)"
+                : $"obj.{memberName}.Length";
         }
 
         // IEnumerable and interface types that need Count() method
@@ -42,12 +44,16 @@ public static class GeneratorUtilities
             member.CollectionTypeInfo?.CollectionTypeName?.Contains("ICollection") == true ||
             member.CollectionTypeInfo?.CollectionTypeName?.Contains("IList") == true)
         {
-            return $"obj.{memberName}.Count()";
+            return nullable
+                ? $"(obj.{memberName}?.Count() ?? 0)"
+                : $"obj.{memberName}.Count()";
         }
 
         // Most concrete collection types use .Count property
         // List<T>, HashSet<T>, Queue<T>, Stack<T>, ConcurrentBag<T>, LinkedList<T>, Collection<T>, etc.
-        return $"obj.{memberName}.Count";
+        return nullable 
+            ? $"(obj.{memberName}?.Count ?? 0)"
+            : $"obj.{memberName}.Count";
     }
 
     /// <summary>

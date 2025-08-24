@@ -105,7 +105,7 @@ public static class PacketSizeGenerator
         }
         else if (info.IsUnmanaged)
         {
-            var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
+            var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name, true);
             sb.WriteLineFormat("size += {0} * sizeof({1});", countExpression, info.TypeName);
         }
         else if (info.IsString)

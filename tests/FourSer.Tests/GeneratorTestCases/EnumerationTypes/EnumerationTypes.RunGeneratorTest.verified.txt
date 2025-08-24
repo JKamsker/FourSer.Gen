@@ -21,44 +21,44 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
     {
         var size = 0;
         size += sizeof(int); // Count size for Numbers
-        size += obj.Numbers.Count * sizeof(int);
+        size += (obj.Numbers?.Count ?? 0) * sizeof(int);
         size += sizeof(int); // Count size for Names
         if (obj.Names is not null)
         {
             foreach(var item in obj.Names) { size += StringEx.MeasureSize(item); }
         }
         size += sizeof(int); // Count size for Data
-        size += obj.Data.Count() * sizeof(byte);
+        size += (obj.Data?.Count() ?? 0) * sizeof(byte);
         size += sizeof(int); // Count size for Data1
-        size += obj.Data1.Count * sizeof(byte);
+        size += (obj.Data1?.Count ?? 0) * sizeof(byte);
         size += sizeof(int); // Count size for Values
-        size += obj.Values.Count * sizeof(float);
+        size += (obj.Values?.Count ?? 0) * sizeof(float);
         size += sizeof(int); // Count size for UniqueIds
-        size += obj.UniqueIds.Count * sizeof(long);
+        size += (obj.UniqueIds?.Count ?? 0) * sizeof(long);
         size += sizeof(int); // Count size for ProcessingQueue
-        size += obj.ProcessingQueue.Count * sizeof(ushort);
+        size += (obj.ProcessingQueue?.Count ?? 0) * sizeof(ushort);
         size += sizeof(int); // Count size for ProcessingStack
-        size += obj.ProcessingStack.Count * sizeof(uint);
+        size += (obj.ProcessingStack?.Count ?? 0) * sizeof(uint);
         size += sizeof(int); // Count size for ArrayData
-        size += obj.ArrayData.Length * sizeof(int);
+        size += (obj.ArrayData?.Length ?? 0) * sizeof(int);
         size += sizeof(int); // Count size for Measurements
-        size += obj.Measurements.Count() * sizeof(double);
+        size += (obj.Measurements?.Count() ?? 0) * sizeof(double);
         size += sizeof(int); // Count size for Flags
-        size += obj.Flags.Count * sizeof(bool);
+        size += (obj.Flags?.Count ?? 0) * sizeof(bool);
         size += sizeof(int); // Count size for ObservableData
-        size += obj.ObservableData.Count * sizeof(short);
+        size += (obj.ObservableData?.Count ?? 0) * sizeof(short);
         size += sizeof(int); // Count size for Characters
-        size += obj.Characters.Count * sizeof(ushort);
+        size += (obj.Characters?.Count ?? 0) * sizeof(ushort);
         size += sizeof(int); // Count size for SortedValues
-        size += obj.SortedValues.Count * sizeof(long);
+        size += (obj.SortedValues?.Count ?? 0) * sizeof(long);
         size += sizeof(byte); // Count size for SmallSet
         if (obj.SmallSet is not null)
         {
             foreach(var item in obj.SmallSet) { size += StringEx.MeasureSize(item); }
         }
         size += sizeof(ushort); // Count size for MediumQueue
-        size += obj.MediumQueue.Count * sizeof(int);
-        size += obj.LargeBag.Count * sizeof(long);
+        size += (obj.MediumQueue?.Count ?? 0) * sizeof(int);
+        size += (obj.LargeBag?.Count ?? 0) * sizeof(long);
         return size;
     }
 

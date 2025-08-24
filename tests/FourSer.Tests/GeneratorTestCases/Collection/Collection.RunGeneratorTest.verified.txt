@@ -21,7 +21,7 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
     {
         var size = 0;
         size += sizeof(int); // Count size for Numbers
-        size += obj.Numbers.Count * sizeof(int);
+        size += (obj.Numbers?.Count ?? 0) * sizeof(int);
         return size;
     }
 

@@ -21,7 +21,7 @@ public partial class MyPacket : ISerializable<MyPacket>
     {
         var size = 0;
         size += sizeof(int); // Count size for Data
-        size += obj.Data.Count * sizeof(byte);
+        size += (obj.Data?.Count ?? 0) * sizeof(byte);
         return size;
     }
 
