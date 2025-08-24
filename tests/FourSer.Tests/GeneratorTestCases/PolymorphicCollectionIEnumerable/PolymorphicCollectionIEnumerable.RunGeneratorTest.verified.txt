@@ -144,7 +144,7 @@ public partial class Inventory : ISerializable<Inventory>
         using var enumerator = obj.Items.GetEnumerator();
         if (!enumerator.MoveNext())
         {
-            SpanWriter.WriteInt32(ref countSpan, 0); // Write count as 0
+            SpanWriter.WriteInt32(ref countSpan, (int)0); // Write count as 0
             SpanWriter.WriteInt32(ref data, (int)10);
         }
         else
@@ -193,7 +193,7 @@ public partial class Inventory : ISerializable<Inventory>
                     break;
                 }
             }
-            SpanWriter.WriteInt32(ref countSpan, count);
+            SpanWriter.WriteInt32(ref countSpan, (int)count);
         }
         return originalData.Length - data.Length;
     }
@@ -205,7 +205,7 @@ public partial class Inventory : ISerializable<Inventory>
             throw new NotSupportedException("Stream must be seekable to serialize this collection.");
         }
         var countPosition = stream.Position;
-        StreamWriter.WriteInt32(stream, 0); // Placeholder for count
+        StreamWriter.WriteInt32(stream, (int)0); // Placeholder for count
         int count = 0;
         using var enumerator = obj.Items.GetEnumerator();
         if (!enumerator.MoveNext())
@@ -257,7 +257,7 @@ public partial class Inventory : ISerializable<Inventory>
             }
             var endPosition = stream.Position;
             stream.Position = countPosition;
-            StreamWriter.WriteInt32(stream, count);
+            StreamWriter.WriteInt32(stream, (int)count);
             stream.Position = endPosition;
         }
     }

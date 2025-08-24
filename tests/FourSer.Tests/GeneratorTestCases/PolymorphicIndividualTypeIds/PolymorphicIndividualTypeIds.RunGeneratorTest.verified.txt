@@ -127,6 +127,10 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
                     case Cat typedInstance:
                     {
                         SpanWriter.WriteByte(ref data, (byte)1);
+                        if (typedInstance is null)
+                        {
+                            throw new System.NullReferenceException($"Instance of type \"Cat\" cannot be null.");
+                        }
                         var bytesWritten = Cat.Serialize(typedInstance, data);
                         data = data.Slice(bytesWritten);
                         break;
@@ -134,6 +138,10 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
                     case Dog typedInstance:
                     {
                         SpanWriter.WriteByte(ref data, (byte)2);
+                        if (typedInstance is null)
+                        {
+                            throw new System.NullReferenceException($"Instance of type \"Dog\" cannot be null.");
+                        }
                         var bytesWritten = Dog.Serialize(typedInstance, data);
                         data = data.Slice(bytesWritten);
                         break;
@@ -164,12 +172,20 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
                     case Cat typedInstance:
                     {
                         StreamWriter.WriteByte(stream, (byte)1);
+                        if (typedInstance is null)
+                        {
+                            throw new System.NullReferenceException($"Instance of type \"Cat\" cannot be null.");
+                        }
                         Cat.Serialize(typedInstance, stream);
                         break;
                     }
                     case Dog typedInstance:
                     {
                         StreamWriter.WriteByte(stream, (byte)2);
+                        if (typedInstance is null)
+                        {
+                            throw new System.NullReferenceException($"Instance of type \"Dog\" cannot be null.");
+                        }
                         Dog.Serialize(typedInstance, stream);
                         break;
                     }

@@ -23,31 +23,6 @@ public static class PolymorphicUtilities
         return key.ToString();
     }
 
-    public static void GenerateWriteTypeIdCode
-    (
-        IndentedStringBuilder sb,
-        PolymorphicOption option,
-        PolymorphicInfo info,
-        string target = "data",
-        string helper = "SpanWriter"
-    )
-    {
-        var key = FormatTypeIdKey(option.Key, info);
-        var underlyingType = info.EnumUnderlyingType ?? info.TypeIdType;
-        var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(underlyingType);
-        var refOrEmpty = target == "data" ? "ref " : "";
-        sb.WriteLineFormat
-        (
-            "{0}.Write{1}({2}{3}, ({4}){5});",
-            helper,
-            typeIdTypeName,
-            refOrEmpty,
-            target,
-            underlyingType,
-            key
-        );
-    }
-
     public static string GenerateTypeIdSizeExpression(PolymorphicInfo info)
     {
         var underlyingType = info.EnumUnderlyingType ?? info.TypeIdType;
