@@ -66,16 +66,16 @@ public partial class LoginPacket : ISerializable<LoginPacket>
     public static int Serialize(LoginPacket obj, System.Span<byte> data)
     {
         var originalData = data;
-        SpanWriter.WriteByte(ref data, (Byte)obj.Result);
-        SpanWriter.WriteUInt32(ref data, (UInt32)obj.UserID);
+        SpanWriter.WriteByte(ref data, (byte)(obj.Result));
+        SpanWriter.WriteUInt32(ref data, (uint)(obj.UserID));
         SpanWriter.WriteString(ref data, obj.Username);
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(LoginPacket obj, System.IO.Stream stream)
     {
-        StreamWriter.WriteByte(stream, (Byte)obj.Result);
-        StreamWriter.WriteUInt32(stream, (UInt32)obj.UserID);
+        StreamWriter.WriteByte(stream, (byte)(obj.Result));
+        StreamWriter.WriteUInt32(stream, (uint)(obj.UserID));
         StreamWriter.WriteString(stream, obj.Username);
     }
 }

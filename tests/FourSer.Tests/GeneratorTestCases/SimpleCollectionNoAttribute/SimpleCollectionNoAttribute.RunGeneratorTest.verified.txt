@@ -61,11 +61,11 @@ public partial class MyPacket : ISerializable<MyPacket>
         var originalData = data;
         if (obj.Data is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.Data.Count);
+            SpanWriter.WriteInt32(ref data, (int)(obj.Data.Count));
             SpanWriter.WriteBytes(ref data, obj.Data);
         }
         return originalData.Length - data.Length;
@@ -75,11 +75,11 @@ public partial class MyPacket : ISerializable<MyPacket>
     {
         if (obj.Data is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.Data.Count);
+            StreamWriter.WriteInt32(stream, (int)(obj.Data.Count));
             StreamWriter.WriteBytes(stream, obj.Data);
         }
     }

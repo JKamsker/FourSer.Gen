@@ -69,14 +69,14 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         var originalData = data;
         if (obj.Numbers is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.Numbers.Count);
+            SpanWriter.WriteInt32(ref data, (int)(obj.Numbers.Count));
             for (int i = 0; i < obj.Numbers.Count; i++)
             {
-                SpanWriter.WriteInt32(ref data, (Int32)obj.Numbers[i]);
+                SpanWriter.WriteInt32(ref data, (int)(obj.Numbers[i]));
             }
         }
         return originalData.Length - data.Length;
@@ -86,14 +86,14 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
     {
         if (obj.Numbers is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.Numbers.Count);
+            StreamWriter.WriteInt32(stream, (int)(obj.Numbers.Count));
             for (int i = 0; i < obj.Numbers.Count; i++)
             {
-                StreamWriter.WriteInt32(stream, (Int32)obj.Numbers[i]);
+                StreamWriter.WriteInt32(stream, (int)(obj.Numbers[i]));
             }
         }
     }

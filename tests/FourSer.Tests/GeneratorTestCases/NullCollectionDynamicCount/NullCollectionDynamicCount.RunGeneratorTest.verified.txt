@@ -56,13 +56,13 @@ public partial class Item : ISerializable<Item>
     public static int Serialize(Item obj, System.Span<byte> data)
     {
         var originalData = data;
-        SpanWriter.WriteInt32(ref data, (Int32)obj.Id);
+        SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(Item obj, System.IO.Stream stream)
     {
-        StreamWriter.WriteInt32(stream, (Int32)obj.Id);
+        StreamWriter.WriteInt32(stream, (int)(obj.Id));
     }
 }
 
@@ -144,11 +144,11 @@ public partial class MainObject : ISerializable<MainObject>
         var originalData = data;
         if (obj.Items is null)
         {
-            SpanWriter.WriteByte(ref data, (byte)0);
+            SpanWriter.WriteByte(ref data, (byte)(0));
         }
         else
         {
-            SpanWriter.WriteByte(ref data, (byte)obj.Items.Count);
+            SpanWriter.WriteByte(ref data, (byte)(obj.Items.Count));
             for (int i = 0; i < obj.Items.Count; i++)
             {
                 var bytesWritten = Item.Serialize(obj.Items[i], data);
@@ -162,11 +162,11 @@ public partial class MainObject : ISerializable<MainObject>
     {
         if (obj.Items is null)
         {
-            StreamWriter.WriteByte(stream, (byte)0);
+            StreamWriter.WriteByte(stream, (byte)(0));
         }
         else
         {
-            StreamWriter.WriteByte(stream, (byte)obj.Items.Count);
+            StreamWriter.WriteByte(stream, (byte)(obj.Items.Count));
             for (int i = 0; i < obj.Items.Count; i++)
             {
                 Item.Serialize(obj.Items[i], stream);

@@ -52,13 +52,13 @@ public partial struct MyStruct : ISerializable<MyStruct>
     public static int Serialize(MyStruct obj, System.Span<byte> data)
     {
         var originalData = data;
-        SpanWriter.WriteInt32(ref data, (Int32)obj.A);
+        SpanWriter.WriteInt32(ref data, (int)(obj.A));
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(MyStruct obj, System.IO.Stream stream)
     {
-        StreamWriter.WriteInt32(stream, (Int32)obj.A);
+        StreamWriter.WriteInt32(stream, (int)(obj.A));
     }
 }
 
@@ -140,11 +140,11 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         var originalData = data;
         if (obj.Structs is null)
         {
-            SpanWriter.WriteInt32(ref data, (int)0);
+            SpanWriter.WriteInt32(ref data, (int)(0));
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)obj.Structs.Count);
+            SpanWriter.WriteInt32(ref data, (int)(obj.Structs.Count));
             for (int i = 0; i < obj.Structs.Count; i++)
             {
                 var bytesWritten = MyStruct.Serialize(obj.Structs[i], data);
@@ -158,11 +158,11 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
     {
         if (obj.Structs is null)
         {
-            StreamWriter.WriteInt32(stream, (int)0);
+            StreamWriter.WriteInt32(stream, (int)(0));
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)obj.Structs.Count);
+            StreamWriter.WriteInt32(stream, (int)(obj.Structs.Count));
             for (int i = 0; i < obj.Structs.Count; i++)
             {
                 MyStruct.Serialize(obj.Structs[i], stream);
