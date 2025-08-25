@@ -58,7 +58,7 @@ internal static class TypeInfoProvider
         var assemblyAttributes = assemblySymbol.GetAttributes();
         foreach (var attribute in assemblyAttributes)
         {
-            if (attribute.AttributeClass?.ToDisplayString() == "FourSer.Contracts.DefaultSerializerAttribute")
+            if (attribute.AttributeClass is not null && attribute.AttributeClass.IsDefaultSerializerAttribute())
             {
                 var targetType = attribute.ConstructorArguments[0].Value as ITypeSymbol;
                 var serializerType = attribute.ConstructorArguments[1].Value as ITypeSymbol;
@@ -75,7 +75,7 @@ internal static class TypeInfoProvider
         var attributes = typeSymbol.GetAttributes();
         foreach (var attribute in attributes)
         {
-            if (attribute.AttributeClass?.ToDisplayString() == "FourSer.Contracts.DefaultSerializerAttribute")
+            if (attribute.AttributeClass is not null && attribute.AttributeClass.IsDefaultSerializerAttribute())
             {
                 var targetType = attribute.ConstructorArguments[0].Value as ITypeSymbol;
                 var serializerType = attribute.ConstructorArguments[1].Value as ITypeSymbol;
@@ -115,7 +115,7 @@ internal static class TypeInfoProvider
 
             if (publicConstructors.Count > 0)
             {
-                var bestConstructor = FindBestConstructor(publicConstructors, members);
+                var bestConstructor = FindBestConstructor(publicConstructors, members, typeSymbol);
                 if (bestConstructor is not null)
                 {
                     var parameters = ImmutableArray.CreateBuilder<ParameterInfo>();
@@ -191,7 +191,7 @@ internal static class TypeInfoProvider
         return publicConstructors;
     }
 
-    private static IMethodSymbol? FindBestConstructor(List<IMethodSymbol> constructors, EquatableArray<MemberToGenerate> members)
+    private static IMethodSymbol? FindBestConstructor(List<IMethodSymbol> constructors, EquatableArray<MemberToGenerate> members, INamedTypeSymbol typeSymbol)
     {
         foreach (var c in constructors)
         {
@@ -206,7 +206,7 @@ internal static class TypeInfoProvider
                 continue;
             }
 
-            if (AllParametersMatch(c, members))
+            if (AllParametersMatch(c, members, typeSymbol))
             {
                 return c;
             }
@@ -215,18 +215,31 @@ internal static class TypeInfoProvider
         return null;
     }
 
-    private static bool AllParametersMatch(IMethodSymbol constructor, EquatableArray<MemberToGenerate> members)
+    private static bool AllParametersMatch(IMethodSymbol constructor, EquatableArray<MemberToGenerate> members, INamedTypeSymbol typeSymbol)
     {
         foreach (var p in constructor.Parameters)
         {
             var parameterMatches = false;
             foreach (var m in members)
             {
-                if (string.Equals(m.Name, p.Name, StringComparison.OrdinalIgnoreCase) &&
-                    m.TypeName == p.Type.ToDisplayString(s_typeNameFormat))
+                if (string.Equals(m.Name, p.Name, StringComparison.OrdinalIgnoreCase))
                 {
-                    parameterMatches = true;
-                    break;
+                    var memberSymbol = FindMember(typeSymbol, m.Name);
+                    if (memberSymbol != null)
+                    {
+                        var memberTypeSymbol = memberSymbol switch
+                        {
+                            IPropertySymbol prop => prop.Type,
+                            IFieldSymbol field => field.Type,
+                            _ => null
+                        };
+
+                        if (memberTypeSymbol != null && SymbolEqualityComparer.Default.Equals(p.Type, memberTypeSymbol))
+                        {
+                            parameterMatches = true;
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -237,6 +250,21 @@ internal static class TypeInfoProvider
         }
 
         return true;
+    }
+
+    private static ISymbol? FindMember(INamedTypeSymbol typeSymbol, string memberName)
+    {
+        var currentType = typeSymbol;
+        while (currentType != null)
+        {
+            var member = currentType.GetMembers(memberName).FirstOrDefault();
+            if (member != null)
+            {
+                return member;
+            }
+            currentType = currentType.BaseType;
+        }
+        return null;
     }
 
     private static bool IsSerializableMember(ISymbol member)
@@ -377,8 +405,7 @@ internal static class TypeInfoProvider
     {
         var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
         var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(memberTypeSymbol);
-        var isList = memberTypeSymbol.OriginalDefinition.ToDisplayString()
-            == "System.Collections.Generic.List<T>";
+        var isList = memberTypeSymbol.OriginalDefinition is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.IsGenericList();
         ListTypeArgumentInfo? listTypeArgumentInfo = null;
         if (isCollection && collectionTypeInfo.HasValue)
         {
@@ -437,7 +464,7 @@ internal static class TypeInfoProvider
 
     private static CustomSerializerInfo? GetCustomSerializer(ISymbol member)
     {
-        var attribute = member.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializerAttribute");
+        var attribute = member.GetAttributes().FirstOrDefault(ad => ad.AttributeClass is not null && ad.AttributeClass.IsSerializerAttribute());
 
         if (attribute == null)
         {
@@ -474,12 +501,9 @@ internal static class TypeInfoProvider
             return false;
         }
 
-        foreach (var ad in typeSymbol.GetAttributes())
+        if (typeSymbol.GetAttributes().Any(ad => ad.AttributeClass is not null && ad.AttributeClass.IsGenerateSerializerAttribute()))
         {
-            if (ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute")
-            {
-                return true;
-            }
+            return true;
         }
         
         // Also good: TypeOfClass implements ISerializable<TypeOfClass>
@@ -535,7 +559,7 @@ internal static class TypeInfoProvider
             var arrayElementHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(elementType as INamedTypeSymbol);
             return (true, new CollectionTypeInfo
             (
-                typeSymbol.ToDisplayString(s_typeNameFormat),
+                typeSymbol,
                 elementType.ToDisplayString(s_typeNameFormat),
                 elementType.IsUnmanagedType,
                 elementType.SpecialType == SpecialType.System_String,
@@ -556,61 +580,73 @@ internal static class TypeInfoProvider
             return (false, null);
         }
 
-        var originalDefinition = namedTypeSymbol.OriginalDefinition.ToDisplayString();
+        var originalDefinition = namedTypeSymbol.OriginalDefinition;
         var genericElementType = namedTypeSymbol.TypeArguments[0];
 
         string? concreteTypeName = null;
         var isCollection = false;
         var isPureEnumerable = false;
 
-        switch (originalDefinition)
+        if (originalDefinition is not INamedTypeSymbol originalNamedTypeSymbol)
         {
-            case "System.Collections.Generic.List<T>":
-                isCollection = true;
-                concreteTypeName = null;
-                break;
-            case "System.Collections.Generic.IList<T>":
-            case "System.Collections.Generic.ICollection<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.Generic.List";
-                break;
-            case "System.Collections.Generic.IEnumerable<T>":
-                isCollection = true;
-                isPureEnumerable = true;
-                concreteTypeName = "System.Collections.Generic.List";
-                break;
-            case "System.Collections.ObjectModel.Collection<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.ObjectModel.Collection";
-                break;
-            case "System.Collections.ObjectModel.ObservableCollection<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.ObjectModel.ObservableCollection";
-                break;
-            case "System.Collections.Generic.HashSet<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.Generic.HashSet";
-                break;
-            case "System.Collections.Generic.SortedSet<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.Generic.SortedSet";
-                break;
-            case "System.Collections.Generic.Queue<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.Generic.Queue";
-                break;
-            case "System.Collections.Generic.Stack<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.Generic.Stack";
-                break;
-            case "System.Collections.Generic.LinkedList<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.Generic.LinkedList";
-                break;
-            case "System.Collections.Concurrent.ConcurrentBag<T>":
-                isCollection = true;
-                concreteTypeName = "System.Collections.Concurrent.ConcurrentBag";
-                break;
+            return (false, null);
+        }
+
+        if (originalNamedTypeSymbol.IsGenericList())
+        {
+            isCollection = true;
+            concreteTypeName = null;
+        }
+        else if (originalNamedTypeSymbol.IsGenericIList() || originalNamedTypeSymbol.IsGenericICollection())
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.Generic.List";
+        }
+        else if (originalNamedTypeSymbol.IsGenericIEnumerable())
+        {
+            isCollection = true;
+            isPureEnumerable = true;
+            concreteTypeName = "System.Collections.Generic.List";
+        }
+        else if (originalNamedTypeSymbol.IsObjectModelCollection())
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.ObjectModel.Collection";
+        }
+        else if (originalNamedTypeSymbol.IsObjectModelObservableCollection())
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.ObjectModel.ObservableCollection";
+        }
+        else if (originalNamedTypeSymbol.IsGenericHashSet())
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.Generic.HashSet";
+        }
+        else if (originalNamedTypeSymbol.IsGenericSortedSet())
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.Generic.SortedSet";
+        }
+        else if (originalNamedTypeSymbol.IsGenericQueue())
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.Generic.Queue";
+        }
+        else if (originalNamedTypeSymbol.IsGenericStack())
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.Generic.Stack";
+        }
+        else if (originalNamedTypeSymbol.IsGenericLinkedList())
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.Generic.LinkedList";
+        }
+        else if (originalNamedTypeSymbol.IsConcurrentConcurrentBag())
+        {
+            isCollection = true;
+            concreteTypeName = "System.Collections.Concurrent.ConcurrentBag";
         }
 
         if (!isCollection)

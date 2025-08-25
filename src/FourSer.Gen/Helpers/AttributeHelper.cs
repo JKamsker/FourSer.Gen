@@ -36,7 +36,7 @@ public static class AttributeHelper
     public static bool HasGenerateSerializerAttribute(ITypeSymbol typeSymbol)
     {
         return typeSymbol.GetAttributes()
-            .Any(a => a.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute");
+            .Any(a => a.AttributeClass is not null && a.AttributeClass.IsGenerateSerializerAttribute());
     }
 
     public static string? GetCountSizeReference(AttributeData? collectionAttribute)

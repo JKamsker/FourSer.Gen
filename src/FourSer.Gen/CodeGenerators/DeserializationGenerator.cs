@@ -1,6 +1,7 @@
 using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
+using Microsoft.CodeAnalysis;
 
 namespace FourSer.Gen.CodeGenerators;
 
@@ -228,7 +229,7 @@ public static class DeserializationGenerator
             {
                 sb.WriteLineFormat("{0} = {1}.ReadBytes({2}{3}, (int){4});", target, helper, refOrEmpty, source, countVar);
             }
-            else if (member.CollectionTypeInfo?.CollectionTypeName == "System.Collections.Generic.List<T>")
+            else if (member.CollectionTypeInfo?.CollectionType is INamedTypeSymbol listType && listType.IsGenericList())
             {
                 sb.WriteLineFormat
                     ("{0} = {1}.ReadBytes({2}{3}, (int){4}).ToList();", target, helper, refOrEmpty, source, countVar);
@@ -280,7 +281,7 @@ public static class DeserializationGenerator
                     source,
                     helper
                 );
-                var addMethod = CollectionUtilities.GetCollectionAddMethod(member.CollectionTypeInfo!.Value.CollectionTypeName);
+                var addMethod = CollectionUtilities.GetCollectionAddMethod(member.CollectionTypeInfo!.Value.CollectionType);
                 sb.WriteLineFormat("{0}.{1}(item);", memberName, addMethod);
                 return;
             }
@@ -598,7 +599,7 @@ public static class DeserializationGenerator
         string helper
     )
     {
-        var addMethod = CollectionUtilities.GetCollectionAddMethod(elementInfo.CollectionTypeName);
+        var addMethod = CollectionUtilities.GetCollectionAddMethod(elementInfo.CollectionType);
         var refOrEmpty = source == "buffer" ? "ref " : "";
 
         if (elementInfo.IsElementUnmanagedType)
