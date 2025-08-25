@@ -539,10 +539,22 @@ var received = LoginAckPacket.Deserialize(receivedBuffer, out var bytesRead);
 dotnet build
 ```
 
-## Running Tests
+## Testing
+
+The solution includes a comprehensive suite of tests to ensure correctness and stability.
+
+-   **`FourSer.Tests`**: Contains snapshot tests for the source generator using `Verify.Xunit`. These tests take input source code, run the generator, and compare the output against approved snapshots. This ensures that any change to the generated code is intentional.
+
+-   **`FourSer.Analyzers.Test`**: Contains unit tests for the Roslyn analyzers. These tests ensure that the analyzers correctly identify issues in the source code and that the code fixes work as expected.
+
+-   **`FourSer.Tests.Behavioural`**: Contains behavioural tests that use the generated serializers to perform round-trip serialization and deserialization of various data structures. These tests verify the runtime behavior of the generated code.
+
+-   **`Serializer.Package.Tests`**: An integration test project that consumes the `FourSer.Gen` NuGet package. This test ensures that the package works correctly in a real-world scenario, from installation to usage.
+
+To run all tests, use the following command from the root of the repository:
 
 ```bash
-dotnet run --project src/FourSer.Consumer
+dotnet test
 ```
 
 ## Contributing
