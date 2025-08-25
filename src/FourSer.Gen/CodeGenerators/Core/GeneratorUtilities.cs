@@ -105,4 +105,25 @@ public static class GeneratorUtilities
     {
         return member.HasGenerateSerializerAttribute;
     }
+
+    public static string? ResolveSerializer(MemberToGenerate member, TypeToGenerate type)
+    {
+        // 1. Direct override
+        if (member.CustomSerializer is { } customSerializer)
+        {
+            return customSerializer.SerializerTypeName;
+        }
+
+        // 2. Default override
+        foreach (var defaultSerializer in type.DefaultSerializers)
+        {
+            if (defaultSerializer.TargetTypeName == member.TypeName)
+            {
+                return defaultSerializer.SerializerTypeName;
+            }
+        }
+
+        // 3. Fallback
+        return null;
+    }
 }

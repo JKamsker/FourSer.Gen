@@ -24,14 +24,21 @@ public static class PacketSizeGenerator
 
         foreach (var member in typeToGenerate.Members)
         {
-            GenerateMemberSizeCalculation(sb, member);
+            GenerateMemberSizeCalculation(sb, member, typeToGenerate);
         }
 
         sb.WriteLine("return size;");
     }
 
-    private static void GenerateMemberSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member)
+    private static void GenerateMemberSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member, TypeToGenerate type)
     {
+        var customSerializer = GeneratorUtilities.ResolveSerializer(member, type);
+        if (customSerializer != null)
+        {
+            sb.WriteLineFormat("size += new {0}().GetPacketSize(obj.{1});", customSerializer, member.Name);
+            return;
+        }
+
         if (member.IsList || member.IsCollection)
         {
             GenerateCollectionSizeCalculation(sb, member);

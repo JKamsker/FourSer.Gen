@@ -34,6 +34,7 @@ internal static class TypeInfoProvider
         var constructorInfo = GetConstructorInfo(typeSymbol, serializableMembers);
 
         var hasSerializableBaseType = HasGenerateSerializerAttribute(typeSymbol.BaseType);
+        var defaultSerializers = GetDefaultSerializers(typeSymbol);
 
         return new TypeToGenerate
         (
@@ -44,8 +45,31 @@ internal static class TypeInfoProvider
             serializableMembers,
             nestedTypes,
             hasSerializableBaseType,
-            constructorInfo
+            constructorInfo,
+            new(defaultSerializers)
         );
+    }
+
+    private static ImmutableArray<DefaultSerializerInfo> GetDefaultSerializers(INamedTypeSymbol typeSymbol)
+    {
+        var attributes = typeSymbol.GetAttributes();
+        var builder = ImmutableArray.CreateBuilder<DefaultSerializerInfo>();
+
+        foreach (var attribute in attributes)
+        {
+            if (attribute.AttributeClass?.ToDisplayString() == "FourSer.Contracts.DefaultSerializerAttribute")
+            {
+                var targetType = attribute.ConstructorArguments[0].Value as ITypeSymbol;
+                var serializerType = attribute.ConstructorArguments[1].Value as ITypeSymbol;
+
+                if (targetType != null && serializerType != null)
+                {
+                    builder.Add(new DefaultSerializerInfo(targetType.ToDisplayString(s_typeNameFormat), serializerType.ToDisplayString(s_typeNameFormat)));
+                }
+            }
+        }
+
+        return builder.ToImmutable();
     }
 
     private static ConstructorInfo? GetConstructorInfo
@@ -385,10 +409,24 @@ internal static class TypeInfoProvider
             IsReadOnly: isReadOnly,
             IsInitOnly: isInitOnly,
             IsCountSizeReferenceFor: null,
-            IsTypeIdPropertyFor: null
+            IsTypeIdPropertyFor: null,
+            CustomSerializer: GetCustomSerializer(m)
         );
 
         return (memberToGenerate, location);
+    }
+
+    private static CustomSerializerInfo? GetCustomSerializer(ISymbol member)
+    {
+        var attribute = member.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializerAttribute");
+
+        if (attribute == null)
+        {
+            return null;
+        }
+
+        var serializerType = attribute.ConstructorArguments[0].Value as ITypeSymbol;
+        return serializerType != null ? new CustomSerializerInfo(serializerType.ToDisplayString(s_typeNameFormat)) : null;
     }
 
     private static EquatableArray<TypeToGenerate> GetNestedTypes(INamedTypeSymbol parentType)
@@ -458,6 +496,7 @@ internal static class TypeInfoProvider
         var deeperNestedTypes = GetNestedTypes(nestedTypeSymbol);
 
         var hasSerializableBaseType = HasGenerateSerializerAttribute(nestedTypeSymbol.BaseType);
+        var defaultSerializers = GetDefaultSerializers(nestedTypeSymbol);
 
         var constructorInfo = GetConstructorInfo(nestedTypeSymbol, nestedMembers);
 
@@ -470,7 +509,8 @@ internal static class TypeInfoProvider
             nestedMembers,
             deeperNestedTypes,
             hasSerializableBaseType,
-            constructorInfo
+            constructorInfo,
+            new(defaultSerializers)
         );
     }
 

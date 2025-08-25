@@ -33,7 +33,8 @@ public partial class TItem
     public byte Type { get; set; }
     public byte Kind { get; set; }
     public ushort AttrID { get; set; }
-    public FourSerString Name { get; set; }
+    [Serializer(typeof(MfcStringSerializer))]
+    public string Name { get; set; }
     public ushort UseValue { get; set; }
     public uint SlotID { get; set; }
     public uint ClassID { get; set; }
@@ -88,47 +89,6 @@ public partial class TItem
     public byte CanColor { get; set; }
 }
 
-public class FourSerString : ISerializable<FourSerString>
-{
-    public string Value { get; set; }
-
-    public static int GetPacketSize(FourSerString obj)
-    {
-        return StringEx.MeasureSize(obj.Value);
-    }
-
-    public static int Serialize(FourSerString obj, Span<byte> data)
-    {
-        var origLen = data.Length;
-        StringEx.WriteString(ref data, obj.Value);
-        return origLen - data.Length;
-    }
-
-    public static void Serialize(FourSerString obj, Stream stream)
-    {
-        StreamWriterHelpers.WriteString(stream, obj.Value);
-    }
-
-    public static FourSerString Deserialize(ref ReadOnlySpan<byte> data)
-    {
-        var str = StringEx.ReadString(ref data);
-        return new FourSerString { Value = str };
-    }
-
-    public static FourSerString Deserialize(ReadOnlySpan<byte> data)
-    {
-        return Deserialize(ref data);
-    }
-
-    public static FourSerString Deserialize(Stream stream)
-    {
-        var rawValue = MfcStringUtils.ReadMfcUnicodeCStringRaw(stream);
-        var value = Encoding.Unicode.GetString(rawValue);
-
-        return new FourSerString { Value = value };
-    }
-}
-
 public class TitemReader
 {
     // "C:\Users\W31rd0\source\repos\4Story\4StoryCC\4StoryCC_Client\Tcd\TItem.tcd"
@@ -146,7 +106,7 @@ public class TitemReader
         // Example assertions for the first item
         var firstItem = titemChart.Items[0];
         Assert.Equal(1, firstItem.ItemID); // Assuming the first item's ID is 1
-        // Assert.False(string.IsNullOrEmpty(firstItem.Name), "First item's name should not be empty");
+        Assert.False(string.IsNullOrEmpty(firstItem.Name), "First item's name should not be empty");
 
         // Additional assertions can be added here based on known values in the TItem.tcd file
     }

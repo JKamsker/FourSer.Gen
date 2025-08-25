@@ -37,6 +37,7 @@ public static class DeserializationGenerator
             (
                 sb,
                 member,
+                typeToGenerate,
                 true,
                 "stream",
                 "StreamReader"
@@ -81,6 +82,7 @@ public static class DeserializationGenerator
             (
                 sb,
                 member,
+                typeToGenerate,
                 true,
                 "buffer",
                 "SpanReader"
@@ -119,6 +121,7 @@ public static class DeserializationGenerator
     (
         IndentedStringBuilder sb,
         MemberToGenerate member,
+        TypeToGenerate type,
         bool isCtorParam,
         string source,
         string helper
@@ -126,6 +129,13 @@ public static class DeserializationGenerator
     {
         var target = isCtorParam ? $"var {member.Name.ToCamelCase()}" : $"obj.{member.Name}";
         var refOrEmpty = source == "buffer" ? "ref " : "";
+
+        var customSerializer = GeneratorUtilities.ResolveSerializer(member, type);
+        if (customSerializer != null)
+        {
+            sb.WriteLineFormat("{0} = new {1}().Deserialize({2}{3});", target, customSerializer, refOrEmpty, source);
+            return;
+        }
 
         if (member.IsList || member.IsCollection)
         {
@@ -258,6 +268,7 @@ public static class DeserializationGenerator
                     null,
                     false,
                     false,
+                    null,
                     null,
                     null
                 );
