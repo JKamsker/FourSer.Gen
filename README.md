@@ -117,12 +117,18 @@ public interface ISerializable<T> where T : ISerializable<T>
     // Serializes the object into the provided span.
     static abstract int Serialize(T obj, Span<byte> data);
 
+    // Serializes the object into the provided stream.
+    static abstract void Serialize(T obj, Stream stream);
+
     // Deserializes an object from the provided span.
     // The span is advanced by the number of bytes read.
     static abstract T Deserialize(ref ReadOnlySpan<byte> data);
 
     // Deserializes an object from the provided span without advancing it.
     static abstract T Deserialize(ReadOnlySpan<byte> data);
+
+    // Deserializes an object from the provided stream.
+    static abstract T Deserialize(Stream stream);
 }
 ```
 
@@ -337,6 +343,81 @@ Using custom discriminator types offers several benefits:
 - **Space Efficiency**: A `byte` uses 1 byte, a `ushort` uses 2, and an `int` uses 4. Choose the smallest type that fits your needs.
 - **Type Safety**: Enums provide strong typing and make your code more readable and maintainable.
 - **Automatic Casting**: The generator handles all necessary type conversions automatically.
+
+## Custom Serializers
+
+For special cases where the default serialization logic is not sufficient, you can provide your own custom serializer for any given type. This is useful for handling legacy binary formats, complex data structures, or types that require special encoding.
+
+### 1. Create a Custom Serializer
+
+A custom serializer is a class that implements the `ISerializer<T>` interface, where `T` is the type you want to serialize.
+
+```csharp
+public interface ISerializer<T>
+{
+    int GetPacketSize(T obj);
+    int Serialize(T obj, Span<byte> data);
+    void Serialize(T obj, Stream stream);
+    T Deserialize(ref ReadOnlySpan<byte> data);
+    T Deserialize(Stream stream);
+}
+```
+
+Here is an example of a custom serializer for handling MFC-style Unicode strings, which have a specific length prefix format:
+
+```csharp
+public class MfcStringSerializer : ISerializer<string>
+{
+    public int GetPacketSize(string obj) { /* ... */ }
+    public int Serialize(string obj, Span<byte> data) { /* ... */ }
+    public void Serialize(string obj, Stream stream) { /* ... */ }
+    public string Deserialize(ref ReadOnlySpan<byte> data) { /* ... */ }
+    public string Deserialize(Stream stream) { /* ... */ }
+}
+```
+
+### 2. Apply the Custom Serializer
+
+You can apply a custom serializer in two ways:
+
+#### On a Specific Property
+
+Use the `[Serializer(typeof(MySerializer))]` attribute on a property to override its serialization logic.
+
+```csharp
+[GenerateSerializer]
+public partial class LegacyPacket
+{
+    public int PlayerId { get; set; }
+
+    [Serializer(typeof(MfcStringSerializer))]
+    public string PlayerName { get; set; }
+}
+```
+
+In this example, `PlayerName` will be serialized using `MfcStringSerializer`, while `PlayerId` will use the default integer serialization.
+
+#### As a Default for a Type
+
+Use the `[DefaultSerializer(typeof(TargetType), typeof(MySerializer))]` attribute on a class to set a default serializer for all properties of a specific type within that class.
+
+```csharp
+[GenerateSerializer]
+[DefaultSerializer(typeof(string), typeof(MfcStringSerializer))]
+public partial class AllMfcStringsPacket
+{
+    // This will use MfcStringSerializer by default
+    public string PlayerName { get; set; }
+
+    // This will also use MfcStringSerializer
+    public string GuildName { get; set; }
+
+    // You can still override the default if needed
+    [Serializer(typeof(StandardStringSerializer))] // Assuming a standard one exists
+    public string ChatMessage { get; set; }
+}
+```
+This approach is useful when an entire class or data structure consistently uses a non-standard format for a certain type.
 
 ## Supported Types
 
