@@ -240,8 +240,10 @@ public static class SpanWriterExtensions
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)
         );
 
-        var generator = new SerializerGenerator();
-        var driver = CSharpGeneratorDriver.Create(generator);
+        var generator = new SerializerGenerator().AsSourceGenerator();
+        var driver =  CSharpGeneratorDriver.Create(
+            generators: new ISourceGenerator[] { generator },
+            driverOptions: new GeneratorDriverOptions(default, trackIncrementalGeneratorSteps: true));
 
         driver = (CSharpGeneratorDriver)driver.RunGenerators(compilation);
 

@@ -32,9 +32,14 @@ public class SerializerGenerator : IIncrementalGenerator
                 "FourSer.Contracts.GenerateSerializerAttribute",
                 (node, _) => node is ClassDeclarationSyntax or StructDeclarationSyntax or RecordDeclarationSyntax,
                 TypeInfoProvider.GetSemanticTargetForGeneration
-            );
+            )
+            .WithTrackingName("TypesWithGenerateSerializerAttribute")
+            ;
 
-        var nonNullableTypes = typesToGenerate.Where(static m => m is not null);
+        var nonNullableTypes = typesToGenerate
+                .Where(static m => m is not null)
+                .WithTrackingName("NonNullableTypes")
+            ;
 
         context.RegisterSourceOutput
         (

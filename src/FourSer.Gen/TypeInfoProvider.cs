@@ -424,9 +424,28 @@ internal static class TypeInfoProvider
                 return true;
             }
         }
+        
+        // Also good: TypeOfClass implements ISerializable<TypeOfClass>
+        foreach (var iface in typeSymbol.AllInterfaces)
+        {
+            var isIserializable = iface.OriginalDefinition is
+            {
+                Name: "ISerializable",
+                Arity: 1, // Arity checks the number of generic parameters
+                ContainingNamespace:
+                { Name: "Contracts", ContainingNamespace: { Name: "FourSer", ContainingNamespace: { IsGlobalNamespace: true } } }
+            };
+            
+            if (isIserializable)
+            {
+                return true;
+            }
+        }
 
         return false;
     }
+    
+   
 
     private static TypeToGenerate? CreateNestedTypeToGenerate(INamedTypeSymbol nestedTypeSymbol)
     {

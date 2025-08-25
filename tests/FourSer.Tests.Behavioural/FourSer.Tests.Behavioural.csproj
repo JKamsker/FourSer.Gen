@@ -24,4 +24,10 @@
     <ProjectReference Include="..\..\src\FourSer.Contracts\FourSer.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="Resources\TestFiles-BOM.zip" />
+    <Compile Remove="Resources\TestFiles-BOM.zip" />
+    <EmbeddedResource Include="Resources\TestFiles-BOM.zip" />
+  </ItemGroup>
+
 </Project>
