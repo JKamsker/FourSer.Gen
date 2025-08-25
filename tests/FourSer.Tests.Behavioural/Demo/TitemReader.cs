@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using FourSer.Gen.Helpers;
+using Xunit;
 
 namespace FourSer.Tests.Behavioural.Demo;
 
@@ -95,9 +96,10 @@ public class TitemReader
     [Fact]
     public void ReadTitemFile()
     {
-        var stream = GetTestFileStream();
+        var originalStream = GetTestFileStream();
         
-        var titemChart = TItemChart.Deserialize(stream);
+        // Read the original data
+        var titemChart = TItemChart.Deserialize(originalStream);
 
         Assert.NotNull(titemChart);
         Assert.NotNull(titemChart.Items);
@@ -107,6 +109,36 @@ public class TitemReader
         var firstItem = titemChart.Items[0];
         Assert.Equal(1, firstItem.ItemID); // Assuming the first item's ID is 1
         Assert.False(string.IsNullOrEmpty(firstItem.Name), "First item's name should not be empty");
+
+        // Test round-trip serialization
+        var serializedStream = new MemoryStream();
+        TItemChart.Serialize(titemChart, serializedStream);
+        
+        // Test round-trip serialization by deserializing our serialized data
+        serializedStream.Position = 0;
+        var deserializedChart = TItemChart.Deserialize(serializedStream);
+        
+        // Verify the round-trip worked
+        Assert.NotNull(deserializedChart);
+        Assert.NotNull(deserializedChart.Items);
+        Assert.Equal(titemChart.Items.Count, deserializedChart.Items.Count);
+        
+        // Check that the first few items match
+        for (int i = 0; i < Math.Min(3, titemChart.Items.Count); i++)
+        {
+            var original = titemChart.Items[i];
+            var roundTrip = deserializedChart.Items[i];
+            
+            Assert.Equal(original.ItemID, roundTrip.ItemID);
+            Assert.Equal(original.Name, roundTrip.Name);
+            Assert.Equal(original.Type, roundTrip.Type);
+            Assert.Equal(original.Price, roundTrip.Price);
+            Assert.Equal(original.Visual.Length, roundTrip.Visual.Length);
+            for (int j = 0; j < original.Visual.Length; j++)
+            {
+                Assert.Equal(original.Visual[j], roundTrip.Visual[j]);
+            }
+        }
 
         // Additional assertions can be added here based on known values in the TItem.tcd file
     }

@@ -1,6 +1,6 @@
-﻿using System;
-using System.IO;
-using System.Text;
+﻿using System.Text;
+
+namespace FourSer.Tests.Behavioural.Demo;
 
 public static class MfcStringUtils
 {
@@ -101,5 +101,112 @@ public static class MfcStringUtils
         stream.ReadExactly(buffer.Slice(0, 4));
         uint dword = BitConverter.ToUInt32(buffer);
         return checked((int)dword); // Throw if length exceeds int.MaxValue
+    }
+
+    /// <summary>
+    /// Writes an MFC-style Unicode CString to a stream.
+    /// The format is: BOM (0xFEFF), then a length prefix, then UTF-16LE bytes.
+    /// </summary>
+    /// <param name="stream">The output stream to write to.</param>
+    /// <param name="value">The string to write.</param>
+    public static void WriteMfcUnicodeCString(Stream stream, string value)
+    {
+        // 1. Write the UTF-16LE BOM (Byte Order Mark).
+        Span<byte> bomBuffer = stackalloc byte[2];
+        BitConverter.TryWriteBytes(bomBuffer, (ushort)0xFEFF);
+        stream.Write(bomBuffer);
+
+        // 2. Convert string to UTF-16LE bytes
+        byte[] utf16Bytes = Encoding.Unicode.GetBytes(value ?? string.Empty);
+        int charCount = utf16Bytes.Length / 2;
+
+        // 3. Write the MFC-style length prefix.
+        WriteMfcCount(stream, charCount);
+
+        // 4. Write the string payload.
+        if (utf16Bytes.Length > 0)
+        {
+            stream.Write(utf16Bytes);
+        }
+    }
+
+    /// <summary>
+    /// Writes a modified MFC length prefix to match the non-standard format.
+    /// </summary>
+    private static void WriteMfcCount(Stream stream, int charCount)
+    {
+        if (charCount < 0)
+        {
+            throw new ArgumentException("Character count cannot be negative.", nameof(charCount));
+        }
+
+        if (charCount < 0xFF)
+        {
+            // Standard case for lengths 0-254.
+            stream.WriteByte((byte)charCount);
+        }
+        else if (charCount <= 0xFF)
+        {
+            // Non-standard case: write FF followed by the actual length
+            stream.WriteByte(0xFF);
+            stream.WriteByte((byte)charCount);
+        }
+        else if (charCount <= 0xFFFF)
+        {
+            // Standard 2-byte length
+            stream.WriteByte(0xFF);
+            stream.WriteByte(0xFF);
+            Span<byte> buffer = stackalloc byte[2];
+            BitConverter.TryWriteBytes(buffer, (ushort)charCount);
+            stream.Write(buffer);
+        }
+        else
+        {
+            // Standard 4-byte length
+            stream.WriteByte(0xFF);
+            stream.WriteByte(0xFF);
+            Span<byte> buffer = stackalloc byte[6];
+            BitConverter.TryWriteBytes(buffer.Slice(0, 2), (ushort)0xFFFF);
+            BitConverter.TryWriteBytes(buffer.Slice(2, 4), (uint)charCount);
+            stream.Write(buffer);
+        }
+    }
+
+    /// <summary>
+    /// Calculates the total size needed to serialize an MFC-style Unicode CString.
+    /// </summary>
+    /// <param name="value">The string to measure.</param>
+    /// <returns>The total byte size including BOM, length prefix, and string data.</returns>
+    public static int GetMfcUnicodeCStringSize(string value)
+    {
+        int charCount = (value ?? string.Empty).Length;
+        int bomSize = 2; // UTF-16LE BOM
+        int lengthPrefixSize = GetMfcCountSize(charCount);
+        int stringDataSize = charCount * 2; // UTF-16LE
+
+        return bomSize + lengthPrefixSize + stringDataSize;
+    }
+
+    /// <summary>
+    /// Calculates the size of the MFC count prefix for the given character count.
+    /// </summary>
+    private static int GetMfcCountSize(int charCount)
+    {
+        if (charCount < 0xFF)
+        {
+            return 1; // Single byte
+        }
+        else if (charCount <= 0xFF)
+        {
+            return 2; // FF + byte (non-standard)
+        }
+        else if (charCount <= 0xFFFF)
+        {
+            return 4; // FF FF + ushort
+        }
+        else
+        {
+            return 6; // FF FF FF FF + uint
+        }
     }
 }
