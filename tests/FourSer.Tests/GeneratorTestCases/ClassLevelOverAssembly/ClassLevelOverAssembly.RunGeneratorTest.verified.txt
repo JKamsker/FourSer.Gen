@@ -13,7 +13,7 @@ using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
 using SpanWriter = FourSer.Gen.Helpers.SpanWriterHelpers;
 using StreamWriter = FourSer.Gen.Helpers.StreamWriterHelpers;
 
-namespace FourSer.Tests.GeneratorTestCases.SerializerPrecedence;
+namespace FourSer.Tests.GeneratorTestCases.ClassLevelOverAssembly;
 
 public partial class Packet : ISerializable<Packet>
 {
@@ -21,7 +21,7 @@ public partial class Packet : ISerializable<Packet>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_SerializerPrecedence_PropertyStringSerializer.GetPacketSize(obj.Name);
+        size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelOverAssembly_ClassStringSerializer.GetPacketSize(obj.Name);
         return size;
     }
 
@@ -37,7 +37,7 @@ public partial class Packet : ISerializable<Packet>
 
     public static Packet Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_SerializerPrecedence_PropertyStringSerializer.Deserialize(ref buffer);
+        var name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelOverAssembly_ClassStringSerializer.Deserialize(ref buffer);
         var obj = new Packet(name);
         return obj;
     }
@@ -49,7 +49,7 @@ public partial class Packet : ISerializable<Packet>
 
     public static Packet Deserialize(System.IO.Stream stream)
     {
-        var name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_SerializerPrecedence_PropertyStringSerializer.Deserialize(stream);
+        var name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelOverAssembly_ClassStringSerializer.Deserialize(stream);
         var obj = new Packet(name);
         return obj;
     }
@@ -58,14 +58,14 @@ public partial class Packet : ISerializable<Packet>
     {
         if (obj is null) return 0;
         var originalData = data;
-        FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_SerializerPrecedence_PropertyStringSerializer.Serialize(obj.Name, data);
+        FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelOverAssembly_ClassStringSerializer.Serialize(obj.Name, data);
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(Packet obj, System.IO.Stream stream)
     {
         if (obj is null) return;
-        FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_SerializerPrecedence_PropertyStringSerializer.Serialize(obj.Name, stream);
+        FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelOverAssembly_ClassStringSerializer.Serialize(obj.Name, stream);
     }
 }
 
@@ -81,7 +81,6 @@ namespace FourSer.Generated.Internal
     [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
     internal static class __FourSer_Generated_Serializers
     {
-        public static readonly FourSer.Tests.GeneratorTestCases.SerializerPrecedence.PropertyStringSerializer FourSer_Tests_GeneratorTestCases_SerializerPrecedence_PropertyStringSerializer = new();
-        public static readonly FourSer.Tests.GeneratorTestCases.SerializerPrecedence.ClassStringSerializer FourSer_Tests_GeneratorTestCases_SerializerPrecedence_ClassStringSerializer = new();
+        public static readonly FourSer.Tests.GeneratorTestCases.ClassLevelOverAssembly.ClassStringSerializer FourSer_Tests_GeneratorTestCases_ClassLevelOverAssembly_ClassStringSerializer = new();
     }
 }

@@ -2,9 +2,9 @@ using FourSer.Contracts;
 using System;
 using System.IO;
 
-[assembly: DefaultSerializer(typeof(string), typeof(FourSer.Tests.GeneratorTestCases.SerializerPrecedence.AssemblyStringSerializer))]
+[assembly: DefaultSerializer(typeof(string), typeof(FourSer.Tests.GeneratorTestCases.PropertyLevelOverClassAndAssembly.AssemblyStringSerializer))]
 
-namespace FourSer.Tests.GeneratorTestCases.SerializerPrecedence;
+namespace FourSer.Tests.GeneratorTestCases.PropertyLevelOverClassAndAssembly;
 
 [GenerateSerializer]
 [DefaultSerializer(typeof(string), typeof(ClassStringSerializer))]
