@@ -19,10 +19,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionIt
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 		.github\workflows\ci.yml = .github\workflows\ci.yml
-		..\..\..\4Story\Gemini\SerializerNew\Directory.Packages.props = ..\..\..\4Story\Gemini\SerializerNew\Directory.Packages.props
-		..\..\..\4Story\Gemini\SerializerNew\Directory.Build.props = ..\..\..\4Story\Gemini\SerializerNew\Directory.Build.props
-		..\..\..\4Story\Gemini\SerializerNew\.gitattributes = ..\..\..\4Story\Gemini\SerializerNew\.gitattributes
-		..\..\..\4Story\Gemini\SerializerNew\README.md = ..\..\..\4Story\Gemini\SerializerNew\README.md
+		Directory.Packages.props = Directory.Packages.props
+		Directory.Build.props = Directory.Build.props
+		.gitattributes = .gitattributes
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FourSer.Analyzers", "src\FourSer.Analyzers\FourSer.Analyzers.csproj", "{B0F5982F-051A-4098-94AE-87B8458F6243}"
@@ -33,7 +33,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FourSer.Gen.Nuget", "src\Fo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FourSer.Tests.Behavioural", "tests\FourSer.Tests.Behavioural\FourSer.Tests.Behavioural.csproj", "{E6D2DBDC-9797-4917-B5E6-4646337D0315}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FourSer.Gen.Benchmark.Simple", "..\..\..\4Story\Gemini\SerializerNew\src\FourSer.Gen.Benchmark.Simple\FourSer.Gen.Benchmark.Simple.csproj", "{510802FB-483B-42ED-B44D-2876DE8E33D4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FourSer.Gen.Benchmark.Simple", "src\FourSer.Gen.Benchmark.Simple\FourSer.Gen.Benchmark.Simple.csproj", "{510802FB-483B-42ED-B44D-2876DE8E33D4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
