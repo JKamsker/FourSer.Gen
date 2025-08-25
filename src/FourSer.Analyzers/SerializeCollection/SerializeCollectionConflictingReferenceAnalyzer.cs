@@ -49,7 +49,7 @@ namespace FourSer.Analyzers.SerializeCollection
 
             foreach (var member in namedTypeSymbol.GetMembers())
             {
-                var attribute = member.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializeCollectionAttribute");
+                var attribute = member.GetAttributes().FirstOrDefault(ad => ad.AttributeClass is not null && ad.AttributeClass.IsSerializeCollectionAttribute());
 
                 if (attribute == null)
                 {

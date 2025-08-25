@@ -15,5 +15,56 @@ public static class SymbolExtensions
             { Name: "Contracts", ContainingNamespace: { Name: "FourSer", ContainingNamespace: { IsGlobalNamespace: true } } }
         };
     }
-    
+
+    public static bool IsGenerateSerializerAttribute(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is
+        {
+            Name: "GenerateSerializerAttribute",
+            ContainingNamespace:
+            {
+                Name: "Contracts",
+                ContainingNamespace: { Name: "FourSer", ContainingNamespace: { IsGlobalNamespace: true } }
+            }
+        };
+    }
+
+    public static bool IsDefaultSerializerAttribute(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is
+        {
+            Name: "DefaultSerializerAttribute",
+            ContainingNamespace:
+            {
+                Name: "Contracts",
+                ContainingNamespace: { Name: "FourSer", ContainingNamespace: { IsGlobalNamespace: true } }
+            }
+        };
+    }
+
+    public static bool IsSerializerAttribute(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is
+        {
+            Name: "SerializerAttribute",
+            ContainingNamespace:
+            {
+                Name: "Contracts",
+                ContainingNamespace: { Name: "FourSer", ContainingNamespace: { IsGlobalNamespace: true } }
+            }
+        };
+    }
+
+    public static bool IsSerializeCollectionAttribute(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is
+        {
+            Name: "SerializeCollectionAttribute",
+            ContainingNamespace:
+            {
+                Name: "Contracts",
+                ContainingNamespace: { Name: "FourSer", ContainingNamespace: { IsGlobalNamespace: true } }
+            }
+        };
+    }
 }

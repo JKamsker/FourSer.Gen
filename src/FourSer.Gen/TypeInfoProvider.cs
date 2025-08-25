@@ -58,7 +58,7 @@ internal static class TypeInfoProvider
         var assemblyAttributes = assemblySymbol.GetAttributes();
         foreach (var attribute in assemblyAttributes)
         {
-            if (attribute.AttributeClass?.ToDisplayString() == "FourSer.Contracts.DefaultSerializerAttribute")
+            if (attribute.AttributeClass is not null && attribute.AttributeClass.IsDefaultSerializerAttribute())
             {
                 var targetType = attribute.ConstructorArguments[0].Value as ITypeSymbol;
                 var serializerType = attribute.ConstructorArguments[1].Value as ITypeSymbol;
@@ -75,7 +75,7 @@ internal static class TypeInfoProvider
         var attributes = typeSymbol.GetAttributes();
         foreach (var attribute in attributes)
         {
-            if (attribute.AttributeClass?.ToDisplayString() == "FourSer.Contracts.DefaultSerializerAttribute")
+            if (attribute.AttributeClass is not null && attribute.AttributeClass.IsDefaultSerializerAttribute())
             {
                 var targetType = attribute.ConstructorArguments[0].Value as ITypeSymbol;
                 var serializerType = attribute.ConstructorArguments[1].Value as ITypeSymbol;
@@ -437,7 +437,7 @@ internal static class TypeInfoProvider
 
     private static CustomSerializerInfo? GetCustomSerializer(ISymbol member)
     {
-        var attribute = member.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.SerializerAttribute");
+        var attribute = member.GetAttributes().FirstOrDefault(ad => ad.AttributeClass is not null && ad.AttributeClass.IsSerializerAttribute());
 
         if (attribute == null)
         {
@@ -474,12 +474,9 @@ internal static class TypeInfoProvider
             return false;
         }
 
-        foreach (var ad in typeSymbol.GetAttributes())
+        if (typeSymbol.GetAttributes().Any(ad => ad.AttributeClass is not null && ad.AttributeClass.IsGenerateSerializerAttribute()))
         {
-            if (ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.GenerateSerializerAttribute")
-            {
-                return true;
-            }
+            return true;
         }
         
         // Also good: TypeOfClass implements ISerializable<TypeOfClass>
