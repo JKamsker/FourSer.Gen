@@ -74,10 +74,10 @@ public static class SerializationGenerator
     // This method is now a simple dispatcher
     private static void GenerateMemberSerialization(IndentedStringBuilder sb, MemberToGenerate member, TypeToGenerate type, SerializationWriterEmitter.WriterCtx ctx)
     {
-        var customSerializer = GeneratorUtilities.ResolveSerializer(member, type);
-        if (customSerializer != null)
+        var resolvedSerializer = GeneratorUtilities.ResolveSerializer(member, type);
+        if (resolvedSerializer is { } serializer)
         {
-            sb.WriteLineFormat("new {0}().Serialize(obj.{1}, {2});", customSerializer, member.Name, ctx.Target);
+            sb.WriteLineFormat("FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.Serialize(obj.{1}, {2});", serializer.FieldName, member.Name, ctx.Target);
             return;
         }
 

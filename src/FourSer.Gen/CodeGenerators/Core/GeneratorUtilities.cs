@@ -5,6 +5,8 @@ namespace FourSer.Gen.CodeGenerators.Core;
 
 public static class GeneratorUtilities
 {
+    public readonly record struct ResolvedSerializer(string TypeName, string FieldName);
+
     /// <summary>
     ///     Unified method name mapping (consolidates 4 duplicate implementations)
     /// </summary>
@@ -106,21 +108,31 @@ public static class GeneratorUtilities
         return member.HasGenerateSerializerAttribute;
     }
 
-    public static string? ResolveSerializer(MemberToGenerate member, TypeToGenerate type)
+    public static ResolvedSerializer? ResolveSerializer(MemberToGenerate member, TypeToGenerate type)
     {
+        string? serializerTypeName = null;
+
         // 1. Direct override
         if (member.CustomSerializer is { } customSerializer)
         {
-            return customSerializer.SerializerTypeName;
+            serializerTypeName = customSerializer.SerializerTypeName;
+        }
+        // 2. Default override
+        else
+        {
+            foreach (var defaultSerializer in type.DefaultSerializers)
+            {
+                if (defaultSerializer.TargetTypeName == member.TypeName)
+                {
+                    serializerTypeName = defaultSerializer.SerializerTypeName;
+                    break;
+                }
+            }
         }
 
-        // 2. Default override
-        foreach (var defaultSerializer in type.DefaultSerializers)
+        if (serializerTypeName != null)
         {
-            if (defaultSerializer.TargetTypeName == member.TypeName)
-            {
-                return defaultSerializer.SerializerTypeName;
-            }
+            return new ResolvedSerializer(serializerTypeName, SerializerGenerator.SanitizeTypeName(serializerTypeName));
         }
 
         // 3. Fallback

@@ -130,10 +130,10 @@ public static class DeserializationGenerator
         var target = isCtorParam ? $"var {member.Name.ToCamelCase()}" : $"obj.{member.Name}";
         var refOrEmpty = source == "buffer" ? "ref " : "";
 
-        var customSerializer = GeneratorUtilities.ResolveSerializer(member, type);
-        if (customSerializer != null)
+        var resolvedSerializer = GeneratorUtilities.ResolveSerializer(member, type);
+        if (resolvedSerializer is { } serializer)
         {
-            sb.WriteLineFormat("{0} = new {1}().Deserialize({2}{3});", target, customSerializer, refOrEmpty, source);
+            sb.WriteLineFormat("{0} = FourSer.Generated.Internal.__FourSer_Generated_Serializers.{1}.Deserialize({2}{3});", target, serializer.FieldName, refOrEmpty, source);
             return;
         }
 
