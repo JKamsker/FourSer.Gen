@@ -66,14 +66,21 @@ public static class SerializationGenerator
             }
             else
             {
-                GenerateMemberSerialization(sb, member, ctx);
+                GenerateMemberSerialization(sb, member, typeToGenerate, ctx);
             }
         }
     }
 
     // This method is now a simple dispatcher
-    private static void GenerateMemberSerialization(IndentedStringBuilder sb, MemberToGenerate member, SerializationWriterEmitter.WriterCtx ctx)
+    private static void GenerateMemberSerialization(IndentedStringBuilder sb, MemberToGenerate member, TypeToGenerate type, SerializationWriterEmitter.WriterCtx ctx)
     {
+        var resolvedSerializer = GeneratorUtilities.ResolveSerializer(member, type);
+        if (resolvedSerializer is { } serializer)
+        {
+            sb.WriteLineFormat("FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.Serialize(obj.{1}, {2});", serializer.FieldName, member.Name, ctx.Target);
+            return;
+        }
+
         if (member.IsList || member.IsCollection)
         {
             CollectionSerializer.Generate(sb, member, ctx);
@@ -159,7 +166,7 @@ public static class SerializationGenerator
         }
         else
         {
-            GenerateMemberSerialization(sb, member, ctx);
+            GenerateMemberSerialization(sb, member, typeToGenerate, ctx);
         }
     }
 

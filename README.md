@@ -442,6 +442,11 @@ var bytesWritten = LoginAckPacket.Serialize(loginAck, buffer);
 var received = LoginAckPacket.Deserialize(receivedBuffer, out var bytesRead);
 ```
 
+## Misc
+### String Behavior
+- Strings are serialized as UTF-8 with a length prefix ()
+
+
 ## Requirements
 
 - .NET 9.0 or later

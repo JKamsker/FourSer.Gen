@@ -150,6 +150,7 @@ internal static class PolymorphicSerializer
             false,
             false,
             null,
+            null,
             null
         );
 

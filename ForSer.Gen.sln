@@ -22,6 +22,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionIt
 		..\..\..\4Story\Gemini\SerializerNew\Directory.Packages.props = ..\..\..\4Story\Gemini\SerializerNew\Directory.Packages.props
 		..\..\..\4Story\Gemini\SerializerNew\Directory.Build.props = ..\..\..\4Story\Gemini\SerializerNew\Directory.Build.props
 		..\..\..\4Story\Gemini\SerializerNew\.gitattributes = ..\..\..\4Story\Gemini\SerializerNew\.gitattributes
+		..\..\..\4Story\Gemini\SerializerNew\README.md = ..\..\..\4Story\Gemini\SerializerNew\README.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FourSer.Analyzers", "src\FourSer.Analyzers\FourSer.Analyzers.csproj", "{B0F5982F-051A-4098-94AE-87B8458F6243}"

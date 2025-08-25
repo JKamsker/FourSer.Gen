@@ -18,7 +18,8 @@ public sealed record TypeToGenerate
     EquatableArray<MemberToGenerate> Members,
     EquatableArray<TypeToGenerate> NestedTypes,
     bool HasSerializableBaseType,
-    ConstructorInfo? Constructor
+    ConstructorInfo? Constructor,
+    EquatableArray<DefaultSerializerInfo> DefaultSerializers
 ) : IEquatable<TypeToGenerate>;
 
 /// <summary>
@@ -73,8 +74,22 @@ public sealed record MemberToGenerate
     bool IsReadOnly,
     bool IsInitOnly,
     int? IsCountSizeReferenceFor,
-    int? IsTypeIdPropertyFor
+    int? IsTypeIdPropertyFor,
+    CustomSerializerInfo? CustomSerializer
 );
+
+/// <summary>
+///     A model describing the [Serializer] attribute on a member.
+/// </summary>
+/// <param name="SerializerTypeName">The full name of the serializer type.</param>
+public readonly record struct CustomSerializerInfo(string SerializerTypeName);
+
+/// <summary>
+///     A model describing the [DefaultSerializer] attribute on a type.
+/// </summary>
+/// <param name="TargetTypeName">The full name of the type to be serialized.</param>
+/// <param name="SerializerTypeName">The full name of the serializer type.</param>
+public readonly record struct DefaultSerializerInfo(string TargetTypeName, string SerializerTypeName);
 
 /// <summary>
 ///     A model describing the type argument of a List&lt;T&gt;.
