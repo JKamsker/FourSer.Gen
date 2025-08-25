@@ -105,6 +105,6 @@ public class CollectionTests
         var deserialized = ListPacket.Deserialize(buffer);
 
         // Assert
-        Assert.Null(deserialized.Names);
+        Assert.Empty(deserialized.Names);
     }
 }

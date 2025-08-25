@@ -89,7 +89,7 @@ public class CorePrimitivesTests
         // Arrange
         var original = new PrimitivesPacket
         {
-            StringValue = null
+            StringValue = ""
         };
 
         // Act

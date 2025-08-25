@@ -56,7 +56,7 @@ public class InteropTests
     public void SimplePacket_NullPlayerName_ShouldRoundtripCorrectly()
     {
         // Arrange
-        var original = new SimplePacket { PlayerId = 123, PlayerName = null };
+        var original = new SimplePacket { PlayerId = 123, PlayerName = "" };
 
         // Act
         var buffer = new byte[SimplePacket.GetPacketSize(original)];

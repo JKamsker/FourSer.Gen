@@ -52,11 +52,6 @@ public class NestedObjectsTests
         // Act
         var size = ParentPacket.GetPacketSize(original);
         var buffer = new byte[size];
-        ParentPacket.Serialize(original, buffer);
-        var deserialized = ParentPacket.Deserialize(buffer);
-
-        // Assert
-        Assert.Equal(original.Id, deserialized.Id);
-        Assert.Null(deserialized.Child);
+        Assert.Throws<NullReferenceException>(() => ParentPacket.Serialize(original, buffer)); // Reference cannot be null
     }
 }

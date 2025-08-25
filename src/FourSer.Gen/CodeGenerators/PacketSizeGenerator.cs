@@ -13,6 +13,13 @@ public static class PacketSizeGenerator
     {
         sb.WriteLineFormat("public static int GetPacketSize({0} obj)", typeToGenerate.Name);
         using var _ = sb.BeginBlock();
+        // null check
+        if (!typeToGenerate.IsValueType)
+        {
+            sb.WriteLine("if (obj is null) return 0;");
+        }
+        
+        
         sb.WriteLine("var size = 0;");
 
         foreach (var member in typeToGenerate.Members)
