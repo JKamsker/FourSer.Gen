@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis;
+
 namespace FourSer.Gen.Models;
 
 /// <summary>
@@ -122,7 +124,7 @@ public readonly record struct ListTypeArgumentInfo
 /// </param>
 public readonly record struct CollectionTypeInfo
 (
-    string CollectionTypeName,
+    ISymbol CollectionType,
     string ElementTypeName,
     bool IsElementUnmanagedType,
     bool IsElementStringType,
