@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using FourSer.Gen;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
 namespace FourSer.Gen.Benchmark.Simple
@@ -195,8 +196,7 @@ public static class SpanWriterExtensions
 }"
         };
 
-        private static string _testCaseDirectory = WildPath.PathResolver.Resolve(@"...\tests\FourSer.Tests\GeneratorTestCases")
-            ?? throw new DirectoryNotFoundException("Test case directory not found.");
+        private static string _testCaseDirectory = "tests/FourSer.Tests/GeneratorTestCases";
 
         private static Dictionary<string, string> _testCases;
 
@@ -276,6 +276,7 @@ public static class SpanWriterExtensions
      
         public TimeSpan? RunGenerator(string testCaseName)
         {
+            SerializerGenerator.BenchmarkMode = true;
             var source = ReadSource(testCaseName);
 
             var syntaxTrees = s_contractsSource.Select(s => CSharpSyntaxTree.ParseText(s)).ToList();

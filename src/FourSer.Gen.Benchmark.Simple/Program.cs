@@ -11,29 +11,18 @@ class Program
 
         var cases = bm.GetTestCases().ToArray();
 
+        var totalElapsedTime = TimeSpan.Zero;
         for (int i = 0; i < 10; i++)
         {
             foreach (var testCase in cases)
             {
-                bm.RunGenerator(testCase);
+                var elapsedTime = bm.RunGenerator(testCase);
+                if (elapsedTime.HasValue)
+                {
+                    totalElapsedTime += elapsedTime.Value;
+                }
             }
         }
-            
-        TimeSpan bestOf100 = TimeSpan.MaxValue;
-        for (int j = 0; j < 10; j++)
-        {
-            var sw = Stopwatch.StartNew();
-            for (int i = 0; i < 10; i++)
-            {
-                foreach (var testCase in cases)
-                {
-                    bm.RunGenerator(testCase);
-                }
-            } 
-            sw.Stop();
-            if (sw.Elapsed < bestOf100)
-                bestOf100 = sw.Elapsed;
-        }
-        Console.WriteLine($"Best of 10: {bestOf100.TotalMilliseconds} ms");
+        Console.WriteLine($"Total time for 'TypesWithGenerateSerializerAttribute' step: {totalElapsedTime.TotalMilliseconds} ms");
     }
 }

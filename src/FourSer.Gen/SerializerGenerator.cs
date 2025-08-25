@@ -13,6 +13,7 @@ namespace FourSer.Gen;
 [Generator]
 public class SerializerGenerator : IIncrementalGenerator
 {
+    public static bool BenchmarkMode { get; set; }
     private static readonly DiagnosticDescriptor s_invalidCollectionTypeArgument = new
     (
         "FS0001",
@@ -104,6 +105,11 @@ public class SerializerGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, TypeToGenerate typeToGenerate)
     {
+        if (BenchmarkMode)
+        {
+            return;
+        }
+
         if (HasInvalidCollection(context, typeToGenerate))
         {
             return;
