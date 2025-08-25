@@ -547,6 +547,21 @@ The solution includes a comprehensive suite of tests to ensure correctness and s
 
     When a snapshot test fails, `Verify` will create a `.received.txt` file next to the `.verified.txt` file. To approve the changes, you can use a diff tool to compare the two files and then copy the content of the received file to the verified file. Many IDEs and diff tools provide a way to do this with a single click.
 
+    Alternatively, you can use the following bash commands:
+
+    To accept all changes:
+    ```bash
+    find . -name "*.received.txt" | while read received_file; do
+      verified_file="${received_file%.received.txt}.verified.txt"
+      mv "$received_file" "$verified_file"
+    done
+    ```
+
+    To accept a specific change:
+    ```bash
+    mv path/to/your.received.txt path/to/your.verified.txt
+    ```
+
 -   **`FourSer.Analyzers.Test`**: Contains unit tests for the Roslyn analyzers. These tests ensure that the analyzers correctly identify issues in the source code and that the code fixes work as expected.
 
 -   **`FourSer.Tests.Behavioural`**: Contains behavioural tests that use the generated serializers to perform round-trip serialization and deserialization of various data structures. These tests verify the runtime behavior of the generated code.
