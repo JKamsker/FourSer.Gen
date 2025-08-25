@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Text;
 using FourSer.Gen.Helpers;
 using Xunit;
 
@@ -97,6 +98,35 @@ public class TitemReader
     public void ReadTitemFile()
     {
         var originalStream = GetTestFileStream();
+
+        #region Perf
+        // 900 vs 600ms for 100 deserializations
+        // var sw = Stopwatch.StartNew();
+        // for (int x = 0; x < 5; x++)
+        // {
+        //     sw.Restart();
+        //     for (int i = 0; i < 100; i++)
+        //     {
+        //         TItemChart.Deserialize(originalStream);
+        //         originalStream.Position = 0;
+        //     }
+        //     sw.Stop();
+        //     Console.WriteLine($"Deserialized TItem.tcd 100 times in {sw.Elapsed.TotalMilliseconds} ms");
+        //
+        //     var bytes = originalStream.ToArray();
+        //     sw.Restart();
+        //     for (int i = 0; i < 100; i++)
+        //     {
+        //         TItemChart.Deserialize(bytes);
+        //     }
+        //     sw.Stop();
+        //     Console.WriteLine($"Deserialized TItem.tcd from byte[] 100 times in {sw.Elapsed.TotalMilliseconds} ms");
+        //     Console.WriteLine();
+        // }
+        
+
+        #endregion
+        
         
         // Read the original data
         var titemChart = TItemChart.Deserialize(originalStream);
@@ -144,7 +174,7 @@ public class TitemReader
     }
 
     // Read Resources/TestFiles-BOM.zip/TItem.tcd
-    private Stream GetTestFileStream()
+    private MemoryStream GetTestFileStream()
     {
         var assembly = typeof(TitemReader).Assembly;
         var resourceName = "FourSer.Tests.Behavioural.Resources.TestFiles-BOM.zip";
