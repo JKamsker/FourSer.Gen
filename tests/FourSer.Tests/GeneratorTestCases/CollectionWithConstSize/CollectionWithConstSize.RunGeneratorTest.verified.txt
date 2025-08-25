@@ -19,6 +19,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
 {
     public static int GetPacketSize(EnumerableOfReferenceTypes obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         if (obj.MyList is not null)
         {
@@ -69,6 +70,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
 
     public static int Serialize(EnumerableOfReferenceTypes obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         if (obj.MyList is null)
         {
@@ -88,6 +90,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
 
     public static void Serialize(EnumerableOfReferenceTypes obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         if (obj.MyList is null)
         {
             throw new System.ArgumentNullException(nameof(obj.MyList), "Fixed-size collections cannot be null.");
@@ -125,6 +128,7 @@ public partial class Entity : ISerializable<Entity>
 {
     public static int GetPacketSize(Entity obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Size for unmanaged type Id
         size += StringEx.MeasureSize(obj.Name); // Size for string Name
@@ -166,6 +170,7 @@ public partial class Entity : ISerializable<Entity>
 
     public static int Serialize(Entity obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         SpanWriter.WriteString(ref data, obj.Name);
@@ -174,6 +179,7 @@ public partial class Entity : ISerializable<Entity>
 
     public static void Serialize(Entity obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         StreamWriter.WriteString(stream, obj.Name);
     }

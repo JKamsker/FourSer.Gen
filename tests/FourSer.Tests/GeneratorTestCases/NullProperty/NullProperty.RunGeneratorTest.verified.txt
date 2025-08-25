@@ -19,6 +19,7 @@ public partial class NestedObject : ISerializable<NestedObject>
 {
     public static int GetPacketSize(NestedObject obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Size for unmanaged type Id
         return size;
@@ -55,6 +56,7 @@ public partial class NestedObject : ISerializable<NestedObject>
 
     public static int Serialize(NestedObject obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         return originalData.Length - data.Length;
@@ -62,6 +64,7 @@ public partial class NestedObject : ISerializable<NestedObject>
 
     public static void Serialize(NestedObject obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
     }
 }
@@ -88,6 +91,7 @@ public partial class MainObject : ISerializable<MainObject>
 {
     public static int GetPacketSize(MainObject obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += NestedObject.GetPacketSize(obj.Nested); // Size for nested type Nested
         return size;
@@ -124,6 +128,7 @@ public partial class MainObject : ISerializable<MainObject>
 
     public static int Serialize(MainObject obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         if (obj.Nested is null)
         {
@@ -136,6 +141,7 @@ public partial class MainObject : ISerializable<MainObject>
 
     public static void Serialize(MainObject obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         if (obj.Nested is null)
         {
             throw new System.NullReferenceException($"Member \"obj.Nested\" cannot be null.");

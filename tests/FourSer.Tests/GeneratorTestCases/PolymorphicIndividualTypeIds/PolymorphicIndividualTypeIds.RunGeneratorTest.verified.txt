@@ -19,6 +19,7 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
 {
     public static int GetPacketSize(PolymorphicIndividualTest obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(byte); // Count size for Animals
         if (obj.Animals is not null)
@@ -112,6 +113,7 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
 
     public static int Serialize(PolymorphicIndividualTest obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         if (obj.Animals is null)
         {
@@ -158,6 +160,7 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
 
     public static void Serialize(PolymorphicIndividualTest obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         if (obj.Animals is null)
         {
             StreamWriter.WriteByte(stream, (byte)(0));
@@ -221,6 +224,7 @@ public partial class Cat : ISerializable<Cat>
 {
     public static int GetPacketSize(Cat obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Size for unmanaged type Id
         size += StringEx.MeasureSize(obj.Name); // Size for string Name
@@ -262,6 +266,7 @@ public partial class Cat : ISerializable<Cat>
 
     public static int Serialize(Cat obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         SpanWriter.WriteString(ref data, obj.Name);
@@ -270,6 +275,7 @@ public partial class Cat : ISerializable<Cat>
 
     public static void Serialize(Cat obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         StreamWriter.WriteString(stream, obj.Name);
     }
@@ -297,6 +303,7 @@ public partial class Dog : ISerializable<Dog>
 {
     public static int GetPacketSize(Dog obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Size for unmanaged type Id
         size += StringEx.MeasureSize(obj.Breed); // Size for string Breed
@@ -338,6 +345,7 @@ public partial class Dog : ISerializable<Dog>
 
     public static int Serialize(Dog obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         SpanWriter.WriteString(ref data, obj.Breed);
@@ -346,6 +354,7 @@ public partial class Dog : ISerializable<Dog>
 
     public static void Serialize(Dog obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         StreamWriter.WriteString(stream, obj.Breed);
     }
@@ -373,6 +382,7 @@ public partial class Animal : ISerializable<Animal>
 {
     public static int GetPacketSize(Animal obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Size for unmanaged type Id
         return size;
@@ -409,6 +419,7 @@ public partial class Animal : ISerializable<Animal>
 
     public static int Serialize(Animal obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         return originalData.Length - data.Length;
@@ -416,6 +427,7 @@ public partial class Animal : ISerializable<Animal>
 
     public static void Serialize(Animal obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
     }
 }

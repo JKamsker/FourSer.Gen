@@ -19,6 +19,7 @@ public partial class Item : ISerializable<Item>
 {
     public static int GetPacketSize(Item obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Size for unmanaged type Id
         return size;
@@ -55,6 +56,7 @@ public partial class Item : ISerializable<Item>
 
     public static int Serialize(Item obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         return originalData.Length - data.Length;
@@ -62,6 +64,7 @@ public partial class Item : ISerializable<Item>
 
     public static void Serialize(Item obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
     }
 }
@@ -88,6 +91,7 @@ public partial class MainObject : ISerializable<MainObject>
 {
     public static int GetPacketSize(MainObject obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Count size for Items
         if (obj.Items is not null)
@@ -141,6 +145,7 @@ public partial class MainObject : ISerializable<MainObject>
 
     public static int Serialize(MainObject obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         if (obj.Items is null)
         {
@@ -160,6 +165,7 @@ public partial class MainObject : ISerializable<MainObject>
 
     public static void Serialize(MainObject obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         if (obj.Items is null)
         {
             StreamWriter.WriteInt32(stream, (int)(0));
