@@ -19,6 +19,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
 {
     public static int GetPacketSize(ConcreteInheritanceTest obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Count size for Dogs
         if (obj.Dogs is not null)
@@ -72,6 +73,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
 
     public static int Serialize(ConcreteInheritanceTest obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         if (obj.Dogs is null)
         {
@@ -91,6 +93,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
 
     public static void Serialize(ConcreteInheritanceTest obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         if (obj.Dogs is null)
         {
             StreamWriter.WriteInt32(stream, (int)(0));
@@ -128,6 +131,7 @@ public partial class Dog : ISerializable<Dog>
 {
     public static int GetPacketSize(Dog obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += StringEx.MeasureSize(obj.Name); // Size for string Name
         size += sizeof(int); // Size for unmanaged type Age
@@ -174,6 +178,7 @@ public partial class Dog : ISerializable<Dog>
 
     public static int Serialize(Dog obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         SpanWriter.WriteString(ref data, obj.Name);
         SpanWriter.WriteInt32(ref data, (int)(obj.Age));
@@ -183,6 +188,7 @@ public partial class Dog : ISerializable<Dog>
 
     public static void Serialize(Dog obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         StreamWriter.WriteString(stream, obj.Name);
         StreamWriter.WriteInt32(stream, (int)(obj.Age));
         StreamWriter.WriteString(stream, obj.Breed);
@@ -211,6 +217,7 @@ public partial class Pet : ISerializable<Pet>
 {
     public static int GetPacketSize(Pet obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += StringEx.MeasureSize(obj.Name); // Size for string Name
         size += sizeof(int); // Size for unmanaged type Age
@@ -252,6 +259,7 @@ public partial class Pet : ISerializable<Pet>
 
     public static int Serialize(Pet obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         SpanWriter.WriteString(ref data, obj.Name);
         SpanWriter.WriteInt32(ref data, (int)(obj.Age));
@@ -260,6 +268,7 @@ public partial class Pet : ISerializable<Pet>
 
     public static void Serialize(Pet obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         StreamWriter.WriteString(stream, obj.Name);
         StreamWriter.WriteInt32(stream, (int)(obj.Age));
     }

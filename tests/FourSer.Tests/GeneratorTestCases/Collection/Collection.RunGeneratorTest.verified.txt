@@ -19,6 +19,7 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
 {
     public static int GetPacketSize(CollectionPacket obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Count size for Numbers
         size += (obj.Numbers?.Count ?? 0) * sizeof(int);
@@ -66,6 +67,7 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
 
     public static int Serialize(CollectionPacket obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         if (obj.Numbers is null)
         {
@@ -84,6 +86,7 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
 
     public static void Serialize(CollectionPacket obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         if (obj.Numbers is null)
         {
             StreamWriter.WriteInt32(stream, (int)(0));

@@ -19,6 +19,7 @@ public partial class Inventory : ISerializable<Inventory>
 {
     public static int GetPacketSize(Inventory obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Count size for Items
         size += sizeof(Byte); // Size for polymorphic type id
@@ -137,6 +138,7 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static int Serialize(Inventory obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         var countSpan = data;
         data = data.Slice(sizeof(int));
@@ -200,6 +202,7 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static void Serialize(Inventory obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         if (!stream.CanSeek)
         {
             throw new NotSupportedException("Stream must be seekable to serialize this collection.");
@@ -285,6 +288,7 @@ public partial class Item : ISerializable<Item>
 {
     public static int GetPacketSize(Item obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         return size;
     }
@@ -312,12 +316,14 @@ public partial class Item : ISerializable<Item>
 
     public static int Serialize(Item obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(Item obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
     }
 }
 
@@ -343,6 +349,7 @@ public partial class Sword : ISerializable<Sword>
 {
     public static int GetPacketSize(Sword obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         return size;
     }
@@ -370,12 +377,14 @@ public partial class Sword : ISerializable<Sword>
 
     public static int Serialize(Sword obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(Sword obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
     }
 }
 
@@ -401,6 +410,7 @@ public partial class Shield : ISerializable<Shield>
 {
     public static int GetPacketSize(Shield obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         return size;
     }
@@ -428,12 +438,14 @@ public partial class Shield : ISerializable<Shield>
 
     public static int Serialize(Shield obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(Shield obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
     }
 }
 
@@ -459,6 +471,7 @@ public partial class Potion : ISerializable<Potion>
 {
     public static int GetPacketSize(Potion obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         return size;
     }
@@ -486,11 +499,13 @@ public partial class Potion : ISerializable<Potion>
 
     public static int Serialize(Potion obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         return originalData.Length - data.Length;
     }
 
     public static void Serialize(Potion obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
     }
 }

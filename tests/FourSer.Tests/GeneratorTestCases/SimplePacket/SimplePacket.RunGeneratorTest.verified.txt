@@ -19,6 +19,7 @@ public partial class LoginPacket : ISerializable<LoginPacket>
 {
     public static int GetPacketSize(LoginPacket obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(byte); // Size for unmanaged type Result
         size += sizeof(uint); // Size for unmanaged type UserID
@@ -65,6 +66,7 @@ public partial class LoginPacket : ISerializable<LoginPacket>
 
     public static int Serialize(LoginPacket obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         SpanWriter.WriteByte(ref data, (byte)(obj.Result));
         SpanWriter.WriteUInt32(ref data, (uint)(obj.UserID));
@@ -74,6 +76,7 @@ public partial class LoginPacket : ISerializable<LoginPacket>
 
     public static void Serialize(LoginPacket obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         StreamWriter.WriteByte(stream, (byte)(obj.Result));
         StreamWriter.WriteUInt32(stream, (uint)(obj.UserID));
         StreamWriter.WriteString(stream, obj.Username);

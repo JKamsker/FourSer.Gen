@@ -19,6 +19,7 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
 {
     public static int GetPacketSize(IndividualTypeIdsTest obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(byte); // Count size for Cats
         if (obj.Cats is not null)
@@ -72,6 +73,7 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
 
     public static int Serialize(IndividualTypeIdsTest obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         if (obj.Cats is null)
         {
@@ -91,6 +93,7 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
 
     public static void Serialize(IndividualTypeIdsTest obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         if (obj.Cats is null)
         {
             StreamWriter.WriteByte(stream, (byte)(0));
@@ -128,6 +131,7 @@ public partial class Cat : ISerializable<Cat>
 {
     public static int GetPacketSize(Cat obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Size for unmanaged type Id
         size += StringEx.MeasureSize(obj.Name); // Size for string Name
@@ -169,6 +173,7 @@ public partial class Cat : ISerializable<Cat>
 
     public static int Serialize(Cat obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         SpanWriter.WriteString(ref data, obj.Name);
@@ -177,6 +182,7 @@ public partial class Cat : ISerializable<Cat>
 
     public static void Serialize(Cat obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         StreamWriter.WriteString(stream, obj.Name);
     }

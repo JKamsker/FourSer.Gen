@@ -26,6 +26,13 @@ public static class SerializationGenerator
     {
         sb.WriteLineFormat("public static int Serialize({0} obj, System.Span<byte> data)", typeToGenerate.Name);
         using var _ = sb.BeginBlock();
+        // null check
+        if (!typeToGenerate.IsValueType)
+        {
+            sb.WriteLine("if (obj is null) return 0;");
+        }
+        
+        
         sb.WriteLine("var originalData = data;");
         GenerateSerializationBody(sb, typeToGenerate, SpanCtx);
         sb.WriteLine("return originalData.Length - data.Length;");
@@ -35,6 +42,11 @@ public static class SerializationGenerator
     {
         sb.WriteLineFormat("public static void Serialize({0} obj, System.IO.Stream stream)", typeToGenerate.Name);
         using var _ = sb.BeginBlock();
+        // null check
+        if (!typeToGenerate.IsValueType)
+        {
+            sb.WriteLine("if (obj is null) return;");
+        }
         GenerateSerializationBody(sb, typeToGenerate, StreamCtx);
     }
 

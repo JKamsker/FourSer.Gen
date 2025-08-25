@@ -19,6 +19,7 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
 {
     public static int GetPacketSize(ContainerPacket obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Size for unmanaged type Id
         size += NestedData.GetPacketSize(obj.Data); // Size for nested type Data
@@ -60,6 +61,7 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
 
     public static int Serialize(ContainerPacket obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         if (obj.Data is null)
@@ -73,6 +75,7 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
 
     public static void Serialize(ContainerPacket obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         if (obj.Data is null)
         {
@@ -104,6 +107,7 @@ public partial class NestedData : ISerializable<NestedData>
 {
     public static int GetPacketSize(NestedData obj)
     {
+        if (obj is null) return 0;
         var size = 0;
         size += StringEx.MeasureSize(obj.Name); // Size for string Name
         size += sizeof(float); // Size for unmanaged type Value
@@ -145,6 +149,7 @@ public partial class NestedData : ISerializable<NestedData>
 
     public static int Serialize(NestedData obj, System.Span<byte> data)
     {
+        if (obj is null) return 0;
         var originalData = data;
         SpanWriter.WriteString(ref data, obj.Name);
         SpanWriter.WriteSingle(ref data, (float)(obj.Value));
@@ -153,6 +158,7 @@ public partial class NestedData : ISerializable<NestedData>
 
     public static void Serialize(NestedData obj, System.IO.Stream stream)
     {
+        if (obj is null) return;
         StreamWriter.WriteString(stream, obj.Name);
         StreamWriter.WriteSingle(stream, (float)(obj.Value));
     }
