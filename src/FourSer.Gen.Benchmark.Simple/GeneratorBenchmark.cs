@@ -196,7 +196,8 @@ public static class SpanWriterExtensions
 }"
         };
 
-        private static string _testCaseDirectory = "tests/FourSer.Tests/GeneratorTestCases";
+        private static string _testCaseDirectory = WildPath.PathResolver.Resolve(@"...\tests\FourSer.Tests\GeneratorTestCases")
+            ?? throw new DirectoryNotFoundException("Test case directory not found.");
 
         private static Dictionary<string, string> _testCases;
 

@@ -2,6 +2,7 @@
 
 namespace FourSer.Gen.Benchmark.Simple;
 
+// 26.08.2025: 900,5361 ms
 class Program
 {
     static void Main(string[] args)
@@ -11,6 +12,13 @@ class Program
 
         var cases = bm.GetTestCases().ToArray();
 
+        GetBestOf10(cases, bm);
+        var totalElapsedTime = GetBestOf10(cases, bm);
+        Console.WriteLine($"Total time for 'TypesWithGenerateSerializerAttribute' step: {totalElapsedTime.TotalMilliseconds} ms");
+    }
+
+    private static TimeSpan GetBestOf10(string[] cases, GeneratorBenchmark bm)
+    {
         var totalElapsedTime = TimeSpan.Zero;
         for (int i = 0; i < 10; i++)
         {
@@ -23,6 +31,7 @@ class Program
                 }
             }
         }
-        Console.WriteLine($"Total time for 'TypesWithGenerateSerializerAttribute' step: {totalElapsedTime.TotalMilliseconds} ms");
+
+        return totalElapsedTime;
     }
 }
