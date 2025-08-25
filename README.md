@@ -545,6 +545,8 @@ The solution includes a comprehensive suite of tests to ensure correctness and s
 
 -   **`FourSer.Tests`**: Contains snapshot tests for the source generator using `Verify.Xunit`. These tests take input source code, run the generator, and compare the output against approved snapshots. This ensures that any change to the generated code is intentional.
 
+    When a snapshot test fails, `Verify` will create a `.received.txt` file next to the `.verified.txt` file. To approve the changes, you can use a diff tool to compare the two files and then copy the content of the received file to the verified file. Many IDEs and diff tools provide a way to do this with a single click.
+
 -   **`FourSer.Analyzers.Test`**: Contains unit tests for the Roslyn analyzers. These tests ensure that the analyzers correctly identify issues in the source code and that the code fixes work as expected.
 
 -   **`FourSer.Tests.Behavioural`**: Contains behavioural tests that use the generated serializers to perform round-trip serialization and deserialization of various data structures. These tests verify the runtime behavior of the generated code.
