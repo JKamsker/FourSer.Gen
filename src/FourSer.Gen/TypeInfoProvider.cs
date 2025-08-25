@@ -485,15 +485,9 @@ internal static class TypeInfoProvider
         // Also good: TypeOfClass implements ISerializable<TypeOfClass>
         foreach (var iface in typeSymbol.AllInterfaces)
         {
-            var isIserializable = iface.OriginalDefinition is
-            {
-                Name: "ISerializable",
-                Arity: 1, // Arity checks the number of generic parameters
-                ContainingNamespace:
-                { Name: "Contracts", ContainingNamespace: { Name: "FourSer", ContainingNamespace: { IsGlobalNamespace: true } } }
-            };
+            var isISerializable = iface.OriginalDefinition.IsISerializable();
             
-            if (isIserializable)
+            if (isISerializable)
             {
                 return true;
             }
