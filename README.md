@@ -117,12 +117,18 @@ public interface ISerializable<T> where T : ISerializable<T>
     // Serializes the object into the provided span.
     static abstract int Serialize(T obj, Span<byte> data);
 
+    // Serializes the object into the provided stream.
+    static abstract void Serialize(T obj, Stream stream);
+
     // Deserializes an object from the provided span.
     // The span is advanced by the number of bytes read.
     static abstract T Deserialize(ref ReadOnlySpan<byte> data);
 
     // Deserializes an object from the provided span without advancing it.
     static abstract T Deserialize(ReadOnlySpan<byte> data);
+
+    // Deserializes an object from the provided stream.
+    static abstract T Deserialize(Stream stream);
 }
 ```
 
@@ -338,6 +344,81 @@ Using custom discriminator types offers several benefits:
 - **Type Safety**: Enums provide strong typing and make your code more readable and maintainable.
 - **Automatic Casting**: The generator handles all necessary type conversions automatically.
 
+## Custom Serializers
+
+For special cases where the default serialization logic is not sufficient, you can provide your own custom serializer for any given type. This is useful for handling legacy binary formats, complex data structures, or types that require special encoding.
+
+### 1. Create a Custom Serializer
+
+A custom serializer is a class that implements the `ISerializer<T>` interface, where `T` is the type you want to serialize.
+
+```csharp
+public interface ISerializer<T>
+{
+    int GetPacketSize(T obj);
+    int Serialize(T obj, Span<byte> data);
+    void Serialize(T obj, Stream stream);
+    T Deserialize(ref ReadOnlySpan<byte> data);
+    T Deserialize(Stream stream);
+}
+```
+
+Here is an example of a custom serializer for handling MFC-style Unicode strings, which have a specific length prefix format:
+
+```csharp
+public class MfcStringSerializer : ISerializer<string>
+{
+    public int GetPacketSize(string obj) { /* ... */ }
+    public int Serialize(string obj, Span<byte> data) { /* ... */ }
+    public void Serialize(string obj, Stream stream) { /* ... */ }
+    public string Deserialize(ref ReadOnlySpan<byte> data) { /* ... */ }
+    public string Deserialize(Stream stream) { /* ... */ }
+}
+```
+
+### 2. Apply the Custom Serializer
+
+You can apply a custom serializer in two ways:
+
+#### On a Specific Property
+
+Use the `[Serializer(typeof(MySerializer))]` attribute on a property to override its serialization logic.
+
+```csharp
+[GenerateSerializer]
+public partial class LegacyPacket
+{
+    public int PlayerId { get; set; }
+
+    [Serializer(typeof(MfcStringSerializer))]
+    public string PlayerName { get; set; }
+}
+```
+
+In this example, `PlayerName` will be serialized using `MfcStringSerializer`, while `PlayerId` will use the default integer serialization.
+
+#### As a Default for a Type
+
+Use the `[DefaultSerializer(typeof(TargetType), typeof(MySerializer))]` attribute on a class to set a default serializer for all properties of a specific type within that class.
+
+```csharp
+[GenerateSerializer]
+[DefaultSerializer(typeof(string), typeof(MfcStringSerializer))]
+public partial class AllMfcStringsPacket
+{
+    // This will use MfcStringSerializer by default
+    public string PlayerName { get; set; }
+
+    // This will also use MfcStringSerializer
+    public string GuildName { get; set; }
+
+    // You can still override the default if needed
+    [Serializer(typeof(StandardStringSerializer))] // Assuming a standard one exists
+    public string ChatMessage { get; set; }
+}
+```
+This approach is useful when an entire class or data structure consistently uses a non-standard format for a certain type.
+
 ## Supported Types
 
 ### Primitive Types
@@ -458,10 +539,39 @@ var received = LoginAckPacket.Deserialize(receivedBuffer, out var bytesRead);
 dotnet build
 ```
 
-## Running Tests
+## Testing
+
+The solution includes a comprehensive suite of tests to ensure correctness and stability.
+
+-   **`FourSer.Tests`**: Contains snapshot tests for the source generator using `Verify.Xunit`. These tests take input source code, run the generator, and compare the output against approved snapshots. This ensures that any change to the generated code is intentional.
+
+    When a snapshot test fails, `Verify` will create a `.received.txt` file next to the `.verified.txt` file. To approve the changes, you can use a diff tool to compare the two files and then copy the content of the received file to the verified file. Many IDEs and diff tools provide a way to do this with a single click.
+
+    Alternatively, you can use the following bash commands:
+
+    To accept all changes:
+    ```bash
+    find . -name "*.received.txt" | while read received_file; do
+      verified_file="${received_file%.received.txt}.verified.txt"
+      mv "$received_file" "$verified_file"
+    done
+    ```
+
+    To accept a specific change:
+    ```bash
+    mv path/to/your.received.txt path/to/your.verified.txt
+    ```
+
+-   **`FourSer.Analyzers.Test`**: Contains unit tests for the Roslyn analyzers. These tests ensure that the analyzers correctly identify issues in the source code and that the code fixes work as expected.
+
+-   **`FourSer.Tests.Behavioural`**: Contains behavioural tests that use the generated serializers to perform round-trip serialization and deserialization of various data structures. These tests verify the runtime behavior of the generated code.
+
+-   **`Serializer.Package.Tests`**: An integration test project that consumes the `FourSer.Gen` NuGet package. This test ensures that the package works correctly in a real-world scenario, from installation to usage.
+
+To run all tests, use the following command from the root of the repository:
 
 ```bash
-dotnet run --project src/FourSer.Consumer
+dotnet test
 ```
 
 ## Contributing

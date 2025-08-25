@@ -66,6 +66,47 @@ public class PolymorphicOptionAttribute : Attribute
     public PolymorphicOptionAttribute(long id, Type type) { Id = id; Type = type; }
     public PolymorphicOptionAttribute(object id, Type type) { Id = id; Type = type; }
 }
+",
+        @"
+using System;
+using System.IO;
+namespace FourSer.Contracts;
+public interface ISerializer<T>
+{
+    int GetPacketSize(T obj);
+    int Serialize(T obj, Span<byte> data);
+    void Serialize(T obj, Stream stream);
+    T Deserialize(ref ReadOnlySpan<byte> data);
+    T Deserialize(Stream stream);
+}
+",
+        @"
+using System;
+namespace FourSer.Contracts;
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = true)]
+public class DefaultSerializerAttribute : Attribute
+{
+    public Type TargetType { get; }
+    public Type SerializerType { get; }
+    public DefaultSerializerAttribute(Type targetType, Type serializerType)
+    {
+        TargetType = targetType;
+        SerializerType = serializerType;
+    }
+}
+",
+        @"
+using System;
+namespace FourSer.Contracts;
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+public class SerializerAttribute : Attribute
+{
+    public Type SerializerType { get; }
+    public SerializerAttribute(Type serializerType)
+    {
+        SerializerType = serializerType;
+    }
+}
 "
     };
 
