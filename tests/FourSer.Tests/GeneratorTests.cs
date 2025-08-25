@@ -83,7 +83,7 @@ public interface ISerializer<T>
         @"
 using System;
 namespace FourSer.Contracts;
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = true)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true)]
 public class DefaultSerializerAttribute : Attribute
 {
     public Type TargetType { get; }
