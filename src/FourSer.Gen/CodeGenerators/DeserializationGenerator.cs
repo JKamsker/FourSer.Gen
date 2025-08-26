@@ -258,6 +258,7 @@ public static class DeserializationGenerator
                 (
                     "item",
                     member.ListTypeArgument!.Value.TypeName,
+                    false, // is value type
                     member.ListTypeArgument.Value.IsUnmanagedType,
                     member.ListTypeArgument.Value.IsStringType,
                     member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
@@ -271,7 +272,7 @@ public static class DeserializationGenerator
                     false,
                     null,
                     null,
-                    null
+                    member.CustomSerializer
                 );
                 GeneratePolymorphicItemDeserialization
                 (

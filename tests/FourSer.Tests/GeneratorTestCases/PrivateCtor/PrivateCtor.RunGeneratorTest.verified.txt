@@ -49,12 +49,15 @@ public partial class PrivateCtorPacket : ISerializable<PrivateCtorPacket>
         return obj;
     }
 
-    public static int Serialize(PrivateCtorPacket obj, System.Span<byte> data)
+    public static void Serialize(PrivateCtorPacket obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         SpanWriter.WriteInt32(ref data, (int)(obj.Value));
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(PrivateCtorPacket obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(PrivateCtorPacket obj, System.IO.Stream stream)

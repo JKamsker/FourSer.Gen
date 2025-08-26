@@ -443,6 +443,7 @@ internal static class TypeInfoProvider
         (
             Name: m.Name,
             TypeName: memberTypeSymbol.ToDisplayString(s_typeNameFormat),
+            IsValueType: memberTypeSymbol.IsValueType,
             IsUnmanagedType: memberTypeSymbol.IsUnmanagedType,
             IsStringType: memberTypeSymbol.SpecialType == SpecialType.System_String,
             HasGenerateSerializerAttribute: memberHasGenerateSerializerAttribute,

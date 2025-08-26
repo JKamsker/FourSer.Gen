@@ -65,10 +65,9 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         return obj;
     }
 
-    public static int Serialize(CollectionPacket obj, System.Span<byte> data)
+    public static void Serialize(CollectionPacket obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         if (obj.Numbers is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -81,7 +80,11 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
                 SpanWriter.WriteInt32(ref data, (int)(obj.Numbers[i]));
             }
         }
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(CollectionPacket obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(CollectionPacket obj, System.IO.Stream stream)

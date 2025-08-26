@@ -54,17 +54,19 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
         return obj;
     }
 
-    public static int Serialize(WrapperUserClass obj, System.Span<byte> data)
+    public static void Serialize(WrapperUserClass obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         if (obj.Name is null)
         {
             throw new System.NullReferenceException($"Member \"obj.Name\" cannot be null.");
         }
-        var bytesWritten = FourSerString.Serialize(obj.Name, data);
-        data = data.Slice(bytesWritten);
-        return originalData.Length - data.Length;
+        FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Serialize(obj.Name, ref data);
+    }
+
+    public static void Serialize(WrapperUserClass obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(WrapperUserClass obj, System.IO.Stream stream)
@@ -74,6 +76,6 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
         {
             throw new System.NullReferenceException($"Member \"obj.Name\" cannot be null.");
         }
-        FourSerString.Serialize(obj.Name, stream);
+        FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Serialize(obj.Name, stream);
     }
 }

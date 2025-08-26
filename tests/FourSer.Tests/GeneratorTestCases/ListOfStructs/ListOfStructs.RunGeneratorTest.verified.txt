@@ -49,11 +49,14 @@ public partial struct MyStruct : ISerializable<MyStruct>
         return obj;
     }
 
-    public static int Serialize(MyStruct obj, System.Span<byte> data)
+    public static void Serialize(MyStruct obj, ref System.Span<byte> data)
     {
-        var originalData = data;
         SpanWriter.WriteInt32(ref data, (int)(obj.A));
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(MyStruct obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(MyStruct obj, System.IO.Stream stream)
@@ -136,10 +139,9 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         return obj;
     }
 
-    public static int Serialize(PacketWithListOfStructs obj, System.Span<byte> data)
+    public static void Serialize(PacketWithListOfStructs obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         if (obj.Structs is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -149,11 +151,14 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
             SpanWriter.WriteInt32(ref data, (int)(obj.Structs.Count));
             for (int i = 0; i < obj.Structs.Count; i++)
             {
-                var bytesWritten = MyStruct.Serialize(obj.Structs[i], data);
-                data = data.Slice(bytesWritten);
+                MyStruct.Serialize(obj.Structs[i], ref data);
             }
         }
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(PacketWithListOfStructs obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(PacketWithListOfStructs obj, System.IO.Stream stream)

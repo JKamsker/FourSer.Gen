@@ -59,18 +59,20 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
         return obj;
     }
 
-    public static int Serialize(ContainerPacket obj, System.Span<byte> data)
+    public static void Serialize(ContainerPacket obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         if (obj.Data is null)
         {
             throw new System.NullReferenceException($"Member \"obj.Data\" cannot be null.");
         }
-        var bytesWritten = NestedData.Serialize(obj.Data, data);
-        data = data.Slice(bytesWritten);
-        return originalData.Length - data.Length;
+        FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.Serialize(obj.Data, ref data);
+    }
+
+    public static void Serialize(ContainerPacket obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(ContainerPacket obj, System.IO.Stream stream)
@@ -81,7 +83,7 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
         {
             throw new System.NullReferenceException($"Member \"obj.Data\" cannot be null.");
         }
-        NestedData.Serialize(obj.Data, stream);
+        FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.Serialize(obj.Data, stream);
     }
 }
 
@@ -147,13 +149,16 @@ public partial class NestedData : ISerializable<NestedData>
         return obj;
     }
 
-    public static int Serialize(NestedData obj, System.Span<byte> data)
+    public static void Serialize(NestedData obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         SpanWriter.WriteString(ref data, obj.Name);
         SpanWriter.WriteSingle(ref data, (float)(obj.Value));
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(NestedData obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(NestedData obj, System.IO.Stream stream)

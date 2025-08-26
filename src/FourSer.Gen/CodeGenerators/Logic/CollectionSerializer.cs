@@ -217,14 +217,7 @@ internal static class CollectionSerializer
         {
             if (ctx.IsSpan)
             {
-                sb.WriteLineFormat
-                (
-                    "var bytesWritten = {0}.Serialize({1}, {2});",
-                    TypeHelper.GetSimpleTypeName(typeName),
-                    elementAccess,
-                    ctx.Target
-                );
-                sb.WriteLine($"{ctx.Target} = {ctx.Target}.Slice(bytesWritten);");
+                sb.WriteLineFormat("{0}.Serialize({1}, ref {2});", TypeHelper.GetSimpleTypeName(typeName), elementAccess, ctx.Target);
             }
             else
             {

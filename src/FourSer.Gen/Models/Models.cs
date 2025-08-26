@@ -64,6 +64,7 @@ public sealed record MemberToGenerate
 (
     string Name,
     string TypeName,
+    bool IsValueType,
     bool IsUnmanagedType,
     bool IsStringType,
     bool HasGenerateSerializerAttribute,

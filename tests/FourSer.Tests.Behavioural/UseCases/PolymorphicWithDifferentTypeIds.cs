@@ -144,7 +144,7 @@ public static class PolymorphicTypeIdTest
     
     public static void TestSerialization<T>(T original, string testName, 
         System.Func<int> getSize, 
-        System.Func<System.Span<byte>, int> serialize,
+        Action<System.Span<byte>> serialize,
         System.Func<System.ReadOnlySpan<byte>, T> deserialize) where T : class
     {
         Console.WriteLine($"Testing {testName}:");
@@ -156,8 +156,8 @@ public static class PolymorphicTypeIdTest
         // Serialize
         var buffer = new byte[size];
         var span = new System.Span<byte>(buffer);
-        var bytesWritten = serialize(span);
-        Console.WriteLine($"  Bytes written: {bytesWritten}");
+        serialize(span);
+        Console.WriteLine($"  Bytes written: {size}");
         
         // Deserialize
         var readSpan = new System.ReadOnlySpan<byte>(buffer);

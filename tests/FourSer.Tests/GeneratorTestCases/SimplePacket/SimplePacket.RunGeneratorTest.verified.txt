@@ -64,14 +64,17 @@ public partial class LoginPacket : ISerializable<LoginPacket>
         return obj;
     }
 
-    public static int Serialize(LoginPacket obj, System.Span<byte> data)
+    public static void Serialize(LoginPacket obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         SpanWriter.WriteByte(ref data, (byte)(obj.Result));
         SpanWriter.WriteUInt32(ref data, (uint)(obj.UserID));
         SpanWriter.WriteString(ref data, obj.Username);
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(LoginPacket obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(LoginPacket obj, System.IO.Stream stream)

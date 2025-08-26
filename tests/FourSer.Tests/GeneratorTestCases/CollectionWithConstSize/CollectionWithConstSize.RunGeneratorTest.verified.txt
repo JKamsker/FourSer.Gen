@@ -68,10 +68,9 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         return obj;
     }
 
-    public static int Serialize(EnumerableOfReferenceTypes obj, System.Span<byte> data)
+    public static void Serialize(EnumerableOfReferenceTypes obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         if (obj.MyList is null)
         {
             throw new System.ArgumentNullException(nameof(obj.MyList), "Fixed-size collections cannot be null.");
@@ -82,10 +81,13 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         }
         for (int i = 0; i < obj.MyList.Count; i++)
         {
-            var bytesWritten = Entity.Serialize(obj.MyList[i], data);
-            data = data.Slice(bytesWritten);
+            Entity.Serialize(obj.MyList[i], ref data);
         }
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(EnumerableOfReferenceTypes obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(EnumerableOfReferenceTypes obj, System.IO.Stream stream)
@@ -168,13 +170,16 @@ public partial class Entity : ISerializable<Entity>
         return obj;
     }
 
-    public static int Serialize(Entity obj, System.Span<byte> data)
+    public static void Serialize(Entity obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         SpanWriter.WriteString(ref data, obj.Name);
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(Entity obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(Entity obj, System.IO.Stream stream)
