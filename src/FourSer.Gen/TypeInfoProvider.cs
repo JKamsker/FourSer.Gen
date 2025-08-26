@@ -36,10 +36,14 @@ internal static class TypeInfoProvider
         var hasSerializableBaseType = HasGenerateSerializerAttribute(typeSymbol.BaseType);
         var defaultSerializers = GetDefaultSerializers(typeSymbol, typeSymbol.ContainingAssembly);
 
+        var ns = typeSymbol.ContainingNamespace.IsGlobalNamespace
+            ? string.Empty
+            : typeSymbol.ContainingNamespace.ToDisplayString();
+
         return new TypeToGenerate
         (
             typeSymbol.Name,
-            typeSymbol.ContainingNamespace.ToDisplayString(),
+            ns,
             typeSymbol.IsValueType,
             typeSymbol.IsRecord,
             serializableMembers,
@@ -538,10 +542,14 @@ internal static class TypeInfoProvider
 
         var constructorInfo = GetConstructorInfo(nestedTypeSymbol, nestedMembers);
 
+        var ns = nestedTypeSymbol.ContainingNamespace.IsGlobalNamespace
+            ? string.Empty
+            : nestedTypeSymbol.ContainingNamespace.ToDisplayString();
+
         return new TypeToGenerate
         (
             nestedTypeSymbol.Name,
-            nestedTypeSymbol.ContainingNamespace.ToDisplayString(),
+            ns,
             nestedTypeSymbol.IsValueType,
             nestedTypeSymbol.IsRecord,
             nestedMembers,

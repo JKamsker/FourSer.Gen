@@ -151,9 +151,12 @@ public class SerializerGenerator : IIncrementalGenerator
             }
         }
 
-        // Namespaces can contain '.', which is not allowed in file names.
-        var hintName = $"{typeToGenerate.Namespace}.{typeToGenerate.Name}".Replace('.', '_');
-        context.AddSource($"{hintName}.g.cs", sb.ToString());
+        var hintNameWithoutExtension = string.IsNullOrEmpty(typeToGenerate.Namespace)
+            ? typeToGenerate.Name
+            : $"{typeToGenerate.Namespace}.{typeToGenerate.Name}";
+        var hintName = $"{hintNameWithoutExtension.Replace('.', '_')}.g.cs";
+
+        context.AddSource(hintName, sb.ToString());
     }
 
     private static void GenerateFileHeader(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
@@ -173,8 +176,11 @@ public class SerializerGenerator : IIncrementalGenerator
         sb.WriteLine("using SpanWriter = FourSer.Gen.Helpers.SpanWriterHelpers;");
         sb.WriteLine("using StreamWriter = FourSer.Gen.Helpers.StreamWriterHelpers;");
         sb.WriteLine();
-        sb.WriteLineFormat("namespace {0};", typeToGenerate.Namespace);
-        sb.WriteLine();
+        if (!string.IsNullOrEmpty(typeToGenerate.Namespace))
+        {
+            sb.WriteLineFormat("namespace {0};", typeToGenerate.Namespace);
+            sb.WriteLine();
+        }
     }
 
     private static void GenerateClassDeclaration(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
