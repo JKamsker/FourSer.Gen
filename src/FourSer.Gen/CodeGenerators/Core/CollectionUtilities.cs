@@ -9,16 +9,11 @@ public static class CollectionUtilities
     /// <summary>
     ///     Collection method mapping (consolidates 2 duplicate implementations)
     /// </summary>
-    public static string GetCollectionAddMethod(ISymbol collectionType)
+    public static string GetCollectionAddMethod(string collectionTypeName)
     {
-        if (collectionType is not INamedTypeSymbol namedTypeSymbol)
-        {
-            return "Add";
-        }
-
-        if (namedTypeSymbol.IsGenericQueue()) return "Enqueue";
-        if (namedTypeSymbol.IsGenericStack()) return "Push";
-        if (namedTypeSymbol.IsGenericLinkedList()) return "AddLast";
+        if (collectionTypeName.Contains("Queue")) return "Enqueue";
+        if (collectionTypeName.Contains("Stack")) return "Push";
+        if (collectionTypeName.Contains("LinkedList")) return "AddLast";
 
         return "Add";
     }

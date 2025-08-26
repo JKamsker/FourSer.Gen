@@ -60,8 +60,11 @@ public class SerializerGenerator : IIncrementalGenerator
                     .Select(d => d.SerializerTypeName);
                 return fromMembers.Concat(fromDefaults);
             })
+            .WithTrackingName("AllSerializers")
             .Collect()
-            .Select((serializers, _) => serializers.Distinct().ToImmutableArray());
+            .WithTrackingName("CollectedSerializers")
+            .Select((serializers, _) => serializers.Distinct().ToImmutableArray())
+            .WithTrackingName("DistinctSerializers");
 
         context.RegisterSourceOutput(allSerializers, (spc, serializers) => GenerateSerializerCache(spc, serializers));
     }

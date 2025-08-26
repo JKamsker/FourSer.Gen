@@ -568,7 +568,7 @@ internal static class TypeInfoProvider
             var arrayElementHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(elementType as INamedTypeSymbol);
             return (true, new CollectionTypeInfo
             (
-                typeSymbol,
+                typeSymbol.ToDisplayString(s_typeNameFormat),
                 elementType.ToDisplayString(s_typeNameFormat),
                 elementType.IsUnmanagedType,
                 elementType.SpecialType == SpecialType.System_String,
@@ -667,7 +667,7 @@ internal static class TypeInfoProvider
 
         return (true, new CollectionTypeInfo
         (
-            originalDefinition,
+            originalDefinition.ToDisplayString(s_typeNameFormat),
             genericElementType.ToDisplayString(s_typeNameFormat),
             genericElementType.IsUnmanagedType,
             genericElementType.SpecialType == SpecialType.System_String,
@@ -806,11 +806,6 @@ internal static class TypeInfoProvider
             return typeIdTypeString!;
         }
 
-        typeIdTypeString = polymorphicOptions.FirstOrDefault().Key.GetType().Name;
-        if(!string.IsNullOrEmpty(typeIdTypeString))
-        {
-            return typeIdTypeString!;
-        }
         
         return "int";
     }
@@ -821,7 +816,7 @@ internal static class TypeInfoProvider
         foreach (var optionAttribute in options)
         {
             var (key, type) = AttributeHelper.GetPolymorphicOption(optionAttribute);
-            polymorphicOptionsBuilder.Add(new(key, type.ToDisplayString()));
+            polymorphicOptionsBuilder.Add(new(key.ToString(), type.ToDisplayString()));
         }
 
         return polymorphicOptionsBuilder.ToImmutable();

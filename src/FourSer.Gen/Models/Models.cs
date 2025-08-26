@@ -125,7 +125,7 @@ public readonly record struct ListTypeArgumentInfo
 /// </param>
 public readonly record struct CollectionTypeInfo
 (
-    ISymbol CollectionType,
+    string CollectionTypeName,
     string ElementTypeName,
     bool IsElementUnmanagedType,
     bool IsElementStringType,
@@ -163,7 +163,7 @@ public readonly record struct CollectionInfo
 /// <param name="Type">The type associated with the key.</param>
 public readonly record struct PolymorphicOption
 (
-    object Key,
+    string Key,
     string Type
 );
 

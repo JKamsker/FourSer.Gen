@@ -406,4 +406,11 @@ public static class SpanWriterExtensions
 
         return source;
     }
+
+    [Fact]
+    public void Generator_Should_Be_Incremental()
+    {
+        var source = ReadSource("SimplePacket");
+        IncrementalGeneratorTestHelper.AssertGeneratorIsIncremental(() => new SerializerGenerator(), source, s_contractsSource);
+    }
 }
