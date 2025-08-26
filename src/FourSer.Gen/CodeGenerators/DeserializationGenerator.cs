@@ -229,7 +229,7 @@ public static class DeserializationGenerator
             {
                 sb.WriteLineFormat("{0} = {1}.ReadBytes({2}{3}, (int){4});", target, helper, refOrEmpty, source, countVar);
             }
-            else if (member.CollectionTypeInfo?.CollectionType is INamedTypeSymbol listType && listType.IsGenericList())
+            else if (member.CollectionTypeInfo is {} collectionTypeInfo && collectionTypeInfo.CollectionTypeName.StartsWith("System.Collections.Generic.List"))
             {
                 sb.WriteLineFormat
                     ("{0} = {1}.ReadBytes({2}{3}, (int){4}).ToList();", target, helper, refOrEmpty, source, countVar);
@@ -282,7 +282,7 @@ public static class DeserializationGenerator
                     source,
                     helper
                 );
-                var addMethod = CollectionUtilities.GetCollectionAddMethod(member.CollectionTypeInfo!.Value.CollectionType);
+                var addMethod = CollectionUtilities.GetCollectionAddMethod(member.CollectionTypeInfo!.Value.CollectionTypeName);
                 sb.WriteLineFormat("{0}.{1}(item);", memberName, addMethod);
                 return;
             }
@@ -600,7 +600,7 @@ public static class DeserializationGenerator
         string helper
     )
     {
-        var addMethod = CollectionUtilities.GetCollectionAddMethod(elementInfo.CollectionType);
+        var addMethod = CollectionUtilities.GetCollectionAddMethod(elementInfo.CollectionTypeName);
         var refOrEmpty = source == "buffer" ? "ref " : "";
 
         if (elementInfo.IsElementUnmanagedType)

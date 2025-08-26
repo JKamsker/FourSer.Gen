@@ -125,7 +125,7 @@ public readonly record struct ListTypeArgumentInfo
 /// </param>
 public readonly record struct CollectionTypeInfo
 (
-    ISymbol CollectionType,
+    string CollectionTypeName,
     string ElementTypeName,
     bool IsElementUnmanagedType,
     bool IsElementStringType,

@@ -568,7 +568,7 @@ internal static class TypeInfoProvider
             var arrayElementHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(elementType as INamedTypeSymbol);
             return (true, new CollectionTypeInfo
             (
-                typeSymbol,
+                typeSymbol.ToDisplayString(s_typeNameFormat),
                 elementType.ToDisplayString(s_typeNameFormat),
                 elementType.IsUnmanagedType,
                 elementType.SpecialType == SpecialType.System_String,
@@ -667,7 +667,7 @@ internal static class TypeInfoProvider
 
         return (true, new CollectionTypeInfo
         (
-            originalDefinition,
+            originalDefinition.ToDisplayString(s_typeNameFormat),
             genericElementType.ToDisplayString(s_typeNameFormat),
             genericElementType.IsUnmanagedType,
             genericElementType.SpecialType == SpecialType.System_String,
