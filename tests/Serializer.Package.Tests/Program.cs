@@ -6,9 +6,7 @@ var buffer = new byte[1024];
 var span = new Span<byte>(buffer);
 
 // Call the static generated method
-var writtenBytes = MyTestPacket.Serialize(packet, span);
-
-Console.WriteLine($"Serialized '{packet.Name}' into {writtenBytes} bytes.");
+MyTestPacket.Serialize(packet, span);
 
 var readOnlySpan = new ReadOnlySpan<byte>(buffer);
 
