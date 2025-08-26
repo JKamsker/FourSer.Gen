@@ -138,10 +138,9 @@ public partial class Inventory : ISerializable<Inventory>
         return obj;
     }
 
-    public static int Serialize(Inventory obj, System.Span<byte> data)
+    public static void Serialize(Inventory obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         if (obj.Items is null || obj.Items.Count == 0)
         {
             SpanWriter.WriteInt64(ref data, (long)(10));
@@ -173,8 +172,7 @@ public partial class Inventory : ISerializable<Inventory>
                     {
                         foreach(var item in obj.Items)
                         {
-                            var bytesWritten = Sword.Serialize((Sword)item, data);
-                            data = data.Slice(bytesWritten);
+                            Sword.Serialize((Sword)item, ref data);
                         }
                         break;
                     }
@@ -182,8 +180,7 @@ public partial class Inventory : ISerializable<Inventory>
                     {
                         foreach(var item in obj.Items)
                         {
-                            var bytesWritten = Shield.Serialize((Shield)item, data);
-                            data = data.Slice(bytesWritten);
+                            Shield.Serialize((Shield)item, ref data);
                         }
                         break;
                     }
@@ -191,8 +188,7 @@ public partial class Inventory : ISerializable<Inventory>
                     {
                         foreach(var item in obj.Items)
                         {
-                            var bytesWritten = Potion.Serialize((Potion)item, data);
-                            data = data.Slice(bytesWritten);
+                            Potion.Serialize((Potion)item, ref data);
                         }
                         break;
                     }
@@ -201,7 +197,11 @@ public partial class Inventory : ISerializable<Inventory>
                 }
             }
         }
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(Inventory obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(Inventory obj, System.IO.Stream stream)
@@ -314,11 +314,14 @@ public partial class Item : ISerializable<Item>
         return obj;
     }
 
-    public static int Serialize(Item obj, System.Span<byte> data)
+    public static void Serialize(Item obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
-        return originalData.Length - data.Length;
+        if (obj is null) return;
+    }
+
+    public static void Serialize(Item obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(Item obj, System.IO.Stream stream)
@@ -375,11 +378,14 @@ public partial class Sword : ISerializable<Sword>
         return obj;
     }
 
-    public static int Serialize(Sword obj, System.Span<byte> data)
+    public static void Serialize(Sword obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
-        return originalData.Length - data.Length;
+        if (obj is null) return;
+    }
+
+    public static void Serialize(Sword obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(Sword obj, System.IO.Stream stream)
@@ -436,11 +442,14 @@ public partial class Shield : ISerializable<Shield>
         return obj;
     }
 
-    public static int Serialize(Shield obj, System.Span<byte> data)
+    public static void Serialize(Shield obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
-        return originalData.Length - data.Length;
+        if (obj is null) return;
+    }
+
+    public static void Serialize(Shield obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(Shield obj, System.IO.Stream stream)
@@ -497,11 +506,14 @@ public partial class Potion : ISerializable<Potion>
         return obj;
     }
 
-    public static int Serialize(Potion obj, System.Span<byte> data)
+    public static void Serialize(Potion obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
-        return originalData.Length - data.Length;
+        if (obj is null) return;
+    }
+
+    public static void Serialize(Potion obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(Potion obj, System.IO.Stream stream)

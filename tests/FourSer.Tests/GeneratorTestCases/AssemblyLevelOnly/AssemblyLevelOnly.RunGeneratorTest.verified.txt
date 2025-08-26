@@ -54,12 +54,16 @@ public partial class Packet : ISerializable<Packet>
         return obj;
     }
 
-    public static int Serialize(Packet obj, System.Span<byte> data)
+    public static void Serialize(Packet obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
-        FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_AssemblyLevelOnly_AssemblyStringSerializer.Serialize(obj.Name, data);
-        return originalData.Length - data.Length;
+        if (obj is null) return;
+        var bytesWritten_Name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_AssemblyLevelOnly_AssemblyStringSerializer.Serialize(obj.Name, data);
+        data = data.Slice(bytesWritten_Name);
+    }
+
+    public static void Serialize(Packet obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(Packet obj, System.IO.Stream stream)

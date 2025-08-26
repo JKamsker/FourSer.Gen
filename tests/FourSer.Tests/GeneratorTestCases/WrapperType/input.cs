@@ -17,11 +17,14 @@ public class FourSerString : ISerializable<FourSerString>
         return StringEx.MeasureSize(obj.Value);
     }
 
-    public static int Serialize(FourSerString obj, Span<byte> data)
+    public static void Serialize(FourSerString obj, ref Span<byte> data)
     {
-        var origLen = data.Length;
         SpanWriter.WriteString(ref data, obj.Value);
-        return origLen - data.Length;
+    }
+
+    public static void Serialize(FourSerString obj, Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(FourSerString obj, Stream stream)

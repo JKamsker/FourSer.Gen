@@ -111,10 +111,9 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         return obj;
     }
 
-    public static int Serialize(PolymorphicIndividualTest obj, System.Span<byte> data)
+    public static void Serialize(PolymorphicIndividualTest obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         if (obj.Animals is null)
         {
             SpanWriter.WriteByte(ref data, (byte)(0));
@@ -129,23 +128,13 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
                     case Cat typedInstance:
                     {
                         SpanWriter.WriteByte(ref data, (byte)(1));
-                        if (typedInstance is null)
-                        {
-                            throw new System.NullReferenceException($"Instance of type \"Cat\" cannot be null.");
-                        }
-                        var bytesWritten = Cat.Serialize(typedInstance, data);
-                        data = data.Slice(bytesWritten);
+                        Cat.Serialize(typedInstance, ref data);
                         break;
                     }
                     case Dog typedInstance:
                     {
                         SpanWriter.WriteByte(ref data, (byte)(2));
-                        if (typedInstance is null)
-                        {
-                            throw new System.NullReferenceException($"Instance of type \"Dog\" cannot be null.");
-                        }
-                        var bytesWritten = Dog.Serialize(typedInstance, data);
-                        data = data.Slice(bytesWritten);
+                        Dog.Serialize(typedInstance, ref data);
                         break;
                     }
                     case null:
@@ -155,7 +144,11 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
                 }
             }
         }
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(PolymorphicIndividualTest obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(PolymorphicIndividualTest obj, System.IO.Stream stream)
@@ -175,20 +168,12 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
                     case Cat typedInstance:
                     {
                         StreamWriter.WriteByte(stream, (byte)(1));
-                        if (typedInstance is null)
-                        {
-                            throw new System.NullReferenceException($"Instance of type \"Cat\" cannot be null.");
-                        }
                         Cat.Serialize(typedInstance, stream);
                         break;
                     }
                     case Dog typedInstance:
                     {
                         StreamWriter.WriteByte(stream, (byte)(2));
-                        if (typedInstance is null)
-                        {
-                            throw new System.NullReferenceException($"Instance of type \"Dog\" cannot be null.");
-                        }
                         Dog.Serialize(typedInstance, stream);
                         break;
                     }
@@ -264,13 +249,16 @@ public partial class Cat : ISerializable<Cat>
         return obj;
     }
 
-    public static int Serialize(Cat obj, System.Span<byte> data)
+    public static void Serialize(Cat obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         SpanWriter.WriteString(ref data, obj.Name);
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(Cat obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(Cat obj, System.IO.Stream stream)
@@ -343,13 +331,16 @@ public partial class Dog : ISerializable<Dog>
         return obj;
     }
 
-    public static int Serialize(Dog obj, System.Span<byte> data)
+    public static void Serialize(Dog obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         SpanWriter.WriteString(ref data, obj.Breed);
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(Dog obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(Dog obj, System.IO.Stream stream)
@@ -417,12 +408,15 @@ public partial class Animal : ISerializable<Animal>
         return obj;
     }
 
-    public static int Serialize(Animal obj, System.Span<byte> data)
+    public static void Serialize(Animal obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(Animal obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(Animal obj, System.IO.Stream stream)

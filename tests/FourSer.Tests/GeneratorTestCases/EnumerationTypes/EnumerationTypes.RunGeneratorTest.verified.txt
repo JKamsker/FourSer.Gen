@@ -308,10 +308,9 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         return obj;
     }
 
-    public static int Serialize(EnumerationTypesPacket obj, System.Span<byte> data)
+    public static void Serialize(EnumerationTypesPacket obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         if (obj.Numbers is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -510,7 +509,11 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         {
             SpanWriter.WriteInt64(ref data, (long)(item));
         }
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(EnumerationTypesPacket obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(EnumerationTypesPacket obj, System.IO.Stream stream)

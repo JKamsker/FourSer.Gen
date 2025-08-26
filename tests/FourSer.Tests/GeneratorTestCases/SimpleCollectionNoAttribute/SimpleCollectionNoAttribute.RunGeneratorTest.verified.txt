@@ -57,10 +57,9 @@ public partial class MyPacket : ISerializable<MyPacket>
         return obj;
     }
 
-    public static int Serialize(MyPacket obj, System.Span<byte> data)
+    public static void Serialize(MyPacket obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         if (obj.Data is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -70,7 +69,11 @@ public partial class MyPacket : ISerializable<MyPacket>
             SpanWriter.WriteInt32(ref data, (int)(obj.Data.Count));
             SpanWriter.WriteBytes(ref data, obj.Data);
         }
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(MyPacket obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(MyPacket obj, System.IO.Stream stream)

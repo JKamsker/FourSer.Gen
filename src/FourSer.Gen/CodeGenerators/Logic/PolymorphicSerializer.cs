@@ -121,7 +121,14 @@ internal static class PolymorphicSerializer
             }
 
             var typeName = TypeHelper.GetSimpleTypeName(option.Type);
-            SerializationWriterEmitter.EmitSerializeNestedOrThrow(s, ctx, typeName, "typedInstance");
+            if (ctx.IsSpan)
+            {
+                s.WriteLineFormat($"{typeName}.Serialize(typedInstance, ref {ctx.Target});");
+            }
+            else // stream
+            {
+                s.WriteLineFormat($"{typeName}.Serialize(typedInstance, {ctx.Target});");
+            }
         });
     }
 
@@ -138,6 +145,7 @@ internal static class PolymorphicSerializer
         (
             "item",
             member.ListTypeArgument!.Value.TypeName,
+            false, // is value type
             member.ListTypeArgument.Value.IsUnmanagedType,
             member.ListTypeArgument.Value.IsStringType,
             member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
@@ -151,7 +159,7 @@ internal static class PolymorphicSerializer
             false,
             null,
             null,
-            null
+            member.CustomSerializer
         );
 
         GeneratePolymorphicItemSerialization
@@ -224,22 +232,11 @@ internal static class PolymorphicSerializer
                         {
                             if (ctx.IsSpan)
                             {
-                                sb.WriteLineFormat
-                                (
-                                    "var bytesWritten = {0}.Serialize(({0})item, {1});",
-                                    typeName,
-                                    ctx.Target
-                                );
-                                sb.WriteLine($"{ctx.Target} = {ctx.Target}.Slice(bytesWritten);");
+                                sb.WriteLineFormat("{0}.Serialize(({0})item, ref {1});", typeName, ctx.Target);
                             }
                             else
                             {
-                                sb.WriteLineFormat
-                                (
-                                    "{0}.Serialize(({0})item, {1});",
-                                    typeName,
-                                    ctx.Target
-                                );
+                                sb.WriteLineFormat("{0}.Serialize(({0})item, {1});", typeName, ctx.Target);
                             }
                         }
 
@@ -312,8 +309,7 @@ internal static class PolymorphicSerializer
                         {
                             if (ctx.IsSpan)
                             {
-                                sb.WriteLine($"var bytesWritten = {typeName}.Serialize(({typeName}){listItemsVar}[i], {ctx.Target});");
-                                sb.WriteLine($"{ctx.Target} = {ctx.Target}.Slice(bytesWritten);");
+                                sb.WriteLine($"{typeName}.Serialize(({typeName}){listItemsVar}[i], ref {ctx.Target});");
                             }
                             else
                             {
@@ -463,8 +459,7 @@ internal static class PolymorphicSerializer
                     {
                         if (ctx.IsSpan)
                         {
-                            sb.WriteLine($"var bytesWritten = {typeName}.Serialize(({typeName})enumerator.Current, data);");
-                            sb.WriteLine("data = data.Slice(bytesWritten);");
+                            sb.WriteLine($"{typeName}.Serialize(({typeName})enumerator.Current, ref data);");
                         }
                         else
                         {

@@ -24,18 +24,23 @@ public static class SerializationGenerator
 
     private static void GenerateSpanSerialize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
     {
-        sb.WriteLineFormat("public static int Serialize({0} obj, System.Span<byte> data)", typeToGenerate.Name);
-        using var _ = sb.BeginBlock();
-        // null check
-        if (!typeToGenerate.IsValueType)
+        sb.WriteLineFormat("public static void Serialize({0} obj, ref System.Span<byte> data)", typeToGenerate.Name);
+        using (var _ = sb.BeginBlock())
         {
-            sb.WriteLine("if (obj is null) return 0;");
+            if (!typeToGenerate.IsValueType)
+            {
+                sb.WriteLine("if (obj is null) return;");
+            }
+
+            GenerateSerializationBody(sb, typeToGenerate, SpanCtx);
         }
-        
-        
-        sb.WriteLine("var originalData = data;");
-        GenerateSerializationBody(sb, typeToGenerate, SpanCtx);
-        sb.WriteLine("return originalData.Length - data.Length;");
+
+        sb.WriteLine();
+        sb.WriteLineFormat("public static void Serialize({0} obj, System.Span<byte> data)", typeToGenerate.Name);
+        using (var _ = sb.BeginBlock())
+        {
+            sb.WriteLine("Serialize(obj, ref data);");
+        }
     }
 
     private static void GenerateStreamSerialize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
@@ -77,7 +82,15 @@ public static class SerializationGenerator
         var resolvedSerializer = GeneratorUtilities.ResolveSerializer(member, type);
         if (resolvedSerializer is { } serializer)
         {
-            sb.WriteLineFormat("FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.Serialize(obj.{1}, {2});", serializer.FieldName, member.Name, ctx.Target);
+            if (ctx.IsSpan)
+            {
+                sb.WriteLineFormat("var bytesWritten_{1} = FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.Serialize(obj.{1}, {2});", serializer.FieldName, member.Name, ctx.Target);
+                sb.WriteLineFormat("{0} = {0}.Slice(bytesWritten_{1});", ctx.Target, member.Name);
+            }
+            else // stream
+            {
+                sb.WriteLineFormat("FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.Serialize(obj.{1}, {2});", serializer.FieldName, member.Name, ctx.Target);
+            }
             return;
         }
 
@@ -91,7 +104,22 @@ public static class SerializationGenerator
         }
         else if (member.HasGenerateSerializerAttribute)
         {
-            SerializationWriterEmitter.EmitSerializeNestedOrThrow(sb, ctx, member.TypeName, $"obj.{member.Name}");
+            if (!member.IsValueType)
+            {
+                sb.WriteLine($"if (obj.{member.Name} is null)");
+                using (sb.BeginBlock())
+                {
+                    sb.WriteLine($"throw new System.NullReferenceException($\"Member \\\"obj.{member.Name}\\\" cannot be null.\");");
+                }
+            }
+            if (ctx.IsSpan)
+            {
+                sb.WriteLineFormat($"{member.TypeName}.Serialize(obj.{member.Name}, ref {ctx.Target});");
+            }
+            else // stream
+            {
+                sb.WriteLineFormat($"{member.TypeName}.Serialize(obj.{member.Name}, {ctx.Target});");
+            }
         }
         else if (member.IsStringType)
         {

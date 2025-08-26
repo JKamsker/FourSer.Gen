@@ -54,12 +54,15 @@ public partial class NestedObject : ISerializable<NestedObject>
         return obj;
     }
 
-    public static int Serialize(NestedObject obj, System.Span<byte> data)
+    public static void Serialize(NestedObject obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(NestedObject obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(NestedObject obj, System.IO.Stream stream)
@@ -126,17 +129,19 @@ public partial class MainObject : ISerializable<MainObject>
         return obj;
     }
 
-    public static int Serialize(MainObject obj, System.Span<byte> data)
+    public static void Serialize(MainObject obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         if (obj.Nested is null)
         {
             throw new System.NullReferenceException($"Member \"obj.Nested\" cannot be null.");
         }
-        var bytesWritten = NestedObject.Serialize(obj.Nested, data);
-        data = data.Slice(bytesWritten);
-        return originalData.Length - data.Length;
+        FourSer.Tests.GeneratorTestCases.NullProperty.NestedObject.Serialize(obj.Nested, ref data);
+    }
+
+    public static void Serialize(MainObject obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(MainObject obj, System.IO.Stream stream)
@@ -146,6 +151,6 @@ public partial class MainObject : ISerializable<MainObject>
         {
             throw new System.NullReferenceException($"Member \"obj.Nested\" cannot be null.");
         }
-        NestedObject.Serialize(obj.Nested, stream);
+        FourSer.Tests.GeneratorTestCases.NullProperty.NestedObject.Serialize(obj.Nested, stream);
     }
 }

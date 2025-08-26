@@ -71,10 +71,9 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
         return obj;
     }
 
-    public static int Serialize(ConcreteInheritanceTest obj, System.Span<byte> data)
+    public static void Serialize(ConcreteInheritanceTest obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         if (obj.Dogs is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -84,11 +83,14 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
             SpanWriter.WriteInt32(ref data, (int)(obj.Dogs.Count));
             for (int i = 0; i < obj.Dogs.Count; i++)
             {
-                var bytesWritten = Dog.Serialize(obj.Dogs[i], data);
-                data = data.Slice(bytesWritten);
+                Dog.Serialize(obj.Dogs[i], ref data);
             }
         }
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(ConcreteInheritanceTest obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(ConcreteInheritanceTest obj, System.IO.Stream stream)
@@ -176,14 +178,17 @@ public partial class Dog : ISerializable<Dog>
         return obj;
     }
 
-    public static int Serialize(Dog obj, System.Span<byte> data)
+    public static void Serialize(Dog obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         SpanWriter.WriteString(ref data, obj.Name);
         SpanWriter.WriteInt32(ref data, (int)(obj.Age));
         SpanWriter.WriteString(ref data, obj.Breed);
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(Dog obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(Dog obj, System.IO.Stream stream)
@@ -257,13 +262,16 @@ public partial class Pet : ISerializable<Pet>
         return obj;
     }
 
-    public static int Serialize(Pet obj, System.Span<byte> data)
+    public static void Serialize(Pet obj, ref System.Span<byte> data)
     {
-        if (obj is null) return 0;
-        var originalData = data;
+        if (obj is null) return;
         SpanWriter.WriteString(ref data, obj.Name);
         SpanWriter.WriteInt32(ref data, (int)(obj.Age));
-        return originalData.Length - data.Length;
+    }
+
+    public static void Serialize(Pet obj, System.Span<byte> data)
+    {
+        Serialize(obj, ref data);
     }
 
     public static void Serialize(Pet obj, System.IO.Stream stream)
