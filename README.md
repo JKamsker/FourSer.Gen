@@ -87,7 +87,7 @@ int size = GameState.GetPacketSize(state);
 // 2. Serialize the object into a buffer
 var buffer = new byte[size];
 var span = new Span<byte>(buffer);
-int bytesWritten = GameState.Serialize(state, span);
+GameState.Serialize(state, span);
 
 // The buffer now contains the binary representation of your object
 // You can now send it over the network, save it to a file, etc.
@@ -114,8 +114,11 @@ public interface ISerializable<T> where T : ISerializable<T>
     // Calculates the total size in bytes required to serialize the object.
     static abstract int GetPacketSize(T obj);
 
+    // Serializes the object into the provided span, advancing the span.
+    static abstract void Serialize(T obj, ref Span<byte> data);
+
     // Serializes the object into the provided span.
-    static abstract int Serialize(T obj, Span<byte> data);
+    static abstract void Serialize(T obj, Span<byte> data);
 
     // Serializes the object into the provided stream.
     static abstract void Serialize(T obj, Stream stream);
@@ -515,12 +518,13 @@ var loginAck = new LoginAckPacket
 
 var size = LoginAckPacket.GetPacketSize(loginAck);
 var buffer = new byte[size];
-var bytesWritten = LoginAckPacket.Serialize(loginAck, buffer);
+LoginAckPacket.Serialize(loginAck, buffer);
 
 // Send buffer over network...
 
 // On receive:
-var received = LoginAckPacket.Deserialize(receivedBuffer, out var bytesRead);
+var readSpan = new ReadOnlySpan<byte>(receivedBuffer);
+var received = LoginAckPacket.Deserialize(readSpan);
 ```
 
 ## Misc
@@ -551,10 +555,7 @@ The solution includes a comprehensive suite of tests to ensure correctness and s
 
     To accept all changes:
     ```bash
-    find . -name "*.received.txt" | while read received_file; do
-      verified_file="${received_file%.received.txt}.verified.txt"
-      mv "$received_file" "$verified_file"
-    done
+    find . -name "*.received.txt" -exec sh -c 'mv "$1" "${1%.received.txt}.verified.txt"' _ {} \;
     ```
 
     To accept a specific change:
