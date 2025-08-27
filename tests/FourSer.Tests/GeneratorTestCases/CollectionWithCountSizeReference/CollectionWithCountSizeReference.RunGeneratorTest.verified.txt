@@ -159,7 +159,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             };
             SpanWriter.WriteInt32(ref data, (int)(discriminator));
         }
-        SpanWriter.WriteInt32(ref data, (int)(obj.Items?.Count ?? 0));
+        SpanWriter.WriteInt32(ref data, (int)((obj.Items?.Count ?? 0)));
         if (obj.Items is not null)
         {
             if (obj.Items.Count > 0)
@@ -221,7 +221,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             };
             StreamWriter.WriteInt32(stream, (int)(discriminator));
         }
-        StreamWriter.WriteInt32(stream, (int)(obj.Items?.Count ?? 0));
+        StreamWriter.WriteInt32(stream, (int)((obj.Items?.Count ?? 0)));
         if (obj.Items is not null)
         {
             if (obj.Items.Count > 0)

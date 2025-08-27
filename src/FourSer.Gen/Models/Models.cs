@@ -125,14 +125,18 @@ public readonly record struct ListTypeArgumentInfo
 /// </param>
 public readonly record struct CollectionTypeInfo
 (
-    ISymbol CollectionType,
+    string CollectionTypeName,
     string ElementTypeName,
     bool IsElementUnmanagedType,
     bool IsElementStringType,
     bool HasElementGenerateSerializerAttribute,
     bool IsArray,
     string? ConcreteTypeName,
-    bool IsPureEnumerable
+    bool IsPureEnumerable,
+    string CollectionAddMethodName,
+    bool IsGenericIEnumerable,
+    bool IsGenericICollection,
+    bool IsGenericIList
 );
 
 /// <summary>

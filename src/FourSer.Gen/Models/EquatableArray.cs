@@ -62,6 +62,16 @@ public readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnume
     /// <inheritdoc />
     public bool Equals(EquatableArray<T> other)
     {
+        if (this.IsEmpty && other.IsEmpty)
+        {
+            return true;
+        }
+
+        if (this.IsEmpty || other.IsEmpty)
+        {
+            return false;
+        }
+        
         return array.SequenceEqual(other.array);
     }
 
