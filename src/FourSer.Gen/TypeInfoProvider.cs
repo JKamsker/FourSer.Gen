@@ -674,11 +674,11 @@ internal static class TypeInfoProvider
         }
 
         var hasGenerateSerializerAttribute = HasGenerateSerializerAttribute(genericElementType as INamedTypeSymbol);
-
-        var isGenericCollection = originalNamedTypeSymbol.IsGenericICollection()
-            || originalNamedTypeSymbol.IsGenericIList()
+        
+        var isGenericCollection = originalNamedTypeSymbol.IsGenericICollection() 
+            || originalNamedTypeSymbol.IsGenericIList() 
             || originalNamedTypeSymbol.IsGenericIEnumerable();
-
+        
         var addMethod = CollectionUtilities.GetCollectionAddMethod(typeSymbol);
 
         return (true, new CollectionTypeInfo
