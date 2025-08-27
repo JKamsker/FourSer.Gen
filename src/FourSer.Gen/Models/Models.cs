@@ -132,7 +132,11 @@ public readonly record struct CollectionTypeInfo
     bool HasElementGenerateSerializerAttribute,
     bool IsArray,
     string? ConcreteTypeName,
-    bool IsPureEnumerable
+    bool IsPureEnumerable,
+    string CollectionAddMethodName,
+    bool IsGenericIEnumerable,
+    bool IsGenericICollection,
+    bool IsGenericIList
 );
 
 /// <summary>

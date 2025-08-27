@@ -28,7 +28,7 @@ public class SerializerGenerator : IIncrementalGenerator
     {
         context.RegisterPostInitializationOutput(AddHelpers);
 
-        var typesToGenerate = context.SyntaxProvider
+        var rawTypesToGenerate = context.SyntaxProvider
             .ForAttributeWithMetadataName
             (
                 "FourSer.Contracts.GenerateSerializerAttribute",
@@ -38,18 +38,22 @@ public class SerializerGenerator : IIncrementalGenerator
             .WithTrackingName("TypesWithGenerateSerializerAttribute")
             ;
 
-        var nonNullableTypes = typesToGenerate
+        var nonNullableRawTypes = rawTypesToGenerate
                 .Where(static m => m is not null)
-                .WithTrackingName("NonNullableTypes")
+                .WithTrackingName("NonNullableRawTypes")
             ;
+
+        var typesToGenerate = nonNullableRawTypes
+            .Select((x, _) => ModelTransformer.Transform(x!))
+            .WithTrackingName("TransformedTypes");
 
         context.RegisterSourceOutput
         (
-            nonNullableTypes,
+            typesToGenerate,
             (spc, source) => Execute(spc, source)
         );
 
-        var allSerializers = nonNullableTypes
+        var allSerializers = typesToGenerate
             .SelectMany((type, _) =>
             {
                 var fromMembers = type.Members

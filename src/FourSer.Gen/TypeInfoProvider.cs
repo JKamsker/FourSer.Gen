@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
+using FourSer.Gen.Models.Raw;
 using Microsoft.CodeAnalysis;
 
 namespace FourSer.Gen;
@@ -17,7 +18,7 @@ internal static class TypeInfoProvider
         | SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers
     );
 
-    public static TypeToGenerate? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context, CancellationToken ct)
+    public static RawTypeToGenerate? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context, CancellationToken ct)
     {
         if (context.TargetSymbol is not INamedTypeSymbol typeSymbol)
         {
@@ -36,16 +37,9 @@ internal static class TypeInfoProvider
         var hasSerializableBaseType = HasGenerateSerializerAttribute(typeSymbol.BaseType);
         var defaultSerializers = GetDefaultSerializers(typeSymbol, typeSymbol.ContainingAssembly);
 
-        var ns = typeSymbol.ContainingNamespace.IsGlobalNamespace
-            ? string.Empty
-            : typeSymbol.ContainingNamespace.ToDisplayString();
-
-        return new TypeToGenerate
+        return new RawTypeToGenerate
         (
-            typeSymbol.Name,
-            ns,
-            typeSymbol.IsValueType,
-            typeSymbol.IsRecord,
+            typeSymbol,
             serializableMembers,
             nestedTypes,
             hasSerializableBaseType,
@@ -98,7 +92,7 @@ internal static class TypeInfoProvider
     private static ConstructorInfo? GetConstructorInfo
     (
         INamedTypeSymbol typeSymbol,
-        EquatableArray<MemberToGenerate> members
+        EquatableArray<RawMemberToGenerate> members
     )
     {
         var constructors = new List<IMethodSymbol>();
@@ -136,7 +130,7 @@ internal static class TypeInfoProvider
         var generatedParametersBuilder = ImmutableArray.CreateBuilder<ParameterInfo>();
         foreach (var m in members)
         {
-            generatedParametersBuilder.Add(new(m.Name, m.TypeName));
+            generatedParametersBuilder.Add(new(m.MemberSymbol.Name, m.MemberTypeSymbol.ToDisplayString(s_typeNameFormat)));
         }
 
         return new ConstructorInfo(new(generatedParametersBuilder.ToImmutable()), true, hasParameterlessCtor);
@@ -168,7 +162,7 @@ internal static class TypeInfoProvider
         return false;
     }
 
-    private static bool HasReadOnlyMembers(EquatableArray<MemberToGenerate> members)
+    private static bool HasReadOnlyMembers(EquatableArray<RawMemberToGenerate> members)
     {
         foreach (var m in members)
         {
@@ -195,7 +189,7 @@ internal static class TypeInfoProvider
         return publicConstructors;
     }
 
-    private static IMethodSymbol? FindBestConstructor(List<IMethodSymbol> constructors, EquatableArray<MemberToGenerate> members, INamedTypeSymbol typeSymbol)
+    private static IMethodSymbol? FindBestConstructor(List<IMethodSymbol> constructors, EquatableArray<RawMemberToGenerate> members, INamedTypeSymbol typeSymbol)
     {
         foreach (var c in constructors)
         {
@@ -219,16 +213,16 @@ internal static class TypeInfoProvider
         return null;
     }
 
-    private static bool AllParametersMatch(IMethodSymbol constructor, EquatableArray<MemberToGenerate> members, INamedTypeSymbol typeSymbol)
+    private static bool AllParametersMatch(IMethodSymbol constructor, EquatableArray<RawMemberToGenerate> members, INamedTypeSymbol typeSymbol)
     {
         foreach (var p in constructor.Parameters)
         {
             var parameterMatches = false;
             foreach (var m in members)
             {
-                if (string.Equals(m.Name, p.Name, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(m.MemberSymbol.Name, p.Name, StringComparison.OrdinalIgnoreCase))
                 {
-                    var memberSymbol = FindMember(typeSymbol, m.Name);
+                    var memberSymbol = FindMember(typeSymbol, m.MemberSymbol.Name);
                     if (memberSymbol != null)
                     {
                         var memberTypeSymbol = memberSymbol switch
@@ -303,14 +297,14 @@ internal static class TypeInfoProvider
         return false;
     }
 
-    private static EquatableArray<MemberToGenerate> GetSerializableMembers(INamedTypeSymbol typeSymbol)
+    private static EquatableArray<RawMemberToGenerate> GetSerializableMembers(INamedTypeSymbol typeSymbol)
     {
-        var members = new List<MemberToGenerate>();
+        var members = new List<RawMemberToGenerate>();
         var currentType = typeSymbol;
 
         while (currentType != null && currentType.SpecialType != SpecialType.System_Object)
         {
-            var typeMembersWithLocation = new List<(MemberToGenerate, Location)>();
+            var typeMembersWithLocation = new List<(RawMemberToGenerate, Location)>();
             foreach (var m in currentType.GetMembers())
             {
                 if (IsSerializableMember(m))
@@ -321,7 +315,7 @@ internal static class TypeInfoProvider
 
             typeMembersWithLocation.Sort((m1, m2) => m1.Item2.SourceSpan.Start.CompareTo(m2.Item2.SourceSpan.Start));
 
-            var typeMembers = new List<MemberToGenerate>();
+            var typeMembers = new List<RawMemberToGenerate>();
             foreach (var m in typeMembersWithLocation)
             {
                 typeMembers.Add(m.Item1);
@@ -331,81 +325,10 @@ internal static class TypeInfoProvider
             currentType = currentType.BaseType;
         }
 
-        var resolvedMembers = ResolveMemberReferences(members);
-        return new(resolvedMembers.ToImmutableArray());
+        return new(members.ToImmutableArray());
     }
 
-    private static List<MemberToGenerate> ResolveMemberReferences(List<MemberToGenerate> members)
-    {
-        var memberMap = new Dictionary<string, int>();
-        for (var i = 0; i < members.Count; i++)
-        {
-            memberMap[members[i].Name] = i;
-        }
-
-        var newMembers = members.ToList();
-        for (var i = 0; i < newMembers.Count; i++)
-        {
-            var member = newMembers[i];
-            var newCollectionInfo = member.CollectionInfo;
-            if (member.CollectionInfo is { } collectionInfo)
-            {
-                int? countRefIndex = null;
-                if (collectionInfo.CountSizeReference is { } countRef)
-                {
-                    if (memberMap.TryGetValue(countRef, out var index))
-                    {
-                        countRefIndex = index;
-                        var oldMember = newMembers[index];
-                        newMembers[index] = oldMember with { IsCountSizeReferenceFor = i };
-                    }
-                }
-
-                var countTypeSize = collectionInfo.CountType is null
-                    ? (int?)null
-                    : TypeHelper.GetSizeOf(collectionInfo.CountType);
-
-                newCollectionInfo = collectionInfo with
-                {
-                    CountSizeReferenceIndex = countRefIndex,
-                    CountTypeSizeInBytes = countTypeSize,
-                };
-            }
-
-            var newPolymorphicInfo = member.PolymorphicInfo;
-            if (member.PolymorphicInfo is { } polyInfo)
-            {
-                int? typeIdRefIndex = null;
-                if (polyInfo.TypeIdProperty is { } typeIdRef)
-                {
-                    if (memberMap.TryGetValue(typeIdRef, out var index))
-                    {
-                        typeIdRefIndex = index;
-                        var oldMember = newMembers[index];
-                        newMembers[index] = oldMember with { IsTypeIdPropertyFor = i };
-                    }
-                }
-
-                var typeIdSize = TypeHelper.GetSizeOf(polyInfo.TypeIdType);
-
-                newPolymorphicInfo = polyInfo with
-                {
-                    TypeIdPropertyIndex = typeIdRefIndex,
-                    TypeIdSizeInBytes = typeIdSize
-                };
-            }
-
-            newMembers[i] = member with
-            {
-                CollectionInfo = newCollectionInfo,
-                PolymorphicInfo = newPolymorphicInfo
-            };
-        }
-
-        return newMembers;
-    }
-
-    private static (MemberToGenerate, Location) CreateMemberToGenerate(ISymbol m)
+    private static (RawMemberToGenerate, Location) CreateMemberToGenerate(ISymbol m)
     {
         var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
         var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(memberTypeSymbol);
@@ -414,12 +337,13 @@ internal static class TypeInfoProvider
         if (isCollection && collectionTypeInfo.HasValue)
         {
             var cti = collectionTypeInfo.Value;
+            var elementType = cti.ElementType;
             listTypeArgumentInfo = new ListTypeArgumentInfo
             (
-                cti.ElementTypeName,
-                cti.IsElementUnmanagedType,
-                cti.IsElementStringType,
-                cti.HasElementGenerateSerializerAttribute
+                elementType.ToDisplayString(s_typeNameFormat),
+                elementType.IsUnmanagedType,
+                elementType.SpecialType == SpecialType.System_String,
+                HasGenerateSerializerAttribute(elementType as INamedTypeSymbol)
             );
         }
 
@@ -437,30 +361,22 @@ internal static class TypeInfoProvider
             isReadOnly = field.IsReadOnly;
         }
 
-        var memberHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(memberTypeSymbol as INamedTypeSymbol);
-
         var location = m.Locations.First();
         var collectionInfo = GetCollectionInfo(m);
 
 
-        var memberToGenerate = new MemberToGenerate
+        var memberToGenerate = new RawMemberToGenerate
         (
-            Name: m.Name,
-            TypeName: memberTypeSymbol.ToDisplayString(s_typeNameFormat),
-            IsValueType: memberTypeSymbol.IsValueType,
-            IsUnmanagedType: memberTypeSymbol.IsUnmanagedType,
-            IsStringType: memberTypeSymbol.SpecialType == SpecialType.System_String,
-            HasGenerateSerializerAttribute: memberHasGenerateSerializerAttribute,
+            MemberSymbol: m,
+            MemberTypeSymbol: memberTypeSymbol,
             IsList: isList,
             ListTypeArgument: listTypeArgumentInfo,
             CollectionInfo: collectionInfo,
             PolymorphicInfo: polymorphicInfo,
             IsCollection: isCollection,
-            CollectionTypeInfo: collectionTypeInfo,
+            RawCollectionTypeInfo: collectionTypeInfo,
             IsReadOnly: isReadOnly,
             IsInitOnly: isInitOnly,
-            IsCountSizeReferenceFor: null,
-            IsTypeIdPropertyFor: null,
             CustomSerializer: GetCustomSerializer(m)
         );
 
@@ -480,9 +396,9 @@ internal static class TypeInfoProvider
         return serializerType != null ? new CustomSerializerInfo(serializerType.ToDisplayString(s_typeNameFormat)) : null;
     }
 
-    private static EquatableArray<TypeToGenerate> GetNestedTypes(INamedTypeSymbol parentType)
+    private static EquatableArray<RawTypeToGenerate> GetNestedTypes(INamedTypeSymbol parentType)
     {
-        var nestedTypes = ImmutableArray.CreateBuilder<TypeToGenerate>();
+        var nestedTypes = ImmutableArray.CreateBuilder<RawTypeToGenerate>();
 
         foreach (var member in parentType.GetMembers())
         {
@@ -527,7 +443,7 @@ internal static class TypeInfoProvider
     
    
 
-    private static TypeToGenerate? CreateNestedTypeToGenerate(INamedTypeSymbol nestedTypeSymbol)
+    private static RawTypeToGenerate? CreateNestedTypeToGenerate(INamedTypeSymbol nestedTypeSymbol)
     {
         if (!HasGenerateSerializerAttribute(nestedTypeSymbol))
         {
@@ -542,16 +458,9 @@ internal static class TypeInfoProvider
 
         var constructorInfo = GetConstructorInfo(nestedTypeSymbol, nestedMembers);
 
-        var ns = nestedTypeSymbol.ContainingNamespace.IsGlobalNamespace
-            ? string.Empty
-            : nestedTypeSymbol.ContainingNamespace.ToDisplayString();
-
-        return new TypeToGenerate
+        return new RawTypeToGenerate
         (
-            nestedTypeSymbol.Name,
-            ns,
-            nestedTypeSymbol.IsValueType,
-            nestedTypeSymbol.IsRecord,
+            nestedTypeSymbol,
             nestedMembers,
             deeperNestedTypes,
             hasSerializableBaseType,
@@ -560,19 +469,15 @@ internal static class TypeInfoProvider
         );
     }
 
-    private static (bool IsCollection, CollectionTypeInfo? CollectionTypeInfo) GetCollectionTypeInfo(ITypeSymbol typeSymbol)
+    private static (bool IsCollection, RawCollectionTypeInfo? CollectionTypeInfo) GetCollectionTypeInfo(ITypeSymbol typeSymbol)
     {
         if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
         {
             var elementType = arrayTypeSymbol.ElementType;
-            var arrayElementHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(elementType as INamedTypeSymbol);
-            return (true, new CollectionTypeInfo
+            return (true, new RawCollectionTypeInfo
             (
-                typeSymbol.ToDisplayString(s_typeNameFormat),
-                elementType.ToDisplayString(s_typeNameFormat),
-                elementType.IsUnmanagedType,
-                elementType.SpecialType == SpecialType.System_String,
-                arrayElementHasGenerateSerializerAttribute,
+                typeSymbol,
+                elementType,
                 true,
                 null,
                 false
@@ -663,15 +568,10 @@ internal static class TypeInfoProvider
             return (false, null);
         }
 
-        var hasGenerateSerializerAttribute = HasGenerateSerializerAttribute(genericElementType as INamedTypeSymbol);
-
-        return (true, new CollectionTypeInfo
+        return (true, new RawCollectionTypeInfo
         (
-            originalDefinition.ToDisplayString(s_typeNameFormat),
-            genericElementType.ToDisplayString(s_typeNameFormat),
-            genericElementType.IsUnmanagedType,
-            genericElementType.SpecialType == SpecialType.System_String,
-            hasGenerateSerializerAttribute,
+            originalDefinition,
+            genericElementType,
             false,
             concreteTypeName,
             isPureEnumerable

@@ -7,18 +7,6 @@ namespace FourSer.Gen.CodeGenerators.Core;
 public static class CollectionUtilities
 {
     /// <summary>
-    ///     Collection method mapping (consolidates 2 duplicate implementations)
-    /// </summary>
-    public static string GetCollectionAddMethod(string collectionTypeName)
-    {
-        if (collectionTypeName.StartsWith("System.Collections.Generic.Queue")) return "Enqueue";
-        if (collectionTypeName.StartsWith("System.Collections.Generic.Stack")) return "Push";
-        if (collectionTypeName.StartsWith("System.Collections.Generic.LinkedList")) return "AddLast";
-
-        return "Add";
-    }
-
-    /// <summary>
     ///     Capacity constructor support (consolidates 2 duplicate implementations)
     /// </summary>
     public static bool SupportsCapacityConstructor(string collectionTypeName)

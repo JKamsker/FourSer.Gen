@@ -141,7 +141,7 @@ public static class SerializationGenerator
         if (collectionMember.CollectionTypeInfo?.IsPureEnumerable != true)
         {
             var collectionName = collectionMember.Name;
-            var countExpression = $"obj.{collectionName}?.Count ?? 0";
+            var countExpression = GeneratorUtilities.GetCountExpression(collectionMember, collectionName, true);
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
             SerializationWriterEmitter.EmitWrite(sb, ctx, member.TypeName, countExpression);
         }
