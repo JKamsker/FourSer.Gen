@@ -35,13 +35,11 @@ public class SerializerGenerator : IIncrementalGenerator
                 (node, _) => node is ClassDeclarationSyntax or StructDeclarationSyntax or RecordDeclarationSyntax,
                 TypeInfoProvider.GetSemanticTargetForGeneration
             )
-            .WithTrackingName("TypesWithGenerateSerializerAttribute")
-            ;
+            .WithTrackingName("TypesWithGenerateSerializerAttribute");
 
         var nonNullableTypes = typesToGenerate
                 .Where(static m => m is not null)
-                .WithTrackingName("NonNullableTypes")
-            ;
+                .WithTrackingName("NonNullableTypes");
 
         context.RegisterSourceOutput
         (
@@ -60,11 +58,9 @@ public class SerializerGenerator : IIncrementalGenerator
                     .Select(d => d.SerializerTypeName);
                 return fromMembers.Concat(fromDefaults);
             })
-            .WithTrackingName("AllSerializers")
             .Collect()
-            .WithTrackingName("CollectedSerializers")
             .Select((serializers, _) => serializers.Distinct().ToImmutableArray())
-            .WithTrackingName("DistinctSerializers");
+            .WithTrackingName("AllSerializers");
 
         context.RegisterSourceOutput(allSerializers, (spc, serializers) => GenerateSerializerCache(spc, serializers));
     }

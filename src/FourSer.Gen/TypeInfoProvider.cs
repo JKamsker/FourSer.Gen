@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
+using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 using Microsoft.CodeAnalysis;
@@ -566,16 +567,25 @@ internal static class TypeInfoProvider
         {
             var elementType = arrayTypeSymbol.ElementType;
             var arrayElementHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(elementType as INamedTypeSymbol);
+            var isGenericCollection1 =  typeSymbol is INamedTypeSymbol namedTypeSymbol1 &&
+                (namedTypeSymbol1.IsGenericICollection()
+                    || namedTypeSymbol1.IsGenericIList()
+                    || namedTypeSymbol1.IsGenericIEnumerable());
+
+            var collectionAddMethod = CollectionUtilities.GetCollectionAddMethod(typeSymbol);
+
             return (true, new CollectionTypeInfo
             (
-                typeSymbol.ToDisplayString(s_typeNameFormat),
-                elementType.ToDisplayString(s_typeNameFormat),
-                elementType.IsUnmanagedType,
-                elementType.SpecialType == SpecialType.System_String,
-                arrayElementHasGenerateSerializerAttribute,
-                true,
-                null,
-                false
+                ElementTypeName: elementType.ToDisplayString(s_typeNameFormat),
+                IsElementUnmanagedType: elementType.IsUnmanagedType,
+                IsElementStringType: elementType.SpecialType == SpecialType.System_String,
+                HasElementGenerateSerializerAttribute: arrayElementHasGenerateSerializerAttribute,
+                IsArray: true,
+                ConcreteTypeName: null,
+                IsPureEnumerable: false,
+                IsGenericCollection: isGenericCollection1,
+                CollectionAddMethod: collectionAddMethod,
+                isGenericList: typeSymbol is INamedTypeSymbol nts && nts.IsGenericList()
             ));
         }
 
@@ -665,16 +675,24 @@ internal static class TypeInfoProvider
 
         var hasGenerateSerializerAttribute = HasGenerateSerializerAttribute(genericElementType as INamedTypeSymbol);
 
+        var isGenericCollection = originalNamedTypeSymbol.IsGenericICollection()
+            || originalNamedTypeSymbol.IsGenericIList()
+            || originalNamedTypeSymbol.IsGenericIEnumerable();
+
+        var addMethod = CollectionUtilities.GetCollectionAddMethod(typeSymbol);
+
         return (true, new CollectionTypeInfo
         (
-            originalDefinition.ToDisplayString(s_typeNameFormat),
             genericElementType.ToDisplayString(s_typeNameFormat),
             genericElementType.IsUnmanagedType,
             genericElementType.SpecialType == SpecialType.System_String,
             hasGenerateSerializerAttribute,
             false,
             concreteTypeName,
-            isPureEnumerable
+            isPureEnumerable,
+            isGenericCollection,
+            addMethod,
+            originalNamedTypeSymbol.IsGenericList()
         ));
     }
 
@@ -806,6 +824,11 @@ internal static class TypeInfoProvider
             return typeIdTypeString!;
         }
 
+        typeIdTypeString = polymorphicOptions.FirstOrDefault().Key.GetType().Name;
+        if(!string.IsNullOrEmpty(typeIdTypeString))
+        {
+            return typeIdTypeString!;
+        }
         
         return "int";
     }
@@ -816,7 +839,7 @@ internal static class TypeInfoProvider
         foreach (var optionAttribute in options)
         {
             var (key, type) = AttributeHelper.GetPolymorphicOption(optionAttribute);
-            polymorphicOptionsBuilder.Add(new(key.ToString(), type.ToDisplayString()));
+            polymorphicOptionsBuilder.Add(new(key, type.ToDisplayString()));
         }
 
         return polymorphicOptionsBuilder.ToImmutable();

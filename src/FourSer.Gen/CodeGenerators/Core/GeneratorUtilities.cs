@@ -43,8 +43,7 @@ public static class GeneratorUtilities
         }
 
         // IEnumerable and interface types that need Count() method
-        if (member.CollectionTypeInfo is { } collectionTypeInfo &&
-            (collectionTypeInfo.CollectionTypeName.Contains("IEnumerable") || collectionTypeInfo.CollectionTypeName.Contains("ICollection") || collectionTypeInfo.CollectionTypeName.Contains("IList")))
+        if(member.CollectionTypeInfo?.IsGenericCollection == true)
         {
             return nullable
                 ? $"(obj.{memberName}?.Count() ?? 0)"
