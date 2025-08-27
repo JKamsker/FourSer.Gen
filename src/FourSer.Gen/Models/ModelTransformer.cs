@@ -20,7 +20,9 @@ public static class ModelTransformer
     public static TypeToGenerate Transform(RawTypeToGenerate rawType)
     {
         var members = rawType.Members.Select(m => TransformMember(m)).ToImmutableArray();
-        var nestedTypes = rawType.NestedTypes.Select(Transform).ToImmutableArray();
+        var nestedTypes = rawType.NestedTypes.IsEmpty
+                ? ImmutableArray<TypeToGenerate>.Empty
+                : rawType.NestedTypes.Select(Transform).ToImmutableArray();
 
         var resolvedMembers = ResolveMemberReferences(members);
 

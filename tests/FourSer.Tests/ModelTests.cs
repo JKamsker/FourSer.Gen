@@ -81,15 +81,3 @@ public static class SymbolExtensions
     }
 }
 
-public static class SymbolExtensions
-{
-    public static ITypeSymbol GetSymbolType(this ISymbol symbol)
-    {
-        return symbol switch
-        {
-            IPropertySymbol p => p.Type,
-            IFieldSymbol f => f.Type,
-            _ => null
-        };
-    }
-}
