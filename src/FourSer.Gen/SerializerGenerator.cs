@@ -14,15 +14,6 @@ namespace FourSer.Gen;
 public class SerializerGenerator : IIncrementalGenerator
 {
     public static bool BenchmarkMode { get; set; }
-    private static readonly DiagnosticDescriptor s_invalidCollectionTypeArgument = new
-    (
-        "FS0001",
-        "Invalid collection type argument",
-        "The type '{0}' in the collection '{1}' must have the [GenerateSerializer] attribute because it is not a primitive type",
-        "Usage",
-        DiagnosticSeverity.Warning,
-        true
-    );
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -33,15 +24,13 @@ public class SerializerGenerator : IIncrementalGenerator
             (
                 "FourSer.Contracts.GenerateSerializerAttribute",
                 (node, _) => node is ClassDeclarationSyntax or StructDeclarationSyntax or RecordDeclarationSyntax,
-                TypeInfoProvider.GetSemanticTargetForGeneration
+                (x, ct) => TypeInfoProvider.GetSemanticTargetForGeneration(x, ct)
             )
-            .WithTrackingName("TypesWithGenerateSerializerAttribute")
-            ;
+            .WithTrackingName("TypesWithGenerateSerializerAttribute");
 
         var nonNullableTypes = typesToGenerate
-                .Where(static m => m is not null)
-                .WithTrackingName("NonNullableTypes")
-            ;
+            .Where(static m => m is not null)
+            .WithTrackingName("NonNullableTypes");
 
         context.RegisterSourceOutput
         (
@@ -50,20 +39,24 @@ public class SerializerGenerator : IIncrementalGenerator
         );
 
         var allSerializers = nonNullableTypes
-            .SelectMany((type, _) =>
-            {
-                var fromMembers = type.Members
-                    .Select(m => m.CustomSerializer)
-                    .Where(s => s is not null)
-                    .Select(s => s!.Value.SerializerTypeName);
-                var fromDefaults = type.DefaultSerializers
-                    .Select(d => d.SerializerTypeName);
-                return fromMembers.Concat(fromDefaults);
-            })
+            .SelectMany
+            (
+                (type, _) =>
+                {
+                    var fromMembers = type.Members
+                        .Select(m => m.CustomSerializer)
+                        .Where(s => s is not null)
+                        .Select(s => s!.Value.SerializerTypeName);
+                    var fromDefaults = type.DefaultSerializers
+                        .Select(d => d.SerializerTypeName);
+                    return fromMembers.Concat(fromDefaults);
+                }
+            )
             .Collect()
-            .Select((serializers, _) => serializers.Distinct().ToImmutableArray());
+            .Select((serializers, _) => serializers.Distinct().ToEquatableArray())
+            .WithTrackingName("AllSerializers");
 
-        context.RegisterSourceOutput(allSerializers, (spc, serializers) => GenerateSerializerCache(spc, serializers));
+        context.RegisterSourceOutput(allSerializers, (spc, serializers) => GenerateSerializerCache(spc, serializers.Array));
     }
 
     private static void GenerateSerializerCache(SourceProductionContext context, ImmutableArray<string> serializers)
@@ -83,7 +76,8 @@ public class SerializerGenerator : IIncrementalGenerator
             sb.WriteLine("/// This class is internal to the FourSer source generator.");
             sb.WriteLine("/// It is not intended for direct use and may change without notice.");
             sb.WriteLine("/// </summary>");
-            sb.WriteLine("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]");
+            sb.WriteLine
+                ("[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]");
             sb.WriteLine("internal static class __FourSer_Generated_Serializers");
             using (sb.BeginBlock())
             {

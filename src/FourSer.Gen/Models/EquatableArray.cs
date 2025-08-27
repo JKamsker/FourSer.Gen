@@ -23,6 +23,8 @@ public readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnume
     ///     The wrapped <see cref="ImmutableArray{T}" /> instance.
     /// </summary>
     private readonly ImmutableArray<T> array;
+    
+    public ImmutableArray<T> Array => array;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="EquatableArray{T}" /> struct.
@@ -108,5 +110,48 @@ public readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnume
     IEnumerator IEnumerable.GetEnumerator()
     {
         return ((IEnumerable)array).GetEnumerator();
+    }
+}
+
+// Extension methods for EquatableArray
+// - From Array
+// - From IEnumerable
+// - From ImmutableArray
+public static class EquatableArrayExtensions
+{
+    /// <summary>
+    ///     Converts an array to an <see cref="EquatableArray{T}" />.
+    /// </summary>
+    /// <typeparam name="T">The type of values in the array.</typeparam>
+    /// <param name="array">The array to convert.</param>
+    /// <returns>The converted <see cref="EquatableArray{T}" />.</returns>
+    public static EquatableArray<T> ToEquatableArray<T>(this T[] array)
+        where T : IEquatable<T>
+    {
+        return new(ImmutableArray.Create(array));
+    }
+
+    /// <summary>
+    ///     Converts an <see cref="IEnumerable{T}" /> to an <see cref="EquatableArray{T}" />.
+    /// </summary>
+    /// <typeparam name="T">The type of values in the enumerable.</typeparam>
+    /// <param name="enumerable">The enumerable to convert.</param>
+    /// <returns>The converted <see cref="EquatableArray{T}" />.</returns>
+    public static EquatableArray<T> ToEquatableArray<T>(this IEnumerable<T> enumerable)
+        where T : IEquatable<T>
+    {
+        return new(ImmutableArray.CreateRange(enumerable));
+    }
+
+    /// <summary>
+    ///     Converts an <see cref="ImmutableArray{T}" /> to an <see cref="EquatableArray{T}" />.
+    /// </summary>
+    /// <typeparam name="T">The type of values in the immutable array.</typeparam>
+    /// <param name="immutableArray">The immutable array to convert.</param>
+    /// <returns>The converted <see cref="EquatableArray{T}" />.</returns>
+    public static EquatableArray<T> ToEquatableArray<T>(this ImmutableArray<T> immutableArray)
+        where T : IEquatable<T>
+    {
+        return new(immutableArray);
     }
 }

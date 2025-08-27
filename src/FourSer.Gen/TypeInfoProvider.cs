@@ -568,12 +568,12 @@ internal static class TypeInfoProvider
             var elementType = arrayTypeSymbol.ElementType;
             var arrayElementHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(elementType as INamedTypeSymbol);
             var isGenericCollection1 =  typeSymbol is INamedTypeSymbol namedTypeSymbol1 &&
-                (namedTypeSymbol1.IsGenericICollection() 
-                    || namedTypeSymbol1.IsGenericIList() 
+                (namedTypeSymbol1.IsGenericICollection()
+                    || namedTypeSymbol1.IsGenericIList()
                     || namedTypeSymbol1.IsGenericIEnumerable());
-            
+
             var collectionAddMethod = CollectionUtilities.GetCollectionAddMethod(typeSymbol);
-            
+
             return (true, new CollectionTypeInfo
             (
                 ElementTypeName: elementType.ToDisplayString(s_typeNameFormat),
@@ -692,7 +692,7 @@ internal static class TypeInfoProvider
             isPureEnumerable,
             isGenericCollection,
             addMethod,
-            originalNamedTypeSymbol.IsGenericList() 
+            originalNamedTypeSymbol.IsGenericList()
         ));
     }
 
