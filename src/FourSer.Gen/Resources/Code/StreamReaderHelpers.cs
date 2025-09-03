@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.IO;
 using System.Runtime.CompilerServices;
 
@@ -89,9 +90,32 @@ internal static class StreamReaderHelpers
     public static string ReadString(this Stream stream)
     {
         ushort length = stream.ReadUInt16();
-        byte[] buffer = new byte[length];
-        stream.ReadExactly(buffer);
-        return System.Text.Encoding.UTF8.GetString(buffer);
+        if (length == 0)
+        {
+            return string.Empty;
+        }
+
+        if (length <= 512)
+        {
+            Span<byte> buffer = stackalloc byte[512];
+            var slicedBuffer = buffer.Slice(0, length);
+            stream.ReadExactly(slicedBuffer);
+            return System.Text.Encoding.UTF8.GetString(slicedBuffer);
+        }
+        else
+        {
+            var rented = ArrayPool<byte>.Shared.Rent(length);
+            try
+            {
+                var buffer = rented.AsSpan(0, length);
+                stream.ReadExactly(buffer);
+                return System.Text.Encoding.UTF8.GetString(buffer);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

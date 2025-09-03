@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -34,8 +35,32 @@ internal static class BinaryWriterHelpers
             return;
         }
 
-        var buffer = Encoding.UTF8.GetBytes(value);
-        input.Write(buffer.Length);
-        input.Write(buffer);
+        var byteCount = Encoding.UTF8.GetByteCount(value);
+        input.Write(byteCount);
+
+        if (byteCount == 0)
+        {
+            return;
+        }
+
+        if (byteCount <= 512)
+        {
+            Span<byte> buffer = stackalloc byte[512];
+            var actualBytes = Encoding.UTF8.GetBytes(value, buffer);
+            input.Write(buffer.Slice(0, actualBytes));
+        }
+        else
+        {
+            var rented = ArrayPool<byte>.Shared.Rent(byteCount);
+            try
+            {
+                var actualBytes = Encoding.UTF8.GetBytes(value, 0, value.Length, rented, 0);
+                input.Write(rented, 0, actualBytes);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+        }
     }
 }

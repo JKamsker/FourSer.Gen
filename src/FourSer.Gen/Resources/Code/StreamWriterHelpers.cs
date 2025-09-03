@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace FourSer.Gen.Helpers;
 
@@ -105,9 +107,39 @@ internal static class StreamWriterHelpers
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteString(this Stream stream, string value)
     {
-        var bytes = System.Text.Encoding.UTF8.GetBytes(value);
-        stream.WriteUInt16((ushort)bytes.Length);
-        stream.Write(bytes, 0, bytes.Length);
+        if (string.IsNullOrEmpty(value))
+        {
+            stream.WriteUInt16(0);
+            return;
+        }
+
+        var byteCount = Encoding.UTF8.GetByteCount(value);
+        stream.WriteUInt16((ushort)byteCount);
+
+        if (byteCount == 0)
+        {
+            return;
+        }
+
+        if (byteCount <= 512)
+        {
+            Span<byte> buffer = stackalloc byte[512];
+            var actualBytes = Encoding.UTF8.GetBytes(value, buffer);
+            stream.Write(buffer.Slice(0, actualBytes));
+        }
+        else
+        {
+            var rented = ArrayPool<byte>.Shared.Rent(byteCount);
+            try
+            {
+                var actualBytes = Encoding.UTF8.GetBytes(value, 0, value.Length, rented, 0);
+                stream.Write(rented, 0, actualBytes);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

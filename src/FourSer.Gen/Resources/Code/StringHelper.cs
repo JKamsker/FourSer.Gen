@@ -19,43 +19,33 @@ internal class StringEx
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe string ReadString(ref ReadOnlySpan<byte> input)
+    public static string ReadString(ref ReadOnlySpan<byte> input)
     {
         var length = FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref input);
-        var strSpan = input.Slice(0, length);
-        input = input.Slice(length);
-
         if (length == 0)
         {
             return string.Empty;
         }
-
-        fixed (byte* p = strSpan)
-        {
-            return Utf8Encoding.GetString(p, strSpan.Length);
-        }
+        var strSpan = input.Slice(0, length);
+        input = input.Slice(length);
+        return Utf8Encoding.GetString(strSpan);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe string ReadString(ref Span<byte> input)
+    public static string ReadString(ref Span<byte> input)
     {
         var length = FourSer.Gen.Helpers.SpanReaderHelpers.ReadInt32(ref input);
-        var strSpan = input.Slice(0, length);
-        input = input.Slice(length);
-
         if (length == 0)
         {
             return string.Empty;
         }
-
-        fixed (byte* p = strSpan)
-        {
-            return Utf8Encoding.GetString(p, strSpan.Length);
-        }
+        var strSpan = input.Slice(0, length);
+        input = input.Slice(length);
+        return Utf8Encoding.GetString(strSpan);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void WriteString(ref Span<byte> input, string value)
+    public static void WriteString(ref Span<byte> input, string value)
     {
         if (string.IsNullOrEmpty(value))
         {
@@ -66,12 +56,7 @@ internal class StringEx
         var byteCount = Utf8Encoding.GetByteCount(value);
         FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref input, byteCount);
         var destination = input.Slice(0, byteCount);
+        Utf8Encoding.GetBytes(value, destination);
         input = input.Slice(byteCount);
-
-        fixed (char* pValue = value)
-        fixed (byte* pDestination = destination)
-        {
-            Utf8Encoding.GetBytes(pValue, value.Length, pDestination, destination.Length);
-        }
     }
 }
