@@ -29,6 +29,10 @@ This project provides a compile-time source generator that creates efficient bin
     - **Polymorphic Collections**: Serialize collections of different types, either with a single type discriminator for the whole collection or individual discriminators for each element.
 - **Easy to Use**: Simply add attributes to your data structures to enable serialization.
 
+## Limitations
+
+The source generator has some intentional limitations. By design, it does not support `null` reference values or collections containing `null` items. This is because the generator is primarily intended for serializing and deserializing pre-existing binary formats, which typically do not have a concept of "null" objects.
+
 ## Quick Start
 
 ### 1. Install the NuGet Package
