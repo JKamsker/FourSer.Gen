@@ -51,49 +51,35 @@ internal static class TypeInfoProvider
             nestedTypes,
             hasSerializableBaseType,
             constructorInfo,
-            new(defaultSerializers)
+            new(defaultSerializers.ToImmutableArray())
         );
     }
 
-    private static ImmutableArray<DefaultSerializerInfo> GetDefaultSerializers(INamedTypeSymbol typeSymbol, IAssemblySymbol assemblySymbol)
+    private static List<DefaultSerializerInfo> GetDefaultSerializers(INamedTypeSymbol typeSymbol, IAssemblySymbol assemblySymbol)
     {
         var defaultSerializers = new Dictionary<string, DefaultSerializerInfo>();
 
-        // Get assembly-level default serializers
-        var assemblyAttributes = assemblySymbol.GetAttributes();
-        foreach (var attribute in assemblyAttributes)
-        {
-            if (attribute.AttributeClass is not null && attribute.AttributeClass.IsDefaultSerializerAttribute())
-            {
-                var targetType = attribute.ConstructorArguments[0].Value as ITypeSymbol;
-                var serializerType = attribute.ConstructorArguments[1].Value as ITypeSymbol;
+        var attributes = assemblySymbol.GetAttributes()
+            .Concat(typeSymbol.GetAttributes());
 
-                if (targetType != null && serializerType != null)
-                {
-                    var targetTypeName = targetType.ToDisplayString(s_typeNameFormat);
-                    defaultSerializers[targetTypeName] = new DefaultSerializerInfo(targetTypeName, serializerType.ToDisplayString(s_typeNameFormat));
-                }
-            }
-        }
-
-        // Get class-level default serializers, potentially overriding assembly-level ones
-        var attributes = typeSymbol.GetAttributes();
         foreach (var attribute in attributes)
         {
-            if (attribute.AttributeClass is not null && attribute.AttributeClass.IsDefaultSerializerAttribute())
-            {
-                var targetType = attribute.ConstructorArguments[0].Value as ITypeSymbol;
-                var serializerType = attribute.ConstructorArguments[1].Value as ITypeSymbol;
-
-                if (targetType != null && serializerType != null)
+            if (attribute is
                 {
-                    var targetTypeName = targetType.ToDisplayString(s_typeNameFormat);
-                    defaultSerializers[targetTypeName] = new DefaultSerializerInfo(targetTypeName, serializerType.ToDisplayString(s_typeNameFormat));
-                }
+                    AttributeClass: { } ac,
+                    ConstructorArguments:
+                    [
+                        { Value: ITypeSymbol targetType },
+                        { Value: ITypeSymbol serializerType },
+                    ],
+                } && ac.IsDefaultSerializerAttribute())
+            {
+                var targetTypeName = targetType.ToDisplayString(s_typeNameFormat);
+                defaultSerializers[targetTypeName] = new DefaultSerializerInfo(targetTypeName, serializerType.ToDisplayString(s_typeNameFormat));
             }
         }
 
-        return defaultSerializers.Values.ToImmutableArray();
+        return defaultSerializers.Values.ToList();
     }
 
     private static ConstructorInfo? GetConstructorInfo
@@ -123,24 +109,24 @@ internal static class TypeInfoProvider
                 var bestConstructor = FindBestConstructor(publicConstructors, members, typeSymbol);
                 if (bestConstructor is not null)
                 {
-                    var parameters = ImmutableArray.CreateBuilder<ParameterInfo>();
+                    var parameters = new List<ParameterInfo>(bestConstructor.Parameters.Length);
                     foreach (var p in bestConstructor.Parameters)
                     {
                         parameters.Add(new(p.Name, p.Type.ToDisplayString(s_typeNameFormat)));
                     }
 
-                    return new ConstructorInfo(new(parameters.ToImmutable()), false, hasParameterlessCtor);
+                    return new ConstructorInfo(new(parameters.ToImmutableArray()), false, hasParameterlessCtor);
                 }
             }
         }
 
-        var generatedParametersBuilder = ImmutableArray.CreateBuilder<ParameterInfo>();
+        var generatedParameters = new List<ParameterInfo>(members.Count);
         foreach (var m in members)
         {
-            generatedParametersBuilder.Add(new(m.Name, m.TypeName));
+            generatedParameters.Add(new(m.Name, m.TypeName));
         }
 
-        return new ConstructorInfo(new(generatedParametersBuilder.ToImmutable()), true, hasParameterlessCtor);
+        return new ConstructorInfo(new(generatedParameters.ToImmutableArray()), true, hasParameterlessCtor);
     }
 
     private static bool HasParameterlessConstructor(List<IMethodSymbol> constructors)
@@ -227,24 +213,28 @@ internal static class TypeInfoProvider
             var parameterMatches = false;
             foreach (var m in members)
             {
-                if (string.Equals(m.Name, p.Name, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(m.Name, p.Name, StringComparison.OrdinalIgnoreCase))
                 {
-                    var memberSymbol = FindMember(typeSymbol, m.Name);
-                    if (memberSymbol != null)
-                    {
-                        var memberTypeSymbol = memberSymbol switch
-                        {
-                            IPropertySymbol prop => prop.Type,
-                            IFieldSymbol field => field.Type,
-                            _ => null
-                        };
+                    continue;
+                }
 
-                        if (memberTypeSymbol != null && SymbolEqualityComparer.Default.Equals(p.Type, memberTypeSymbol))
-                        {
-                            parameterMatches = true;
-                            break;
-                        }
-                    }
+                var memberSymbol = FindMember(typeSymbol, m.Name);
+                if (memberSymbol == null)
+                {
+                    continue;
+                }
+
+                var memberTypeSymbol = memberSymbol switch
+                {
+                    IPropertySymbol prop => prop.Type,
+                    IFieldSymbol field => field.Type,
+                    _ => null
+                };
+
+                if (memberTypeSymbol != null && SymbolEqualityComparer.Default.Equals(p.Type, memberTypeSymbol))
+                {
+                    parameterMatches = true;
+                    break;
                 }
             }
 
@@ -408,7 +398,21 @@ internal static class TypeInfoProvider
 
     private static (MemberToGenerate, Location) CreateMemberToGenerate(ISymbol m)
     {
-        var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
+        var (memberTypeSymbol, isReadOnly, isInitOnly) = m switch
+        {
+            IPropertySymbol property => (
+                property.Type,
+                property.SetMethod is null,
+                property.SetMethod is { IsInitOnly: true }
+            ),
+            IFieldSymbol field => (
+                field.Type,
+                field.IsReadOnly,
+                false
+            ),
+            _ => throw new InvalidOperationException("Member is not a property or a field.")
+        };
+
         var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(memberTypeSymbol);
         var isList = memberTypeSymbol.OriginalDefinition is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.IsGenericList();
         ListTypeArgumentInfo? listTypeArgumentInfo = null;
@@ -425,18 +429,6 @@ internal static class TypeInfoProvider
         }
 
         var polymorphicInfo = GetPolymorphicInfo(m);
-
-        var isReadOnly = false;
-        var isInitOnly = false;
-        if (m is IPropertySymbol prop)
-        {
-            isReadOnly = prop.SetMethod is null;
-            isInitOnly = prop.SetMethod?.IsInitOnly ?? false;
-        }
-        else if (m is IFieldSymbol field)
-        {
-            isReadOnly = field.IsReadOnly;
-        }
 
         var memberHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(memberTypeSymbol as INamedTypeSymbol);
 
@@ -557,7 +549,7 @@ internal static class TypeInfoProvider
             deeperNestedTypes,
             hasSerializableBaseType,
             constructorInfo,
-            new(defaultSerializers)
+            new(defaultSerializers.ToImmutableArray())
         );
     }
 
