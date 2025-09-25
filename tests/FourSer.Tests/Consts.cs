@@ -42,6 +42,7 @@ public class SerializeCollectionAttribute : Attribute
     public PolymorphicMode PolymorphicMode { get; set; } = PolymorphicMode.None;
     public Type? TypeIdType { get; set; }
     public string? TypeIdProperty { get; set; }
+    public bool Unlimited { get; set; }
 }
 ",
         @"

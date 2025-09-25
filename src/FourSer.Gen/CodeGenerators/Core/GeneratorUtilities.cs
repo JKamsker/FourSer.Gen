@@ -43,11 +43,18 @@ public static class GeneratorUtilities
         }
 
         // IEnumerable and interface types that need Count() method
-        if(member.CollectionTypeInfo?.IsGenericCollection == true)
+        if (member.CollectionTypeInfo is { IsPureEnumerable: true })
         {
             return nullable
                 ? $"(obj.{memberName}?.Count() ?? 0)"
                 : $"obj.{memberName}.Count()";
+        }
+
+        if (member.CollectionTypeInfo?.IsGenericCollection == true)
+        {
+            return nullable
+                ? $"(obj.{memberName}?.Count ?? 0)"
+                : $"obj.{memberName}.Count";
         }
 
         // Most concrete collection types use .Count property

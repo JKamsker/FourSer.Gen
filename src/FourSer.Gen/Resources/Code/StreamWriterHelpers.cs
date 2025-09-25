@@ -65,6 +65,17 @@ internal static class StreamWriterHelpers
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteDecimal(this Stream stream, decimal value)
+    {
+        Span<int> bits = stackalloc int[4];
+        decimal.GetBits(value, bits);
+        stream.WriteInt32(bits[0]);
+        stream.WriteInt32(bits[1]);
+        stream.WriteInt32(bits[2]);
+        stream.WriteInt32(bits[3]);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteUInt16(this Stream stream, ushort value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(ushort)];

@@ -23,6 +23,7 @@ public static class TypeHelper
             "float" => "ReadSingle",
             "double" => "ReadDouble",
             "bool" => "ReadBoolean",
+            "decimal" => "ReadDecimal",
             _ => $"Read{GetMethodFriendlyTypeName(typeName)}"
         };
     }
@@ -45,6 +46,7 @@ public static class TypeHelper
             "float" => "WriteSingle",
             "double" => "WriteDouble",
             "bool" => "WriteBoolean",
+            "decimal" => "WriteDecimal",
             _ => $"Write{GetMethodFriendlyTypeName(typeName)}"
         };
     }
@@ -65,6 +67,7 @@ public static class TypeHelper
             "double" => sizeof(double),
             "bool" => sizeof(bool),
             "char" => sizeof(char),
+            "decimal" => sizeof(decimal),
             _ => 0
         };
     }
@@ -105,7 +108,7 @@ public static class TypeHelper
             "double" => "Double",
             // Unsupported types - map to supported alternatives
             "char" => "UInt16", // char is 2 bytes, same as ushort
-            "decimal" => "Int64", // decimal can be represented as long for simple cases
+            "decimal" => "Decimal",
             _ => GetSimpleTypeName(typeName)
         };
     }
