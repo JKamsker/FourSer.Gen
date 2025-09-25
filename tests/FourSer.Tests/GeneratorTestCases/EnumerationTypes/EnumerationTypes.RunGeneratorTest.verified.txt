@@ -43,7 +43,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         size += sizeof(int); // Count size for ArrayData
         size += (obj.ArrayData?.Length ?? 0) * sizeof(int);
         size += sizeof(int); // Count size for Measurements
-        size += (obj.Measurements?.Count() ?? 0) * sizeof(double);
+        size += (obj.Measurements?.Count ?? 0) * sizeof(double);
         size += sizeof(int); // Count size for Flags
         size += (obj.Flags?.Count ?? 0) * sizeof(bool);
         size += sizeof(int); // Count size for ObservableData
@@ -329,7 +329,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Names.Count()));
+            SpanWriter.WriteInt32(ref data, (int)(obj.Names.Count));
             foreach (var item in obj.Names)
             {
                 SpanWriter.WriteString(ref data, item);
@@ -419,7 +419,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Measurements.Count()));
+            SpanWriter.WriteInt32(ref data, (int)(obj.Measurements.Count));
             foreach (var item in obj.Measurements)
             {
                 SpanWriter.WriteDouble(ref data, (double)(item));
@@ -537,7 +537,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Names.Count()));
+            StreamWriter.WriteInt32(stream, (int)(obj.Names.Count));
             foreach (var item in obj.Names)
             {
                 StreamWriter.WriteString(stream, item);
@@ -627,7 +627,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Measurements.Count()));
+            StreamWriter.WriteInt32(stream, (int)(obj.Measurements.Count));
             foreach (var item in obj.Measurements)
             {
                 StreamWriter.WriteDouble(stream, (double)(item));

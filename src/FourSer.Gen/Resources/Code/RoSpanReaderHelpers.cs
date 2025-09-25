@@ -71,6 +71,18 @@ internal static class RoSpanReaderHelpers
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static decimal ReadDecimal(ref ReadOnlySpan<byte> input)
+    {
+        var lo = ReadInt32(ref input);
+        var mid = ReadInt32(ref input);
+        var hi = ReadInt32(ref input);
+        var flags = ReadInt32(ref input);
+        var isNegative = (flags & unchecked((int)0x80000000)) != 0;
+        var scale = (byte)((flags >> 16) & 0x7F);
+        return new decimal(lo, mid, hi, isNegative, scale);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string ReadString(ref ReadOnlySpan<byte> input)
         => StringEx.ReadString(ref input);
 

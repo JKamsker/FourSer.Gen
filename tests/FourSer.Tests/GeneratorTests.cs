@@ -77,6 +77,76 @@ public class GeneratorTests
                 .UseTypeName(testCaseName)
             ;
     }
+
+    [Fact]
+    public void DecimalProperty_ShouldGenerateCompilableSerializer()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.DecimalPacket;
+
+        [GenerateSerializer]
+        public partial class DecimalPacket
+        {
+            public decimal Amount { get; set; }
+        }
+        """;
+
+        var compilation = CreateCompilation(AddDefaultUsings(source));
+        var generator = new SerializerGenerator();
+        var driver = CSharpGeneratorDriver.Create(generator);
+
+        driver = (CSharpGeneratorDriver)driver.RunGenerators(compilation);
+        var runResult = driver.GetRunResult();
+        var finalCompilation = compilation.AddSyntaxTrees(runResult.GeneratedTrees);
+
+        using var ms = new MemoryStream();
+        var emitResult = finalCompilation.Emit(ms);
+
+        Assert.True(emitResult.Success, $"Compilation failed with errors: {string.Join(", ", emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.GetMessage()))}");
+    }
+
+    [Fact]
+    public void UnlimitedCollection_ShouldNotEmitCountPrefix()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Unlimited;
+
+        [GenerateSerializer]
+        public partial class UnlimitedPacket
+        {
+            [SerializeCollection(Unlimited = true)]
+            public List<int>? Values { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "UnlimitedPacket");
+
+        Assert.DoesNotContain("Count size for Values", generatedCode);
+        Assert.DoesNotContain("SpanWriter.WriteInt32(ref data, (int)(obj.Values.Count", generatedCode);
+        Assert.DoesNotContain("StreamWriter.WriteInt32(stream, (int)(obj.Values.Count", generatedCode);
+    }
+
+    [Fact]
+    public void ICollectionMembers_ShouldUseCountProperty()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class InterfaceCollectionPacket
+        {
+            [SerializeCollection]
+            public ICollection<int>? Numbers { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "InterfaceCollectionPacket");
+
+        Assert.Contains("obj.Numbers?.Count ?? 0", generatedCode);
+        Assert.Contains("obj.Numbers.Count", generatedCode);
+        Assert.DoesNotContain("obj.Numbers?.Count() ?? 0", generatedCode);
+        Assert.DoesNotContain("obj.Numbers.Count()", generatedCode);
+    }
     
     /// <summary>
     /// This test verifies that the source code produced by the generator compiles successfully.
@@ -149,7 +219,7 @@ public class GeneratorTests
     private static string AddDefaultUsings(string source)
     {
         var sb = new System.Text.StringBuilder(source);
-        
+
         var requiredUsings = new[]
         {
             "using System;",
@@ -173,5 +243,41 @@ public class GeneratorTests
         }
 
         return source;
+    }
+
+    private static CSharpCompilation CreateCompilation(string source)
+    {
+        var syntaxTrees = s_contractsSource.Select(s => CSharpSyntaxTree.ParseText(s)).ToList();
+        syntaxTrees.AddRange(s_extensionsSource.Select(s => CSharpSyntaxTree.ParseText(s)));
+        syntaxTrees.Add(CSharpSyntaxTree.ParseText(source));
+
+        return CSharpCompilation.Create
+        (
+            "TestProject",
+            syntaxTrees,
+            Basic.Reference.Assemblies.Net90.References.All,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)
+        );
+    }
+
+    private static string GenerateSerializerSource(string source, string? hintNameContains = null)
+    {
+        var compilation = CreateCompilation(source);
+        var generator = new SerializerGenerator();
+        var driver = CSharpGeneratorDriver.Create(generator);
+
+        driver = (CSharpGeneratorDriver)driver.RunGenerators(compilation);
+        var result = driver.GetRunResult();
+
+        var sources = result.Results
+            .SelectMany(r => r.GeneratedSources)
+            .Where(g => g.HintName.EndsWith("g.cs", StringComparison.Ordinal));
+
+        if (!string.IsNullOrEmpty(hintNameContains))
+        {
+            sources = sources.Where(g => g.HintName.Contains(hintNameContains, StringComparison.Ordinal));
+        }
+
+        return string.Join("\n\n", sources.Select(g => g.SourceText.ToString()));
     }
 }

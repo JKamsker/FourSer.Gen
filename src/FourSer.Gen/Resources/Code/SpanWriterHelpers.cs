@@ -49,6 +49,17 @@ internal static class SpanWriterHelpers
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void WriteDouble(ref Span<byte> input, double value) => WriteUInt64(ref input, *(ulong*)&value);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void WriteDecimal(ref Span<byte> input, decimal value)
+    {
+        Span<int> bits = stackalloc int[4];
+        decimal.GetBits(value, bits);
+        WriteInt32(ref input, bits[0]);
+        WriteInt32(ref input, bits[1]);
+        WriteInt32(ref input, bits[2]);
+        WriteInt32(ref input, bits[3]);
+    }
+
     /// <summary>
     /// Copied from <see cref="BinaryWriter.Write(ushort)"/>
     /// </summary>

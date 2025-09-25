@@ -87,6 +87,18 @@ internal static class StreamReaderHelpers
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static decimal ReadDecimal(this Stream stream)
+    {
+        var lo = stream.ReadInt32();
+        var mid = stream.ReadInt32();
+        var hi = stream.ReadInt32();
+        var flags = stream.ReadInt32();
+        var isNegative = (flags & unchecked((int)0x80000000)) != 0;
+        var scale = (byte)((flags >> 16) & 0x7F);
+        return new decimal(lo, mid, hi, isNegative, scale);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string ReadString(this Stream stream)
     {
         ushort length = stream.ReadUInt16();

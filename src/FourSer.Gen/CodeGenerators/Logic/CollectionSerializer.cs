@@ -174,14 +174,9 @@ internal static class CollectionSerializer
                 info
             );
         }
-        else if (collectionInfo.CountType != null || collectionInfo.CountSizeReferenceIndex is not null)
+        else if (!collectionInfo.Unlimited)
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
-            SerializationWriterEmitter.EmitWrite(sb, ctx, countType, "0");
-        }
-        else
-        {
-            var countType = TypeHelper.GetDefaultCountType();
             SerializationWriterEmitter.EmitWrite(sb, ctx, countType, "0");
         }
     }
