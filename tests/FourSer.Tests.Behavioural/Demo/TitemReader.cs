@@ -1,19 +1,14 @@
-﻿using System.Diagnostics;
-using System.Text;
-using FourSer.Gen.Helpers;
-using Xunit;
-
-namespace FourSer.Tests.Behavioural.Demo;
-
-using FourSer.Contracts;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using FourSer.Contracts;
+
+namespace FourSer.Tests.Behavioural.Demo;
 
 /// <summary>
 /// Represents the entire TItem.tcd file structure.
 /// It contains a list of TItem entries, prefixed by a count of type ushort.
 /// </summary>
+[TcdResource("TItem.tcd")]
 [GenerateSerializer]
 public partial class TItemChart
 {
@@ -91,114 +86,3 @@ public partial class TItem
     public byte CanColor { get; set; }
 }
 
-public class TitemReader
-{
-    // "C:\Users\W31rd0\source\repos\4Story\4StoryCC\4StoryCC_Client\Tcd\TItem.tcd"
-    [Fact]
-    public void ReadTitemFile()
-    {
-        var originalStream = GetTestFileStream();
-
-        #region Perf
-        // 900 vs 600ms for 100 deserializations
-        // var sw = Stopwatch.StartNew();
-        // for (int x = 0; x < 5; x++)
-        // {
-        //     sw.Restart();
-        //     for (int i = 0; i < 100; i++)
-        //     {
-        //         TItemChart.Deserialize(originalStream);
-        //         originalStream.Position = 0;
-        //     }
-        //     sw.Stop();
-        //     Console.WriteLine($"Deserialized TItem.tcd 100 times in {sw.Elapsed.TotalMilliseconds} ms");
-        //
-        //     var bytes = originalStream.ToArray();
-        //     sw.Restart();
-        //     for (int i = 0; i < 100; i++)
-        //     {
-        //         TItemChart.Deserialize(bytes);
-        //     }
-        //     sw.Stop();
-        //     Console.WriteLine($"Deserialized TItem.tcd from byte[] 100 times in {sw.Elapsed.TotalMilliseconds} ms");
-        //     Console.WriteLine();
-        // }
-        
-
-        #endregion
-        
-        
-        // Read the original data
-        var titemChart = TItemChart.Deserialize(originalStream);
-
-        Assert.NotNull(titemChart);
-        Assert.NotNull(titemChart.Items);
-        Assert.True(titemChart.Items.Count > 0, "No items found in TItem.tcd");
-
-        // Example assertions for the first item
-        var firstItem = titemChart.Items[0];
-        Assert.Equal(1, firstItem.ItemID); // Assuming the first item's ID is 1
-        Assert.False(string.IsNullOrEmpty(firstItem.Name), "First item's name should not be empty");
-
-        // Test round-trip serialization
-        var serializedStream = new MemoryStream();
-        TItemChart.Serialize(titemChart, serializedStream);
-        
-        // Test round-trip serialization by deserializing our serialized data
-        serializedStream.Position = 0;
-        var deserializedChart = TItemChart.Deserialize(serializedStream);
-        
-        // Verify the round-trip worked
-        Assert.NotNull(deserializedChart);
-        Assert.NotNull(deserializedChart.Items);
-        Assert.Equal(titemChart.Items.Count, deserializedChart.Items.Count);
-        
-        // Check that the first few items match
-        for (int i = 0; i < Math.Min(3, titemChart.Items.Count); i++)
-        {
-            var original = titemChart.Items[i];
-            var roundTrip = deserializedChart.Items[i];
-            
-            Assert.Equal(original.ItemID, roundTrip.ItemID);
-            Assert.Equal(original.Name, roundTrip.Name);
-            Assert.Equal(original.Type, roundTrip.Type);
-            Assert.Equal(original.Price, roundTrip.Price);
-            Assert.Equal(original.Visual.Length, roundTrip.Visual.Length);
-            for (int j = 0; j < original.Visual.Length; j++)
-            {
-                Assert.Equal(original.Visual[j], roundTrip.Visual[j]);
-            }
-        }
-
-        // Additional assertions can be added here based on known values in the TItem.tcd file
-    }
-
-    // Read Resources/TestFiles-BOM.zip/TItem.tcd
-    private MemoryStream GetTestFileStream()
-    {
-        var assembly = typeof(TitemReader).Assembly;
-        var resourceName = "FourSer.Tests.Behavioural.Resources.TestFiles-BOM.zip";
-
-        var stream = assembly.GetManifestResourceStream(resourceName);
-        if (stream == null)
-        {
-            throw new FileNotFoundException($"Resource '{resourceName}' not found in assembly.");
-        }
-
-        using var archive = new System.IO.Compression.ZipArchive(stream, System.IO.Compression.ZipArchiveMode.Read);
-        var entry = archive.GetEntry("TItem.tcd");
-        if (entry == null)
-        {
-            throw new FileNotFoundException("TItem.tcd not found in the zip archive.");
-        }
-
-        var memoryStream = new MemoryStream();
-        using (var entryStream = entry.Open())
-        {
-            entryStream.CopyTo(memoryStream);
-        }
-
-        memoryStream.Position = 0; // Reset stream position to the beginning
-        return memoryStream;
-    }
-}
