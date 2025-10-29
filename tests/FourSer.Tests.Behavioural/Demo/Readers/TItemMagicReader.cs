@@ -14,7 +14,7 @@ namespace FourSer.Tests.Behavioural.Demo
     [GenerateSerializer]
     public partial class TItemMagicRecord
     {
-        [Serializer(typeof(MfcStringSerializer))]
+        [Serializer(typeof(MfcAnsiStringSerializer))]
         public string Name { get; set; } = string.Empty;
 
         public ushort Id { get; set; }

@@ -18,7 +18,7 @@ namespace FourSer.Tests.Behavioural.Demo
         public byte TextCount { get; set; }
 
         [SerializeCollection(CountSizeReference = nameof(TextCount))]
-        [Serializer(typeof(MfcStringSerializer))]
+        [Serializer(typeof(MfcAnsiStringSerializer))]
         public List<string> Texts { get; set; } = new();
     }
 }

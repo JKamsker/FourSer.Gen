@@ -16,7 +16,7 @@ namespace FourSer.Tests.Behavioural.Demo
     {
         public ushort StringId { get; set; }
 
-        [Serializer(typeof(MfcAnsiStringSerializer))]
+        [Serializer(typeof(MfcStringSerializer))]
         public string Value { get; set; } = string.Empty;
     }
 }
