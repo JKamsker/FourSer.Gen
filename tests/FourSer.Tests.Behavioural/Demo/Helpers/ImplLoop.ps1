@@ -2,7 +2,7 @@
 param(
     [string]$ProjectPath = (Join-Path (Join-Path $PSScriptRoot '..\..') 'FourSer.Tests.Behavioural.csproj'),
     [string]$TestFilter = 'FullyQualifiedName=FourSer.Tests.Behavioural.Demo.TcdRoundTripTests.File_Has_Serializer',
-    [int]$MaxAttempts = 5,
+    [int]$RetryDelaySeconds = 10,
     [switch]$DryRun
 )
 
@@ -74,16 +74,16 @@ Write-Host "Project: $resolvedProject" -ForegroundColor Yellow
 Write-Host "Repository root: $repoRoot" -ForegroundColor Yellow
 
 $attempt = 0
-while ($attempt -lt $MaxAttempts) {
+while ($true) {
     $attempt++
-    Write-Host "Attempt $attempt of $MaxAttempts" -ForegroundColor Green
+    Write-Host "Attempt $attempt (continuous mode)" -ForegroundColor Green
 
     $skipBuild = $attempt -gt 1
     $result = Invoke-TcdTests -Project $resolvedProject -Filter $TestFilter -SkipBuild:$skipBuild
     $result.Output | ForEach-Object { Write-Host $_ }
 
     if ($result.ExitCode -eq 0) {
-        Write-Host "TcdRoundTripTests.File_Has_Serializer passed." -ForegroundColor Green
+        Write-Host "TcdRoundTripTests.File_Has_Serializer passed. Exiting loop." -ForegroundColor Green
         exit 0
     }
 
@@ -103,8 +103,11 @@ while ($attempt -lt $MaxAttempts) {
 
         $codexExit = Invoke-CodexPrompt -Prompt $prompt -WorkingDirectory $repoRoot -DryRun:$DryRun
         if ($codexExit -ne 0) {
-            Write-Host "Codex invocation failed with exit code $codexExit. Halting." -ForegroundColor Red
-            exit $codexExit
+            Write-Host "Codex invocation failed with exit code $codexExit. Retrying after delay." -ForegroundColor Red
+            if ($RetryDelaySeconds -gt 0) {
+                Start-Sleep -Seconds $RetryDelaySeconds
+            }
+            continue
         }
 
         continue
@@ -124,10 +127,14 @@ while ($attempt -lt $MaxAttempts) {
 
     $codexExit = Invoke-CodexPrompt -Prompt $prompt -WorkingDirectory $repoRoot -DryRun:$DryRun
     if ($codexExit -ne 0) {
-        Write-Host "Codex invocation failed with exit code $codexExit. Halting." -ForegroundColor Red
-        exit $codexExit
+        Write-Host "Codex invocation failed with exit code $codexExit. Retrying after delay." -ForegroundColor Red
+        if ($RetryDelaySeconds -gt 0) {
+            Start-Sleep -Seconds $RetryDelaySeconds
+        }
+        continue
+    }
+
+    if ($RetryDelaySeconds -gt 0) {
+        Start-Sleep -Seconds $RetryDelaySeconds
     }
 }
-
-Write-Host "Reached maximum attempts ($MaxAttempts) without a passing test run." -ForegroundColor Red
-exit 1
