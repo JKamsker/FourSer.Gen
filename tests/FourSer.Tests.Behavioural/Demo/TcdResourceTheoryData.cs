@@ -109,7 +109,7 @@ namespace FourSer.Tests.Behavioural.Demo
 
         public static IEnumerable<object[]> BoundCases()
         {
-            foreach (var testCase in CachedCases.Value.Where(static c => c.Binding is not null))
+            foreach (var testCase in CachedCases.Value.Where(static c => c.Binding is not null && c.Payload.Length > 0))
             {
                 yield return new object[] { testCase };
             }

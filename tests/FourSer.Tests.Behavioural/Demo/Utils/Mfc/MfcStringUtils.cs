@@ -7,6 +7,14 @@ namespace FourSer.Tests.Behavioural.Demo
 {
     public static class MfcStringUtils
     {
+        private static readonly Encoding AnsiEncoding;
+
+        static MfcStringUtils()
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            AnsiEncoding = Encoding.GetEncoding(1250);
+        }
+
         public static string ReadMfcUnicodeCString(ref ReadOnlySpan<byte> data)
         {
             // 1. Read and verify BOM
@@ -46,6 +54,30 @@ namespace FourSer.Tests.Behavioural.Demo
             data = data.Slice(byteCount);
 
             return Encoding.Unicode.GetString(content);
+        }
+
+        public static string ReadMfcAnsiCString(ref ReadOnlySpan<byte> data)
+        {
+            int charCount = ReadMfcCount(ref data);
+            if (charCount < 0)
+            {
+                throw new InvalidDataException("Invalid negative length for ANSI string.");
+            }
+
+            if (charCount == 0)
+            {
+                return string.Empty;
+            }
+
+            if (data.Length < charCount)
+            {
+                throw new InvalidDataException("Insufficient data for ANSI string content.");
+            }
+
+            var content = data.Slice(0, charCount);
+            data = data.Slice(charCount);
+
+            return AnsiEncoding.GetString(content);
         }
 
         private static int ReadMfcCount(ref ReadOnlySpan<byte> data)
@@ -118,6 +150,17 @@ namespace FourSer.Tests.Behavioural.Demo
 
             return 2 + prefixSize + bytesWritten;
         }
+
+        public static int WriteMfcAnsiCString(Span<byte> buffer, string? value)
+        {
+            string safeValue = value ?? string.Empty;
+            int charCount = safeValue.Length;
+            int prefixSize = WriteMfcCount(buffer, charCount);
+            buffer = buffer.Slice(prefixSize);
+
+            int bytesWritten = AnsiEncoding.GetBytes(safeValue.AsSpan(), buffer);
+            return prefixSize + bytesWritten;
+        }
     
         private static int WriteMfcCount(Span<byte> buffer, int charCount)
         {
@@ -162,6 +205,13 @@ namespace FourSer.Tests.Behavioural.Demo
             int stringDataSize = charCount * 2; // UTF-16LE
 
             return bomSize + lengthPrefixSize + stringDataSize;
+        }
+
+        public static int GetMfcAnsiCStringSize(string? value)
+        {
+            int charCount = (value ?? string.Empty).Length;
+            int lengthPrefixSize = GetMfcCountSize(charCount);
+            return lengthPrefixSize + charCount;
         }
 
         private static int GetMfcCountSize(int charCount)
@@ -261,6 +311,40 @@ namespace FourSer.Tests.Behavioural.Demo
             {
                 stream.Write(utf16Bytes);
             }
+        }
+
+        public static string ReadMfcAnsiCString(Stream stream)
+        {
+            int charCount = ReadMfcCount(stream);
+            if (charCount < 0)
+            {
+                throw new InvalidDataException("Invalid negative length for ANSI string.");
+            }
+
+            if (charCount == 0)
+            {
+                return string.Empty;
+            }
+
+            byte[] data = new byte[charCount];
+            stream.ReadExactly(data);
+            return AnsiEncoding.GetString(data);
+        }
+
+        public static void WriteMfcAnsiCString(Stream stream, string? value)
+        {
+            string safeValue = value ?? string.Empty;
+            int charCount = safeValue.Length;
+
+            WriteMfcCount(stream, charCount);
+
+            if (charCount == 0)
+            {
+                return;
+            }
+
+            byte[] data = AnsiEncoding.GetBytes(safeValue);
+            stream.Write(data, 0, data.Length);
         }
 
         private static void WriteMfcCount(Stream stream, int charCount)
