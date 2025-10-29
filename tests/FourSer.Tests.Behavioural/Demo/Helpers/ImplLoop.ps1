@@ -60,8 +60,8 @@ function Invoke-CodexPrompt {
         Write-Host "DryRun specified; skipping Codex invocation." -ForegroundColor DarkYellow
         return 0
     }
-
-    $codexArgs = @('exec', '--cd', $WorkingDirectory, $Prompt)
+    
+    $codexArgs = @('exec', '--yolo' ,'--cd', $WorkingDirectory, $Prompt)
     Write-Host "Invoking Codex: codex $($codexArgs -join ' ')" -ForegroundColor Cyan
     & codex @codexArgs
     return $LASTEXITCODE
