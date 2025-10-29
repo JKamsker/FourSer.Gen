@@ -109,6 +109,17 @@ public static class PacketSizeGenerator
         MemberToGenerate member,
         ElementInfo info)
     {
+        if (member.CustomSerializer is { } customSerializer)
+        {
+            var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
+            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
+            using var _ = sb.BeginBlock();
+            sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+            using var __ = sb.BeginBlock();
+            sb.WriteLineFormat("size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.GetPacketSize(item);", serializerField);
+            return;
+        }
+
         if (info.HasSerializer)
         {
             sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);

@@ -348,6 +348,7 @@ public static class DeserializationGenerator
             GenerateArrayElementDeserialization
             (
                 sb,
+                member,
                 member.CollectionTypeInfo.Value,
                 memberName,
                 "i",
@@ -360,6 +361,7 @@ public static class DeserializationGenerator
             GenerateListElementDeserialization
             (
                 sb,
+                member,
                 member.ListTypeArgument.Value,
                 memberName,
                 source,
@@ -371,6 +373,7 @@ public static class DeserializationGenerator
             GenerateCollectionElementDeserialization
             (
                 sb,
+                member,
                 member.CollectionTypeInfo.Value,
                 memberName,
                 source,
@@ -428,6 +431,7 @@ public static class DeserializationGenerator
             GenerateListElementDeserialization
             (
                 sb,
+                member,
                 listTypeInfo,
                 tempCollectionVar,
                 source,
@@ -537,6 +541,7 @@ public static class DeserializationGenerator
     private static void GenerateArrayElementDeserialization
     (
         IndentedStringBuilder sb,
+        MemberToGenerate member,
         CollectionTypeInfo elementInfo,
         string arrayName,
         string indexVar,
@@ -545,6 +550,14 @@ public static class DeserializationGenerator
     )
     {
         var refOrEmpty = source == "buffer" ? "ref " : "";
+        if (member.CustomSerializer is { } customSerializer)
+        {
+            var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
+            var serializerAccess = $"FourSer.Generated.Internal.__FourSer_Generated_Serializers.{serializerField}";
+            sb.WriteLineFormat("{0}[{1}] = {2}.Deserialize({3}{4});", arrayName, indexVar, serializerAccess, refOrEmpty, source);
+            return;
+        }
+
         if (elementInfo.IsElementUnmanagedType)
         {
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(elementInfo.ElementTypeName);
@@ -566,6 +579,7 @@ public static class DeserializationGenerator
     private static void GenerateListElementDeserialization
     (
         IndentedStringBuilder sb,
+        MemberToGenerate member,
         ListTypeArgumentInfo elementInfo,
         string collectionTarget,
         string source,
@@ -573,6 +587,14 @@ public static class DeserializationGenerator
     )
     {
         var refOrEmpty = source == "buffer" ? "ref " : "";
+        if (member.CustomSerializer is { } customSerializer)
+        {
+            var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
+            var serializerAccess = $"FourSer.Generated.Internal.__FourSer_Generated_Serializers.{serializerField}";
+            sb.WriteLineFormat("{0}.Add({1}.Deserialize({2}{3}));", collectionTarget, serializerAccess, refOrEmpty, source);
+            return;
+        }
+
         if (elementInfo.HasGenerateSerializerAttribute)
         {
             sb.WriteLineFormat
@@ -594,6 +616,7 @@ public static class DeserializationGenerator
     private static void GenerateCollectionElementDeserialization
     (
         IndentedStringBuilder sb,
+        MemberToGenerate member,
         CollectionTypeInfo elementInfo,
         string collectionTarget,
         string source,
@@ -602,6 +625,14 @@ public static class DeserializationGenerator
     {
         var addMethod = elementInfo.CollectionAddMethod ?? "Add";
         var refOrEmpty = source == "buffer" ? "ref " : "";
+
+        if (member.CustomSerializer is { } customSerializer)
+        {
+            var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
+            var serializerAccess = $"FourSer.Generated.Internal.__FourSer_Generated_Serializers.{serializerField}";
+            sb.WriteLineFormat("{0}.{1}({2}.Deserialize({3}{4}));", collectionTarget, addMethod, serializerAccess, refOrEmpty, source);
+            return;
+        }
 
         if (elementInfo.IsElementUnmanagedType)
         {

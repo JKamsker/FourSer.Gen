@@ -112,6 +112,7 @@ internal static class CollectionSerializer
                     GenerateListElementSerialization
                     (
                         s,
+                        member,
                         member.ListTypeArgument.Value,
                         $"obj.{member.Name}[{indexVar}]",
                         ctx
@@ -122,6 +123,7 @@ internal static class CollectionSerializer
                     GenerateCollectionElementSerialization
                     (
                         s,
+                        member,
                         member.CollectionTypeInfo.Value,
                         $"obj.{member.Name}[{indexVar}]",
                         ctx
@@ -138,6 +140,7 @@ internal static class CollectionSerializer
                     GenerateCollectionElementSerialization
                     (
                         s,
+                        member,
                         member.CollectionTypeInfo.Value,
                         itemVar,
                         ctx
@@ -199,6 +202,33 @@ internal static class CollectionSerializer
         }
     }
 
+    private static bool TryEmitCustomSerializerElement(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        string elementAccess,
+        SerializationWriterEmitter.WriterCtx ctx)
+    {
+        if (member.CustomSerializer is not { } customSerializer)
+        {
+            return false;
+        }
+
+        var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
+        var serializerAccess = $"FourSer.Generated.Internal.__FourSer_Generated_Serializers.{serializerField}";
+        if (ctx.IsSpan)
+        {
+            var bytesVar = $"bytesWritten_{member.Name.ToCamelCase()}";
+            sb.WriteLineFormat("var {0} = {1}.Serialize({2}, {3});", bytesVar, serializerAccess, elementAccess, ctx.Target);
+            sb.WriteLineFormat("{0} = {0}.Slice({1});", ctx.Target, bytesVar);
+        }
+        else
+        {
+            sb.WriteLineFormat("{0}.Serialize({1}, {2});", serializerAccess, elementAccess, ctx.Target);
+        }
+
+        return true;
+    }
+
     private static void EmitElement(
         IndentedStringBuilder sb,
         string elementAccess,
@@ -232,11 +262,17 @@ internal static class CollectionSerializer
     private static void GenerateListElementSerialization
     (
         IndentedStringBuilder sb,
+        MemberToGenerate member,
         ListTypeArgumentInfo elementInfo,
         string elementAccess,
         SerializationWriterEmitter.WriterCtx ctx
     )
     {
+        if (TryEmitCustomSerializerElement(sb, member, elementAccess, ctx))
+        {
+            return;
+        }
+
         EmitElement
         (
             sb,
@@ -252,11 +288,17 @@ internal static class CollectionSerializer
     private static void GenerateCollectionElementSerialization
     (
         IndentedStringBuilder sb,
+        MemberToGenerate member,
         CollectionTypeInfo elementInfo,
         string elementAccess,
         SerializationWriterEmitter.WriterCtx ctx
     )
     {
+        if (TryEmitCustomSerializerElement(sb, member, elementAccess, ctx))
+        {
+            return;
+        }
+
         EmitElement
         (
             sb,
@@ -326,15 +368,13 @@ internal static class CollectionSerializer
             using (sb.BeginBlock())
             {
                 var elementInfo = member.CollectionTypeInfo!.Value;
-                EmitElement
+                GenerateCollectionElementSerialization
                 (
                     sb,
+                    member,
+                    elementInfo,
                     "enumerator.Current",
-                    ctx,
-                    elementInfo.ElementTypeName,
-                    elementInfo.HasElementGenerateSerializerAttribute,
-                    elementInfo.IsElementUnmanagedType,
-                    elementInfo.IsElementStringType
+                    ctx
                 );
                 sb.WriteLine("count++;");
             }

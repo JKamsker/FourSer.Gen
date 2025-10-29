@@ -116,6 +116,11 @@ public static class GeneratorUtilities
 
     public static ResolvedSerializer? ResolveSerializer(MemberToGenerate member, TypeToGenerate type)
     {
+        if (member.IsList || member.IsCollection)
+        {
+            return null;
+        }
+
         string? serializerTypeName = null;
 
         // 1. Direct override
