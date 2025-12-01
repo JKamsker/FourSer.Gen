@@ -32,17 +32,28 @@ public static class DeserializationGenerator
         var newKeyword = typeToGenerate.HasSerializableBaseType ? "new " : "";
         sb.WriteLineFormat("public static {0}{1} Deserialize(System.IO.Stream stream)", newKeyword, typeToGenerate.Name);
         using var _ = sb.BeginBlock();
-        foreach (var member in typeToGenerate.Members)
+        var instructions = BatchingUtilities.AnalyzeMembers(typeToGenerate.Members, typeToGenerate, BatchingUtilities.DefaultMinBatchSize);
+        var batchIndex = 0;
+
+        foreach (var instruction in instructions)
         {
-            GenerateMemberDeserialization
-            (
-                sb,
-                member,
-                typeToGenerate,
-                true,
-                "stream",
-                "StreamReader"
-            );
+            switch (instruction)
+            {
+                case BatchGroup batchGroup:
+                    GenerateBatchGroupDeserialization(sb, batchGroup, ref batchIndex);
+                    break;
+                case SingleMember single:
+                    GenerateMemberDeserialization
+                    (
+                        sb,
+                        single.Member,
+                        typeToGenerate,
+                        true,
+                        "stream",
+                        "StreamReader"
+                    );
+                    break;
+            }
         }
 
         if (typeToGenerate.Constructor is { } ctor)
@@ -70,6 +81,55 @@ public static class DeserializationGenerator
         }
 
         sb.WriteLine("return obj;");
+    }
+
+    private static void GenerateBatchGroupDeserialization(IndentedStringBuilder sb, BatchGroup batchGroup, ref int batchIndex)
+    {
+        // Declare variables for each member in the batch so they are available after the batch read.
+        foreach (var batchedMember in batchGroup.Members)
+        {
+            var member = batchedMember.Member;
+            var typeName = TypeHelper.GetSimpleTypeName(member.TypeName);
+            sb.WriteLineFormat("{0} {1};", typeName, member.Name.ToCamelCase());
+        }
+
+        var batchVarName = $"batch{batchIndex++}";
+        var totalSize = batchGroup.TotalSize;
+
+        if (totalSize <= BatchingUtilities.StackAllocThreshold)
+        {
+            sb.WriteLineFormat("Span<byte> {0} = stackalloc byte[{1}];", batchVarName, totalSize);
+            sb.WriteLineFormat("stream.ReadExactly({0});", batchVarName);
+
+            foreach (var batchedMember in batchGroup.Members)
+            {
+                var member = batchedMember.Member;
+                var readExpr = BatchingUtilities.GetBatchReadExpression(batchVarName, member.TypeName, batchedMember.Offset);
+                sb.WriteLineFormat("{0} = {1};", member.Name.ToCamelCase(), readExpr);
+            }
+        }
+        else
+        {
+            sb.WriteLineFormat("var {0}Rented = System.Buffers.ArrayPool<byte>.Shared.Rent({1});", batchVarName, totalSize);
+            sb.WriteLine("try");
+            using (sb.BeginBlock())
+            {
+                sb.WriteLineFormat("var {0} = {0}Rented.AsSpan(0, {1});", batchVarName, totalSize);
+                sb.WriteLineFormat("stream.ReadExactly({0});", batchVarName);
+
+                foreach (var batchedMember in batchGroup.Members)
+                {
+                    var member = batchedMember.Member;
+                    var readExpr = BatchingUtilities.GetBatchReadExpression(batchVarName, member.TypeName, batchedMember.Offset);
+                    sb.WriteLineFormat("{0} = {1};", member.Name.ToCamelCase(), readExpr);
+                }
+            }
+            sb.WriteLine("finally");
+            using (sb.BeginBlock())
+            {
+                sb.WriteLineFormat("System.Buffers.ArrayPool<byte>.Shared.Return({0}Rented);", batchVarName);
+            }
+        }
     }
 
     private static void GenerateDeserializeWithRef(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)

@@ -17,6 +17,12 @@ internal static class RoSpanReaderHelpers
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static sbyte ReadSByte(ref ReadOnlySpan<byte> input)
+    {
+        return (sbyte)ReadByte(ref input);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static short ReadInt16(ref ReadOnlySpan<byte> input)
     {
         var original = Advance<short>(ref input);

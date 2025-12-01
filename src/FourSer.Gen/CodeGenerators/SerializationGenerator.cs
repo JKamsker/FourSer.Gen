@@ -59,6 +59,38 @@ public static class SerializationGenerator
     {
         GenerateTypeIdPrePass(sb, typeToGenerate);
 
+        if (!ctx.IsSpan)
+        {
+            var instructions = BatchingUtilities.AnalyzeMembers(typeToGenerate.Members, typeToGenerate, BatchingUtilities.DefaultMinBatchSize);
+            var batchIndex = 0;
+
+            foreach (var instruction in instructions)
+            {
+                switch (instruction)
+                {
+                    case BatchGroup batchGroup:
+                        GenerateBatchGroupStreamSerialization(sb, batchGroup, ref batchIndex, typeToGenerate);
+                        break;
+                    case SingleMember single:
+                        if (single.Member.IsCountSizeReferenceFor is not null)
+                        {
+                            GenerateCountSizeReferenceSerialization(sb, typeToGenerate, single.Member, ctx);
+                        }
+                        else if (single.Member.IsTypeIdPropertyFor is not null)
+                        {
+                            GenerateTypeIdPropertySerialization(sb, typeToGenerate, single.Member, ctx);
+                        }
+                        else
+                        {
+                            GenerateMemberSerialization(sb, single.Member, typeToGenerate, ctx);
+                        }
+                        break;
+                }
+            }
+            return;
+        }
+
+        // Span path: keep existing per-member emission (batching not needed)
         foreach (var member in typeToGenerate.Members)
         {
             if (member.IsCountSizeReferenceFor is not null)
@@ -73,6 +105,54 @@ public static class SerializationGenerator
             {
                 GenerateMemberSerialization(sb, member, typeToGenerate, ctx);
             }
+        }
+    }
+
+    private static void GenerateBatchGroupStreamSerialization(
+        IndentedStringBuilder sb,
+        BatchGroup batchGroup,
+        ref int batchIndex,
+        TypeToGenerate type)
+    {
+        var batchVar = $"batch{batchIndex++}";
+        var totalSize = batchGroup.TotalSize;
+
+        if (totalSize <= BatchingUtilities.StackAllocThreshold)
+        {
+            sb.WriteLineFormat("Span<byte> {0} = stackalloc byte[{1}];", batchVar, totalSize);
+        }
+        else
+        {
+            sb.WriteLineFormat("var {0}Rented = System.Buffers.ArrayPool<byte>.Shared.Rent({1});", batchVar, totalSize);
+            sb.WriteLineFormat("var {0} = {0}Rented.AsSpan(0, {1});", batchVar, totalSize);
+        }
+
+        foreach (var batchedMember in batchGroup.Members)
+        {
+            var member = batchedMember.Member;
+
+            // Decimal needs special handling because GetBatchWriteExpression is not yet optimized for it.
+            if (member.TypeName == "decimal")
+            {
+                var bitsVar = $"bits_{batchVar}_{member.Name.ToCamelCase()}";
+                sb.WriteLineFormat("int[] {0} = new int[4];", bitsVar);
+                sb.WriteLineFormat("decimal.GetBits(obj.{0}, {1});", member.Name, bitsVar);
+                sb.WriteLineFormat("System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian({0}.Slice({1}), {2}[0]);", batchVar, batchedMember.Offset, bitsVar);
+                sb.WriteLineFormat("System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian({0}.Slice({1}), {2}[1]);", batchVar, batchedMember.Offset + 4, bitsVar);
+                sb.WriteLineFormat("System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian({0}.Slice({1}), {2}[2]);", batchVar, batchedMember.Offset + 8, bitsVar);
+                sb.WriteLineFormat("System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian({0}.Slice({1}), {2}[3]);", batchVar, batchedMember.Offset + 12, bitsVar);
+                continue;
+            }
+
+            var writeExpr = BatchingUtilities.GetBatchWriteExpression(batchVar, member.TypeName, batchedMember.Offset, $"obj.{member.Name}");
+            sb.WriteLine(writeExpr + ";");
+        }
+
+        sb.WriteLineFormat("stream.Write({0});", batchVar);
+
+        if (totalSize > BatchingUtilities.StackAllocThreshold)
+        {
+            sb.WriteLineFormat("System.Buffers.ArrayPool<byte>.Shared.Return({0}Rented);", batchVar);
         }
     }
 

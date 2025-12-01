@@ -101,7 +101,7 @@ internal static class StreamReaderHelpers
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static string ReadString(this Stream stream)
     {
-        ushort length = stream.ReadUInt16();
+        int length = stream.ReadInt32();
         if (length == 0)
         {
             return string.Empty;

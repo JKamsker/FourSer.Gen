@@ -120,12 +120,12 @@ internal static class StreamWriterHelpers
     {
         if (string.IsNullOrEmpty(value))
         {
-            stream.WriteUInt16(0);
+            stream.WriteInt32(0);
             return;
         }
 
         var byteCount = Encoding.UTF8.GetByteCount(value);
-        stream.WriteUInt16((ushort)byteCount);
+        stream.WriteInt32(byteCount);
 
         if (byteCount == 0)
         {

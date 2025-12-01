@@ -343,3 +343,4 @@ healthchecksdb
 
 src/FourSer.Consumer/Generated/
 *.received.txt
+tests/FourSer.Tests.Behavioural/Generated/FourSer.Gen/FourSer.Gen.SerializerGenerator/
