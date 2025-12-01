@@ -86,12 +86,12 @@ public static class DeserializationGenerator
     private static void GenerateBatchGroupDeserialization(IndentedStringBuilder sb, BatchGroup batchGroup, ref int batchIndex)
     {
         // Declare variables for each member in the batch so they are available after the batch read.
-        foreach (var batchedMember in batchGroup.Members)
-        {
-            var member = batchedMember.Member;
-            var typeName = TypeHelper.GetSimpleTypeName(member.TypeName);
-            sb.WriteLineFormat("{0} {1};", typeName, member.Name.ToCamelCase());
-        }
+            foreach (var batchedMember in batchGroup.Members)
+            {
+                var member = batchedMember.Member;
+                var typeName = TypeHelper.GetSimpleTypeName(member.TypeName);
+                sb.WriteLineFormat("{0} {1};", typeName, member.Name.ToCamelCase());
+            }
 
         var batchVarName = $"batch{batchIndex++}";
         var totalSize = batchGroup.TotalSize;
@@ -104,6 +104,24 @@ public static class DeserializationGenerator
             foreach (var batchedMember in batchGroup.Members)
             {
                 var member = batchedMember.Member;
+                if (batchedMember.IsFixedCollection)
+                {
+                    var varName = member.Name.ToCamelCase();
+                    var elemType = TypeHelper.GetSimpleTypeName(batchedMember.ElementTypeName ?? "byte");
+
+                    sb.WriteLineFormat("{0} = new {1}[{2}];", varName, elemType, batchedMember.FixedCount);
+
+                    if (elemType == "byte")
+                    {
+                        sb.WriteLineFormat("{0}.Slice({1}, {2}).CopyTo({3}.AsSpan());", batchVarName, batchedMember.Offset, batchedMember.Size, varName);
+                    }
+                    else
+                    {
+                        sb.WriteLineFormat("{0}.Slice({1}, {2}).CopyTo(System.Runtime.InteropServices.MemoryMarshal.AsBytes({3}.AsSpan()));", batchVarName, batchedMember.Offset, batchedMember.Size, varName);
+                    }
+                    continue;
+                }
+
                 var readExpr = BatchingUtilities.GetBatchReadExpression(batchVarName, member.TypeName, batchedMember.Offset);
                 sb.WriteLineFormat("{0} = {1};", member.Name.ToCamelCase(), readExpr);
             }
@@ -120,6 +138,24 @@ public static class DeserializationGenerator
                 foreach (var batchedMember in batchGroup.Members)
                 {
                     var member = batchedMember.Member;
+                    if (batchedMember.IsFixedCollection)
+                    {
+                        var varName = member.Name.ToCamelCase();
+                        var elemType = TypeHelper.GetSimpleTypeName(batchedMember.ElementTypeName ?? "byte");
+
+                        sb.WriteLineFormat("{0} = new {1}[{2}];", varName, elemType, batchedMember.FixedCount);
+
+                        if (elemType == "byte")
+                        {
+                            sb.WriteLineFormat("{0}.Slice({1}, {2}).CopyTo({3}.AsSpan());", batchVarName, batchedMember.Offset, batchedMember.Size, varName);
+                        }
+                        else
+                        {
+                            sb.WriteLineFormat("{0}.Slice({1}, {2}).CopyTo(System.Runtime.InteropServices.MemoryMarshal.AsBytes({3}.AsSpan()));", batchVarName, batchedMember.Offset, batchedMember.Size, varName);
+                        }
+                        continue;
+                    }
+
                     var readExpr = BatchingUtilities.GetBatchReadExpression(batchVarName, member.TypeName, batchedMember.Offset);
                     sb.WriteLineFormat("{0} = {1};", member.Name.ToCamelCase(), readExpr);
                 }

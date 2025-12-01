@@ -90,20 +90,33 @@ public static class SerializationGenerator
             return;
         }
 
-        // Span path: keep existing per-member emission (batching not needed)
-        foreach (var member in typeToGenerate.Members)
+        // Span path: also use batching to reduce per-field overhead when contiguous.
         {
-            if (member.IsCountSizeReferenceFor is not null)
+            var instructions = BatchingUtilities.AnalyzeMembers(typeToGenerate.Members, typeToGenerate, BatchingUtilities.DefaultMinBatchSize);
+            var batchIndex = 0;
+
+            foreach (var instruction in instructions)
             {
-                GenerateCountSizeReferenceSerialization(sb, typeToGenerate, member, ctx);
-            }
-            else if (member.IsTypeIdPropertyFor is not null)
-            {
-                GenerateTypeIdPropertySerialization(sb, typeToGenerate, member, ctx);
-            }
-            else
-            {
-                GenerateMemberSerialization(sb, member, typeToGenerate, ctx);
+                switch (instruction)
+                {
+                    case BatchGroup batchGroup:
+                        GenerateBatchGroupSpanSerialization(sb, batchGroup, ref batchIndex, ctx);
+                        break;
+                    case SingleMember single:
+                        if (single.Member.IsCountSizeReferenceFor is not null)
+                        {
+                            GenerateCountSizeReferenceSerialization(sb, typeToGenerate, single.Member, ctx);
+                        }
+                        else if (single.Member.IsTypeIdPropertyFor is not null)
+                        {
+                            GenerateTypeIdPropertySerialization(sb, typeToGenerate, single.Member, ctx);
+                        }
+                        else
+                        {
+                            GenerateMemberSerialization(sb, single.Member, typeToGenerate, ctx);
+                        }
+                        break;
+                }
             }
         }
     }
@@ -117,7 +130,8 @@ public static class SerializationGenerator
         var batchVar = $"batch{batchIndex++}";
         var totalSize = batchGroup.TotalSize;
 
-        if (totalSize <= BatchingUtilities.StackAllocThreshold)
+        var needsPool = totalSize > BatchingUtilities.StackAllocThreshold;
+        if (!needsPool)
         {
             sb.WriteLineFormat("Span<byte> {0} = stackalloc byte[{1}];", batchVar, totalSize);
         }
@@ -130,6 +144,32 @@ public static class SerializationGenerator
         foreach (var batchedMember in batchGroup.Members)
         {
             var member = batchedMember.Member;
+
+            if (batchedMember.IsFixedCollection)
+            {
+                sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
+                using (sb.BeginBlock())
+                {
+                    sb.WriteLineFormat("throw new System.ArgumentNullException(nameof(obj.{0}), \"Fixed-size collections cannot be null.\");", member.Name);
+                }
+                sb.WriteLineFormat("if (obj.{0}.Length != {1})", member.Name, batchedMember.FixedCount);
+                using (sb.BeginBlock())
+                {
+                    sb.WriteLineFormat("throw new System.InvalidOperationException($\"Collection '{0}' must have a size of {1} but was {{obj.{0}.Length}}.\");", member.Name, batchedMember.FixedCount);
+                }
+
+                var elemType = TypeHelper.GetSimpleTypeName(batchedMember.ElementTypeName ?? "byte");
+
+                if (elemType == "byte")
+                {
+                    sb.WriteLineFormat("obj.{0}.AsSpan().CopyTo({1}.Slice({2}, {3}));", member.Name, batchVar, batchedMember.Offset, batchedMember.Size);
+                }
+                else
+                {
+                    sb.WriteLineFormat("System.Runtime.InteropServices.MemoryMarshal.AsBytes(obj.{0}.AsSpan()).CopyTo({1}.Slice({2}, {3}));", member.Name, batchVar, batchedMember.Offset, batchedMember.Size);
+                }
+                continue;
+            }
 
             // Decimal needs special handling because GetBatchWriteExpression is not yet optimized for it.
             if (member.TypeName == "decimal")
@@ -148,12 +188,83 @@ public static class SerializationGenerator
             sb.WriteLine(writeExpr + ";");
         }
 
-        sb.WriteLineFormat("stream.Write({0});", batchVar);
-
-        if (totalSize > BatchingUtilities.StackAllocThreshold)
+        if (!needsPool)
         {
-            sb.WriteLineFormat("System.Buffers.ArrayPool<byte>.Shared.Return({0}Rented);", batchVar);
+            sb.WriteLineFormat("stream.Write({0});", batchVar);
         }
+        else
+        {
+            sb.WriteLine("try");
+            using (sb.BeginBlock())
+            {
+                sb.WriteLineFormat("stream.Write({0});", batchVar);
+            }
+            sb.WriteLine("finally");
+            using (sb.BeginBlock())
+            {
+                sb.WriteLineFormat("System.Buffers.ArrayPool<byte>.Shared.Return({0}Rented);", batchVar);
+            }
+        }
+    }
+
+    private static void GenerateBatchGroupSpanSerialization(
+        IndentedStringBuilder sb,
+        BatchGroup batchGroup,
+        ref int batchIndex,
+        SerializationWriterEmitter.WriterCtx ctx)
+    {
+        var batchVar = $"batchSpan{batchIndex++}";
+        var totalSize = batchGroup.TotalSize;
+
+        sb.WriteLineFormat("var {0} = {1}.Slice(0, {2});", batchVar, ctx.Target, totalSize);
+
+        foreach (var batchedMember in batchGroup.Members)
+        {
+            var member = batchedMember.Member;
+
+            if (batchedMember.IsFixedCollection)
+            {
+                sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
+                using (sb.BeginBlock())
+                {
+                    sb.WriteLineFormat("throw new System.ArgumentNullException(nameof(obj.{0}), \"Fixed-size collections cannot be null.\");", member.Name);
+                }
+                sb.WriteLineFormat("if (obj.{0}.Length != {1})", member.Name, batchedMember.FixedCount);
+                using (sb.BeginBlock())
+                {
+                    sb.WriteLineFormat("throw new System.InvalidOperationException($\"Collection '{0}' must have a size of {1} but was {{obj.{0}.Length}}.\");", member.Name, batchedMember.FixedCount);
+                }
+
+                var elemType = TypeHelper.GetSimpleTypeName(batchedMember.ElementTypeName ?? "byte");
+
+                if (elemType == "byte")
+                {
+                    sb.WriteLineFormat("obj.{0}.AsSpan().CopyTo({1}.Slice({2}, {3}));", member.Name, batchVar, batchedMember.Offset, batchedMember.Size);
+                }
+                else
+                {
+                    sb.WriteLineFormat("System.Runtime.InteropServices.MemoryMarshal.AsBytes(obj.{0}.AsSpan()).CopyTo({1}.Slice({2}, {3}));", member.Name, batchVar, batchedMember.Offset, batchedMember.Size);
+                }
+                continue;
+            }
+
+            if (member.TypeName == "decimal")
+            {
+                var bitsVar = $"bits_{batchVar}_{member.Name.ToCamelCase()}";
+                sb.WriteLineFormat("int[] {0} = new int[4];", bitsVar);
+                sb.WriteLineFormat("decimal.GetBits(obj.{0}, {1});", member.Name, bitsVar);
+                sb.WriteLineFormat("System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian({0}.Slice({1}), {2}[0]);", batchVar, batchedMember.Offset, bitsVar);
+                sb.WriteLineFormat("System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian({0}.Slice({1}), {2}[1]);", batchVar, batchedMember.Offset + 4, bitsVar);
+                sb.WriteLineFormat("System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian({0}.Slice({1}), {2}[2]);", batchVar, batchedMember.Offset + 8, bitsVar);
+                sb.WriteLineFormat("System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian({0}.Slice({1}), {2}[3]);", batchVar, batchedMember.Offset + 12, bitsVar);
+                continue;
+            }
+
+            var writeExpr = BatchingUtilities.GetBatchWriteExpression(batchVar, member.TypeName, batchedMember.Offset, $"obj.{member.Name}");
+            sb.WriteLine(writeExpr + ";");
+        }
+
+        sb.WriteLineFormat("{0} = {0}.Slice({1});", ctx.Target, totalSize);
     }
 
     // This method is now a simple dispatcher

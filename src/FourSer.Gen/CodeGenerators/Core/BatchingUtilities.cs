@@ -38,11 +38,10 @@ public static class BatchingUtilities
 
         foreach (var member in members)
         {
-            if (IsBatchable(member, type))
+            if (IsBatchable(member, type, out var info))
             {
-                var size = GetMemberSize(member);
-                currentBatch.Add(new BatchedMember(member, currentBatchSize, size));
-                currentBatchSize += size;
+                currentBatch.Add(new BatchedMember(member, currentBatchSize, info.Size, info.IsFixedCollection, info.FixedCount, info.ElementSize, info.ElementTypeName));
+                currentBatchSize += info.Size;
             }
             else
             {
@@ -88,18 +87,24 @@ public static class BatchingUtilities
     /// <summary>
     ///     Determines if a member can be batched (fixed size, no conditional logic).
     /// </summary>
-    public static bool IsBatchable(MemberToGenerate member, TypeToGenerate type)
+    public static bool IsBatchable(MemberToGenerate member, TypeToGenerate type, out BatchableInfo info)
     {
+        info = default;
+
+        // Collections: allow fixed-size unmanaged collections (e.g., byte arrays with CountSize)
+        if (member.IsList || member.IsCollection)
+        {
+            if (TryGetFixedCollectionInfo(member, type, out info))
+                return true;
+            return false;
+        }
+
         // Must be unmanaged type (fixed size)
         if (!member.IsUnmanagedType)
             return false;
 
         // Strings are variable length
         if (member.IsStringType)
-            return false;
-
-        // Collections require count-dependent logic
-        if (member.IsList || member.IsCollection)
             return false;
 
         // Polymorphic fields require type-dependent logic
@@ -114,6 +119,7 @@ public static class BatchingUtilities
         if (GeneratorUtilities.ResolveSerializer(member, type) is not null)
             return false;
 
+        info = new BatchableInfo(GetMemberSize(member), false, 0, 0, null);
         return true;
     }
 
@@ -148,8 +154,8 @@ public static class BatchingUtilities
             "uint" => $"System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian({sliceExpr})",
             "long" => $"System.Buffers.Binary.BinaryPrimitives.ReadInt64LittleEndian({sliceExpr})",
             "ulong" => $"System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian({sliceExpr})",
-            "float" => $"System.BitConverter.ToSingle({sliceExpr})",
-            "double" => $"System.BitConverter.ToDouble({sliceExpr})",
+            "float" => $"System.Buffers.Binary.BinaryPrimitives.ReadSingleLittleEndian({sliceExpr})",
+            "double" => $"System.Buffers.Binary.BinaryPrimitives.ReadDoubleLittleEndian({sliceExpr})",
             "decimal" => GenerateDecimalReadExpression(batchVar, offset),
             _ => throw new NotSupportedException($"Unsupported batch type: {typeName}")
         };
@@ -173,8 +179,8 @@ public static class BatchingUtilities
             "uint" => $"System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian({sliceExpr}, (uint)({valueExpr}))",
             "long" => $"System.Buffers.Binary.BinaryPrimitives.WriteInt64LittleEndian({sliceExpr}, (long)({valueExpr}))",
             "ulong" => $"System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian({sliceExpr}, (ulong)({valueExpr}))",
-            "float" => $"System.BitConverter.TryWriteBytes({sliceExpr}, (float)({valueExpr}))",
-            "double" => $"System.BitConverter.TryWriteBytes({sliceExpr}, (double)({valueExpr}))",
+            "float" => $"System.Buffers.Binary.BinaryPrimitives.WriteSingleLittleEndian({sliceExpr}, (float)({valueExpr}))",
+            "double" => $"System.Buffers.Binary.BinaryPrimitives.WriteDoubleLittleEndian({sliceExpr}, (double)({valueExpr}))",
             "decimal" => GenerateDecimalWriteExpression(batchVar, offset, valueExpr),
             _ => throw new NotSupportedException($"Unsupported batch type: {typeName}")
         };
@@ -198,6 +204,46 @@ public static class BatchingUtilities
         // TODO: Optimize decimal batch writing
         return $"/* decimal batch write not yet optimized */ throw new System.NotSupportedException(\"Decimal batch write\")";
     }
+
+    private static bool TryGetFixedCollectionInfo(MemberToGenerate member, TypeToGenerate type, out BatchableInfo info)
+    {
+        info = default;
+
+        if (member.CollectionInfo is not { } collectionInfo)
+            return false;
+
+        if (collectionInfo.CountSize is null or <= 0)
+            return false;
+
+        if (collectionInfo.Unlimited || collectionInfo.CountSizeReferenceIndex is not null)
+            return false;
+
+        // Polymorphic or custom-serializer collections are not batchable.
+        if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+            return false;
+
+        if (GeneratorUtilities.ResolveSerializer(member, type) is not null)
+            return false;
+
+        var isArray = member.CollectionTypeInfo?.IsArray == true;
+        if (!isArray)
+            return false;
+
+        var elementType = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
+        var elementIsUnmanaged = member.ListTypeArgument?.IsUnmanagedType ?? member.CollectionTypeInfo?.IsElementUnmanagedType ?? false;
+        var elementIsString = member.ListTypeArgument?.IsStringType ?? member.CollectionTypeInfo?.IsElementStringType ?? false;
+        var hasElementSerializerAttr = member.ListTypeArgument?.HasGenerateSerializerAttribute ?? member.CollectionTypeInfo?.HasElementGenerateSerializerAttribute ?? false;
+
+        if (!elementIsUnmanaged || elementIsString || hasElementSerializerAttr)
+            return false;
+
+        var elemSize = TypeHelper.GetSizeOf(elementType ?? string.Empty);
+        var count = collectionInfo.CountSize.Value;
+        var totalSize = elemSize * count;
+
+        info = new BatchableInfo(totalSize, true, count, elemSize, elementType);
+        return true;
+    }
 }
 
 /// <summary>
@@ -216,6 +262,11 @@ public sealed record BatchGroup(BatchedMember[] Members, int TotalSize) : BatchI
 public sealed record SingleMember(MemberToGenerate Member) : BatchInstruction;
 
 /// <summary>
+///     Internal struct describing batchable member info.
+/// </summary>
+public readonly record struct BatchableInfo(int Size, bool IsFixedCollection, int FixedCount, int ElementSize, string? ElementTypeName);
+
+/// <summary>
 ///     A member within a batch group.
 /// </summary>
-public sealed record BatchedMember(MemberToGenerate Member, int Offset, int Size);
+public sealed record BatchedMember(MemberToGenerate Member, int Offset, int Size, bool IsFixedCollection, int FixedCount, int ElementSize, string? ElementTypeName);
