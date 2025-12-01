@@ -9,6 +9,22 @@ public static class GeneratorUtilities
     public readonly record struct ResolvedSerializer(string TypeName, string FieldName);
 
     /// <summary>
+    ///     Checks if a type has a default serializer override for a given target type.
+    /// </summary>
+    public static bool HasDefaultSerializerFor(TypeToGenerate type, string targetTypeName)
+    {
+        foreach (var defaultSerializer in type.DefaultSerializers)
+        {
+            if (defaultSerializer.TargetTypeName == targetTypeName)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     ///     Unified method name mapping (consolidates 4 duplicate implementations)
     /// </summary>
     public static string GetMethodFriendlyTypeName(string typeName)

@@ -9,16 +9,16 @@ internal static class CollectionSerializer
 {
     private enum CollMode { Fixed, Count }
 
-    public static void Generate(IndentedStringBuilder sb, MemberToGenerate member, SerializationWriterEmitter.WriterCtx ctx)
+    public static void Generate(IndentedStringBuilder sb, MemberToGenerate member, SerializationWriterEmitter.WriterCtx ctx, TypeToGenerate type)
     {
         var mode = GetCollectionMode(member);
         if (mode == CollMode.Fixed)
         {
-            EmitFixedCollection(sb, member, ctx);
+            EmitFixedCollection(sb, member, ctx, type);
         }
         else
         {
-            EmitCountedCollection(sb, member, ctx);
+            EmitCountedCollection(sb, member, ctx, type);
         }
     }
 
@@ -42,7 +42,8 @@ internal static class CollectionSerializer
         IndentedStringBuilder sb,
         MemberToGenerate member,
         SerializationWriterEmitter.WriterCtx ctx,
-        CollectionInfo collectionInfo
+        CollectionInfo collectionInfo,
+        TypeToGenerate type
     )
     {
         var isHandledByPolymorphic = collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId &&
@@ -88,11 +89,79 @@ internal static class CollectionSerializer
         if (isByteCollection)
         {
             SerializationWriterEmitter.EmitWriteBytes(sb, ctx, $"obj.{member.Name}");
+            return;
+        }
+
+        if (TryEmitUnmanagedContiguousCollectionWrite(sb, member, ctx, type))
+        {
+            return;
+        }
+
+        GenerateStandardCollectionBody(sb, member, ctx);
+    }
+
+    private static bool TryEmitUnmanagedContiguousCollectionWrite(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        SerializationWriterEmitter.WriterCtx ctx,
+        TypeToGenerate type)
+    {
+        // Only non-polymorphic, unmanaged element collections without custom/default serializers qualify.
+        if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+        {
+            return false;
+        }
+
+        var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
+        if (string.IsNullOrEmpty(elementTypeName))
+        {
+            return false;
+        }
+
+        var elementIsUnmanaged = member.ListTypeArgument?.IsUnmanagedType ?? member.CollectionTypeInfo?.IsElementUnmanagedType ?? false;
+        var elementIsString = member.ListTypeArgument?.IsStringType ?? member.CollectionTypeInfo?.IsElementStringType ?? false;
+        var elementHasGenerateSerializer = member.ListTypeArgument?.HasGenerateSerializerAttribute ?? member.CollectionTypeInfo?.HasElementGenerateSerializerAttribute ?? false;
+
+        if (!elementIsUnmanaged || elementIsString || elementHasGenerateSerializer)
+        {
+            return false;
+        }
+
+        if (GeneratorUtilities.HasDefaultSerializerFor(type, elementTypeName))
+        {
+            return false;
+        }
+
+        // Fast path only for arrays or List<T> where contiguous memory is guaranteed.
+        string? elementSpanExpr = null;
+        if (member.CollectionTypeInfo?.IsArray == true)
+        {
+            elementSpanExpr = $"obj.{member.Name}.AsSpan()";
+        }
+        else if (member.IsList)
+        {
+            elementSpanExpr = $"System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.{member.Name})";
+        }
+
+        if (elementSpanExpr is null)
+        {
+            return false;
+        }
+
+        var bytesVar = $"{member.Name.ToCamelCase()}Bytes";
+        sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.AsBytes({1});", bytesVar, elementSpanExpr);
+
+        if (!ctx.IsSpan)
+        {
+            sb.WriteLineFormat("stream.Write({0});", bytesVar);
         }
         else
         {
-            GenerateStandardCollectionBody(sb, member, ctx);
+            sb.WriteLineFormat("{0}.CopyTo({1});", bytesVar, ctx.Target);
+            sb.WriteLineFormat("{0} = {0}.Slice({1}.Length);", ctx.Target, bytesVar);
         }
+
+        return true;
     }
 
     private static void GenerateStandardCollectionBody
@@ -383,7 +452,7 @@ internal static class CollectionSerializer
         EndCountReservation(sb, ctx, countType, "count");
     }
 
-    private static void EmitFixedCollection(IndentedStringBuilder sb, MemberToGenerate member, SerializationWriterEmitter.WriterCtx ctx)
+    private static void EmitFixedCollection(IndentedStringBuilder sb, MemberToGenerate member, SerializationWriterEmitter.WriterCtx ctx, TypeToGenerate type)
     {
         sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
         using (sb.BeginBlock())
@@ -396,7 +465,8 @@ internal static class CollectionSerializer
             sb,
             member,
             ctx,
-            member.CollectionInfo.Value
+            member.CollectionInfo.Value,
+            type
         );
     }
 
@@ -450,7 +520,7 @@ internal static class CollectionSerializer
         return false;
     }
 
-    private static void EmitNullOrNonNullCollection(IndentedStringBuilder sb, MemberToGenerate member, SerializationWriterEmitter.WriterCtx ctx, CollectionInfo collectionInfo)
+    private static void EmitNullOrNonNullCollection(IndentedStringBuilder sb, MemberToGenerate member, SerializationWriterEmitter.WriterCtx ctx, CollectionInfo collectionInfo, TypeToGenerate type)
     {
         var isNotListOrArray = !member.IsList && member.CollectionTypeInfo?.IsArray != true;
         sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
@@ -474,12 +544,13 @@ internal static class CollectionSerializer
                 sb,
                 member,
                 ctx,
-                collectionInfo
+                collectionInfo,
+                type
             );
         }
     }
 
-    private static void EmitCountedCollection(IndentedStringBuilder sb, MemberToGenerate member, SerializationWriterEmitter.WriterCtx ctx)
+    private static void EmitCountedCollection(IndentedStringBuilder sb, MemberToGenerate member, SerializationWriterEmitter.WriterCtx ctx, TypeToGenerate type)
     {
         if (member.CollectionInfo is not { } collectionInfo)
         {
@@ -526,6 +597,6 @@ internal static class CollectionSerializer
             return;
         }
 
-        EmitNullOrNonNullCollection(sb, member, ctx, collectionInfo);
+        EmitNullOrNonNullCollection(sb, member, ctx, collectionInfo, type);
     }
 }

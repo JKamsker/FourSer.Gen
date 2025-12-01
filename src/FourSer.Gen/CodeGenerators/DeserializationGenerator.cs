@@ -242,7 +242,8 @@ public static class DeserializationGenerator
                 member,
                 target,
                 source,
-                helper
+                helper,
+                type
             );
         }
         else if (member.PolymorphicInfo is not null)
@@ -271,7 +272,8 @@ public static class DeserializationGenerator
         MemberToGenerate member,
         string target,
         string source,
-        string helper
+        string helper,
+        TypeToGenerate type
     )
     {
         if (member.CollectionInfo is not { } collectionInfo)
@@ -339,6 +341,11 @@ public static class DeserializationGenerator
         }
 
         var capacityVar = countType is "uint" or "ulong" ? $"(int){countVar}" : countVar;
+        if (TryGenerateUnmanagedCollectionReadFastPath(sb, member, target, source, helper, countVar, capacityVar, type))
+        {
+            return;
+        }
+
         sb.WriteLine(CollectionUtilities.GenerateCollectionInstantiation(member, capacityVar, target));
 
         var loopLimitVar = countType is "ulong" or "uint" ? $"(int){countVar}" : countVar;
@@ -476,6 +483,95 @@ public static class DeserializationGenerator
                 helper
             );
         }
+    }
+
+    private static bool TryGenerateUnmanagedCollectionReadFastPath(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        string target,
+        string source,
+        string helper,
+        string countVar,
+        string capacityVar,
+        TypeToGenerate type)
+    {
+        // Only apply when we can safely reinterpret the collection as a contiguous byte span.
+        if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+        {
+            return false;
+        }
+
+        var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
+        if (string.IsNullOrEmpty(elementTypeName))
+        {
+            return false;
+        }
+
+        var elementIsUnmanaged = member.ListTypeArgument?.IsUnmanagedType ?? member.CollectionTypeInfo?.IsElementUnmanagedType ?? false;
+        var elementIsString = member.ListTypeArgument?.IsStringType ?? member.CollectionTypeInfo?.IsElementStringType ?? false;
+        var elementHasGenerateSerializer = member.ListTypeArgument?.HasGenerateSerializerAttribute ?? member.CollectionTypeInfo?.HasElementGenerateSerializerAttribute ?? false;
+
+        if (!elementIsUnmanaged || elementIsString || elementHasGenerateSerializer)
+        {
+            return false;
+        }
+
+        if (GeneratorUtilities.HasDefaultSerializerFor(type, elementTypeName))
+        {
+            return false;
+        }
+
+        // Arrays and List<T> share the same contiguous backing storage.
+        var valueVar = member.Name.ToCamelCase();
+        var byteCountVar = $"{valueVar}ByteCount";
+        var elementSize = TypeHelper.GetSizeOf(elementTypeName);
+
+        if (member.CollectionTypeInfo?.IsArray == true)
+        {
+            sb.WriteLineFormat("{0} = new {1}[{2}];", target, elementTypeName, capacityVar);
+
+            if (source == "buffer")
+            {
+                sb.WriteLineFormat("int {0} = checked({1} * {2});", byteCountVar, capacityVar, elementSize);
+                sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, {1}>({2}.Slice(0, {3}));", valueVar + "Span", elementTypeName, source, byteCountVar);
+                sb.WriteLineFormat("{0}.CopyTo({1});", valueVar + "Span", valueVar);
+                sb.WriteLineFormat("{0} = {0}.Slice({1});", source, byteCountVar);
+            }
+            else
+            {
+                sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.AsBytes({1}.AsSpan());", valueVar + "Bytes", valueVar);
+                sb.WriteLineFormat("{0}.ReadExactly({1});", source, valueVar + "Bytes");
+            }
+
+            return true;
+        }
+
+        if (member.IsList)
+        {
+            var tempArrayVar = $"{valueVar}Array";
+
+            sb.WriteLineFormat("var {0} = new {1}[{2}];", tempArrayVar, elementTypeName, capacityVar);
+
+            if (source == "buffer")
+            {
+                sb.WriteLineFormat("int {0} = checked({1} * {2});", byteCountVar, capacityVar, elementSize);
+                sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, {1}>({2}.Slice(0, {3}));", valueVar + "Span", elementTypeName, source, byteCountVar);
+                sb.WriteLineFormat("{0}.CopyTo({1});", valueVar + "Span", tempArrayVar);
+                sb.WriteLineFormat("{0} = {0}.Slice({1});", source, byteCountVar);
+            }
+            else
+            {
+                sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.AsBytes({1}.AsSpan());", valueVar + "Bytes", tempArrayVar);
+                sb.WriteLineFormat("{0}.ReadExactly({1});", source, valueVar + "Bytes");
+            }
+
+            sb.WriteLineFormat("{0} = new System.Collections.Generic.List<{1}>({2});", target, elementTypeName, capacityVar);
+            sb.WriteLineFormat("{0}.AddRange({1});", valueVar, tempArrayVar);
+
+            return true;
+        }
+
+        return false;
     }
 
     private static void GenerateUnlimitedCollectionDeserialization

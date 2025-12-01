@@ -287,7 +287,7 @@ public static class SerializationGenerator
 
         if (member.IsList || member.IsCollection)
         {
-            CollectionSerializer.Generate(sb, member, ctx);
+            CollectionSerializer.Generate(sb, member, ctx, type);
         }
         else if (member.PolymorphicInfo is not null)
         {
