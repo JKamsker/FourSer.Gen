@@ -426,6 +426,13 @@ public partial class AllMfcStringsPacket
 ```
 This approach is useful when an entire class or data structure consistently uses a non-standard format for a certain type.
 
+It also works on the assembly level by placing the attribute in any source file within the assembly:
+
+```csharp
+[assembly: DefaultSerializer(typeof(string), typeof(MfcStringSerializer))]
+```
+
+
 ## Supported Types
 
 ### Primitive Types
