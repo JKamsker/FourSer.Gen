@@ -1,3 +1,4 @@
+using System;
 using FourSer.Analyzers.SerializePolymorphic;
 using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
@@ -19,7 +20,7 @@ public class MyData
 {
     [SerializePolymorphic({|FSG2000:""TypeId""|})]
     public object A { get; set; }
-}";
+}".ReplaceLineEndings(Environment.NewLine);
 
         var fixedCode = @"
 using FourSer.Contracts;
@@ -30,7 +31,7 @@ public class MyData
     public int TypeId { get; set; }
     [SerializePolymorphic(""TypeId"")]
     public object A { get; set; }
-}";
+}".ReplaceLineEndings(Environment.NewLine);
 
         await new CSharpCodeFixTest<SerializePolymorphicPropertyNameAnalyzer, SerializePolymorphicPropertyNameCodeFixProvider, DefaultVerifier>
         {

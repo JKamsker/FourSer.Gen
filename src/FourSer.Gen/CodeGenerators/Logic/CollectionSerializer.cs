@@ -3,8 +3,6 @@ using FourSer.Gen.CodeGenerators.Helpers;
 using FourSer.Gen.Models;
 using FourSer.Gen.Helpers;
 
-#pragma warning disable CS8602, CS8604, CS8629
-
 namespace FourSer.Gen.CodeGenerators.Logic;
 
 internal static class CollectionSerializer
@@ -119,6 +117,7 @@ internal static class CollectionSerializer
         {
             return false;
         }
+        var elementTypeNameNonNull = elementTypeName!;
 
         var elementIsUnmanaged = member.ListTypeArgument?.IsUnmanagedType ?? member.CollectionTypeInfo?.IsElementUnmanagedType ?? false;
         var elementIsString = member.ListTypeArgument?.IsStringType ?? member.CollectionTypeInfo?.IsElementStringType ?? false;
@@ -129,7 +128,7 @@ internal static class CollectionSerializer
             return false;
         }
 
-        if (GeneratorUtilities.HasDefaultSerializerFor(type, elementTypeName))
+        if (GeneratorUtilities.HasDefaultSerializerFor(type, elementTypeNameNonNull))
         {
             return false;
         }
@@ -456,6 +455,7 @@ internal static class CollectionSerializer
 
     private static void EmitFixedCollection(IndentedStringBuilder sb, MemberToGenerate member, SerializationWriterEmitter.WriterCtx ctx, TypeToGenerate type)
     {
+        var collectionInfo = member.CollectionInfo ?? throw new InvalidOperationException("Collection attribute is required for fixed collections.");
         sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
         using (sb.BeginBlock())
         {
@@ -467,7 +467,7 @@ internal static class CollectionSerializer
             sb,
             member,
             ctx,
-            member.CollectionInfo.Value,
+            collectionInfo,
             type
         );
     }

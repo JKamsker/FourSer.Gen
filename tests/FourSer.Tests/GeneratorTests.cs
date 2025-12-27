@@ -147,6 +147,33 @@ public class GeneratorTests
         Assert.DoesNotContain("obj.Numbers?.Count() ?? 0", generatedCode);
         Assert.DoesNotContain("obj.Numbers.Count()", generatedCode);
     }
+
+    [Fact]
+    public void InvalidNestedCollection_ShouldReportDiagnosticAndSkipGeneration()
+    {
+        var source = ReadSource("InvalidNestedCollection");
+
+        var syntaxTrees = s_contractsSource.Select(s => CSharpSyntaxTree.ParseText(s)).ToList();
+        syntaxTrees.AddRange(s_extensionsSource.Select(s => CSharpSyntaxTree.ParseText(s)));
+        syntaxTrees.Add(CSharpSyntaxTree.ParseText(source));
+
+        var compilation = CSharpCompilation.Create
+        (
+            "TestProject",
+            syntaxTrees,
+            Basic.Reference.Assemblies.Net90.References.All,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)
+        );
+
+        var generator = new SerializerGenerator();
+        var driver = CSharpGeneratorDriver.Create(generator);
+        driver = (CSharpGeneratorDriver)driver.RunGenerators(compilation);
+
+        var runResult = driver.GetRunResult();
+
+        Assert.Contains(runResult.Diagnostics, d => d.Id == "FSG0002" && d.Severity == DiagnosticSeverity.Error);
+        Assert.DoesNotContain(runResult.Results.Single().GeneratedSources, s => s.HintName.Contains("ContainerPacket"));
+    }
     
     /// <summary>
     /// This test verifies that the source code produced by the generator compiles successfully.

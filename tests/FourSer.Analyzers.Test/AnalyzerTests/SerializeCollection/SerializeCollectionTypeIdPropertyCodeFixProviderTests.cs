@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using FourSer.Analyzers.SerializeCollection;
 using FourSer.Analyzers.Test.Helpers;
@@ -22,7 +23,7 @@ public class MyData
 {
     [SerializeCollection({|FSG1007:TypeIdProperty = ""TypeId""|})]
     public List<int> A { get; set; }
-}";
+}".ReplaceLineEndings(System.Environment.NewLine);
 
         var fixedCode = @"
 using FourSer.Contracts;
@@ -33,7 +34,7 @@ public class MyData
     public int TypeId { get; set; }
     [SerializeCollection(TypeIdProperty = ""TypeId"")]
     public List<int> A { get; set; }
-}";
+}".ReplaceLineEndings(System.Environment.NewLine);
 
         await new
             CSharpCodeFixTest<SerializeCollectionTypeIdPropertyAnalyzer, SerializeCollectionTypeIdPropertyCodeFixProvider,
@@ -61,7 +62,7 @@ public class MyData
     [SerializeCollection({{|FSG1007:TypeIdProperty = ""TypeId""|}}, PolymorphicMode = PolymorphicMode.SingleTypeId)]
     [PolymorphicOption({typeCast}1, typeof(string))]
     public List<string> A {{ get; set; }}
-}}";
+}}".ReplaceLineEndings(System.Environment.NewLine);
 
         var fixedCode = @$"
 using FourSer.Contracts;
@@ -74,7 +75,7 @@ public class MyData
     [SerializeCollection(TypeIdProperty = ""TypeId"", PolymorphicMode = PolymorphicMode.SingleTypeId)]
     [PolymorphicOption({typeCast}1, typeof(string))]
     public List<string> A {{ get; set; }}
-}}";
+}}".ReplaceLineEndings(System.Environment.NewLine);
 
         var additionalEnum =
             // lang=cs

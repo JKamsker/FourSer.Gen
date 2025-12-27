@@ -3,8 +3,6 @@ using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 using Microsoft.CodeAnalysis;
 
-#pragma warning disable CS8602, CS8604, CS8629
-
 namespace FourSer.Gen.CodeGenerators;
 
 /// <summary>
@@ -298,7 +296,7 @@ public static class DeserializationGenerator
             return;
         }
 
-        var memberName = member.Name.ToCamelCase();
+        var memberName = (member.Name ?? string.Empty).ToCamelCase();
         string countVar;
         string countType;
 
@@ -309,7 +307,7 @@ public static class DeserializationGenerator
         }
         else if (collectionInfo.CountSizeReferenceIndex is not null)
         {
-            countVar = collectionInfo.CountSizeReference.ToCamelCase();
+            countVar = (collectionInfo.CountSizeReference ?? "countRef").ToCamelCase();
             countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
         }
         else
@@ -356,9 +354,13 @@ public static class DeserializationGenerator
         {
             if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
             {
+                if (member.ListTypeArgument is null || member.CollectionTypeInfo is null)
+                {
+                    throw new InvalidOperationException("Polymorphic collections require list type information.");
+                }
                 sb.WriteLineFormat("for (int i = 0; i < {0}; i++)", loopLimitVar);
                 using var _ = sb.BeginBlock();
-                sb.WriteLineFormat("{0} item;", member.ListTypeArgument!.Value.TypeName);
+                sb.WriteLineFormat("{0} item;", member.ListTypeArgument.Value.TypeName);
                 var itemMember = new MemberToGenerate
                 (
                     "item",
@@ -387,7 +389,7 @@ public static class DeserializationGenerator
                     source,
                     helper
                 );
-                var addMethod = member.CollectionTypeInfo!.Value.CollectionAddMethod;
+                var addMethod = member.CollectionTypeInfo.Value.CollectionAddMethod ?? "Add";
                 sb.WriteLineFormat("{0}.{1}(item);", memberName, addMethod);
                 return;
             }
@@ -399,7 +401,7 @@ public static class DeserializationGenerator
 
                 if (info.TypeIdPropertyIndex is null)
                 {
-                    typeIdVar = $"{member.Name.ToCamelCase()}TypeId";
+                    typeIdVar = $"{(member.Name ?? string.Empty).ToCamelCase()}TypeId";
                     var typeToRead = info.EnumUnderlyingType ?? info.TypeIdType;
                     var typeIdReadMethod = TypeHelper.GetReadMethodName(typeToRead);
                     var cast = info.EnumUnderlyingType is not null ? $"({info.TypeIdType})" : "";
@@ -407,7 +409,7 @@ public static class DeserializationGenerator
                 }
                 else
                 {
-                    typeIdVar = collectionInfo.TypeIdProperty.ToCamelCase();
+                    typeIdVar = (collectionInfo.TypeIdProperty ?? "typeId").ToCamelCase();
                 }
 
                 sb.WriteLineFormat("switch ({0})", typeIdVar);
@@ -441,7 +443,7 @@ public static class DeserializationGenerator
 
                 sb.WriteLine("default:");
                 sb.WriteLineFormat
-                    ("    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{{1}}}\");", member.Name, typeIdVar);
+                    ("    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{{1}}}\");", member.Name ?? "member", typeIdVar ?? "typeId");
                 return;
             }
         }
@@ -463,6 +465,10 @@ public static class DeserializationGenerator
         }
         else if (member.IsList)
         {
+            if (member.ListTypeArgument is null)
+            {
+                throw new InvalidOperationException("List deserialization requires element type information.");
+            }
             GenerateListElementDeserialization
             (
                 sb,
@@ -508,6 +514,7 @@ public static class DeserializationGenerator
         {
             return false;
         }
+        var elementTypeNameNonNull = elementTypeName!;
 
         var elementIsUnmanaged = member.ListTypeArgument?.IsUnmanagedType ?? member.CollectionTypeInfo?.IsElementUnmanagedType ?? false;
         var elementIsString = member.ListTypeArgument?.IsStringType ?? member.CollectionTypeInfo?.IsElementStringType ?? false;
@@ -518,25 +525,25 @@ public static class DeserializationGenerator
             return false;
         }
 
-        if (GeneratorUtilities.HasDefaultSerializerFor(type, elementTypeName))
+        if (GeneratorUtilities.HasDefaultSerializerFor(type, elementTypeNameNonNull))
         {
             return false;
         }
 
         // Arrays and List<T> share the same contiguous backing storage.
         var targetExpr = target.StartsWith("var ") ? target.Substring(4) : target;
-        var valueVar = member.Name.ToCamelCase();
+        var valueVar = (member.Name ?? string.Empty).ToCamelCase();
         var byteCountVar = $"{valueVar}ByteCount";
-        var elementSize = TypeHelper.GetSizeOf(elementTypeName);
+        var elementSize = TypeHelper.GetSizeOf(elementTypeNameNonNull);
 
         if (member.CollectionTypeInfo?.IsArray == true)
         {
-            sb.WriteLineFormat("{0} = new {1}[{2}];", target, elementTypeName, capacityVar);
+            sb.WriteLineFormat("{0} = new {1}[{2}];", target, elementTypeNameNonNull, capacityVar);
 
             if (source == "buffer")
             {
                 sb.WriteLineFormat("int {0} = checked({1} * {2});", byteCountVar, capacityVar, elementSize);
-                sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, {1}>({2}.Slice(0, {3}));", valueVar + "Span", elementTypeName, source, byteCountVar);
+                sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, {1}>({2}.Slice(0, {3}));", valueVar + "Span", elementTypeNameNonNull, source, byteCountVar);
                 sb.WriteLineFormat("{0}.CopyTo({1});", valueVar + "Span", targetExpr);
                 sb.WriteLineFormat("{0} = {0}.Slice({1});", source, byteCountVar);
             }
@@ -553,12 +560,12 @@ public static class DeserializationGenerator
         {
             var tempArrayVar = $"{valueVar}Array";
 
-            sb.WriteLineFormat("var {0} = new {1}[{2}];", tempArrayVar, elementTypeName, capacityVar);
+            sb.WriteLineFormat("var {0} = new {1}[{2}];", tempArrayVar, elementTypeNameNonNull, capacityVar);
 
             if (source == "buffer")
             {
                 sb.WriteLineFormat("int {0} = checked({1} * {2});", byteCountVar, capacityVar, elementSize);
-                sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, {1}>({2}.Slice(0, {3}));", valueVar + "Span", elementTypeName, source, byteCountVar);
+                sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, {1}>({2}.Slice(0, {3}));", valueVar + "Span", elementTypeNameNonNull, source, byteCountVar);
                 sb.WriteLineFormat("{0}.CopyTo({1});", valueVar + "Span", tempArrayVar);
                 sb.WriteLineFormat("{0} = {0}.Slice({1});", source, byteCountVar);
             }
@@ -568,7 +575,7 @@ public static class DeserializationGenerator
                 sb.WriteLineFormat("{0}.ReadExactly({1});", source, valueVar + "Bytes");
             }
 
-            sb.WriteLineFormat("{0} = new System.Collections.Generic.List<{1}>({2});", target, elementTypeName, capacityVar);
+            sb.WriteLineFormat("{0} = new System.Collections.Generic.List<{1}>({2});", target, elementTypeNameNonNull, capacityVar);
             sb.WriteLineFormat("{0}.AddRange({1});", targetExpr, tempArrayVar);
 
             return true;
@@ -655,7 +662,7 @@ public static class DeserializationGenerator
         string switchVar;
         if (info.TypeIdPropertyIndex is not null)
         {
-            switchVar = info.TypeIdProperty.ToCamelCase();
+            switchVar = (info.TypeIdProperty ?? "typeId").ToCamelCase();
         }
         else
         {

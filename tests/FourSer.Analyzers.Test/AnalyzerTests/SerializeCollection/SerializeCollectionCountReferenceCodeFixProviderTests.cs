@@ -1,3 +1,4 @@
+using System;
 using FourSer.Analyzers.SerializeCollection;
 using FourSer.Analyzers.Test.Helpers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
@@ -19,7 +20,7 @@ public class MyData
 {
     [SerializeCollection({|FSG1004:CountSizeReference = ""Size""|})]
     public List<int> A { get; set; }
-}";
+}".ReplaceLineEndings(Environment.NewLine);
 
         var fixedCode = @"
 using FourSer.Contracts;
@@ -30,7 +31,7 @@ public class MyData
     public int Size { get; set; }
     [SerializeCollection(CountSizeReference = ""Size"")]
     public List<int> A { get; set; }
-}";
+}".ReplaceLineEndings(Environment.NewLine);
 
         await new CSharpCodeFixTest<SerializeCollectionCountReferenceAnalyzer, SerializeCollectionCountReferenceCodeFixProvider, DefaultVerifier>
         {

@@ -4,8 +4,6 @@ using FourSer.Gen.CodeGenerators.Logic;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 
-#pragma warning disable CS8602, CS8604, CS8629
-
 namespace FourSer.Gen.CodeGenerators;
 
 /// <summary>
@@ -330,7 +328,12 @@ public static class SerializationGenerator
         MemberToGenerate member,
         SerializationWriterEmitter.WriterCtx ctx)
     {
-        var collectionMember = typeToGenerate.Members[member.IsCountSizeReferenceFor.Value];
+        if (member.IsCountSizeReferenceFor is null)
+        {
+            return;
+        }
+        var countRefIndex = member.IsCountSizeReferenceFor!.Value;
+        var collectionMember = typeToGenerate.Members[countRefIndex];
         if (collectionMember.CollectionTypeInfo?.IsPureEnumerable != true)
         {
             var collectionName = collectionMember.Name;
@@ -346,10 +349,19 @@ public static class SerializationGenerator
         MemberToGenerate member,
         SerializationWriterEmitter.WriterCtx ctx)
     {
-        var referencedMember = typeToGenerate.Members[member.IsTypeIdPropertyFor.Value];
+        if (member.IsTypeIdPropertyFor is null)
+        {
+            return;
+        }
+        var typeIdIndex = member.IsTypeIdPropertyFor!.Value;
+        var referencedMember = typeToGenerate.Members[typeIdIndex];
         if (referencedMember.IsList || referencedMember.IsCollection)
         {
             var collectionName = referencedMember.Name;
+            if (referencedMember.PolymorphicInfo is null)
+            {
+                throw new InvalidOperationException("TypeIdPropertyFor member must have PolymorphicInfo.");
+            }
             var info = referencedMember.PolymorphicInfo.Value;
             var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
 
