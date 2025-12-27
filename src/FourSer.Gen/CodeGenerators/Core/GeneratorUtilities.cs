@@ -2,6 +2,8 @@ using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 using Microsoft.CodeAnalysis;
 
+#pragma warning disable CS8602, CS8604
+
 namespace FourSer.Gen.CodeGenerators.Core;
 
 public static class GeneratorUtilities

@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -44,7 +45,7 @@ internal static class StreamWriterHelpers
     public static unsafe void WriteUInt32(this Stream stream, uint value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(uint)];
-        BitConverter.TryWriteBytes(buffer, value);
+        BinaryPrimitives.WriteUInt32LittleEndian(buffer, value);
         stream.Write(buffer);
     }
 
@@ -52,7 +53,7 @@ internal static class StreamWriterHelpers
     public static unsafe void WriteSingle(this Stream stream, float value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(float)];
-        BitConverter.TryWriteBytes(buffer, value);
+        BinaryPrimitives.WriteSingleLittleEndian(buffer, value);
         stream.Write(buffer);
     }
 
@@ -60,7 +61,7 @@ internal static class StreamWriterHelpers
     public static unsafe void WriteDouble(this Stream stream, double value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(double)];
-        BitConverter.TryWriteBytes(buffer, value);
+        BinaryPrimitives.WriteDoubleLittleEndian(buffer, value);
         stream.Write(buffer);
     }
 
@@ -79,7 +80,7 @@ internal static class StreamWriterHelpers
     public static void WriteUInt16(this Stream stream, ushort value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(ushort)];
-        BitConverter.TryWriteBytes(buffer, value);
+        BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
         stream.Write(buffer);
     }
 
@@ -87,7 +88,7 @@ internal static class StreamWriterHelpers
     public static void WriteInt16(this Stream stream, short value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(short)];
-        BitConverter.TryWriteBytes(buffer, value);
+        BinaryPrimitives.WriteInt16LittleEndian(buffer, value);
         stream.Write(buffer);
     }
 
@@ -95,7 +96,7 @@ internal static class StreamWriterHelpers
     public static void WriteUInt64(this Stream stream, ulong value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(ulong)];
-        BitConverter.TryWriteBytes(buffer, value);
+        BinaryPrimitives.WriteUInt64LittleEndian(buffer, value);
         stream.Write(buffer);
     }
 
@@ -103,7 +104,7 @@ internal static class StreamWriterHelpers
     public static void WriteInt64(this Stream stream, long value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(long)];
-        BitConverter.TryWriteBytes(buffer, value);
+        BinaryPrimitives.WriteInt64LittleEndian(buffer, value);
         stream.Write(buffer);
     }
 
@@ -111,7 +112,7 @@ internal static class StreamWriterHelpers
     public static void WriteInt32(this Stream stream, int value)
     {
         Span<byte> buffer = stackalloc byte[sizeof(int)];
-        BitConverter.TryWriteBytes(buffer, value);
+        BinaryPrimitives.WriteInt32LittleEndian(buffer, value);
         stream.Write(buffer);
     }
 

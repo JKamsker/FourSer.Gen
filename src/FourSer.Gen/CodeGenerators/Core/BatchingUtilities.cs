@@ -99,6 +99,10 @@ public static class BatchingUtilities
             return false;
         }
 
+        // Members that participate in count/type-id logic must go through specialized emitters.
+        if (member.IsCountSizeReferenceFor is not null || member.IsTypeIdPropertyFor is not null)
+            return false;
+
         // Must be unmanaged type (fixed size)
         if (!member.IsUnmanagedType)
             return false;

@@ -4,6 +4,8 @@ using FourSer.Gen.CodeGenerators.Logic;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 
+#pragma warning disable CS8602, CS8604, CS8629
+
 namespace FourSer.Gen.CodeGenerators;
 
 /// <summary>

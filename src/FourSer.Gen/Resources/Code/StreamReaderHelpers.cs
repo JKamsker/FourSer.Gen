@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.IO;
+using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 
 namespace FourSer.Gen.Helpers;
@@ -27,7 +28,7 @@ internal static class StreamReaderHelpers
     {
         Span<byte> buffer = stackalloc byte[sizeof(short)];
         stream.ReadExactly(buffer);
-        return BitConverter.ToInt16(buffer);
+        return BinaryPrimitives.ReadInt16LittleEndian(buffer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -35,7 +36,7 @@ internal static class StreamReaderHelpers
     {
         Span<byte> buffer = stackalloc byte[sizeof(ushort)];
         stream.ReadExactly(buffer);
-        return BitConverter.ToUInt16(buffer);
+        return BinaryPrimitives.ReadUInt16LittleEndian(buffer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -43,7 +44,7 @@ internal static class StreamReaderHelpers
     {
         Span<byte> buffer = stackalloc byte[sizeof(int)];
         stream.ReadExactly(buffer);
-        return BitConverter.ToInt32(buffer);
+        return BinaryPrimitives.ReadInt32LittleEndian(buffer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -51,7 +52,7 @@ internal static class StreamReaderHelpers
     {
         Span<byte> buffer = stackalloc byte[sizeof(uint)];
         stream.ReadExactly(buffer);
-        return BitConverter.ToUInt32(buffer);
+        return BinaryPrimitives.ReadUInt32LittleEndian(buffer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -59,7 +60,7 @@ internal static class StreamReaderHelpers
     {
         Span<byte> buffer = stackalloc byte[sizeof(long)];
         stream.ReadExactly(buffer);
-        return BitConverter.ToInt64(buffer);
+        return BinaryPrimitives.ReadInt64LittleEndian(buffer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -67,7 +68,7 @@ internal static class StreamReaderHelpers
     {
         Span<byte> buffer = stackalloc byte[sizeof(ulong)];
         stream.ReadExactly(buffer);
-        return BitConverter.ToUInt64(buffer);
+        return BinaryPrimitives.ReadUInt64LittleEndian(buffer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -75,7 +76,7 @@ internal static class StreamReaderHelpers
     {
         Span<byte> buffer = stackalloc byte[sizeof(float)];
         stream.ReadExactly(buffer);
-        return BitConverter.ToSingle(buffer);
+        return BinaryPrimitives.ReadSingleLittleEndian(buffer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -83,7 +84,7 @@ internal static class StreamReaderHelpers
     {
         Span<byte> buffer = stackalloc byte[sizeof(double)];
         stream.ReadExactly(buffer);
-        return BitConverter.ToDouble(buffer);
+        return BinaryPrimitives.ReadDoubleLittleEndian(buffer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

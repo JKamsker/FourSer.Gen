@@ -39,11 +39,13 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
     public static CollectionPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         var numbersCount = SpanReader.ReadInt32(ref buffer);
+        var numbersArray = new int[numbersCount];
+        int numbersByteCount = checked(numbersCount * 4);
+        var numbersSpan = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, int>(buffer.Slice(0, numbersByteCount));
+        numbersSpan.CopyTo(numbersArray);
+        buffer = buffer.Slice(numbersByteCount);
         var numbers = new System.Collections.Generic.List<int>(numbersCount);
-        for (int i = 0; i < numbersCount; i++)
-        {
-            numbers.Add(SpanReader.ReadInt32(ref buffer));
-        }
+        numbers.AddRange(numbersArray);
         var obj = new CollectionPacket(numbers);
         return obj;
     }
@@ -56,11 +58,11 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
     public static CollectionPacket Deserialize(System.IO.Stream stream)
     {
         var numbersCount = StreamReader.ReadInt32(stream);
+        var numbersArray = new int[numbersCount];
+        var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(numbersArray.AsSpan());
+        stream.ReadExactly(numbersBytes);
         var numbers = new System.Collections.Generic.List<int>(numbersCount);
-        for (int i = 0; i < numbersCount; i++)
-        {
-            numbers.Add(StreamReader.ReadInt32(stream));
-        }
+        numbers.AddRange(numbersArray);
         var obj = new CollectionPacket(numbers);
         return obj;
     }
@@ -75,10 +77,9 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         else
         {
             SpanWriter.WriteInt32(ref data, (int)(obj.Numbers.Count));
-            for (int i = 0; i < obj.Numbers.Count; i++)
-            {
-                SpanWriter.WriteInt32(ref data, (int)(obj.Numbers[i]));
-            }
+            var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
+            numbersBytes.CopyTo(data);
+            data = data.Slice(numbersBytes.Length);
         }
     }
 
@@ -97,10 +98,8 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         else
         {
             StreamWriter.WriteInt32(stream, (int)(obj.Numbers.Count));
-            for (int i = 0; i < obj.Numbers.Count; i++)
-            {
-                StreamWriter.WriteInt32(stream, (int)(obj.Numbers[i]));
-            }
+            var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
+            stream.Write(numbersBytes);
         }
     }
 }

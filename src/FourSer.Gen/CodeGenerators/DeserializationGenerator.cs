@@ -3,6 +3,8 @@ using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 using Microsoft.CodeAnalysis;
 
+#pragma warning disable CS8602, CS8604, CS8629
+
 namespace FourSer.Gen.CodeGenerators;
 
 /// <summary>
@@ -522,6 +524,7 @@ public static class DeserializationGenerator
         }
 
         // Arrays and List<T> share the same contiguous backing storage.
+        var targetExpr = target.StartsWith("var ") ? target.Substring(4) : target;
         var valueVar = member.Name.ToCamelCase();
         var byteCountVar = $"{valueVar}ByteCount";
         var elementSize = TypeHelper.GetSizeOf(elementTypeName);
@@ -534,12 +537,12 @@ public static class DeserializationGenerator
             {
                 sb.WriteLineFormat("int {0} = checked({1} * {2});", byteCountVar, capacityVar, elementSize);
                 sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, {1}>({2}.Slice(0, {3}));", valueVar + "Span", elementTypeName, source, byteCountVar);
-                sb.WriteLineFormat("{0}.CopyTo({1});", valueVar + "Span", valueVar);
+                sb.WriteLineFormat("{0}.CopyTo({1});", valueVar + "Span", targetExpr);
                 sb.WriteLineFormat("{0} = {0}.Slice({1});", source, byteCountVar);
             }
             else
             {
-                sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.AsBytes({1}.AsSpan());", valueVar + "Bytes", valueVar);
+                sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.AsBytes({1}.AsSpan());", valueVar + "Bytes", targetExpr);
                 sb.WriteLineFormat("{0}.ReadExactly({1});", source, valueVar + "Bytes");
             }
 
@@ -566,7 +569,7 @@ public static class DeserializationGenerator
             }
 
             sb.WriteLineFormat("{0} = new System.Collections.Generic.List<{1}>({2});", target, elementTypeName, capacityVar);
-            sb.WriteLineFormat("{0}.AddRange({1});", valueVar, tempArrayVar);
+            sb.WriteLineFormat("{0}.AddRange({1});", targetExpr, tempArrayVar);
 
             return true;
         }

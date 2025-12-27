@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -32,10 +33,7 @@ internal static class SpanWriterHelpers
     public static void WriteUInt32(ref Span<byte> input, uint value)
     {
         var original = Advance<uint>(ref input);
-        original[0] = (byte)value;
-        original[1] = (byte)(value >> 8);
-        original[2] = (byte)(value >> 16);
-        original[3] = (byte)(value >> 24);
+        BinaryPrimitives.WriteUInt32LittleEndian(original, value);
     }
 
     /// <summary>
@@ -69,16 +67,14 @@ internal static class SpanWriterHelpers
     public static void WriteUInt16(ref Span<byte> input, ushort value)
     {
         var original = Advance<ushort>(ref input);
-        original[0] = (byte)value;
-        original[1] = (byte)(value >> 8);
+        BinaryPrimitives.WriteUInt16LittleEndian(original, value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteInt16(ref Span<byte> input, short value)
     {
         var original = Advance<short>(ref input);
-        original[0] = (byte)value;
-        original[1] = (byte)(value >> 8);
+        BinaryPrimitives.WriteInt16LittleEndian(original, value);
     }
 
     /// <summary>
@@ -90,14 +86,7 @@ internal static class SpanWriterHelpers
     public static void WriteUInt64(ref Span<byte> input, ulong value)
     {
         var original = Advance<ulong>(ref input);
-        original[0] = (byte)value;
-        original[1] = (byte)(value >> 8);
-        original[2] = (byte)(value >> 16);
-        original[3] = (byte)(value >> 24);
-        original[4] = (byte)(value >> 32);
-        original[5] = (byte)(value >> 40);
-        original[6] = (byte)(value >> 48);
-        original[7] = (byte)(value >> 56);
+        BinaryPrimitives.WriteUInt64LittleEndian(original, value);
     }
 
     /// <summary>
@@ -109,14 +98,7 @@ internal static class SpanWriterHelpers
     public static void WriteInt64(ref Span<byte> input, long value)
     {
         var original = Advance<long>(ref input);
-        original[0] = (byte)value;
-        original[1] = (byte)(value >> 8);
-        original[2] = (byte)(value >> 16);
-        original[3] = (byte)(value >> 24);
-        original[4] = (byte)(value >> 32);
-        original[5] = (byte)(value >> 40);
-        original[6] = (byte)(value >> 48);
-        original[7] = (byte)(value >> 56);
+        BinaryPrimitives.WriteInt64LittleEndian(original, value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -135,10 +117,7 @@ internal static class SpanWriterHelpers
     public static void WriteInt32(ref Span<byte> input, int value)
     {
         var original = Advance<int>(ref input);
-        original[0] = (byte)value;
-        original[1] = (byte)(value >> 8);
-        original[2] = (byte)(value >> 16);
-        original[3] = (byte)(value >> 24);
+        BinaryPrimitives.WriteInt32LittleEndian(original, value);
     }
         
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -3,6 +3,8 @@ using FourSer.Gen.CodeGenerators.Helpers;
 using FourSer.Gen.Models;
 using FourSer.Gen.Helpers;
 
+#pragma warning disable CS8602, CS8604, CS8629
+
 namespace FourSer.Gen.CodeGenerators.Logic;
 
 internal static class CollectionSerializer
