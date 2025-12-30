@@ -4,6 +4,7 @@ using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace FourSer.Gen;
 
@@ -30,8 +31,9 @@ internal static class TypeInfoProvider
             return null;
         }
 
-        var serializableMembers = GetSerializableMembers(typeSymbol);
-        var nestedTypes = GetNestedTypes(typeSymbol);
+        var semanticModel = context.SemanticModel;
+        var serializableMembers = GetSerializableMembers(typeSymbol, semanticModel, ct);
+        var nestedTypes = GetNestedTypes(typeSymbol, semanticModel, ct);
         var constructorInfo = GetConstructorInfo(typeSymbol, serializableMembers);
 
         var hasSerializableBaseType = HasGenerateSerializerAttribute(typeSymbol.BaseType);
@@ -304,7 +306,7 @@ internal static class TypeInfoProvider
         return false;
     }
 
-    private static EquatableArray<MemberToGenerate> GetSerializableMembers(INamedTypeSymbol typeSymbol)
+    private static EquatableArray<MemberToGenerate> GetSerializableMembers(INamedTypeSymbol typeSymbol, SemanticModel semanticModel, CancellationToken ct)
     {
         var members = new List<MemberToGenerate>();
         var currentType = typeSymbol;
@@ -316,7 +318,7 @@ internal static class TypeInfoProvider
             {
                 if (IsSerializableMember(m))
                 {
-                    typeMembersWithLocation.Add(CreateMemberToGenerate(m));
+                    typeMembersWithLocation.Add(CreateMemberToGenerate(m, semanticModel, ct));
                 }
             }
 
@@ -406,7 +408,7 @@ internal static class TypeInfoProvider
         return newMembers;
     }
 
-    private static (MemberToGenerate, Location) CreateMemberToGenerate(ISymbol m)
+    private static (MemberToGenerate, Location) CreateMemberToGenerate(ISymbol m, SemanticModel semanticModel, CancellationToken ct)
     {
         var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
         var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(memberTypeSymbol);
@@ -425,6 +427,9 @@ internal static class TypeInfoProvider
         }
 
         var polymorphicInfo = GetPolymorphicInfo(m);
+        var polymorphicDefaultValue = polymorphicInfo is not null
+            ? GetPolymorphicDefaultValue(m, memberTypeSymbol, semanticModel, ct)
+            : null;
 
         var isReadOnly = false;
         var isInitOnly = false;
@@ -456,6 +461,7 @@ internal static class TypeInfoProvider
             ListTypeArgument: listTypeArgumentInfo,
             CollectionInfo: collectionInfo,
             PolymorphicInfo: polymorphicInfo,
+            PolymorphicDefaultValue: polymorphicDefaultValue,
             IsCollection: isCollection,
             CollectionTypeInfo: collectionTypeInfo,
             IsReadOnly: isReadOnly,
@@ -466,6 +472,66 @@ internal static class TypeInfoProvider
         );
 
         return (memberToGenerate, location);
+    }
+
+    private static PolymorphicDefaultValue? GetPolymorphicDefaultValue(ISymbol member, ITypeSymbol memberTypeSymbol, SemanticModel semanticModel, CancellationToken ct)
+    {
+        if (!IsNullablePolymorphicMember(member, memberTypeSymbol))
+        {
+            return null;
+        }
+
+        var syntaxReference = member.DeclaringSyntaxReferences.FirstOrDefault();
+        if (syntaxReference is null)
+        {
+            return null;
+        }
+
+        var syntax = syntaxReference.GetSyntax(ct);
+        ExpressionSyntax? initializer = syntax switch
+        {
+            PropertyDeclarationSyntax propertySyntax => propertySyntax.Initializer?.Value,
+            VariableDeclaratorSyntax variableDeclarator => variableDeclarator.Initializer?.Value,
+            _ => null
+        };
+
+        if (initializer is null)
+        {
+            return null;
+        }
+
+        var typeInfo = semanticModel.GetTypeInfo(initializer, ct).Type;
+        if (typeInfo is null)
+        {
+            return null;
+        }
+
+        var expressionText = initializer.ToString();
+        var typeName = typeInfo.ToDisplayString(s_typeNameFormat);
+
+        return new PolymorphicDefaultValue(expressionText, typeName);
+    }
+
+    private static bool IsNullablePolymorphicMember(ISymbol member, ITypeSymbol memberTypeSymbol)
+    {
+        var nullableAnnotation = member switch
+        {
+            IPropertySymbol propertySymbol => propertySymbol.NullableAnnotation,
+            IFieldSymbol fieldSymbol => fieldSymbol.NullableAnnotation,
+            _ => NullableAnnotation.None
+        };
+
+        if (nullableAnnotation == NullableAnnotation.Annotated)
+        {
+            return true;
+        }
+
+        if (memberTypeSymbol.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+        {
+            return true;
+        }
+
+        return memberTypeSymbol.IsReferenceType;
     }
 
     private static CustomSerializerInfo? GetCustomSerializer(ISymbol member)
@@ -481,7 +547,7 @@ internal static class TypeInfoProvider
         return serializerType != null ? new CustomSerializerInfo(serializerType.ToDisplayString(s_typeNameFormat)) : null;
     }
 
-    private static EquatableArray<TypeToGenerate> GetNestedTypes(INamedTypeSymbol parentType)
+    private static EquatableArray<TypeToGenerate> GetNestedTypes(INamedTypeSymbol parentType, SemanticModel semanticModel, CancellationToken ct)
     {
         var nestedTypes = ImmutableArray.CreateBuilder<TypeToGenerate>();
 
@@ -489,7 +555,7 @@ internal static class TypeInfoProvider
         {
             if (member is INamedTypeSymbol nestedTypeSymbol)
             {
-                var nestedType = CreateNestedTypeToGenerate(nestedTypeSymbol);
+                var nestedType = CreateNestedTypeToGenerate(nestedTypeSymbol, semanticModel, ct);
                 if (nestedType is not null)
                 {
                     nestedTypes.Add(nestedType);
@@ -528,15 +594,15 @@ internal static class TypeInfoProvider
     
    
 
-    private static TypeToGenerate? CreateNestedTypeToGenerate(INamedTypeSymbol nestedTypeSymbol)
+    private static TypeToGenerate? CreateNestedTypeToGenerate(INamedTypeSymbol nestedTypeSymbol, SemanticModel semanticModel, CancellationToken ct)
     {
         if (!HasGenerateSerializerAttribute(nestedTypeSymbol))
         {
             return null;
         }
 
-        var nestedMembers = GetSerializableMembers(nestedTypeSymbol);
-        var deeperNestedTypes = GetNestedTypes(nestedTypeSymbol);
+        var nestedMembers = GetSerializableMembers(nestedTypeSymbol, semanticModel, ct);
+        var deeperNestedTypes = GetNestedTypes(nestedTypeSymbol, semanticModel, ct);
 
         var hasSerializableBaseType = HasGenerateSerializerAttribute(nestedTypeSymbol.BaseType);
         var defaultSerializers = GetDefaultSerializers(nestedTypeSymbol, nestedTypeSymbol.ContainingAssembly);
@@ -800,7 +866,7 @@ internal static class TypeInfoProvider
         // Determine type ID type string in order of precedence:
         // 1. Take whatever is specified explicitly as typeIdType
         // 2. If previous null: take the type of the property "typeIdProperty"
-        // 3. If previous null: polymorphicOptions.FirstOrDefault().Key.GetType().Name 
+        // 3. If previous null: preferred polymorphic option's key type (default option when specified)
         // 4. If previous null: int
         var typeIdTypeString = typeIdType?.ToDisplayString();
         if (!string.IsNullOrEmpty(typeIdTypeString))
@@ -824,10 +890,13 @@ internal static class TypeInfoProvider
             return typeIdTypeString!;
         }
 
-        typeIdTypeString = polymorphicOptions.FirstOrDefault().Key.GetType().Name;
-        if(!string.IsNullOrEmpty(typeIdTypeString))
+        if (PolymorphicUtilities.TryGetDefaultOption(polymorphicOptions, out var defaultOption))
         {
-            return typeIdTypeString!;
+            typeIdTypeString = defaultOption.Key.GetType().Name;
+            if(!string.IsNullOrEmpty(typeIdTypeString))
+            {
+                return typeIdTypeString!;
+            }
         }
         
         return "int";
@@ -838,8 +907,8 @@ internal static class TypeInfoProvider
         var polymorphicOptionsBuilder = ImmutableArray.CreateBuilder<PolymorphicOption>();
         foreach (var optionAttribute in options)
         {
-            var (key, type) = AttributeHelper.GetPolymorphicOption(optionAttribute);
-            polymorphicOptionsBuilder.Add(new(key, type.ToDisplayString()));
+            var (key, type, isDefault) = AttributeHelper.GetPolymorphicOption(optionAttribute);
+            polymorphicOptionsBuilder.Add(new(key, type.ToDisplayString(s_typeNameFormat), isDefault));
         }
 
         return polymorphicOptionsBuilder.ToImmutable();

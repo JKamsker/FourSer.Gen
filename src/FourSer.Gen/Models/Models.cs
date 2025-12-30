@@ -70,6 +70,7 @@ public sealed record MemberToGenerate
     ListTypeArgumentInfo? ListTypeArgument,
     CollectionInfo? CollectionInfo,
     PolymorphicInfo? PolymorphicInfo,
+    PolymorphicDefaultValue? PolymorphicDefaultValue,
     bool IsCollection,
     CollectionTypeInfo? CollectionTypeInfo,
     bool IsReadOnly,
@@ -164,8 +165,16 @@ public readonly record struct CollectionInfo
 public readonly record struct PolymorphicOption
 (
     object Key,
-    string Type
+    string Type,
+    bool IsDefault
 );
+
+/// <summary>
+///     Represents the default initializer expression for a nullable polymorphic member.
+/// </summary>
+/// <param name="Expression">The expression text for the initializer.</param>
+/// <param name="TypeName">The type of the initializer expression.</param>
+public readonly record struct PolymorphicDefaultValue(string Expression, string TypeName);
 
 /// <summary>
 ///     A model describing the [SerializePolymorphic] attribute on a member.

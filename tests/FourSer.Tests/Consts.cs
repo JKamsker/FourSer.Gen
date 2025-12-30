@@ -61,11 +61,12 @@ public class PolymorphicOptionAttribute : Attribute
 {
     public object Id { get; }
     public Type Type { get; }
-    public PolymorphicOptionAttribute(int id, Type type) { Id = id; Type = type; }
-    public PolymorphicOptionAttribute(byte id, Type type) { Id = id; Type = type; }
-    public PolymorphicOptionAttribute(ushort id, Type type) { Id = id; Type = type; }
-    public PolymorphicOptionAttribute(long id, Type type) { Id = id; Type = type; }
-    public PolymorphicOptionAttribute(object id, Type type) { Id = id; Type = type; }
+    public bool IsDefault { get; }
+    public PolymorphicOptionAttribute(int id, Type type, bool isDefault = false) { Id = id; Type = type; IsDefault = isDefault; }
+    public PolymorphicOptionAttribute(byte id, Type type, bool isDefault = false) { Id = id; Type = type; IsDefault = isDefault; }
+    public PolymorphicOptionAttribute(ushort id, Type type, bool isDefault = false) { Id = id; Type = type; IsDefault = isDefault; }
+    public PolymorphicOptionAttribute(long id, Type type, bool isDefault = false) { Id = id; Type = type; IsDefault = isDefault; }
+    public PolymorphicOptionAttribute(object id, Type type, bool isDefault = false) { Id = id; Type = type; IsDefault = isDefault; }
 }
 ",
         @"

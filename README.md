@@ -351,6 +351,12 @@ Using custom discriminator types offers several benefits:
 - **Type Safety**: Enums provide strong typing and make your code more readable and maintainable.
 - **Automatic Casting**: The generator handles all necessary type conversions automatically.
 
+### Default polymorphic option selection
+
+- The optional `isDefault` argument on `[PolymorphicOption]` marks the option that should be written when a polymorphic value is missing (for example, empty polymorphic collections). If none is specified, the generator falls back to the first option to preserve existing behavior.
+- A Roslyn analyzer emits an error if more than one option on the same member uses `isDefault = true`.
+- When a nullable polymorphic member includes an initializer (e.g., `IShape? Shape { get; set; } = Shapes.Default;`) and no default option is present, the generator uses that initializer during serialization so a discriminator can still be emitted without throwing.
+
 ## Custom Serializers
 
 For special cases where the default serialization logic is not sufficient, you can provide your own custom serializer for any given type. This is useful for handling legacy binary formats, complex data structures, or types that require special encoding.

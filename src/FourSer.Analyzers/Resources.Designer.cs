@@ -131,6 +131,33 @@ namespace FourSer.Analyzers
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Mark only one PolymorphicOptionAttribute with isDefault = true for a polymorphic member..
+        /// </summary>
+        internal static string PolymorphicOptionMultipleDefaults_Description {
+            get {
+                return ResourceManager.GetString("PolymorphicOptionMultipleDefaults_Description", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Only one 'PolymorphicOption' can be marked as the default.
+        /// </summary>
+        internal static string PolymorphicOptionMultipleDefaults_MessageFormat {
+            get {
+                return ResourceManager.GetString("PolymorphicOptionMultipleDefaults_MessageFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Multiple default polymorphic options.
+        /// </summary>
+        internal static string PolymorphicOptionMultipleDefaults_Title {
+            get {
+                return ResourceManager.GetString("PolymorphicOptionMultipleDefaults_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to A property cannot be used as a reference for multiple different kinds of references (e.g. CountSizeReference and TypeIdProperty)..
         /// </summary>
         internal static string FSER009_Description {

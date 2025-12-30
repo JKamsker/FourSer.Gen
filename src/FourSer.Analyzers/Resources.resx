@@ -138,6 +138,15 @@
   <data name="SerializeCollectionSingleTypeId_Description" xml:space="preserve">
     <value>When using PolymorphicMode.SingleTypeId, the TypeIdType property must match the type of the PolymorphicOption's ID.</value>
   </data>
+  <data name="PolymorphicOptionMultipleDefaults_Title" xml:space="preserve">
+    <value>Multiple default polymorphic options</value>
+  </data>
+  <data name="PolymorphicOptionMultipleDefaults_MessageFormat" xml:space="preserve">
+    <value>Only one 'PolymorphicOption' can be marked as the default</value>
+  </data>
+  <data name="PolymorphicOptionMultipleDefaults_Description" xml:space="preserve">
+    <value>Mark only one PolymorphicOptionAttribute with isDefault = true for a polymorphic member.</value>
+  </data>
   <data name="FSER009_Title" xml:space="preserve">
     <value>Conflicting property reference</value>
   </data>

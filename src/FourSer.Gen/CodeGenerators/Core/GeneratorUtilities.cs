@@ -50,34 +50,40 @@ public static class GeneratorUtilities
     /// </summary>
     public static string GetCountExpression(MemberToGenerate member, string memberName, bool nullable = false)
     {
+        var accessExpression = $"obj.{memberName}";
+        return GetCountExpressionForAccess(member, accessExpression, nullable);
+    }
+
+    public static string GetCountExpressionForAccess(MemberToGenerate member, string accessExpression, bool nullable = false)
+    {
         // Arrays use .Length property
         if (member.CollectionTypeInfo?.IsArray == true)
         {
             return nullable
-                ? $"(obj.{memberName}?.Length ?? 0)"
-                : $"obj.{memberName}.Length";
+                ? $"({accessExpression}?.Length ?? 0)"
+                : $"{accessExpression}.Length";
         }
 
         // IEnumerable and interface types that need Count() method
         if (member.CollectionTypeInfo is { IsPureEnumerable: true })
         {
             return nullable
-                ? $"(obj.{memberName}?.Count() ?? 0)"
-                : $"obj.{memberName}.Count()";
+                ? $"({accessExpression}?.Count() ?? 0)"
+                : $"{accessExpression}.Count()";
         }
 
         if (member.CollectionTypeInfo?.IsGenericCollection == true)
         {
             return nullable
-                ? $"(obj.{memberName}?.Count ?? 0)"
-                : $"obj.{memberName}.Count";
+                ? $"({accessExpression}?.Count ?? 0)"
+                : $"{accessExpression}.Count";
         }
 
         // Most concrete collection types use .Count property
         // List<T>, HashSet<T>, Queue<T>, Stack<T>, ConcurrentBag<T>, LinkedList<T>, Collection<T>, etc.
         return nullable 
-            ? $"(obj.{memberName}?.Count ?? 0)"
-            : $"obj.{memberName}.Count";
+            ? $"({accessExpression}?.Count ?? 0)"
+            : $"{accessExpression}.Count";
     }
 
     /// <summary>

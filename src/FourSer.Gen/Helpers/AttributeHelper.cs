@@ -26,11 +26,23 @@ public static class AttributeHelper
             .ToList();
     }
 
-    public static (object Key, ITypeSymbol Type) GetPolymorphicOption(AttributeData optionAttribute)
+    public static (object Key, ITypeSymbol Type, bool IsDefault) GetPolymorphicOption(AttributeData optionAttribute)
     {
         var key = optionAttribute.ConstructorArguments[0].Value!;
         var type = (ITypeSymbol)optionAttribute.ConstructorArguments[1].Value!;
-        return (key, type);
+        var isDefault = false;
+        if (optionAttribute.ConstructorArguments.Length > 2)
+        {
+            isDefault = optionAttribute.ConstructorArguments[2].Value as bool? ?? false;
+        }
+        else
+        {
+            isDefault = optionAttribute.NamedArguments
+                .FirstOrDefault(arg => string.Equals(arg.Key, "IsDefault", StringComparison.OrdinalIgnoreCase))
+                .Value.Value as bool? ?? false;
+        }
+
+        return (key, type, isDefault);
     }
 
     public static bool HasGenerateSerializerAttribute(ITypeSymbol typeSymbol)
