@@ -373,6 +373,7 @@ public static class DeserializationGenerator
                     null,
                     null,
                     member.PolymorphicInfo,
+                    null,
                     false,
                     null,
                     false,

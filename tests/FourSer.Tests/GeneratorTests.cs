@@ -149,6 +149,44 @@ public class GeneratorTests
     }
 
     [Fact]
+    public void PolymorphicDefaultInitializer_IsUsedWhenValueIsNull()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.PolymorphicDefaults;
+
+        public interface IAnimal { }
+
+        [GenerateSerializer]
+        public partial class Dog : IAnimal
+        {
+            public int Id { get; set; }
+        }
+
+        [GenerateSerializer]
+        public partial class Cat : IAnimal
+        {
+            public int Id { get; set; }
+        }
+
+        [GenerateSerializer]
+        public partial class PetOwner
+        {
+            [SerializePolymorphic]
+            [PolymorphicOption(1, typeof(Dog))]
+            [PolymorphicOption(2, typeof(Cat))]
+            public IAnimal? Pet { get; set; } = new Dog();
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "PetOwner");
+
+        Assert.Contains("var petValue = obj.Pet;", generatedCode);
+        Assert.Contains("if (petValue is null)", generatedCode);
+        Assert.Contains("petValue = new Dog();", generatedCode);
+        Assert.Contains("switch (petValue)", generatedCode);
+    }
+
+    [Fact]
     public void InvalidNestedCollection_ShouldReportDiagnosticAndSkipGeneration()
     {
         var source = ReadSource("InvalidNestedCollection");
