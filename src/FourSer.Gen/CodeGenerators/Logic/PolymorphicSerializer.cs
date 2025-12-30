@@ -26,11 +26,10 @@ internal static class PolymorphicSerializer
         sb.WriteLineFormat
             ("    throw new System.NullReferenceException($\"Property \\\"{0}\\\" cannot be null.\");", member.Name);
         sb.WriteLine("default:");
-        sb.WriteLineFormat
-        (
-            $"    throw new System.IO.InvalidDataException($\"Unknown type for {{0}}: {{{accessExpression}?.GetType().FullName}}\");",
-            member.Name
-        );
+        sb.WriteLineFormat(
+            "    throw new System.IO.InvalidDataException($\"Unknown type for {0}: {{{1}?.GetType().FullName}}\");",
+            member.Name,
+            accessExpression);
     }
 
     public static void GeneratePolymorphicCollection(
@@ -254,11 +253,10 @@ internal static class PolymorphicSerializer
                 }
 
                 sb.WriteLine("default:");
-                sb.WriteLineFormat
-                (
-                    $"    throw new System.IO.InvalidDataException($\"Unknown type for item in {{0}}: {{{collectionAccess}[0].GetType().Name}}\");",
-                    member.Name
-                );
+                sb.WriteLineFormat(
+                    "    throw new System.IO.InvalidDataException($\"Unknown type for item in {0}: {{{1}[0].GetType().Name}}\");",
+                    member.Name,
+                    collectionAccess);
             }
         }
     }

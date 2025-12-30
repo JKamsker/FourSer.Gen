@@ -114,14 +114,19 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
     public static void Serialize(PolymorphicIndividualTest obj, ref System.Span<byte> data)
     {
         if (obj is null) return;
-        if (obj.Animals is null)
+        var animalsValue = obj.Animals;
+        if (animalsValue is null)
+        {
+            animalsValue = new();
+        }
+        if (animalsValue is null)
         {
             SpanWriter.WriteByte(ref data, (byte)(0));
         }
         else
         {
-            SpanWriter.WriteByte(ref data, (byte)(obj.Animals.Count));
-            foreach(var item in obj.Animals)
+            SpanWriter.WriteByte(ref data, (byte)(animalsValue.Count));
+            foreach(var item in animalsValue)
             {
                 switch (item)
                 {
@@ -154,14 +159,19 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
     public static void Serialize(PolymorphicIndividualTest obj, System.IO.Stream stream)
     {
         if (obj is null) return;
-        if (obj.Animals is null)
+        var animalsValue = obj.Animals;
+        if (animalsValue is null)
+        {
+            animalsValue = new();
+        }
+        if (animalsValue is null)
         {
             StreamWriter.WriteByte(stream, (byte)(0));
         }
         else
         {
-            StreamWriter.WriteByte(stream, (byte)(obj.Animals.Count));
-            foreach(var item in obj.Animals)
+            StreamWriter.WriteByte(stream, (byte)(animalsValue.Count));
+            foreach(var item in animalsValue)
             {
                 switch (item)
                 {
