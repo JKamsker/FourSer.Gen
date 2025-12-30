@@ -9,7 +9,7 @@ namespace FourSer.Analyzers.PolymorphicOption;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public class PolymorphicOptionDefaultAnalyzer : DiagnosticAnalyzer
 {
-    public const string MultipleDefaultsDiagnosticId = "FSG3002";
+    public const string MultipleDefaultsDiagnosticId = "FSG3003";
 
     private static readonly LocalizableString Title =
         new LocalizableResourceString(nameof(Resources.PolymorphicOptionMultipleDefaults_Title), Resources.ResourceManager, typeof(Resources));

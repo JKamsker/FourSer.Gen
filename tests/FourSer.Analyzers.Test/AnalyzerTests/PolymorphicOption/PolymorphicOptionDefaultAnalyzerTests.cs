@@ -24,7 +24,7 @@ public class PolymorphicOptionDefaultAnalyzerTests : AnalyzerTestBase
         public class Example
         {
             [PolymorphicOption(1, typeof(int), isDefault: true)]
-            [PolymorphicOption(2, typeof(string), {|FSG3002:isDefault: true|})]
+            [PolymorphicOption(2, typeof(string), {|FSG3003:isDefault: true|})]
             public object? Value { get; set; }
         }
         """;
