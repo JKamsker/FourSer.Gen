@@ -43,6 +43,11 @@ namespace FourSer.Analyzers.SerializePolymorphic
                 return;
             }
 
+            if (symbol.HasIgnoreAttribute())
+            {
+                return;
+            }
+
             var propertyNameArg = attribute.ConstructorArguments.FirstOrDefault();
             var isPositional = !propertyNameArg.IsNull;
 
@@ -63,7 +68,8 @@ namespace FourSer.Analyzers.SerializePolymorphic
             }
 
             var containingType = symbol.ContainingType;
-            var referencedSymbol = containingType.GetMembers(referenceName!).FirstOrDefault();
+            var referencedSymbol = containingType.GetMembers(referenceName!)
+                .FirstOrDefault(m => (m is IPropertySymbol or IFieldSymbol) && !m.HasIgnoreAttribute());
 
             var attributeSyntax = (AttributeSyntax)attribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
             AttributeArgumentSyntax? argumentSyntax = null;

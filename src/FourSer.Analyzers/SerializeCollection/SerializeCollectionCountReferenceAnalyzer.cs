@@ -43,6 +43,11 @@ namespace FourSer.Analyzers.SerializeCollection
                 return;
             }
 
+            if (symbol.HasIgnoreAttribute())
+            {
+                return;
+            }
+
             var countSizeReferenceArg = attribute.NamedArguments.FirstOrDefault(na => na.Key == "CountSizeReference");
             if (countSizeReferenceArg.Key == null)
             {
@@ -56,7 +61,8 @@ namespace FourSer.Analyzers.SerializeCollection
             }
 
             var containingType = symbol.ContainingType;
-            var referencedSymbol = containingType.GetMembers(referenceName!).FirstOrDefault();
+            var referencedSymbol = containingType.GetMembers(referenceName!)
+                .FirstOrDefault(m => (m is IPropertySymbol or IFieldSymbol) && !m.HasIgnoreAttribute());
 
             var attributeSyntax = (AttributeSyntax?)attribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
             var argumentSyntax = attributeSyntax?.ArgumentList?.Arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "CountSizeReference");

@@ -7,13 +7,19 @@ internal static class Consts
         @"
 using System;
 namespace FourSer.Contracts;
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
-public class GenerateSerializerAttribute : Attribute { }
+ [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+ public class GenerateSerializerAttribute : Attribute { }
 ",
         @"
-using System;
-using System.IO;
-
+ using System;
+ namespace FourSer.Contracts;
+ [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+ public sealed class IgnoredAttribute : Attribute { }
+ ",
+        @"
+ using System;
+ using System.IO;
+ 
 namespace FourSer.Contracts;
 public interface ISerializable<T> where T : ISerializable<T>
 {
