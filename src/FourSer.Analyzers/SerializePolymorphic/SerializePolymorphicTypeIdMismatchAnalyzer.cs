@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using FourSer.Analyzers.Helpers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -40,6 +41,11 @@ namespace FourSer.Analyzers.SerializePolymorphic
                 return;
             }
 
+            if (symbol.HasIgnoreAttribute())
+            {
+                return;
+            }
+
             var attributeSyntax = (AttributeSyntax)serializePolymorphicAttribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
             if (attributeSyntax == null) return;
 
@@ -65,7 +71,8 @@ namespace FourSer.Analyzers.SerializePolymorphic
                 typeIdTypeConstant.Kind == TypedConstantKind.Type &&
                 typeIdTypeConstant.Value is ITypeSymbol typeIdType)
             {
-                var referencedSymbol = symbol.ContainingType.GetMembers(referenceName!).FirstOrDefault();
+                var referencedSymbol = symbol.ContainingType.GetMembers(referenceName!)
+                    .FirstOrDefault(m => (m is IPropertySymbol or IFieldSymbol) && !m.HasIgnoreAttribute());
                 if (referencedSymbol == null) return;
 
                 bool mismatch = false;

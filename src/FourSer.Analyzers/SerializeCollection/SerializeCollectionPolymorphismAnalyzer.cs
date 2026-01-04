@@ -98,6 +98,11 @@ namespace FourSer.Analyzers.SerializeCollection
                 return;
             }
 
+            if (symbol.HasIgnoreAttribute())
+            {
+                return;
+            }
+
             var attributeSyntax = (AttributeSyntax?)serializeCollectionAttribute.ApplicationSyntaxReference.GetSyntax
                 (context.CancellationToken);
             if (attributeSyntax == null) return;
@@ -125,7 +130,8 @@ namespace FourSer.Analyzers.SerializeCollection
                 var referenceName = typeIdPropertyValue.Value as string;
                 if (string.IsNullOrEmpty(referenceName)) return;
 
-                var referencedSymbol = symbol.ContainingType.GetMembers(referenceName!).FirstOrDefault();
+                var referencedSymbol = symbol.ContainingType.GetMembers(referenceName!)
+                    .FirstOrDefault(m => (m is IPropertySymbol or IFieldSymbol) && !m.HasIgnoreAttribute());
                 if (referencedSymbol == null) return;
                 var fieldOrPropertyType = referencedSymbol switch
                 {

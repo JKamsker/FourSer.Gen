@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using FourSer.Analyzers.Helpers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
@@ -31,6 +32,11 @@ namespace FourSer.Analyzers.SerializeCollection
 
             var serializeCollectionAttribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializeCollectionAttribute");
             if (serializeCollectionAttribute == null)
+            {
+                return;
+            }
+
+            if (symbol.HasIgnoreAttribute())
             {
                 return;
             }

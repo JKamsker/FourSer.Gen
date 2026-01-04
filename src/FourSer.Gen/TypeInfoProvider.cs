@@ -279,6 +279,13 @@ internal static class TypeInfoProvider
             return false;
         }
 
+        if (member.GetAttributes().Any(ad =>
+                ad.AttributeClass is not null
+                && (ad.AttributeClass.IsIgnoredAttribute() || ad.AttributeClass.IsIgnoreDataMemberAttribute())))
+        {
+            return false;
+        }
+
         if (member is IPropertySymbol p)
         {
             if (p.IsIndexer || p.DeclaredAccessibility != Accessibility.Public)
