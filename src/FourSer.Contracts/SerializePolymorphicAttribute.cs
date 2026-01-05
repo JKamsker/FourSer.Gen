@@ -23,35 +23,44 @@ public class PolymorphicOptionAttribute : Attribute
 {
     public object Id { get; }
     public Type Type { get; }
+    /// <summary>
+    /// When set to <c>true</c>, this option will be used as the default discriminator when a value is missing.
+    /// </summary>
+    public bool IsDefault { get; }
 
-    public PolymorphicOptionAttribute(int id, Type type)
+    public PolymorphicOptionAttribute(int id, Type type, bool isDefault = false)
     {
         Id = id;
         Type = type;
+        IsDefault = isDefault;
     }
     
-    public PolymorphicOptionAttribute(byte id, Type type)
+    public PolymorphicOptionAttribute(byte id, Type type, bool isDefault = false)
     {
         Id = id;
         Type = type;
+        IsDefault = isDefault;
     }
     
-    public PolymorphicOptionAttribute(ushort id, Type type)
+    public PolymorphicOptionAttribute(ushort id, Type type, bool isDefault = false)
     {
         Id = id;
         Type = type;
+        IsDefault = isDefault;
     }
     
-    public PolymorphicOptionAttribute(long id, Type type)
+    public PolymorphicOptionAttribute(long id, Type type, bool isDefault = false)
     {
         Id = id;
         Type = type;
+        IsDefault = isDefault;
     }
     
     // For enum values
-    public PolymorphicOptionAttribute(object id, Type type)
+    public PolymorphicOptionAttribute(object id, Type type, bool isDefault = false)
     {
         Id = id;
         Type = type;
+        IsDefault = isDefault;
     }
 }

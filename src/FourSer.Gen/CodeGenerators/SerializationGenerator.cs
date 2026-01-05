@@ -287,11 +287,17 @@ public static class SerializationGenerator
 
         if (member.IsList || member.IsCollection)
         {
-            CollectionSerializer.Generate(sb, member, ctx, type);
+            var collectionAccess = member.PolymorphicDefaultValue is not null && member.PolymorphicInfo is not null
+                ? GetPolymorphicMemberAccess(sb, member)
+                : $"obj.{member.Name}";
+            CollectionSerializer.Generate(sb, member, ctx, type, collectionAccess);
         }
         else if (member.PolymorphicInfo is not null)
         {
-            PolymorphicSerializer.GeneratePolymorphicMember(sb, member, ctx);
+            var memberAccess = member.PolymorphicDefaultValue is not null
+                ? GetPolymorphicMemberAccess(sb, member)
+                : $"obj.{member.Name}";
+            PolymorphicSerializer.GeneratePolymorphicMember(sb, member, ctx, memberAccess);
         }
         else if (member.HasGenerateSerializerAttribute)
         {
@@ -320,6 +326,25 @@ public static class SerializationGenerator
         {
             SerializationWriterEmitter.EmitWrite(sb, ctx, member.TypeName, $"obj.{member.Name}");
         }
+    }
+
+    private static string GetPolymorphicMemberAccess(IndentedStringBuilder sb, MemberToGenerate member, string? localNameSuffix = null)
+    {
+        if (member.PolymorphicDefaultValue is not { } defaultValue)
+        {
+            return $"obj.{member.Name}";
+        }
+
+        var suffix = string.IsNullOrEmpty(localNameSuffix) ? string.Empty : localNameSuffix;
+        var localName = $"{member.Name.ToCamelCase()}{suffix}Value";
+        sb.WriteLine($"var {localName} = obj.{member.Name};");
+        sb.WriteLine($"if ({localName} is null)");
+        using (sb.BeginBlock())
+        {
+            sb.WriteLine($"{localName} = {defaultValue.Expression};");
+        }
+
+        return localName;
     }
 
     private static void GenerateCountSizeReferenceSerialization(
@@ -358,6 +383,9 @@ public static class SerializationGenerator
         if (referencedMember.IsList || referencedMember.IsCollection)
         {
             var collectionName = referencedMember.Name;
+            var collectionAccess = referencedMember.PolymorphicDefaultValue is not null
+                ? GetPolymorphicMemberAccess(sb, referencedMember, "TypeId")
+                : $"obj.{collectionName}";
             if (referencedMember.PolymorphicInfo is null)
             {
                 throw new InvalidOperationException("TypeIdPropertyFor member must have PolymorphicInfo.");
@@ -365,10 +393,14 @@ public static class SerializationGenerator
             var info = referencedMember.PolymorphicInfo.Value;
             var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
 
-            var defaultOption = info.Options.FirstOrDefault();
+            if (!PolymorphicUtilities.TryGetDefaultOption(info, out var defaultOption))
+            {
+                throw new InvalidOperationException("Polymorphic members require at least one [PolymorphicOption].");
+            }
+
             var defaultKey = PolymorphicUtilities.FormatTypeIdKey(defaultOption.Key, info);
 
-            sb.WriteLineFormat($"if (obj.{collectionName} is null || obj.{collectionName}.Count == 0)");
+            sb.WriteLineFormat($"if ({collectionAccess} is null || {collectionAccess}.Count == 0)");
             using (sb.BeginBlock())
             {
                 SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, defaultKey);
@@ -377,7 +409,7 @@ public static class SerializationGenerator
             sb.WriteLine("else");
             using (sb.BeginBlock())
             {
-                sb.WriteLine($"var firstItem = obj.{collectionName}[0];");
+                sb.WriteLine($"var firstItem = {collectionAccess}[0];");
                 sb.WriteLine("var discriminator = firstItem switch");
                 sb.WriteLine("{");
                 sb.Indent();

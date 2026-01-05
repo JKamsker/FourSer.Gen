@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using System.Linq;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 
@@ -5,6 +7,29 @@ namespace FourSer.Gen.CodeGenerators.Core;
 
 public static class PolymorphicUtilities
 {
+    public static bool TryGetDefaultOption(ImmutableArray<PolymorphicOption> options, out PolymorphicOption option)
+    {
+        option = options.FirstOrDefault(o => o.IsDefault);
+        if (!option.Equals(default) || option.IsDefault)
+        {
+            return true;
+        }
+
+        if (!options.IsDefaultOrEmpty)
+        {
+            option = options[0];
+            return true;
+        }
+
+        option = default;
+        return false;
+    }
+
+    public static bool TryGetDefaultOption(PolymorphicInfo info, out PolymorphicOption option)
+    {
+        return TryGetDefaultOption(info.Options.Array, out option);
+    }
+
     /// <summary>
     ///     Formats the key for a polymorphic switch case.
     /// </summary>
