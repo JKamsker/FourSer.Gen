@@ -234,7 +234,11 @@ public static class DeserializationGenerator
             return;
         }
 
-        if (member.IsList || member.IsCollection)
+        if (member.IsMemoryOwner)
+        {
+            GenerateMemoryOwnerDeserialization(sb, member, target, source, helper);
+        }
+        else if (member.IsList || member.IsCollection)
         {
             GenerateCollectionDeserialization
             (
@@ -263,6 +267,140 @@ public static class DeserializationGenerator
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
             var readMethod = $"Read{typeName}";
             sb.WriteLineFormat("{0} = {1}.{2}({3}{4});", target, helper, readMethod, refOrEmpty, source);
+        }
+    }
+
+    private static void GenerateMemoryOwnerDeserialization
+    (
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        string target,
+        string source,
+        string helper
+    )
+    {
+        if (member.MemoryOwnerTypeInfo is not { } elementInfo)
+        {
+            return;
+        }
+
+        if (member.CollectionInfo is not { } collectionInfo)
+        {
+            // Should not happen: TypeInfoProvider assigns default CollectionInfo for IMemoryOwner<T>.
+            return;
+        }
+
+        if (collectionInfo.Unlimited)
+        {
+            throw new NotSupportedException("Unlimited IMemoryOwner<T> collections are not supported.");
+        }
+
+        var memberName = (member.Name ?? string.Empty).ToCamelCase();
+        var refOrEmpty = source == "buffer" ? "ref " : "";
+
+        string countVar;
+        string countType;
+
+        if (collectionInfo.CountSize >= 0)
+        {
+            countVar = collectionInfo.CountSize.ToString();
+            countType = "int";
+        }
+        else if (collectionInfo.CountSizeReferenceIndex is not null)
+        {
+            countVar = (collectionInfo.CountSizeReference ?? "countRef").ToCamelCase();
+            countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+        }
+        else
+        {
+            countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+            var countReadMethod = TypeHelper.GetReadMethodName(countType);
+            countVar = $"{memberName}Count";
+            sb.WriteLineFormat("var {0} = {1}.{2}({3}{4});", countVar, helper, countReadMethod, refOrEmpty, source);
+        }
+
+        var capacityVar = countType is "uint" or "ulong" ? $"(int){countVar}" : countVar;
+        var elementTypeName = elementInfo.ElementTypeName;
+
+        // Allocate a fresh IMemoryOwner<T> and slice to the exact required length.
+        sb.WriteLineFormat(
+            "{0} = MemoryPool<{1}>.Shared.Rent({2}).SliceToSize({2});",
+            target,
+            elementTypeName,
+            capacityVar
+        );
+
+        var ownerExpr = target.StartsWith("var ", StringComparison.Ordinal) ? memberName : target;
+        var spanVar = $"{memberName}Span";
+        sb.WriteLineFormat("var {0} = {1}.Memory.Span;", spanVar, ownerExpr);
+
+        var isByte = TypeHelper.IsByteCollection(elementTypeName);
+        var canBulkRead =
+            member.CustomSerializer is null
+            && elementInfo.IsElementUnmanagedType
+            && !elementInfo.IsElementStringType
+            && !elementInfo.HasElementGenerateSerializerAttribute;
+
+        if (isByte)
+        {
+            if (source == "buffer")
+            {
+                sb.WriteLineFormat("{0}.ReadBytes(ref buffer, {1});", helper, spanVar);
+            }
+            else
+            {
+                sb.WriteLineFormat("{0}.ReadExactly({1});", source, spanVar);
+            }
+
+            return;
+        }
+
+        if (canBulkRead)
+        {
+            var bytesVar = $"{memberName}Bytes";
+            sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.AsBytes({1});", bytesVar, spanVar);
+            if (source == "buffer")
+            {
+                sb.WriteLineFormat("{0}.ReadBytes(ref buffer, {1});", helper, bytesVar);
+            }
+            else
+            {
+                sb.WriteLineFormat("{0}.ReadExactly({1});", source, bytesVar);
+            }
+
+            return;
+        }
+
+        sb.WriteLineFormat("for (int i = 0; i < {0}.Length; i++)", spanVar);
+        using (sb.BeginBlock())
+        {
+            var elementTarget = $"{spanVar}[i]";
+
+            if (member.CustomSerializer is { } customSerializer)
+            {
+                var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
+                var serializerAccess = $"FourSer.Generated.Internal.__FourSer_Generated_Serializers.{serializerField}";
+                sb.WriteLineFormat("{0} = {1}.Deserialize({2}{3});", elementTarget, serializerAccess, refOrEmpty, source);
+            }
+            else if (elementInfo.HasElementGenerateSerializerAttribute)
+            {
+                sb.WriteLineFormat(
+                    "{0} = {1}.Deserialize({2}{3});",
+                    elementTarget,
+                    TypeHelper.GetSimpleTypeName(elementTypeName),
+                    refOrEmpty,
+                    source
+                );
+            }
+            else if (elementInfo.IsElementUnmanagedType)
+            {
+                var methodFriendly = GeneratorUtilities.GetMethodFriendlyTypeName(elementTypeName);
+                sb.WriteLineFormat("{0} = {1}.Read{2}({3}{4});", elementTarget, helper, methodFriendly, refOrEmpty, source);
+            }
+            else if (elementInfo.IsElementStringType)
+            {
+                sb.WriteLineFormat("{0} = {1}.ReadString({2}{3});", elementTarget, helper, refOrEmpty, source);
+            }
         }
     }
 
@@ -373,6 +511,8 @@ public static class DeserializationGenerator
                     null,
                     null,
                     member.PolymorphicInfo,
+                    false,
+                    null,
                     false,
                     null,
                     false,

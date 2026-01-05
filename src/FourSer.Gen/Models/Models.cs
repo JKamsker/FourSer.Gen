@@ -19,7 +19,10 @@ public sealed record TypeToGenerate
     EquatableArray<TypeToGenerate> NestedTypes,
     bool HasSerializableBaseType,
     ConstructorInfo? Constructor,
-    EquatableArray<DefaultSerializerInfo> DefaultSerializers
+    EquatableArray<DefaultSerializerInfo> DefaultSerializers,
+    bool ImplementsIDisposable,
+    bool HasDisposeMethod,
+    bool RequiresDisposal
 ) : IEquatable<TypeToGenerate>;
 
 /// <summary>
@@ -72,11 +75,30 @@ public sealed record MemberToGenerate
     PolymorphicInfo? PolymorphicInfo,
     bool IsCollection,
     CollectionTypeInfo? CollectionTypeInfo,
+    bool IsMemoryOwner,
+    MemoryOwnerTypeInfo? MemoryOwnerTypeInfo,
     bool IsReadOnly,
     bool IsInitOnly,
     int? IsCountSizeReferenceFor,
     int? IsTypeIdPropertyFor,
     CustomSerializerInfo? CustomSerializer
+);
+
+/// <summary>
+///     A model describing information about an IMemoryOwner&lt;T&gt; member.
+/// </summary>
+/// <param name="ElementTypeName">The name of the element type.</param>
+/// <param name="IsElementUnmanagedType">Whether the element type is unmanaged.</param>
+/// <param name="IsElementStringType">Whether the element type is a string.</param>
+/// <param name="HasElementGenerateSerializerAttribute">
+///     Whether the element type has the [GenerateSerializer] attribute.
+/// </param>
+public readonly record struct MemoryOwnerTypeInfo
+(
+    string ElementTypeName,
+    bool IsElementUnmanagedType,
+    bool IsElementStringType,
+    bool HasElementGenerateSerializerAttribute
 );
 
 /// <summary>

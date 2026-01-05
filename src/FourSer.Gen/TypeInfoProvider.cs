@@ -30,12 +30,15 @@ internal static class TypeInfoProvider
             return null;
         }
 
-        var serializableMembers = GetSerializableMembers(typeSymbol);
+        var serializableMembers = GetSerializableMembers(typeSymbol);       
         var nestedTypes = GetNestedTypes(typeSymbol);
         var constructorInfo = GetConstructorInfo(typeSymbol, serializableMembers);
 
         var hasSerializableBaseType = HasGenerateSerializerAttribute(typeSymbol.BaseType);
         var defaultSerializers = GetDefaultSerializers(typeSymbol, typeSymbol.ContainingAssembly);
+        var implementsIDisposable = ImplementsIDisposable(typeSymbol);
+        var hasDisposeMethod = HasInstanceDisposeMethod(typeSymbol);
+        var requiresDisposal = RequiresDisposal(typeSymbol);
 
         var ns = typeSymbol.ContainingNamespace.IsGlobalNamespace
             ? string.Empty
@@ -51,8 +54,102 @@ internal static class TypeInfoProvider
             nestedTypes,
             hasSerializableBaseType,
             constructorInfo,
-            new(defaultSerializers)
+            new(defaultSerializers),
+            implementsIDisposable,
+            hasDisposeMethod,
+            requiresDisposal
         );
+    }
+
+    private static bool ImplementsIDisposable(INamedTypeSymbol typeSymbol)
+    {
+        foreach (var iface in typeSymbol.AllInterfaces)
+        {
+            if (iface.IsIDisposable())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasInstanceDisposeMethod(INamedTypeSymbol typeSymbol)   
+    {
+        foreach (var member in typeSymbol.GetMembers("Dispose"))
+        {
+            if (member is not IMethodSymbol method)
+            {
+                continue;
+            }
+
+            if (method.IsStatic)
+            {
+                continue;
+            }
+
+            if (method.Parameters.Length == 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool RequiresDisposal(INamedTypeSymbol typeSymbol)
+    {
+        var visited = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+        return RequiresDisposal(typeSymbol, visited);
+    }
+
+    private static bool RequiresDisposal(INamedTypeSymbol typeSymbol, HashSet<INamedTypeSymbol> visited)
+    {
+        if (!visited.Add(typeSymbol))
+        {
+            return false;
+        }
+
+        var currentType = typeSymbol;
+        while (currentType != null && currentType.SpecialType != SpecialType.System_Object)
+        {
+            foreach (var member in currentType.GetMembers())
+            {
+                if (!IsSerializableMember(member))
+                {
+                    continue;
+                }
+
+                var memberTypeSymbol = member switch
+                {
+                    IPropertySymbol p => p.Type,
+                    IFieldSymbol f => f.Type,
+                    _ => null
+                };
+
+                if (memberTypeSymbol is null)
+                {
+                    continue;
+                }
+
+                var (isMemoryOwner, _) = GetMemoryOwnerTypeInfo(memberTypeSymbol);
+                if (isMemoryOwner)
+                {
+                    return true;
+                }
+
+                if (memberTypeSymbol is INamedTypeSymbol namedMemberType
+                    && HasGenerateSerializerAttribute(namedMemberType)
+                    && RequiresDisposal(namedMemberType, visited))
+                {
+                    return true;
+                }
+            }
+
+            currentType = currentType.BaseType;
+        }
+
+        return false;
     }
 
     private static ImmutableArray<DefaultSerializerInfo> GetDefaultSerializers(INamedTypeSymbol typeSymbol, IAssemblySymbol assemblySymbol)
@@ -417,6 +514,7 @@ internal static class TypeInfoProvider
     {
         var memberTypeSymbol = m is IPropertySymbol p ? p.Type : ((IFieldSymbol)m).Type;
         var (isCollection, collectionTypeInfo) = GetCollectionTypeInfo(memberTypeSymbol);
+        var (isMemoryOwner, memoryOwnerTypeInfo) = GetMemoryOwnerTypeInfo(memberTypeSymbol);
         var isList = memberTypeSymbol.OriginalDefinition is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.IsGenericList();
         ListTypeArgumentInfo? listTypeArgumentInfo = null;
         if (isCollection && collectionTypeInfo.HasValue)
@@ -454,7 +552,7 @@ internal static class TypeInfoProvider
         var memberToGenerate = new MemberToGenerate
         (
             Name: m.Name,
-            TypeName: memberTypeSymbol.ToDisplayString(s_typeNameFormat),
+            TypeName: memberTypeSymbol.ToDisplayString(s_typeNameFormat),  
             IsValueType: memberTypeSymbol.IsValueType,
             IsUnmanagedType: memberTypeSymbol.IsUnmanagedType,
             IsStringType: memberTypeSymbol.SpecialType == SpecialType.System_String,
@@ -465,6 +563,8 @@ internal static class TypeInfoProvider
             PolymorphicInfo: polymorphicInfo,
             IsCollection: isCollection,
             CollectionTypeInfo: collectionTypeInfo,
+            IsMemoryOwner: isMemoryOwner,
+            MemoryOwnerTypeInfo: memoryOwnerTypeInfo,
             IsReadOnly: isReadOnly,
             IsInitOnly: isInitOnly,
             IsCountSizeReferenceFor: null,
@@ -564,7 +664,10 @@ internal static class TypeInfoProvider
             deeperNestedTypes,
             hasSerializableBaseType,
             constructorInfo,
-            new(defaultSerializers)
+            new(defaultSerializers),
+            ImplementsIDisposable(nestedTypeSymbol),
+            HasInstanceDisposeMethod(nestedTypeSymbol),
+            RequiresDisposal(nestedTypeSymbol)
         );
     }
 
@@ -703,16 +806,47 @@ internal static class TypeInfoProvider
         ));
     }
 
+    private static (bool IsMemoryOwner, MemoryOwnerTypeInfo? MemoryOwnerTypeInfo) GetMemoryOwnerTypeInfo(ITypeSymbol typeSymbol)
+    {
+        if (typeSymbol is not INamedTypeSymbol namedTypeSymbol)
+        {
+            return (false, null);
+        }
+
+        if (!namedTypeSymbol.IsGenericType || namedTypeSymbol.TypeArguments.Length != 1)
+        {
+            return (false, null);
+        }
+
+        if (namedTypeSymbol.OriginalDefinition is not INamedTypeSymbol originalDefinition ||
+            !originalDefinition.IsIMemoryOwner())
+        {
+            return (false, null);
+        }
+
+        var elementType = namedTypeSymbol.TypeArguments[0];
+        var hasGenerateSerializerAttribute = HasGenerateSerializerAttribute(elementType as INamedTypeSymbol);
+
+        return (true, new MemoryOwnerTypeInfo
+        (
+            ElementTypeName: elementType.ToDisplayString(s_typeNameFormat),
+            IsElementUnmanagedType: elementType.IsUnmanagedType,
+            IsElementStringType: elementType.SpecialType == SpecialType.System_String,
+            HasElementGenerateSerializerAttribute: hasGenerateSerializerAttribute
+        ));
+    }
+
     private static CollectionInfo? GetCollectionInfo(ISymbol member)
     {
-        var attribute = AttributeHelper.GetCollectionAttribute(member);
+        var attribute = AttributeHelper.GetCollectionAttribute(member);    
 
         var memberTypeSymbol = member is IPropertySymbol p ? p.Type : ((IFieldSymbol)member).Type;
-        var (isCollection, _) = GetCollectionTypeInfo(memberTypeSymbol);
+        var (isCollection, _) = GetCollectionTypeInfo(memberTypeSymbol);   
+        var (isMemoryOwner, _) = GetMemoryOwnerTypeInfo(memberTypeSymbol);
 
         if (attribute is null)
         {
-            if (isCollection)
+            if (isCollection || isMemoryOwner)
             {
                 return new CollectionInfo
                 (

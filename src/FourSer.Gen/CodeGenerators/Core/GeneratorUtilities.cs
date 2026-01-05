@@ -132,7 +132,7 @@ public static class GeneratorUtilities
 
     public static ResolvedSerializer? ResolveSerializer(MemberToGenerate member, TypeToGenerate type)
     {
-        if (member.IsList || member.IsCollection)
+        if (member.IsList || member.IsCollection || member.IsMemoryOwner)
         {
             return null;
         }

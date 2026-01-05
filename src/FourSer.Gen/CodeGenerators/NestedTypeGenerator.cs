@@ -19,10 +19,15 @@ public static class NestedTypeGenerator
         {
             sb.WriteLine();
             var typeKeyword = nestedType.IsValueType ? "struct" : "class";
-            sb.WriteLineFormat("public partial {0} {1} : ISerializable<{1}>", typeKeyword, nestedType.Name);
+            if (nestedType.IsRecord)
+            {
+                typeKeyword = $"record {typeKeyword}";
+            }
+            var disposableInterface = DisposalGenerator.ShouldGenerateDispose(nestedType) ? ", IDisposable" : string.Empty;
+            sb.WriteLineFormat("public partial {0} {1} : ISerializable<{1}>{2}", typeKeyword, nestedType.Name, disposableInterface);
             using var _ = sb.BeginBlock();
             // Delegate to the primary generators
-            if (nestedType.Constructor is { ShouldGenerate: true } ctor)
+            if (nestedType.Constructor is { ShouldGenerate: true } ctor)        
             {
                 if (!ctor.Parameters.IsEmpty)
                 {
@@ -42,6 +47,8 @@ public static class NestedTypeGenerator
             DeserializationGenerator.GenerateDeserialize(sb, nestedType);
             sb.WriteLine();
             SerializationGenerator.GenerateSerialize(sb, nestedType);
+
+            DisposalGenerator.GenerateDispose(sb, nestedType);
 
             // Handle even deeper nested types recursively
             if (!nestedType.NestedTypes.IsEmpty)

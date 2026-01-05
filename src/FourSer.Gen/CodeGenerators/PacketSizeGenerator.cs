@@ -39,7 +39,11 @@ public static class PacketSizeGenerator
             return;
         }
 
-        if (member.IsList || member.IsCollection)
+        if (member.IsMemoryOwner)
+        {
+            GenerateMemoryOwnerSizeCalculation(sb, member);
+        }
+        else if (member.IsList || member.IsCollection)
         {
             GenerateCollectionSizeCalculation(sb, member);
         }
@@ -98,6 +102,22 @@ public static class PacketSizeGenerator
                 collInfo.IsElementUnmanagedType,
                 collInfo.IsElementStringType,
                 collInfo.HasElementGenerateSerializerAttribute
+            );
+        }
+
+        return null;
+    }
+
+    private static ElementInfo? GetMemoryOwnerElementInfo(MemberToGenerate member)
+    {
+        if (member.MemoryOwnerTypeInfo is { } info)
+        {
+            return new ElementInfo
+            (
+                info.ElementTypeName,
+                info.IsElementUnmanagedType,
+                info.IsElementStringType,
+                info.HasElementGenerateSerializerAttribute
             );
         }
 
@@ -167,7 +187,71 @@ public static class PacketSizeGenerator
 
         if (GetElementInfo(member) is { } info)
         {
-            GenerateStandardCollectionSizeCalculation(sb, member, info);
+            GenerateStandardCollectionSizeCalculation(sb, member, info);   
+        }
+    }
+
+    private static void GenerateMemoryOwnerSizeCalculation(
+        IndentedStringBuilder sb,
+        MemberToGenerate member)
+    {
+        if (member.CollectionInfo is not { } collectionInfo)
+        {
+            return;
+        }
+
+        if (
+            !collectionInfo.Unlimited
+            && (collectionInfo.CountSize is null or < 0)
+            && collectionInfo.CountSizeReferenceIndex is null
+        )
+        {
+            var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+            var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
+            sb.WriteLineFormat("size += {0}; // Count size for {1}", countSizeExpression, member.Name);
+        }
+
+        if (member.CustomSerializer is { } customSerializer)
+        {
+            var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
+            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
+            using var _ = sb.BeginBlock();
+            sb.WriteLineFormat("var span_{0} = obj.{0}.Memory.Span;", member.Name);
+            sb.WriteLineFormat("for (int i = 0; i < span_{0}.Length; i++)", member.Name);
+            using var __ = sb.BeginBlock();
+            sb.WriteLineFormat(
+                "size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.GetPacketSize(span_{1}[i]);",
+                serializerField,
+                member.Name
+            );
+            return;
+        }
+
+        if (GetMemoryOwnerElementInfo(member) is not { } info)
+        {
+            return;
+        }
+
+        if (info.HasSerializer)
+        {
+            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
+            using var _ = sb.BeginBlock();
+            sb.WriteLineFormat("var span_{0} = obj.{0}.Memory.Span;", member.Name);
+            sb.WriteLineFormat("for (int i = 0; i < span_{0}.Length; i++)", member.Name);
+            using var __ = sb.BeginBlock();
+            sb.WriteLineFormat("size += {0}.GetPacketSize(span_{1}[i]);", TypeHelper.GetSimpleTypeName(info.TypeName), member.Name);
+        }
+        else if (info.IsUnmanaged)
+        {
+            var countExpression = $"(obj.{member.Name}?.Memory.Length ?? 0)";
+            sb.WriteLineFormat("size += {0} * sizeof({1});", countExpression, info.TypeName);
+        }
+        else if (info.IsString)
+        {
+            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
+            using var _ = sb.BeginBlock();
+            sb.WriteLineFormat("var span_{0} = obj.{0}.Memory.Span;", member.Name);
+            sb.WriteLineFormat("for (int i = 0; i < span_{0}.Length; i++) {{ size += StringEx.MeasureSize(span_{0}[i]); }}", member.Name);
         }
     }
 
