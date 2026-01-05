@@ -285,7 +285,11 @@ public static class SerializationGenerator
             return;
         }
 
-        if (member.IsList || member.IsCollection)
+        if (member.IsMemoryOwner)
+        {
+            MemoryOwnerSerializer.Generate(sb, member, ctx, type);
+        }
+        else if (member.IsList || member.IsCollection)
         {
             CollectionSerializer.Generate(sb, member, ctx, type);
         }

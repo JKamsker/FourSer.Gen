@@ -4,6 +4,31 @@ namespace FourSer.Gen.Helpers;
 
 public static class SymbolExtensions
 {
+    public static bool IsIDisposable(this INamedTypeSymbol typeSymbol)
+    {
+        // System.IDisposable
+        return typeSymbol is
+        {
+            Name: "IDisposable",
+            ContainingNamespace: { Name: "System", ContainingNamespace: { IsGlobalNamespace: true } }
+        };
+    }
+
+    public static bool IsIMemoryOwner(this INamedTypeSymbol typeSymbol)
+    {
+        // System.Buffers.IMemoryOwner<T>
+        return typeSymbol is
+        {
+            Name: "IMemoryOwner",
+            Arity: 1,
+            ContainingNamespace:
+            {
+                Name: "Buffers",
+                ContainingNamespace: { Name: "System", ContainingNamespace: { IsGlobalNamespace: true } }
+            }
+        };
+    }
+
     public static bool IsISerializable(this INamedTypeSymbol typeSymbol)
     {
         // better alternative to .ToDisplayString() == "FourSer.Contracts.ISerializable<T>"
