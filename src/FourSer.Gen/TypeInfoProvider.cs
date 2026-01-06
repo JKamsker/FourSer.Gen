@@ -144,12 +144,58 @@ internal static class TypeInfoProvider
                 {
                     return true;
                 }
+
+                // Check if this is a collection with elements that require disposal
+                var elementType = GetCollectionElementType(memberTypeSymbol);
+                if (elementType is INamedTypeSymbol namedElementType
+                    && HasGenerateSerializerAttribute(namedElementType)
+                    && RequiresDisposal(namedElementType, visited))
+                {
+                    return true;
+                }
             }
 
             currentType = currentType.BaseType;
         }
 
         return false;
+    }
+
+    private static ITypeSymbol? GetCollectionElementType(ITypeSymbol typeSymbol)
+    {
+        if (typeSymbol is IArrayTypeSymbol arrayTypeSymbol)
+        {
+            return arrayTypeSymbol.ElementType;
+        }
+
+        if (typeSymbol is INamedTypeSymbol namedTypeSymbol
+            && namedTypeSymbol.IsGenericType
+            && namedTypeSymbol.TypeArguments.Length == 1)
+        {
+            var originalDefinition = namedTypeSymbol.OriginalDefinition;
+            if (originalDefinition is INamedTypeSymbol originalNamedTypeSymbol)
+            {
+                var isCollection = originalNamedTypeSymbol.IsGenericList()
+                    || originalNamedTypeSymbol.IsGenericIList()
+                    || originalNamedTypeSymbol.IsGenericICollection()
+                    || originalNamedTypeSymbol.IsGenericIEnumerable()
+                    || originalNamedTypeSymbol.IsObjectModelCollection()
+                    || originalNamedTypeSymbol.IsObjectModelObservableCollection()
+                    || originalNamedTypeSymbol.IsGenericHashSet()
+                    || originalNamedTypeSymbol.IsGenericSortedSet()
+                    || originalNamedTypeSymbol.IsGenericQueue()
+                    || originalNamedTypeSymbol.IsGenericStack()
+                    || originalNamedTypeSymbol.IsGenericLinkedList()
+                    || originalNamedTypeSymbol.IsConcurrentConcurrentBag();
+
+                if (isCollection)
+                {
+                    return namedTypeSymbol.TypeArguments[0];
+                }
+            }
+        }
+
+        return null;
     }
 
     private static ImmutableArray<DefaultSerializerInfo> GetDefaultSerializers(INamedTypeSymbol typeSymbol, IAssemblySymbol assemblySymbol)

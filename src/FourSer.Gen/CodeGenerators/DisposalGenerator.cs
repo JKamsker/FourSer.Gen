@@ -48,6 +48,27 @@ public static class DisposalGenerator
                 {
                     sb.WriteLineFormat("{0}.Dispose();", disposableVar);
                 }
+                continue;
+            }
+
+            // Handle collections with disposable elements
+            if (member.IsCollection && member.CollectionTypeInfo?.HasElementGenerateSerializerAttribute == true)
+            {
+                var itemVar = $"item_{member.Name.ToCamelCase()}";
+                sb.WriteLineFormat("if (this.{0} != null)", member.Name);
+                using (sb.BeginBlock())
+                {
+                    sb.WriteLineFormat("foreach (var {0} in this.{1})", itemVar, member.Name);
+                    using (sb.BeginBlock())
+                    {
+                        var disposableVar = $"disposable_{itemVar}";
+                        sb.WriteLineFormat("if ({0} is System.IDisposable {1})", itemVar, disposableVar);
+                        using (sb.BeginBlock())
+                        {
+                            sb.WriteLineFormat("{0}.Dispose();", disposableVar);
+                        }
+                    }
+                }
             }
         }
     }
