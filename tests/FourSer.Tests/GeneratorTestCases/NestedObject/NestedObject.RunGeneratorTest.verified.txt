@@ -23,7 +23,7 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
         if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Size for unmanaged type Id
-        size += NestedData.GetPacketSize(obj.Data); // Size for nested type Data
+        size += global::FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.GetPacketSize(obj.Data); // Size for nested type Data
         return size;
     }
 
@@ -42,7 +42,7 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
     public static ContainerPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         var id = SpanReader.ReadInt32(ref buffer);
-        var data = NestedData.Deserialize(ref buffer);
+        var data = global::FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.Deserialize(ref buffer);
         var obj = new ContainerPacket(id, data);
         return obj;
     }
@@ -55,7 +55,7 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
     public static ContainerPacket Deserialize(System.IO.Stream stream)
     {
         var id = StreamReader.ReadInt32(stream);
-        var data = NestedData.Deserialize(stream);
+        var data = global::FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.Deserialize(stream);
         var obj = new ContainerPacket(id, data);
         return obj;
     }

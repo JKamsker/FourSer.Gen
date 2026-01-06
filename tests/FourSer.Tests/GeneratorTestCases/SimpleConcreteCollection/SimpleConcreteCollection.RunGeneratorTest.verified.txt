@@ -27,7 +27,7 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
         {
             foreach(var item in obj.Cats)
             {
-                size += Cat.GetPacketSize(item);
+                size += global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.GetPacketSize(item);
             }
         }
         return size;
@@ -49,7 +49,7 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
         var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat>(catsCount);
         for (int i = 0; i < catsCount; i++)
         {
-            cats.Add(Cat.Deserialize(ref buffer));
+            cats.Add(global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.Deserialize(ref buffer));
         }
         var obj = new SimpleConcreteCollectionTest(cats);
         return obj;
@@ -66,7 +66,7 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
         var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat>(catsCount);
         for (int i = 0; i < catsCount; i++)
         {
-            cats.Add(Cat.Deserialize(stream));
+            cats.Add(global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.Deserialize(stream));
         }
         var obj = new SimpleConcreteCollectionTest(cats);
         return obj;
@@ -84,7 +84,7 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
             SpanWriter.WriteInt32(ref data, (int)(obj.Cats.Count));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
-                Cat.Serialize(obj.Cats[i], ref data);
+                global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.Serialize(obj.Cats[i], ref data);
             }
         }
     }
@@ -106,7 +106,7 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
             StreamWriter.WriteInt32(stream, (int)(obj.Cats.Count));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
-                Cat.Serialize(obj.Cats[i], stream);
+                global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.Serialize(obj.Cats[i], stream);
             }
         }
     }

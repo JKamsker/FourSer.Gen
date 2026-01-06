@@ -30,9 +30,9 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             {
                 size += item switch
                 {
-                    Sword sword => Sword.GetPacketSize(sword),
-                    Shield shield => Shield.GetPacketSize(shield),
-                    Potion potion => Potion.GetPacketSize(potion),
+                    global::FourSer.TestUser.CollectionWithCountSizeReference.Sword sword => global::FourSer.TestUser.CollectionWithCountSizeReference.Sword.GetPacketSize(sword),
+                    global::FourSer.TestUser.CollectionWithCountSizeReference.Shield shield => global::FourSer.TestUser.CollectionWithCountSizeReference.Shield.GetPacketSize(shield),
+                    global::FourSer.TestUser.CollectionWithCountSizeReference.Potion potion => global::FourSer.TestUser.CollectionWithCountSizeReference.Potion.GetPacketSize(potion),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
                 };
             }
@@ -65,7 +65,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             {
                 for (int i = 0; i < count; i++)
                 {
-                    var item = Sword.Deserialize(ref buffer);
+                    var item = global::FourSer.TestUser.CollectionWithCountSizeReference.Sword.Deserialize(ref buffer);
                     items.Add(item);
                 }
                 break;
@@ -74,7 +74,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             {
                 for (int i = 0; i < count; i++)
                 {
-                    var item = Shield.Deserialize(ref buffer);
+                    var item = global::FourSer.TestUser.CollectionWithCountSizeReference.Shield.Deserialize(ref buffer);
                     items.Add(item);
                 }
                 break;
@@ -83,7 +83,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             {
                 for (int i = 0; i < count; i++)
                 {
-                    var item = Potion.Deserialize(ref buffer);
+                    var item = global::FourSer.TestUser.CollectionWithCountSizeReference.Potion.Deserialize(ref buffer);
                     items.Add(item);
                 }
                 break;
@@ -111,7 +111,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             {
                 for (int i = 0; i < count; i++)
                 {
-                    var item = Sword.Deserialize(stream);
+                    var item = global::FourSer.TestUser.CollectionWithCountSizeReference.Sword.Deserialize(stream);
                     items.Add(item);
                 }
                 break;
@@ -120,7 +120,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             {
                 for (int i = 0; i < count; i++)
                 {
-                    var item = Shield.Deserialize(stream);
+                    var item = global::FourSer.TestUser.CollectionWithCountSizeReference.Shield.Deserialize(stream);
                     items.Add(item);
                 }
                 break;
@@ -129,7 +129,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             {
                 for (int i = 0; i < count; i++)
                 {
-                    var item = Potion.Deserialize(stream);
+                    var item = global::FourSer.TestUser.CollectionWithCountSizeReference.Potion.Deserialize(stream);
                     items.Add(item);
                 }
                 break;
@@ -153,9 +153,9 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             var firstItem = obj.Items[0];
             var discriminator = firstItem switch
             {
-                Sword => (int)10,
-                Shield => (int)20,
-                Potion => (int)30,
+                global::FourSer.TestUser.CollectionWithCountSizeReference.Sword => (int)10,
+                global::FourSer.TestUser.CollectionWithCountSizeReference.Shield => (int)20,
+                global::FourSer.TestUser.CollectionWithCountSizeReference.Potion => (int)30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
             SpanWriter.WriteInt32(ref data, (int)(discriminator));
@@ -167,27 +167,27 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             {
                 switch (obj.Items[0])
                 {
-                    case Sword:
+                    case global::FourSer.TestUser.CollectionWithCountSizeReference.Sword:
                     {
                         foreach(var item in obj.Items)
                         {
-                            Sword.Serialize((Sword)item, ref data);
+                            global::FourSer.TestUser.CollectionWithCountSizeReference.Sword.Serialize((global::FourSer.TestUser.CollectionWithCountSizeReference.Sword)item, ref data);
                         }
                         break;
                     }
-                    case Shield:
+                    case global::FourSer.TestUser.CollectionWithCountSizeReference.Shield:
                     {
                         foreach(var item in obj.Items)
                         {
-                            Shield.Serialize((Shield)item, ref data);
+                            global::FourSer.TestUser.CollectionWithCountSizeReference.Shield.Serialize((global::FourSer.TestUser.CollectionWithCountSizeReference.Shield)item, ref data);
                         }
                         break;
                     }
-                    case Potion:
+                    case global::FourSer.TestUser.CollectionWithCountSizeReference.Potion:
                     {
                         foreach(var item in obj.Items)
                         {
-                            Potion.Serialize((Potion)item, ref data);
+                            global::FourSer.TestUser.CollectionWithCountSizeReference.Potion.Serialize((global::FourSer.TestUser.CollectionWithCountSizeReference.Potion)item, ref data);
                         }
                         break;
                     }
@@ -215,9 +215,9 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             var firstItem = obj.Items[0];
             var discriminator = firstItem switch
             {
-                Sword => (int)10,
-                Shield => (int)20,
-                Potion => (int)30,
+                global::FourSer.TestUser.CollectionWithCountSizeReference.Sword => (int)10,
+                global::FourSer.TestUser.CollectionWithCountSizeReference.Shield => (int)20,
+                global::FourSer.TestUser.CollectionWithCountSizeReference.Potion => (int)30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
             StreamWriter.WriteInt32(stream, (int)(discriminator));
@@ -229,27 +229,27 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             {
                 switch (obj.Items[0])
                 {
-                    case Sword:
+                    case global::FourSer.TestUser.CollectionWithCountSizeReference.Sword:
                     {
                         foreach(var item in obj.Items)
                         {
-                            Sword.Serialize((Sword)item, stream);
+                            global::FourSer.TestUser.CollectionWithCountSizeReference.Sword.Serialize((global::FourSer.TestUser.CollectionWithCountSizeReference.Sword)item, stream);
                         }
                         break;
                     }
-                    case Shield:
+                    case global::FourSer.TestUser.CollectionWithCountSizeReference.Shield:
                     {
                         foreach(var item in obj.Items)
                         {
-                            Shield.Serialize((Shield)item, stream);
+                            global::FourSer.TestUser.CollectionWithCountSizeReference.Shield.Serialize((global::FourSer.TestUser.CollectionWithCountSizeReference.Shield)item, stream);
                         }
                         break;
                     }
-                    case Potion:
+                    case global::FourSer.TestUser.CollectionWithCountSizeReference.Potion:
                     {
                         foreach(var item in obj.Items)
                         {
-                            Potion.Serialize((Potion)item, stream);
+                            global::FourSer.TestUser.CollectionWithCountSizeReference.Potion.Serialize((global::FourSer.TestUser.CollectionWithCountSizeReference.Potion)item, stream);
                         }
                         break;
                     }

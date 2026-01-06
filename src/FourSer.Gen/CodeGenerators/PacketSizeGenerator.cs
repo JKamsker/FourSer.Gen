@@ -61,7 +61,7 @@ public static class PacketSizeGenerator
             sb.WriteLineFormat
             (
                 "size += {0}.GetPacketSize(obj.{1}); // Size for nested type {1}",
-                TypeHelper.GetSimpleTypeName(member.TypeName),
+                TypeHelper.GetGlobalTypeName(member.TypeName),
                 member.Name
             );
         }
@@ -146,7 +146,7 @@ public static class PacketSizeGenerator
             using var _ = sb.BeginBlock();
             sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
             using var __ = sb.BeginBlock();
-            sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetSimpleTypeName(info.TypeName));
+            sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
         }
         else if (info.IsUnmanaged)
         {
@@ -239,7 +239,7 @@ public static class PacketSizeGenerator
             sb.WriteLineFormat("var span_{0} = obj.{0}.Memory.Span;", member.Name);
             sb.WriteLineFormat("for (int i = 0; i < span_{0}.Length; i++)", member.Name);
             using var __ = sb.BeginBlock();
-            sb.WriteLineFormat("size += {0}.GetPacketSize(span_{1}[i]);", TypeHelper.GetSimpleTypeName(info.TypeName), member.Name);
+            sb.WriteLineFormat("size += {0}.GetPacketSize(span_{1}[i]);", TypeHelper.GetGlobalTypeName(info.TypeName), member.Name);
         }
         else if (info.IsUnmanaged)
         {
@@ -293,8 +293,8 @@ public static class PacketSizeGenerator
         sb.Indent();
         foreach (var option in info.Options)
         {
-            var typeName = TypeHelper.GetSimpleTypeName(option.Type);
-            var varName = typeName.ToCamelCase();
+            var typeName = TypeHelper.GetGlobalTypeName(option.Type);
+            var varName = TypeHelper.GetSimpleTypeName(option.Type).ToCamelCase();
             sb.WriteLineFormat("{0} {1} => {2}.GetPacketSize({1}),", typeName, varName, typeName);
         }
 
@@ -328,7 +328,7 @@ public static class PacketSizeGenerator
         using var _ = sb.BeginBlock();
         foreach (var option in info.Options)
         {
-            var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+            var typeName = TypeHelper.GetGlobalTypeName(option.Type);
             sb.WriteLineFormat("case {0} typedInstance:", typeName);
             sb.WriteLineFormat("    size += {0}.GetPacketSize(typedInstance);", typeName);
             sb.WriteLine("    break;");

@@ -27,7 +27,7 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         {
             foreach(var item in obj.Cats)
             {
-                size += Cat.GetPacketSize(item);
+                size += global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat.GetPacketSize(item);
             }
         }
         return size;
@@ -49,7 +49,7 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat>(catsCount);
         for (int i = 0; i < catsCount; i++)
         {
-            cats.Add(Cat.Deserialize(ref buffer));
+            cats.Add(global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat.Deserialize(ref buffer));
         }
         var obj = new UShortCountTest(cats);
         return obj;
@@ -66,7 +66,7 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat>(catsCount);
         for (int i = 0; i < catsCount; i++)
         {
-            cats.Add(Cat.Deserialize(stream));
+            cats.Add(global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat.Deserialize(stream));
         }
         var obj = new UShortCountTest(cats);
         return obj;
@@ -84,7 +84,7 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
             SpanWriter.WriteUInt16(ref data, (ushort)(obj.Cats.Count));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
-                Cat.Serialize(obj.Cats[i], ref data);
+                global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat.Serialize(obj.Cats[i], ref data);
             }
         }
     }
@@ -106,7 +106,7 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
             StreamWriter.WriteUInt16(stream, (ushort)(obj.Cats.Count));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
-                Cat.Serialize(obj.Cats[i], stream);
+                global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat.Serialize(obj.Cats[i], stream);
             }
         }
     }

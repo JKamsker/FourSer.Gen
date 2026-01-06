@@ -103,7 +103,7 @@ public partial class MainObject : ISerializable<MainObject>
         {
             foreach(var item in obj.Items)
             {
-                size += Item.GetPacketSize(item);
+                size += global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.GetPacketSize(item);
             }
         }
         return size;
@@ -125,7 +125,7 @@ public partial class MainObject : ISerializable<MainObject>
         var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>(itemsCount);
         for (int i = 0; i < itemsCount; i++)
         {
-            items.Add(Item.Deserialize(ref buffer));
+            items.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Deserialize(ref buffer));
         }
         var obj = new MainObject(items);
         return obj;
@@ -142,7 +142,7 @@ public partial class MainObject : ISerializable<MainObject>
         var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>(itemsCount);
         for (int i = 0; i < itemsCount; i++)
         {
-            items.Add(Item.Deserialize(stream));
+            items.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Deserialize(stream));
         }
         var obj = new MainObject(items);
         return obj;
@@ -160,7 +160,7 @@ public partial class MainObject : ISerializable<MainObject>
             SpanWriter.WriteInt32(ref data, (int)(obj.Items.Count));
             for (int i = 0; i < obj.Items.Count; i++)
             {
-                Item.Serialize(obj.Items[i], ref data);
+                global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Serialize(obj.Items[i], ref data);
             }
         }
     }
@@ -182,7 +182,7 @@ public partial class MainObject : ISerializable<MainObject>
             StreamWriter.WriteInt32(stream, (int)(obj.Items.Count));
             for (int i = 0; i < obj.Items.Count; i++)
             {
-                Item.Serialize(obj.Items[i], stream);
+                global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Serialize(obj.Items[i], stream);
             }
         }
     }

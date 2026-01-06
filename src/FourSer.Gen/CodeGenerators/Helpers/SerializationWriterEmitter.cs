@@ -68,7 +68,7 @@ internal static class SerializationWriterEmitter
             sb.WriteLineFormat
             (
                 "var bytesWritten = {0}.Serialize({1}, {2});",
-                TypeHelper.GetSimpleTypeName(typeName),
+                TypeHelper.GetGlobalTypeName(typeName),
                 instanceName,
                 ctx.Target
             );
@@ -76,7 +76,7 @@ internal static class SerializationWriterEmitter
         }
         else
         {
-            sb.WriteLineFormat("{0}.Serialize({1}, {2});", TypeHelper.GetSimpleTypeName(typeName), instanceName, ctx.Target);
+            sb.WriteLineFormat("{0}.Serialize({1}, {2});", TypeHelper.GetGlobalTypeName(typeName), instanceName, ctx.Target);
         }
     }
 }

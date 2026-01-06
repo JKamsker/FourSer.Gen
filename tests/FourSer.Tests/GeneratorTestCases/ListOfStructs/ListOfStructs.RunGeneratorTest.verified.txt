@@ -96,7 +96,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         {
             foreach(var item in obj.Structs)
             {
-                size += MyStruct.GetPacketSize(item);
+                size += global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.GetPacketSize(item);
             }
         }
         return size;
@@ -118,7 +118,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         var structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
         for (int i = 0; i < structsCount; i++)
         {
-            structs.Add(MyStruct.Deserialize(ref buffer));
+            structs.Add(global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.Deserialize(ref buffer));
         }
         var obj = new PacketWithListOfStructs(structs);
         return obj;
@@ -135,7 +135,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         var structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
         for (int i = 0; i < structsCount; i++)
         {
-            structs.Add(MyStruct.Deserialize(stream));
+            structs.Add(global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.Deserialize(stream));
         }
         var obj = new PacketWithListOfStructs(structs);
         return obj;
@@ -153,7 +153,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
             SpanWriter.WriteInt32(ref data, (int)(obj.Structs.Count));
             for (int i = 0; i < obj.Structs.Count; i++)
             {
-                MyStruct.Serialize(obj.Structs[i], ref data);
+                global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.Serialize(obj.Structs[i], ref data);
             }
         }
     }
@@ -175,7 +175,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
             StreamWriter.WriteInt32(stream, (int)(obj.Structs.Count));
             for (int i = 0; i < obj.Structs.Count; i++)
             {
-                MyStruct.Serialize(obj.Structs[i], stream);
+                global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.Serialize(obj.Structs[i], stream);
             }
         }
     }

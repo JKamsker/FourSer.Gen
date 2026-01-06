@@ -390,7 +390,7 @@ public static class SerializationGenerator
                 foreach (var option in info.Options)
                 {
                     var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                    sb.WriteLineFormat("{0} => ({1}){2},", TypeHelper.GetSimpleTypeName(option.Type), typeIdType, key);
+                    sb.WriteLineFormat("{0} => ({1}){2},", TypeHelper.GetGlobalTypeName(option.Type), typeIdType, key);
                 }
 
                 sb.WriteLine
@@ -420,7 +420,7 @@ public static class SerializationGenerator
         {
             foreach (var option in info.Options)
             {
-                var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+                var typeName = TypeHelper.GetGlobalTypeName(option.Type);
                 var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
                 sb.WriteLineFormat("case {0}:", typeName);
                 sb.WriteLineFormat("    {0} = {1};", assignmentTarget, key);

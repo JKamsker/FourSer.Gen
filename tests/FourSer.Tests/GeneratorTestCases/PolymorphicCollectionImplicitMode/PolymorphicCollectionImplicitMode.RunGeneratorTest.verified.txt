@@ -30,9 +30,9 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 size += item switch
                 {
-                    Sword sword => Sword.GetPacketSize(sword),
-                    Shield shield => Shield.GetPacketSize(shield),
-                    Potion potion => Potion.GetPacketSize(potion),
+                    global::FourSer.TestUser.Sword sword => global::FourSer.TestUser.Sword.GetPacketSize(sword),
+                    global::FourSer.TestUser.Shield shield => global::FourSer.TestUser.Shield.GetPacketSize(shield),
+                    global::FourSer.TestUser.Potion potion => global::FourSer.TestUser.Potion.GetPacketSize(potion),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
                 };
             }
@@ -63,7 +63,7 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    var item = Sword.Deserialize(ref buffer);
+                    var item = global::FourSer.TestUser.Sword.Deserialize(ref buffer);
                     items.Add(item);
                 }
                 break;
@@ -72,7 +72,7 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    var item = Shield.Deserialize(ref buffer);
+                    var item = global::FourSer.TestUser.Shield.Deserialize(ref buffer);
                     items.Add(item);
                 }
                 break;
@@ -81,7 +81,7 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    var item = Potion.Deserialize(ref buffer);
+                    var item = global::FourSer.TestUser.Potion.Deserialize(ref buffer);
                     items.Add(item);
                 }
                 break;
@@ -109,7 +109,7 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    var item = Sword.Deserialize(stream);
+                    var item = global::FourSer.TestUser.Sword.Deserialize(stream);
                     items.Add(item);
                 }
                 break;
@@ -118,7 +118,7 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    var item = Shield.Deserialize(stream);
+                    var item = global::FourSer.TestUser.Shield.Deserialize(stream);
                     items.Add(item);
                 }
                 break;
@@ -127,7 +127,7 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    var item = Potion.Deserialize(stream);
+                    var item = global::FourSer.TestUser.Potion.Deserialize(stream);
                     items.Add(item);
                 }
                 break;
@@ -151,9 +151,9 @@ public partial class Inventory : ISerializable<Inventory>
             var firstItem = obj.Items[0];
             var discriminator = firstItem switch
             {
-                Sword => (long)10,
-                Shield => (long)20,
-                Potion => (long)30,
+                global::FourSer.TestUser.Sword => (long)10,
+                global::FourSer.TestUser.Shield => (long)20,
+                global::FourSer.TestUser.Potion => (long)30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
             SpanWriter.WriteInt64(ref data, (long)(discriminator));
@@ -169,27 +169,27 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 switch (obj.Items[0])
                 {
-                    case Sword:
+                    case global::FourSer.TestUser.Sword:
                     {
                         foreach(var item in obj.Items)
                         {
-                            Sword.Serialize((Sword)item, ref data);
+                            global::FourSer.TestUser.Sword.Serialize((global::FourSer.TestUser.Sword)item, ref data);
                         }
                         break;
                     }
-                    case Shield:
+                    case global::FourSer.TestUser.Shield:
                     {
                         foreach(var item in obj.Items)
                         {
-                            Shield.Serialize((Shield)item, ref data);
+                            global::FourSer.TestUser.Shield.Serialize((global::FourSer.TestUser.Shield)item, ref data);
                         }
                         break;
                     }
-                    case Potion:
+                    case global::FourSer.TestUser.Potion:
                     {
                         foreach(var item in obj.Items)
                         {
-                            Potion.Serialize((Potion)item, ref data);
+                            global::FourSer.TestUser.Potion.Serialize((global::FourSer.TestUser.Potion)item, ref data);
                         }
                         break;
                     }
@@ -217,9 +217,9 @@ public partial class Inventory : ISerializable<Inventory>
             var firstItem = obj.Items[0];
             var discriminator = firstItem switch
             {
-                Sword => (long)10,
-                Shield => (long)20,
-                Potion => (long)30,
+                global::FourSer.TestUser.Sword => (long)10,
+                global::FourSer.TestUser.Shield => (long)20,
+                global::FourSer.TestUser.Potion => (long)30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
             StreamWriter.WriteInt64(stream, (long)(discriminator));
@@ -235,27 +235,27 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 switch (obj.Items[0])
                 {
-                    case Sword:
+                    case global::FourSer.TestUser.Sword:
                     {
                         foreach(var item in obj.Items)
                         {
-                            Sword.Serialize((Sword)item, stream);
+                            global::FourSer.TestUser.Sword.Serialize((global::FourSer.TestUser.Sword)item, stream);
                         }
                         break;
                     }
-                    case Shield:
+                    case global::FourSer.TestUser.Shield:
                     {
                         foreach(var item in obj.Items)
                         {
-                            Shield.Serialize((Shield)item, stream);
+                            global::FourSer.TestUser.Shield.Serialize((global::FourSer.TestUser.Shield)item, stream);
                         }
                         break;
                     }
-                    case Potion:
+                    case global::FourSer.TestUser.Potion:
                     {
                         foreach(var item in obj.Items)
                         {
-                            Potion.Serialize((Potion)item, stream);
+                            global::FourSer.TestUser.Potion.Serialize((global::FourSer.TestUser.Potion)item, stream);
                         }
                         break;
                     }

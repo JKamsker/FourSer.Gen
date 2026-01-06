@@ -19,19 +19,19 @@ public partial class MemoryOwnerTestWrapper
 [GenerateSerializer]
 public partial class MemoryOwnerEnumerableTestWrapper
 {
-    public IEnumerable<TestMemoryOwner> Items { get; set; }
+    public IEnumerable<TestMemoryOwner> TestMemoryOwner { get; set; }
 }
 
 [GenerateSerializer]
 public partial class MemoryOwnerListTestWrapper
 {
-    public List<TestMemoryOwner> Items { get; set; }
+    public List<TestMemoryOwner> TestMemoryOwner { get; set; }
 }
 
 [GenerateSerializer]
 public partial class MemoryOwnerArrayTestWrapper
 {
-    public TestMemoryOwner[] Items { get; set; }
+    public TestMemoryOwner[] TestMemoryOwner { get; set; }
 }
 
 

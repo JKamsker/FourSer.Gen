@@ -176,7 +176,7 @@ internal static class MemoryOwnerSerializer
             {
                 sb.WriteLineFormat(
                     "{0}.Serialize({1}, ref {2});",
-                    TypeHelper.GetSimpleTypeName(elementInfo.ElementTypeName),
+                    TypeHelper.GetGlobalTypeName(elementInfo.ElementTypeName),
                     elementAccess,
                     ctx.Target
                 );
@@ -185,7 +185,7 @@ internal static class MemoryOwnerSerializer
             {
                 sb.WriteLineFormat(
                     "{0}.Serialize({1}, {2});",
-                    TypeHelper.GetSimpleTypeName(elementInfo.ElementTypeName),
+                    TypeHelper.GetGlobalTypeName(elementInfo.ElementTypeName),
                     elementAccess,
                     ctx.Target
                 );

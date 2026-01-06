@@ -133,6 +133,32 @@ public static class TypeHelper
     }
 
     /// <summary>
+    ///     Gets the globally qualified type name to avoid ambiguity with member names.
+    ///     Uses global:: prefix with the full type name.
+    /// </summary>
+    public static string GetGlobalTypeName(string? fullyQualifiedName)
+    {
+        if (string.IsNullOrEmpty(fullyQualifiedName))
+        {
+            return string.Empty;
+        }
+
+        // If it already has global:: prefix, return as is
+        if (fullyQualifiedName!.StartsWith("global::"))
+        {
+            return fullyQualifiedName;
+        }
+
+        // If it's a simple name without namespace, just return it
+        if (!fullyQualifiedName.Contains('.'))
+        {
+            return fullyQualifiedName;
+        }
+
+        return $"global::{fullyQualifiedName}";
+    }
+
+    /// <summary>
     ///     Determines if a collection contains byte elements and can use bulk operations
     /// </summary>
     public static bool IsByteCollection(string? elementTypeName)

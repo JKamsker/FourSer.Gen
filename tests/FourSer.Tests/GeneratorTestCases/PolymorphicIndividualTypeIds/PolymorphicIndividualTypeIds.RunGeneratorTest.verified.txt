@@ -30,8 +30,8 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
                 size += sizeof(byte); // Size for polymorphic type id
                 size += item switch
                 {
-                    Cat cat => Cat.GetPacketSize(cat),
-                    Dog dog => Dog.GetPacketSize(dog),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat cat => global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat.GetPacketSize(cat),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog dog => global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog.GetPacketSize(dog),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Animals: {item.GetType().Name}")
                 };
             }
@@ -61,12 +61,12 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
             {
                 case 1:
                 {
-                    item = Cat.Deserialize(ref buffer);
+                    item = global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat.Deserialize(ref buffer);
                     break;
                 }
                 case 2:
                 {
-                    item = Dog.Deserialize(ref buffer);
+                    item = global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog.Deserialize(ref buffer);
                     break;
                 }
                 default:
@@ -95,12 +95,12 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
             {
                 case 1:
                 {
-                    item = Cat.Deserialize(stream);
+                    item = global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat.Deserialize(stream);
                     break;
                 }
                 case 2:
                 {
-                    item = Dog.Deserialize(stream);
+                    item = global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog.Deserialize(stream);
                     break;
                 }
                 default:
@@ -126,16 +126,16 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
             {
                 switch (item)
                 {
-                    case Cat typedInstance:
+                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat typedInstance:
                     {
                         SpanWriter.WriteByte(ref data, (byte)(1));
-                        Cat.Serialize(typedInstance, ref data);
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat.Serialize(typedInstance, ref data);
                         break;
                     }
-                    case Dog typedInstance:
+                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog typedInstance:
                     {
                         SpanWriter.WriteByte(ref data, (byte)(2));
-                        Dog.Serialize(typedInstance, ref data);
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog.Serialize(typedInstance, ref data);
                         break;
                     }
                     case null:
@@ -166,16 +166,16 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
             {
                 switch (item)
                 {
-                    case Cat typedInstance:
+                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat typedInstance:
                     {
                         StreamWriter.WriteByte(stream, (byte)(1));
-                        Cat.Serialize(typedInstance, stream);
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat.Serialize(typedInstance, stream);
                         break;
                     }
-                    case Dog typedInstance:
+                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog typedInstance:
                     {
                         StreamWriter.WriteByte(stream, (byte)(2));
-                        Dog.Serialize(typedInstance, stream);
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog.Serialize(typedInstance, stream);
                         break;
                     }
                     case null:

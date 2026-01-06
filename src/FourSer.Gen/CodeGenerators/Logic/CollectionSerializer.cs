@@ -312,11 +312,11 @@ internal static class CollectionSerializer
         {
             if (ctx.IsSpan)
             {
-                sb.WriteLineFormat("{0}.Serialize({1}, ref {2});", TypeHelper.GetSimpleTypeName(typeName), elementAccess, ctx.Target);
+                sb.WriteLineFormat("{0}.Serialize({1}, ref {2});", TypeHelper.GetGlobalTypeName(typeName), elementAccess, ctx.Target);
             }
             else
             {
-                sb.WriteLineFormat("{0}.Serialize({1}, {2});", TypeHelper.GetSimpleTypeName(typeName), elementAccess, ctx.Target);
+                sb.WriteLineFormat("{0}.Serialize({1}, {2});", TypeHelper.GetGlobalTypeName(typeName), elementAccess, ctx.Target);
             }
         }
         else if (isUnmanagedType)

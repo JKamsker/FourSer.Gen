@@ -90,7 +90,7 @@ internal static class PolymorphicSerializer
     {
         foreach (var option in info.Options)
         {
-            var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+            var typeName = TypeHelper.GetGlobalTypeName(option.Type);
             sb.WriteLineFormat("case {0} typedInstance:", typeName);
             using (sb.BeginBlock())
             {
@@ -120,7 +120,7 @@ internal static class PolymorphicSerializer
                 );
             }
 
-            var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+            var typeName = TypeHelper.GetGlobalTypeName(option.Type);
             if (ctx.IsSpan)
             {
                 s.WriteLineFormat($"{typeName}.Serialize(typedInstance, ref {ctx.Target});");
@@ -225,7 +225,7 @@ internal static class PolymorphicSerializer
             {
                 foreach (var option in info.Options)
                 {
-                    var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+                    var typeName = TypeHelper.GetGlobalTypeName(option.Type);
                     sb.WriteLineFormat("case {0}:", typeName);
                     using (sb.BeginBlock())
                     {
@@ -302,7 +302,7 @@ internal static class PolymorphicSerializer
                 foreach (var option in info.Options)
                 {
                     var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                    var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+                    var typeName = TypeHelper.GetGlobalTypeName(option.Type);
                     sb.WriteLine($"case {key}:");
                     using (sb.BeginBlock())
                     {
@@ -341,7 +341,7 @@ internal static class PolymorphicSerializer
         foreach (var option in info.Options)
         {
             var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-            sb.WriteLineFormat("{0} => ({1}){2},", TypeHelper.GetSimpleTypeName(option.Type), typeIdType, key);
+            sb.WriteLineFormat("{0} => ({1}){2},", TypeHelper.GetGlobalTypeName(option.Type), typeIdType, key);
         }
 
         sb.WriteLine($"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")");
@@ -436,7 +436,7 @@ internal static class PolymorphicSerializer
         foreach (var option in info.Options)
         {
             var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-            sb.WriteLineFormat($"{TypeHelper.GetSimpleTypeName(option.Type)} => ({typeIdType}){key},");
+            sb.WriteLineFormat($"{TypeHelper.GetGlobalTypeName(option.Type)} => ({typeIdType}){key},");
         }
 
         sb.WriteLine
@@ -452,7 +452,7 @@ internal static class PolymorphicSerializer
             foreach (var option in info.Options)
             {
                 var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                var typeName = TypeHelper.GetSimpleTypeName(option.Type);
+                var typeName = TypeHelper.GetGlobalTypeName(option.Type);
                 sb.WriteLine($"case {key}:");
                 using (sb.BeginBlock())
                 {

@@ -132,7 +132,7 @@ public partial class Parent : ISerializable<Parent>, IDisposable
         var size = 0;
         size += sizeof(int); // Count size for Data
         size += (obj.Data?.Memory.Length ?? 0) * sizeof(byte);
-        size += Child.GetPacketSize(obj.DisposableProperty); // Size for nested type DisposableProperty
+        size += global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.GetPacketSize(obj.DisposableProperty); // Size for nested type DisposableProperty
         return size;
     }
 
@@ -154,7 +154,7 @@ public partial class Parent : ISerializable<Parent>, IDisposable
         var data = MemoryPool<byte>.Shared.Rent(dataCount).SliceToSize(dataCount);
         var dataSpan = data.Memory.Span;
         SpanReader.ReadBytes(ref buffer, dataSpan);
-        var disposableProperty = Child.Deserialize(ref buffer);
+        var disposableProperty = global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.Deserialize(ref buffer);
         var obj = new Parent(data, disposableProperty);
         return obj;
     }
@@ -170,7 +170,7 @@ public partial class Parent : ISerializable<Parent>, IDisposable
         var data = MemoryPool<byte>.Shared.Rent(dataCount).SliceToSize(dataCount);
         var dataSpan = data.Memory.Span;
         stream.ReadExactly(dataSpan);
-        var disposableProperty = Child.Deserialize(stream);
+        var disposableProperty = global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.Deserialize(stream);
         var obj = new Parent(data, disposableProperty);
         return obj;
     }

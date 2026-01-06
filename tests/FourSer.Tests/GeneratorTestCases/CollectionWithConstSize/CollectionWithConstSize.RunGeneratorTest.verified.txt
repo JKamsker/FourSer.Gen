@@ -26,7 +26,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         {
             foreach(var item in obj.MyList)
             {
-                size += Entity.GetPacketSize(item);
+                size += global::FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity.GetPacketSize(item);
             }
         }
         return size;
@@ -47,7 +47,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         var myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity>(10);
         for (int i = 0; i < 10; i++)
         {
-            myList.Add(Entity.Deserialize(ref buffer));
+            myList.Add(global::FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity.Deserialize(ref buffer));
         }
         var obj = new EnumerableOfReferenceTypes(myList);
         return obj;
@@ -63,7 +63,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         var myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity>(10);
         for (int i = 0; i < 10; i++)
         {
-            myList.Add(Entity.Deserialize(stream));
+            myList.Add(global::FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity.Deserialize(stream));
         }
         var obj = new EnumerableOfReferenceTypes(myList);
         return obj;
@@ -82,7 +82,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         }
         for (int i = 0; i < obj.MyList.Count; i++)
         {
-            Entity.Serialize(obj.MyList[i], ref data);
+            global::FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity.Serialize(obj.MyList[i], ref data);
         }
     }
 
@@ -104,7 +104,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         }
         for (int i = 0; i < obj.MyList.Count; i++)
         {
-            Entity.Serialize(obj.MyList[i], stream);
+            global::FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity.Serialize(obj.MyList[i], stream);
         }
     }
 }

@@ -30,8 +30,8 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             {
                 size += item switch
                 {
-                    Cat cat => Cat.GetPacketSize(cat),
-                    Dog dog => Dog.GetPacketSize(dog),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat cat => global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat.GetPacketSize(cat),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog dog => global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog.GetPacketSize(dog),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Animals: {item.GetType().Name}")
                 };
             }
@@ -62,7 +62,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             {
                 for (int i = 0; i < animalsCount; i++)
                 {
-                    var item = Cat.Deserialize(ref buffer);
+                    var item = global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat.Deserialize(ref buffer);
                     animals.Add(item);
                 }
                 break;
@@ -71,7 +71,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             {
                 for (int i = 0; i < animalsCount; i++)
                 {
-                    var item = Dog.Deserialize(ref buffer);
+                    var item = global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog.Deserialize(ref buffer);
                     animals.Add(item);
                 }
                 break;
@@ -99,7 +99,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             {
                 for (int i = 0; i < animalsCount; i++)
                 {
-                    var item = Cat.Deserialize(stream);
+                    var item = global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat.Deserialize(stream);
                     animals.Add(item);
                 }
                 break;
@@ -108,7 +108,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             {
                 for (int i = 0; i < animalsCount; i++)
                 {
-                    var item = Dog.Deserialize(stream);
+                    var item = global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog.Deserialize(stream);
                     animals.Add(item);
                 }
                 break;
@@ -132,8 +132,8 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             var firstItem = obj.Animals[0];
             var discriminator = firstItem switch
             {
-                Cat => (byte)1,
-                Dog => (byte)2,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat => (byte)1,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog => (byte)2,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
             SpanWriter.WriteByte(ref data, (byte)(discriminator));
@@ -149,19 +149,19 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             {
                 switch (obj.Animals[0])
                 {
-                    case Cat:
+                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat:
                     {
                         foreach(var item in obj.Animals)
                         {
-                            Cat.Serialize((Cat)item, ref data);
+                            global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat)item, ref data);
                         }
                         break;
                     }
-                    case Dog:
+                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog:
                     {
                         foreach(var item in obj.Animals)
                         {
-                            Dog.Serialize((Dog)item, ref data);
+                            global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog)item, ref data);
                         }
                         break;
                     }
@@ -189,8 +189,8 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             var firstItem = obj.Animals[0];
             var discriminator = firstItem switch
             {
-                Cat => (byte)1,
-                Dog => (byte)2,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat => (byte)1,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog => (byte)2,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
             StreamWriter.WriteByte(stream, (byte)(discriminator));
@@ -206,19 +206,19 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             {
                 switch (obj.Animals[0])
                 {
-                    case Cat:
+                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat:
                     {
                         foreach(var item in obj.Animals)
                         {
-                            Cat.Serialize((Cat)item, stream);
+                            global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat)item, stream);
                         }
                         break;
                     }
-                    case Dog:
+                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog:
                     {
                         foreach(var item in obj.Animals)
                         {
-                            Dog.Serialize((Dog)item, stream);
+                            global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog)item, stream);
                         }
                         break;
                     }

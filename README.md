@@ -206,35 +206,71 @@ public partial class MyPacket
 }
 ```
 
-### IMemoryOwner<T> (pooled buffers)
+### IMemoryOwner<T> (Pooled Buffers)
 
-FourSer.Gen supports `System.Buffers.IMemoryOwner<T>` as a collection when used
-with `[SerializeCollection]`.
+FourSer.Gen supports `System.Buffers.IMemoryOwner<T>` as a collection type when used with `[SerializeCollection]`. This enables zero-copy deserialization with pooled memory, reducing GC pressure for high-throughput scenarios.
 
-- The buffer contents are serialized via `owner.Memory`.
-- Length/count is taken from `owner.Memory.Length` (including when using
-  `CountSizeReference`).
-- During deserialization the generator rents from `MemoryPool<T>.Shared` and
-  slices the returned owner to the requested length.
-- Deserialization requires the requested length to fit into `int` (because
-  `MemoryPool<T>.Rent(int)` takes an `int`).
-- `Unlimited = true` is not supported for `IMemoryOwner<T>`.
-- If a generated type owns `IMemoryOwner<T>` instances, it will also implement
-  `IDisposable` (unless you already provide one) and dispose them.
+#### How It Works
+
+- **Serialization**: The buffer contents are serialized via `owner.Memory.Span`.
+- **Deserialization**: The generator rents a buffer from `MemoryPool<T>.Shared` and slices it to the requested length.
+- **Length Handling**: The count is taken from `owner.Memory.Length`, and all standard count options (`CountType`, `CountSize`, `CountSizeReference`) are supported.
+
+#### Basic Example
 
 ```csharp
 using System.Buffers;
 using FourSer.Contracts;
 
 [GenerateSerializer]
-public partial class MyPacket
+public partial class BinaryPayload
 {
     public long Size { get; set; }
 
     [SerializeCollection(CountSizeReference = nameof(Size))]
-    public IMemoryOwner<byte> Payload { get; set; }
+    public IMemoryOwner<byte> Data { get; set; }
 }
 ```
+
+#### Automatic IDisposable Generation
+
+When a type contains `IMemoryOwner<T>` properties (directly or via nested types), FourSer.Gen automatically generates `IDisposable` implementation to ensure proper cleanup of pooled memory:
+
+```csharp
+[GenerateSerializer]
+public partial class PooledPacket
+{
+    [SerializeCollection(CountType = typeof(ushort))]
+    public IMemoryOwner<byte> Payload { get; set; }
+}
+// PooledPacket automatically implements IDisposable
+// and disposes Payload when Dispose() is called.
+
+// Wrapper types also get IDisposable:
+[GenerateSerializer]
+public partial class PacketWrapper
+{
+    public PooledPacket Inner { get; set; }
+}
+// PacketWrapper implements IDisposable and disposes Inner.
+
+// Collections of disposable types are also handled:
+[GenerateSerializer]
+public partial class PacketCollection
+{
+    [SerializeCollection]
+    public List<PooledPacket> Packets { get; set; }
+}
+// PacketCollection implements IDisposable and disposes each packet in Packets.
+```
+
+> **Important**: Always dispose types containing `IMemoryOwner<T>` to return buffers to the pool.
+
+#### Limitations
+
+- `Unlimited = true` is **not supported** for `IMemoryOwner<T>` (the pool requires a known size).
+- The requested length must fit into `int` (due to `MemoryPool<T>.Rent(int)` signature).
+- If you provide your own `IDisposable` implementation, the generator will not override it.
 
 ### Polymorphic Collections
 

@@ -256,7 +256,7 @@ public static class DeserializationGenerator
         }
         else if (member.HasGenerateSerializerAttribute)
         {
-            sb.WriteLineFormat("{0} = {1}.Deserialize({2}{3});", target, TypeHelper.GetSimpleTypeName(member.TypeName), refOrEmpty, source);
+            sb.WriteLineFormat("{0} = {1}.Deserialize({2}{3});", target, TypeHelper.GetGlobalTypeName(member.TypeName), refOrEmpty, source);
         }
         else if (member.IsStringType)
         {
@@ -388,7 +388,7 @@ public static class DeserializationGenerator
                 sb.WriteLineFormat(
                     "{0} = {1}.Deserialize({2}{3});",
                     elementTarget,
-                    TypeHelper.GetSimpleTypeName(elementTypeName),
+                    TypeHelper.GetGlobalTypeName(elementTypeName),
                     refOrEmpty,
                     source
                 );
@@ -585,7 +585,7 @@ public static class DeserializationGenerator
                         using (sb.BeginBlock())
                         {
                             sb.WriteLineFormat
-                                ("var item = {0}.Deserialize({1}{2});", TypeHelper.GetSimpleTypeName(option.Type), refOrEmpty, source);
+                                ("var item = {0}.Deserialize({1}{2});", TypeHelper.GetGlobalTypeName(option.Type), refOrEmpty, source);
                             sb.WriteLineFormat("{0}.Add(item);", memberName);
                         }
 
@@ -842,7 +842,7 @@ public static class DeserializationGenerator
             sb.WriteLineFormat("case {0}:", key);
 
             using var __ = sb.BeginBlock();
-            sb.WriteLineFormat("{0} = {1}.Deserialize({2}{3});", memberName, TypeHelper.GetSimpleTypeName(option.Type), refOrEmpty, source);
+            sb.WriteLineFormat("{0} = {1}.Deserialize({2}{3});", memberName, TypeHelper.GetGlobalTypeName(option.Type), refOrEmpty, source);
             sb.WriteLine("break;");
         }
 
@@ -884,7 +884,7 @@ public static class DeserializationGenerator
 
             sb.WriteLineFormat("case {0}:", key);
             using var __ = sb.BeginBlock();
-            sb.WriteLineFormat("{0} = {1}.Deserialize({2}{3});", assignmentTarget, TypeHelper.GetSimpleTypeName(option.Type), refOrEmpty, source);
+            sb.WriteLineFormat("{0} = {1}.Deserialize({2}{3});", assignmentTarget, TypeHelper.GetGlobalTypeName(option.Type), refOrEmpty, source);
             sb.WriteLine("break;");
         }
 
@@ -925,7 +925,7 @@ public static class DeserializationGenerator
         {
             sb.WriteLineFormat
             (
-                "{0}[{1}] = {2}.Deserialize({3}{4});", arrayName, indexVar, TypeHelper.GetSimpleTypeName(elementInfo.ElementTypeName), refOrEmpty, source
+                "{0}[{1}] = {2}.Deserialize({3}{4});", arrayName, indexVar, TypeHelper.GetGlobalTypeName(elementInfo.ElementTypeName), refOrEmpty, source
             );
         }
     }
@@ -953,7 +953,7 @@ public static class DeserializationGenerator
         {
             sb.WriteLineFormat
             (
-                "{0}.Add({1}.Deserialize({2}{3}));", collectionTarget, TypeHelper.GetSimpleTypeName(elementInfo.TypeName), refOrEmpty, source
+                "{0}.Add({1}.Deserialize({2}{3}));", collectionTarget, TypeHelper.GetGlobalTypeName(elementInfo.TypeName), refOrEmpty, source
             );
         }
         else if (elementInfo.IsUnmanagedType)
@@ -1001,7 +1001,7 @@ public static class DeserializationGenerator
         {
             sb.WriteLineFormat
             (
-                "{0}.{1}({2}.Deserialize({3}{4}));", collectionTarget, addMethod, TypeHelper.GetSimpleTypeName(elementInfo.ElementTypeName), refOrEmpty, source
+                "{0}.{1}({2}.Deserialize({3}{4}));", collectionTarget, addMethod, TypeHelper.GetGlobalTypeName(elementInfo.ElementTypeName), refOrEmpty, source
             );
         }
     }

@@ -22,7 +22,7 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += FourSerString.GetPacketSize(obj.Name); // Size for nested type Name
+        size += global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.GetPacketSize(obj.Name); // Size for nested type Name
         return size;
     }
 
@@ -38,7 +38,7 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
 
     public static WrapperUserClass Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var name = FourSerString.Deserialize(ref buffer);
+        var name = global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Deserialize(ref buffer);
         var obj = new WrapperUserClass(name);
         return obj;
     }
@@ -50,7 +50,7 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
 
     public static WrapperUserClass Deserialize(System.IO.Stream stream)
     {
-        var name = FourSerString.Deserialize(stream);
+        var name = global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Deserialize(stream);
         var obj = new WrapperUserClass(name);
         return obj;
     }

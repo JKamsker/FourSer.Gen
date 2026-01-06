@@ -27,7 +27,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
         {
             foreach(var item in obj.Dogs)
             {
-                size += Dog.GetPacketSize(item);
+                size += global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.GetPacketSize(item);
             }
         }
         return size;
@@ -49,7 +49,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
         var dogs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(dogsCount);
         for (int i = 0; i < dogsCount; i++)
         {
-            dogs.Add(Dog.Deserialize(ref buffer));
+            dogs.Add(global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.Deserialize(ref buffer));
         }
         var obj = new ConcreteInheritanceTest(dogs);
         return obj;
@@ -66,7 +66,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
         var dogs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(dogsCount);
         for (int i = 0; i < dogsCount; i++)
         {
-            dogs.Add(Dog.Deserialize(stream));
+            dogs.Add(global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.Deserialize(stream));
         }
         var obj = new ConcreteInheritanceTest(dogs);
         return obj;
@@ -84,7 +84,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
             SpanWriter.WriteInt32(ref data, (int)(obj.Dogs.Count));
             for (int i = 0; i < obj.Dogs.Count; i++)
             {
-                Dog.Serialize(obj.Dogs[i], ref data);
+                global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.Serialize(obj.Dogs[i], ref data);
             }
         }
     }
@@ -106,7 +106,7 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
             StreamWriter.WriteInt32(stream, (int)(obj.Dogs.Count));
             for (int i = 0; i < obj.Dogs.Count; i++)
             {
-                Dog.Serialize(obj.Dogs[i], stream);
+                global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.Serialize(obj.Dogs[i], stream);
             }
         }
     }

@@ -27,7 +27,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         {
             foreach(var item in obj.MyList)
             {
-                size += Entity.GetPacketSize(item);
+                size += global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.GetPacketSize(item);
             }
         }
         return size;
@@ -51,7 +51,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         var myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity>(count);
         for (int i = 0; i < count; i++)
         {
-            myList.Add(Entity.Deserialize(ref buffer));
+            myList.Add(global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.Deserialize(ref buffer));
         }
         var obj = new EnumerableOfReferenceTypes(count, myList);
         return obj;
@@ -68,7 +68,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         var myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity>(count);
         for (int i = 0; i < count; i++)
         {
-            myList.Add(Entity.Deserialize(stream));
+            myList.Add(global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.Deserialize(stream));
         }
         var obj = new EnumerableOfReferenceTypes(count, myList);
         return obj;
@@ -85,7 +85,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
             using var enumerator = obj.MyList.GetEnumerator();
             while (enumerator.MoveNext())
             {
-                Entity.Serialize(enumerator.Current, ref data);
+                global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.Serialize(enumerator.Current, ref data);
                 count++;
             }
         }
@@ -112,7 +112,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
             using var enumerator = obj.MyList.GetEnumerator();
             while (enumerator.MoveNext())
             {
-                Entity.Serialize(enumerator.Current, stream);
+                global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.Serialize(enumerator.Current, stream);
                 count++;
             }
         }

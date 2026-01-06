@@ -30,9 +30,9 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 size += item switch
                 {
-                    Sword sword => Sword.GetPacketSize(sword),
-                    Shield shield => Shield.GetPacketSize(shield),
-                    Potion potion => Potion.GetPacketSize(potion),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword.GetPacketSize(sword),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield shield => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield.GetPacketSize(shield),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion potion => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion.GetPacketSize(potion),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
                 };
             }
@@ -61,7 +61,7 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    var item = Sword.Deserialize(ref buffer);
+                    var item = global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword.Deserialize(ref buffer);
                     items.Add(item);
                 }
                 break;
@@ -70,7 +70,7 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    var item = Shield.Deserialize(ref buffer);
+                    var item = global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield.Deserialize(ref buffer);
                     items.Add(item);
                 }
                 break;
@@ -79,7 +79,7 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    var item = Potion.Deserialize(ref buffer);
+                    var item = global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion.Deserialize(ref buffer);
                     items.Add(item);
                 }
                 break;
@@ -107,7 +107,7 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    var item = Sword.Deserialize(stream);
+                    var item = global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword.Deserialize(stream);
                     items.Add(item);
                 }
                 break;
@@ -116,7 +116,7 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    var item = Shield.Deserialize(stream);
+                    var item = global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield.Deserialize(stream);
                     items.Add(item);
                 }
                 break;
@@ -125,7 +125,7 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    var item = Potion.Deserialize(stream);
+                    var item = global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion.Deserialize(stream);
                     items.Add(item);
                 }
                 break;
@@ -153,9 +153,9 @@ public partial class Inventory : ISerializable<Inventory>
         {
             var discriminator = enumerator.Current switch
             {
-                Sword => (Byte)10,
-                Shield => (Byte)20,
-                Potion => (Byte)30,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword => (Byte)10,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield => (Byte)20,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion => (Byte)30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {enumerator.Current.GetType().Name}")
             };
             SpanWriter.WriteByte(ref data, (Byte)(discriminator));
@@ -165,7 +165,7 @@ public partial class Inventory : ISerializable<Inventory>
                 {
                     do
                     {
-                        Sword.Serialize((Sword)enumerator.Current, ref data);
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword)enumerator.Current, ref data);
                         count++;
                     }
                     while (enumerator.MoveNext());
@@ -175,7 +175,7 @@ public partial class Inventory : ISerializable<Inventory>
                 {
                     do
                     {
-                        Shield.Serialize((Shield)enumerator.Current, ref data);
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield)enumerator.Current, ref data);
                         count++;
                     }
                     while (enumerator.MoveNext());
@@ -185,7 +185,7 @@ public partial class Inventory : ISerializable<Inventory>
                 {
                     do
                     {
-                        Potion.Serialize((Potion)enumerator.Current, ref data);
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion)enumerator.Current, ref data);
                         count++;
                     }
                     while (enumerator.MoveNext());
@@ -220,9 +220,9 @@ public partial class Inventory : ISerializable<Inventory>
         {
             var discriminator = enumerator.Current switch
             {
-                Sword => (Byte)10,
-                Shield => (Byte)20,
-                Potion => (Byte)30,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword => (Byte)10,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield => (Byte)20,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion => (Byte)30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {enumerator.Current.GetType().Name}")
             };
             StreamWriter.WriteByte(stream, (Byte)(discriminator));
@@ -232,7 +232,7 @@ public partial class Inventory : ISerializable<Inventory>
                 {
                     do
                     {
-                        Sword.Serialize((Sword)enumerator.Current, stream);
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword)enumerator.Current, stream);
                         count++;
                     }
                     while (enumerator.MoveNext());
@@ -242,7 +242,7 @@ public partial class Inventory : ISerializable<Inventory>
                 {
                     do
                     {
-                        Shield.Serialize((Shield)enumerator.Current, stream);
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield)enumerator.Current, stream);
                         count++;
                     }
                     while (enumerator.MoveNext());
@@ -252,7 +252,7 @@ public partial class Inventory : ISerializable<Inventory>
                 {
                     do
                     {
-                        Potion.Serialize((Potion)enumerator.Current, stream);
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion)enumerator.Current, stream);
                         count++;
                     }
                     while (enumerator.MoveNext());
