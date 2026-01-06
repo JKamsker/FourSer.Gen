@@ -97,6 +97,38 @@ internal static class TypeInfoProvider
         return false;
     }
 
+    private static bool HasUserProvidedDisposeMethod(INamedTypeSymbol typeSymbol)
+    {
+        foreach (var member in typeSymbol.GetMembers())
+        {
+            if (member is not IMethodSymbol method)
+            {
+                continue;
+            }
+
+            if (method.IsStatic || method.Parameters.Length != 0)
+            {
+                continue;
+            }
+
+            var isDisposeMethod = method.Name == "Dispose"
+                || method.ExplicitInterfaceImplementations.Any(i => i.Name == "Dispose" && i.ContainingType.IsIDisposable());
+
+            if (!isDisposeMethod)
+            {
+                continue;
+            }
+
+            // Only treat Dispose as "user-provided" when declared in source.
+            if (method.Locations.Any(l => l.IsInSource))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static bool RequiresDisposal(INamedTypeSymbol typeSymbol)
     {
         var visited = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
@@ -138,8 +170,9 @@ internal static class TypeInfoProvider
                     return true;
                 }
 
-                if (memberTypeSymbol is INamedTypeSymbol namedMemberType
-                    && HasGenerateSerializerAttribute(namedMemberType)
+                if (memberTypeSymbol is INamedTypeSymbol namedMemberType        
+                    && HasGenerateSerializerAttributeDirect(namedMemberType)
+                    && !HasUserProvidedDisposeMethod(namedMemberType)
                     && RequiresDisposal(namedMemberType, visited))
                 {
                     return true;
@@ -148,7 +181,8 @@ internal static class TypeInfoProvider
                 // Check if this is a collection with elements that require disposal
                 var elementType = GetCollectionElementType(memberTypeSymbol);
                 if (elementType is INamedTypeSymbol namedElementType
-                    && HasGenerateSerializerAttribute(namedElementType)
+                    && HasGenerateSerializerAttributeDirect(namedElementType)
+                    && !HasUserProvidedDisposeMethod(namedElementType)
                     && RequiresDisposal(namedElementType, visited))
                 {
                     return true;
@@ -594,8 +628,10 @@ internal static class TypeInfoProvider
         var location = m.Locations.First();
         var collectionInfo = GetCollectionInfo(m);
 
-        // Determine if the member type requires disposal
+        // Determine if the member type requires disposal (and is managed by FourSer.Gen)
         var memberRequiresDisposal = memberTypeSymbol is INamedTypeSymbol namedMemberTypeSymbol
+            && HasGenerateSerializerAttributeDirect(namedMemberTypeSymbol)
+            && !HasUserProvidedDisposeMethod(namedMemberTypeSymbol)
             && RequiresDisposal(namedMemberTypeSymbol);
 
         var memberToGenerate = new MemberToGenerate
@@ -682,8 +718,14 @@ internal static class TypeInfoProvider
 
         return false;
     }
-    
-   
+
+    private static bool HasGenerateSerializerAttributeDirect(INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol.GetAttributes()
+            .Any(ad => ad.AttributeClass is not null && ad.AttributeClass.IsGenerateSerializerAttribute());
+    }
+
+
 
     private static TypeToGenerate? CreateNestedTypeToGenerate(INamedTypeSymbol nestedTypeSymbol)
     {
@@ -727,6 +769,10 @@ internal static class TypeInfoProvider
         {
             var elementType = arrayTypeSymbol.ElementType;
             var arrayElementHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(elementType as INamedTypeSymbol);
+            var arrayElementRequiresDisposal = elementType is INamedTypeSymbol namedArrayElementType
+                && HasGenerateSerializerAttributeDirect(namedArrayElementType)
+                && !HasUserProvidedDisposeMethod(namedArrayElementType)
+                && RequiresDisposal(namedArrayElementType);
             var isGenericCollection1 =  typeSymbol is INamedTypeSymbol namedTypeSymbol1 &&
                 (namedTypeSymbol1.IsGenericICollection()
                     || namedTypeSymbol1.IsGenericIList()
@@ -740,6 +786,7 @@ internal static class TypeInfoProvider
                 IsElementUnmanagedType: elementType.IsUnmanagedType,
                 IsElementStringType: elementType.SpecialType == SpecialType.System_String,
                 HasElementGenerateSerializerAttribute: arrayElementHasGenerateSerializerAttribute,
+                ElementRequiresDisposal: arrayElementRequiresDisposal,
                 IsArray: true,
                 ConcreteTypeName: null,
                 IsPureEnumerable: false,
@@ -834,6 +881,10 @@ internal static class TypeInfoProvider
         }
 
         var hasGenerateSerializerAttribute = HasGenerateSerializerAttribute(genericElementType as INamedTypeSymbol);
+        var genericElementRequiresDisposal = genericElementType is INamedTypeSymbol namedGenericElementType
+            && HasGenerateSerializerAttributeDirect(namedGenericElementType)
+            && !HasUserProvidedDisposeMethod(namedGenericElementType)
+            && RequiresDisposal(namedGenericElementType);
         
         var isGenericCollection = originalNamedTypeSymbol.IsGenericICollection() 
             || originalNamedTypeSymbol.IsGenericIList() 
@@ -845,8 +896,9 @@ internal static class TypeInfoProvider
         (
             genericElementType.ToDisplayString(s_typeNameFormat),
             genericElementType.IsUnmanagedType,
-            genericElementType.SpecialType == SpecialType.System_String,
+            genericElementType.SpecialType == SpecialType.System_String,        
             hasGenerateSerializerAttribute,
+            genericElementRequiresDisposal,
             false,
             concreteTypeName,
             isPureEnumerable,

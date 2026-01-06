@@ -150,6 +150,7 @@ public readonly record struct CollectionTypeInfo
     bool IsElementUnmanagedType,
     bool IsElementStringType,
     bool HasElementGenerateSerializerAttribute,
+    bool ElementRequiresDisposal,
     bool IsArray,
     string? ConcreteTypeName,
     bool IsPureEnumerable,

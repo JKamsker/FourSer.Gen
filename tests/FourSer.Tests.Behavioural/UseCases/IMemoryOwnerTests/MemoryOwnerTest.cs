@@ -68,9 +68,22 @@ public partial class CustomDisposeMemoryOwner : IDisposable
 public partial class SerializeCollectionWorksOnIMemoryOwner
 {
     public long Size { get; set; }
-
+    
+    // This should be disposed by the generated Dispose method
     [SerializeCollection(CountSizeReference = nameof(Size))]
     public IMemoryOwner<byte> Value { get; set; }
+    
+    // Dispose shouldnt try to dispose this
+    public NoMemoryOwnerTestWrapper NoDisposeWrapper { get; set; }
+
+    // This should be disposed by the generated Dispose method
+    public MemoryOwnerListTestWrapper MemoryOwnerListTestWrapper { get; set; }
+
+    // Should be disposed by the generated Dispose method
+    public List<MemoryOwnerListTestWrapper> Wrappers { get; set; }
+
+    // Shouldnt try to dispose this as it is not managed by FourSer.Gen
+    public CustomDisposeMemoryOwner CustomDisposeMemoryOwner { get; set; }
 }
 
 public class MemoryOwnerTests

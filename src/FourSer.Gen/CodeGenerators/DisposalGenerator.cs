@@ -42,17 +42,18 @@ public static class DisposalGenerator
 
             if (member.HasGenerateSerializerAttribute)
             {
+                if (!member.RequiresDisposal)
+                {
+                    continue;
+                }
+
                 // For value types, we can't use pattern matching against IDisposable
                 // since C# doesn't allow it unless the struct implements the interface.
                 // Only generate disposal if we know at compile time the member requires disposal.
                 if (member.IsValueType)
                 {
-                    if (member.RequiresDisposal)
-                    {
-                        // Value type that requires disposal - call Dispose directly
-                        sb.WriteLineFormat("((System.IDisposable)this.{0}).Dispose();", member.Name);
-                    }
-                    // Skip value types that don't require disposal
+                    // Value type that requires disposal - call Dispose directly
+                    sb.WriteLineFormat("((System.IDisposable)this.{0}).Dispose();", member.Name);
                 }
                 else
                 {
@@ -68,7 +69,7 @@ public static class DisposalGenerator
             }
 
             // Handle collections with disposable elements
-            if (member.IsCollection && member.CollectionTypeInfo?.HasElementGenerateSerializerAttribute == true)
+            if (member.IsCollection && member.CollectionTypeInfo?.ElementRequiresDisposal == true)
             {
                 var itemVar = $"item_{member.Name.ToCamelCase()}";
                 sb.WriteLineFormat("if (this.{0} != null)", member.Name);
