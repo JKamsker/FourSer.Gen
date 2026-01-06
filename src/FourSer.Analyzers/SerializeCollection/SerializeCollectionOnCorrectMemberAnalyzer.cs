@@ -11,8 +11,8 @@ namespace FourSer.Analyzers.SerializeCollection
         public const string DiagnosticId = "FSG1000";
 
         private static readonly LocalizableString Title = "Misplaced SerializeCollection attribute";
-        private static readonly LocalizableString MessageFormat = "'[SerializeCollection]' can only be applied to properties of type 'IEnumerable<T>'";
-        private static readonly LocalizableString Description = "The '[SerializeCollection]' attribute is intended for collections and should only be applied to properties that implement 'IEnumerable<T>'.";
+        private static readonly LocalizableString MessageFormat = "'[SerializeCollection]' can only be applied to properties of type 'IEnumerable<T>' or 'IMemoryOwner<T>'";
+        private static readonly LocalizableString Description = "The '[SerializeCollection]' attribute is intended for collections and should only be applied to properties that implement 'IEnumerable<T>' or 'IMemoryOwner<T>'.";
         private const string Category = "Usage";
 
         internal static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, DiagnosticSeverity.Error, isEnabledByDefault: true, description: Description);
@@ -71,7 +71,21 @@ namespace FourSer.Analyzers.SerializeCollection
                 isIEnumerable = typeSymbol.AllInterfaces.Any(i => i.IsGenericType && i.ConstructedFrom.Equals(ienumerableT, SymbolEqualityComparer.Default));
             }
 
-            if (isIEnumerable)
+            var iMemoryOwnerT = context.Compilation.GetTypeByMetadataName("System.Buffers.IMemoryOwner`1");
+            bool isMemoryOwner = false;
+            if (iMemoryOwnerT != null)
+            {
+                isMemoryOwner = typeSymbol is INamedTypeSymbol memoryOwnerType &&
+                    memoryOwnerType.IsGenericType &&
+                    memoryOwnerType.ConstructedFrom.Equals(iMemoryOwnerT, SymbolEqualityComparer.Default);
+                if (!isMemoryOwner)
+                {
+                    isMemoryOwner = typeSymbol.AllInterfaces.Any(i =>
+                        i.IsGenericType && i.ConstructedFrom.Equals(iMemoryOwnerT, SymbolEqualityComparer.Default));
+                }
+            }
+
+            if (isIEnumerable || isMemoryOwner)
             {
                 return;
             }

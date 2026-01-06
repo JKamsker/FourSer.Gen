@@ -206,6 +206,36 @@ public partial class MyPacket
 }
 ```
 
+### IMemoryOwner<T> (pooled buffers)
+
+FourSer.Gen supports `System.Buffers.IMemoryOwner<T>` as a collection when used
+with `[SerializeCollection]`.
+
+- The buffer contents are serialized via `owner.Memory`.
+- Length/count is taken from `owner.Memory.Length` (including when using
+  `CountSizeReference`).
+- During deserialization the generator rents from `MemoryPool<T>.Shared` and
+  slices the returned owner to the requested length.
+- Deserialization requires the requested length to fit into `int` (because
+  `MemoryPool<T>.Rent(int)` takes an `int`).
+- `Unlimited = true` is not supported for `IMemoryOwner<T>`.
+- If a generated type owns `IMemoryOwner<T>` instances, it will also implement
+  `IDisposable` (unless you already provide one) and dispose them.
+
+```csharp
+using System.Buffers;
+using FourSer.Contracts;
+
+[GenerateSerializer]
+public partial class MyPacket
+{
+    public long Size { get; set; }
+
+    [SerializeCollection(CountSizeReference = nameof(Size))]
+    public IMemoryOwner<byte> Payload { get; set; }
+}
+```
+
 ### Polymorphic Collections
 
 The generator supports serializing collections of polymorphic types. This is useful when a list can contain objects of different derived types.
@@ -454,6 +484,7 @@ The generator supports a wide range of collection types, where `T` can be any su
 - `IList<T>`
 - `IReadOnlyCollection<T>`
 - `IReadOnlyList<T>`
+- `System.Buffers.IMemoryOwner<T>` (with `[SerializeCollection]`)
 - `System.Collections.ObjectModel.Collection<T>`
 - `System.Collections.ObjectModel.ObservableCollection<T>`
 - `System.Collections.Concurrent.ConcurrentBag<T>`

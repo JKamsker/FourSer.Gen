@@ -236,7 +236,7 @@ public static class DeserializationGenerator
 
         if (member.IsMemoryOwner)
         {
-            GenerateMemoryOwnerDeserialization(sb, member, target, source, helper);
+            GenerateMemoryOwnerDeserialization(sb, member, target, source, helper, type);
         }
         else if (member.IsList || member.IsCollection)
         {
@@ -276,7 +276,8 @@ public static class DeserializationGenerator
         MemberToGenerate member,
         string target,
         string source,
-        string helper
+        string helper,
+        TypeToGenerate type
     )
     {
         if (member.MemoryOwnerTypeInfo is not { } elementInfo)
@@ -309,7 +310,7 @@ public static class DeserializationGenerator
         else if (collectionInfo.CountSizeReferenceIndex is not null)
         {
             countVar = (collectionInfo.CountSizeReference ?? "countRef").ToCamelCase();
-            countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+            countType = type.Members[collectionInfo.CountSizeReferenceIndex.Value].TypeName;
         }
         else
         {
@@ -319,7 +320,7 @@ public static class DeserializationGenerator
             sb.WriteLineFormat("var {0} = {1}.{2}({3}{4});", countVar, helper, countReadMethod, refOrEmpty, source);
         }
 
-        var capacityVar = countType is "uint" or "ulong" ? $"(int){countVar}" : countVar;
+        var capacityVar = GetInt32CountExpression(countVar, countType);
         var elementTypeName = elementInfo.ElementTypeName;
 
         // Allocate a fresh IMemoryOwner<T> and slice to the exact required length.
@@ -404,6 +405,17 @@ public static class DeserializationGenerator
         }
     }
 
+    private static string GetInt32CountExpression(string countVar, string countType)
+    {
+        return countType switch
+        {
+            // Implicit conversions to int exist for these types.
+            "sbyte" or "byte" or "short" or "ushort" or "char" or "int" => countVar,
+            // Explicit conversions are required for these (and for enums / other numeric types).
+            _ => $"(int){countVar}"
+        };
+    }
+
     private static void GenerateCollectionDeserialization
     (
         IndentedStringBuilder sb,
@@ -446,7 +458,7 @@ public static class DeserializationGenerator
         else if (collectionInfo.CountSizeReferenceIndex is not null)
         {
             countVar = (collectionInfo.CountSizeReference ?? "countRef").ToCamelCase();
-            countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+            countType = type.Members[collectionInfo.CountSizeReferenceIndex.Value].TypeName;
         }
         else
         {
@@ -478,7 +490,7 @@ public static class DeserializationGenerator
             return;
         }
 
-        var capacityVar = countType is "uint" or "ulong" ? $"(int){countVar}" : countVar;
+        var capacityVar = GetInt32CountExpression(countVar, countType);
         if (TryGenerateUnmanagedCollectionReadFastPath(sb, member, target, source, helper, countVar, capacityVar, type))
         {
             return;
@@ -486,7 +498,7 @@ public static class DeserializationGenerator
 
         sb.WriteLine(CollectionUtilities.GenerateCollectionInstantiation(member, capacityVar, target));
 
-        var loopLimitVar = countType is "ulong" or "uint" ? $"(int){countVar}" : countVar;
+        var loopLimitVar = capacityVar;
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {

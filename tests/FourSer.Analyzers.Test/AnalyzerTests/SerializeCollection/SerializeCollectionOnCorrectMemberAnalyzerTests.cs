@@ -36,14 +36,16 @@ public class MyData
     [InlineData("IEnumerable<int>")]
     [InlineData("List<int>")]
     [InlineData("int[]")]
+    [InlineData("IMemoryOwner<byte>")]
     public async Task OnCollectionTypes_NoDiagnostic(string collectionType)
     {
         var testCode = @$"
-using FourSer.Contracts;
-using System.Collections.Generic;
+ using FourSer.Contracts;
+using System.Buffers;
+ using System.Collections.Generic;
 
-public class MyData
-{{
+ public class MyData
+ {{
     [SerializeCollection]
     public {collectionType} A {{ get; set; }}
 }}";

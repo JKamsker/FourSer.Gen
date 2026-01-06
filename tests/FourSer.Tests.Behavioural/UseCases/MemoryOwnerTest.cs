@@ -6,6 +6,7 @@ namespace FourSer.Tests.Behavioural.UseCases;
 [GenerateSerializer]
 public partial class TestMemoryOwner
 {
+    [SerializeCollection(CountType = typeof(byte))]
     public IMemoryOwner<byte> Test { get; set; }
 }
 
@@ -32,6 +33,15 @@ public partial class CustomDisposeMemoryOwner : IDisposable
     }
 }
 
+[GenerateSerializer]
+public partial class SerializeCollectionWorksOnIMemoryOwner
+{
+    public long Size { get; set; }
+
+    [SerializeCollection(CountSizeReference = nameof(Size))]
+    public IMemoryOwner<byte> Value { get; set; }
+}
+
 public class MemoryOwnerTests
 {
     [Fact]
@@ -53,6 +63,13 @@ public class MemoryOwnerTests
     {
         var wrapperIsDisposeable = IsIDisposeable<NoMemoryOwnerTestWrapper>();
         Assert.False(wrapperIsDisposeable, "Generated class 'NoMemoryOwnerTestWrapper' implements IDisposable unexpectedly.");
+    }
+
+    [Fact]
+    public void SerializeCollectionWorksOnMemoryOwnerIsDisposeable()
+    {
+        var memoryOwnerIsDisposeable = IsIDisposeable<SerializeCollectionWorksOnIMemoryOwner>();
+        Assert.True(memoryOwnerIsDisposeable, "Generated class 'SerializeCollectionWorksOnIMemoryOwner' does not implement IDisposable as expected.");
     }
 
     private static bool IsIDisposeable<T>()

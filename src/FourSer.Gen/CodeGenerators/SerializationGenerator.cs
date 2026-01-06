@@ -341,7 +341,9 @@ public static class SerializationGenerator
         if (collectionMember.CollectionTypeInfo?.IsPureEnumerable != true)
         {
             var collectionName = collectionMember.Name;
-            var countExpression = $"obj.{collectionName}?.Count ?? 0";
+            var countExpression = collectionMember.IsMemoryOwner
+                ? $"obj.{collectionName}?.Memory.Length ?? 0"
+                : $"obj.{collectionName}?.Count ?? 0";
             var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
             SerializationWriterEmitter.EmitWrite(sb, ctx, member.TypeName, countExpression);
         }
