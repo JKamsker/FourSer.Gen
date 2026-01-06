@@ -81,7 +81,8 @@ public sealed record MemberToGenerate
     bool IsInitOnly,
     int? IsCountSizeReferenceFor,
     int? IsTypeIdPropertyFor,
-    CustomSerializerInfo? CustomSerializer
+    CustomSerializerInfo? CustomSerializer,
+    bool RequiresDisposal = false
 );
 
 /// <summary>

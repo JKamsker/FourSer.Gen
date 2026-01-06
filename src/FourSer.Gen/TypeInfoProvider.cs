@@ -594,6 +594,9 @@ internal static class TypeInfoProvider
         var location = m.Locations.First();
         var collectionInfo = GetCollectionInfo(m);
 
+        // Determine if the member type requires disposal
+        var memberRequiresDisposal = memberTypeSymbol is INamedTypeSymbol namedMemberTypeSymbol
+            && RequiresDisposal(namedMemberTypeSymbol);
 
         var memberToGenerate = new MemberToGenerate
         (
@@ -615,7 +618,8 @@ internal static class TypeInfoProvider
             IsInitOnly: isInitOnly,
             IsCountSizeReferenceFor: null,
             IsTypeIdPropertyFor: null,
-            CustomSerializer: GetCustomSerializer(m)
+            CustomSerializer: GetCustomSerializer(m),
+            RequiresDisposal: memberRequiresDisposal
         );
 
         return (memberToGenerate, location);

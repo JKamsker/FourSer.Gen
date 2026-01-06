@@ -31,7 +31,19 @@ public partial class MemoryOwnerListTestWrapper
 [GenerateSerializer]
 public partial class MemoryOwnerArrayTestWrapper
 {
+
+    public int Yolo { get; set; }
+    public NonDisposeableStruct NonDisposeableStruct { get; set; }
+    
+    
     public TestMemoryOwner[] TestMemoryOwner { get; set; }
+}
+
+[GenerateSerializer]
+public partial struct NonDisposeableStruct
+{
+    public int X { get; set; }
+    public int Z { get; set; }
 }
 
 
