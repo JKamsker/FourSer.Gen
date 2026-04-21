@@ -22,13 +22,18 @@ public partial class Inventory : ISerializable<Inventory>
     {
         if (obj is null) return 0;
         var size = 0;
-        _ = checked((int)((obj.Items?.Count() ?? 0)));
         size += sizeof(int); // Count size for Items
+        var itemsSizedItems = obj.Items is null ? null : global::System.Linq.Enumerable.ToArray(obj.Items);
+        _ = checked((int)(itemsSizedItems?.Length ?? 0));
         size += sizeof(Byte); // Size for polymorphic type id
-        if (obj.Items is not null)
+        if (itemsSizedItems is not null)
         {
-            foreach (var item in obj.Items)
+            foreach (var item in itemsSizedItems)
             {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
                 size += item switch
                 {
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword.GetPacketSize(sword),

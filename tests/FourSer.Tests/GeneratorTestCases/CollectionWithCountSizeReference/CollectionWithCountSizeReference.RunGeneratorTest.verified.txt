@@ -29,6 +29,10 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
         {
             foreach (var item in obj.Items)
             {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
                 size += item switch
                 {
                     global::FourSer.TestUser.CollectionWithCountSizeReference.Sword sword => global::FourSer.TestUser.CollectionWithCountSizeReference.Sword.GetPacketSize(sword),

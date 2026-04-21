@@ -22,11 +22,12 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
     {
         if (obj is null) return 0;
         var size = 0;
-        _ = checked((int)((obj.MyList?.Count() ?? 0)));
         size += sizeof(int); // Size for unmanaged type Count
-        if (obj.MyList is not null)
+        var myListSizedItems = obj.MyList is null ? null : global::System.Linq.Enumerable.ToArray(obj.MyList);
+        _ = checked((int)(myListSizedItems?.Length ?? 0));
+        if (myListSizedItems is not null)
         {
-            foreach(var item in obj.MyList)
+            foreach (var item in myListSizedItems)
             {
                 if (item is null)
                 {

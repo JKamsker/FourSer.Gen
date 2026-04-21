@@ -7,7 +7,7 @@ namespace FourSer.Gen.CodeGenerators;
 /// <summary>
 ///     Generates GetPacketSize method implementations
 /// </summary>
-public static class PacketSizeGenerator
+public static partial class PacketSizeGenerator
 {
     public static void GenerateGetSize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
     {
@@ -35,10 +35,13 @@ public static class PacketSizeGenerator
         if (member.IsCountSizeReferenceFor is { } countRefIndex)
         {
             var referencedMember = type.Members[countRefIndex];
-            var countExpression = referencedMember.IsMemoryOwner
-                ? $"(obj.{referencedMember.Name}?.Memory.Length ?? 0)"
-                : GeneratorUtilities.GetCountExpressionForAccess(referencedMember, $"obj.{referencedMember.Name}", true);
-            EmitCheckedCountValidation(sb, member.TypeName, countExpression);
+            if (!ShouldDeferCollectionCountValidation(referencedMember))
+            {
+                var countExpression = referencedMember.IsMemoryOwner
+                    ? $"(obj.{referencedMember.Name}?.Memory.Length ?? 0)"
+                    : GeneratorUtilities.GetCountExpressionForAccess(referencedMember, $"obj.{referencedMember.Name}", true);
+                EmitCheckedCountValidation(sb, member.TypeName, countExpression);
+            }
         }
 
         var resolvedSerializer = GeneratorUtilities.ResolveSerializer(member, type);
@@ -54,7 +57,7 @@ public static class PacketSizeGenerator
         }
         else if (member.IsList || member.IsCollection)
         {
-            GenerateCollectionSizeCalculation(sb, member);
+            GenerateCollectionSizeCalculation(sb, member, type);
         }
         else if (member.PolymorphicInfo is { } info)
         {
@@ -225,12 +228,14 @@ public static class PacketSizeGenerator
         }
     }
 
-    private static void GenerateCollectionSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member)
+    private static void GenerateCollectionSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member, TypeToGenerate type)
     {
         if (member.CollectionInfo is not { } collectionInfo)
         {
             return;
         }
+
+        var deferredCountValidationType = GetDeferredCountValidationType(member, type);
 
         if (
             !collectionInfo.Unlimited
@@ -239,10 +244,19 @@ public static class PacketSizeGenerator
         )
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
-            var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}", true);
-            EmitCheckedCountValidation(sb, countType, countExpression);
+            if (deferredCountValidationType is null)
+            {
+                var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}", true);
+                EmitCheckedCountValidation(sb, countType, countExpression);
+            }
             var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
             sb.WriteLineFormat("size += {0}; // Count size for {1}", countSizeExpression, member.Name);
+        }
+
+        if (deferredCountValidationType is not null)
+        {
+            GenerateDeferredCountValidationCollectionSizeCalculation(sb, member, type, deferredCountValidationType);
+            return;
         }
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
@@ -327,7 +341,8 @@ public static class PacketSizeGenerator
     (
         IndentedStringBuilder sb,
         MemberToGenerate member,
-        CollectionInfo collectionInfo
+        CollectionInfo collectionInfo,
+        string? collectionAccessExpression = null
     )
     {
         if (member.PolymorphicInfo is not { } info)
@@ -344,8 +359,10 @@ public static class PacketSizeGenerator
             }
         }
 
-        var collectionAccessExpression = $"obj.{member.Name}";
-        var enumerationGuard = GeneratorUtilities.GetCollectionIterationGuard(member, collectionAccessExpression);
+        collectionAccessExpression ??= $"obj.{member.Name}";
+        var enumerationGuard = collectionAccessExpression == $"obj.{member.Name}"
+            ? GeneratorUtilities.GetCollectionIterationGuard(member, collectionAccessExpression)
+            : $"{collectionAccessExpression} is not null";
 
         if (member.CollectionTypeInfo?.CanBeNull == true || enumerationGuard is not null)
         {
@@ -360,6 +377,12 @@ public static class PacketSizeGenerator
             {
                 sb.WriteLineFormat
                     ("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
+            }
+
+            sb.WriteLine("if (item is null)");
+            using (sb.BeginBlock())
+            {
+                sb.WriteLine("throw new System.NullReferenceException(\"Item in collection cannot be null.\");");
             }
 
             sb.WriteLine("size += item switch");
@@ -389,6 +412,12 @@ public static class PacketSizeGenerator
         {
             sb.WriteLineFormat
                 ("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
+        }
+
+        sb.WriteLine("if (item is null)");
+        using (sb.BeginBlock())
+        {
+            sb.WriteLine("throw new System.NullReferenceException(\"Item in collection cannot be null.\");");
         }
 
         sb.WriteLine("size += item switch");

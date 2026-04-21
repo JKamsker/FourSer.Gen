@@ -29,6 +29,10 @@ public partial class Inventory : ISerializable<Inventory>
         {
             foreach (var item in obj.Items)
             {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
                 size += item switch
                 {
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword.GetPacketSize(sword),

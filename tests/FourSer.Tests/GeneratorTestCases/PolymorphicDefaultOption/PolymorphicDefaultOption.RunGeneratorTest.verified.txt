@@ -30,6 +30,10 @@ public partial class Inventory : ISerializable<Inventory>
         {
             foreach (var item in obj.Items)
             {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
                 size += item switch
                 {
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword.GetPacketSize(sword),
@@ -44,6 +48,10 @@ public partial class Inventory : ISerializable<Inventory>
         {
             foreach (var item in obj.ReadOnlyItems)
             {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
                 size += item switch
                 {
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword.GetPacketSize(sword),
@@ -240,6 +248,43 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
+            if (obj.Items.Count > 0)
+            {
+                var firstItem = obj.Items[0];
+                byte discriminator = firstItem switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => (byte)10,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => (byte)20,
+                    null => throw new System.NullReferenceException("Item in collection cannot be null."),
+                    _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstItem?.GetType().FullName}")
+                };
+                foreach (var item in obj.Items)
+                {
+                    switch (item)
+                    {
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword:
+                        {
+                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)10))
+                            {
+                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
+                            }
+                            break;
+                        }
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield:
+                        {
+                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)20))
+                            {
+                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
+                            }
+                            break;
+                        }
+                        case null:
+                            throw new System.NullReferenceException("Item in collection cannot be null.");
+                        default:
+                            throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+                    }
+                }
+            }
             var collectionItems = obj.Items;
             if (collectionItems.Count == 0)
             {
@@ -284,6 +329,48 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
+            if (obj.ReadOnlyItems.Count > 0)
+            {
+                using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
+                if (!firstItemEnumerator.MoveNext())
+                {
+                    throw new System.InvalidOperationException("Collection must contain at least one item.");
+                }
+                var firstItem = firstItemEnumerator.Current;
+                byte discriminator = firstItem switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => (byte)10,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => (byte)20,
+                    null => throw new System.NullReferenceException("Item in collection cannot be null."),
+                    _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstItem?.GetType().FullName}")
+                };
+                foreach (var item in obj.ReadOnlyItems)
+                {
+                    switch (item)
+                    {
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword:
+                        {
+                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)10))
+                            {
+                                throw new System.IO.InvalidDataException("All items in collection ReadOnlyItems must have the same runtime type for single-type-id polymorphism.");
+                            }
+                            break;
+                        }
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield:
+                        {
+                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)20))
+                            {
+                                throw new System.IO.InvalidDataException("All items in collection ReadOnlyItems must have the same runtime type for single-type-id polymorphism.");
+                            }
+                            break;
+                        }
+                        case null:
+                            throw new System.NullReferenceException("Item in collection cannot be null.");
+                        default:
+                            throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+                    }
+                }
+            }
             SpanWriter.WriteInt32(ref data, checked((int)(obj.ReadOnlyItems.Count)));
             if (obj.ReadOnlyItems.Count > 0)
             {
@@ -385,6 +472,43 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
+            if (obj.Items.Count > 0)
+            {
+                var firstItem = obj.Items[0];
+                byte discriminator = firstItem switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => (byte)10,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => (byte)20,
+                    null => throw new System.NullReferenceException("Item in collection cannot be null."),
+                    _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstItem?.GetType().FullName}")
+                };
+                foreach (var item in obj.Items)
+                {
+                    switch (item)
+                    {
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword:
+                        {
+                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)10))
+                            {
+                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
+                            }
+                            break;
+                        }
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield:
+                        {
+                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)20))
+                            {
+                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
+                            }
+                            break;
+                        }
+                        case null:
+                            throw new System.NullReferenceException("Item in collection cannot be null.");
+                        default:
+                            throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+                    }
+                }
+            }
             var collectionItems = obj.Items;
             if (collectionItems.Count == 0)
             {
@@ -429,6 +553,48 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
+            if (obj.ReadOnlyItems.Count > 0)
+            {
+                using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
+                if (!firstItemEnumerator.MoveNext())
+                {
+                    throw new System.InvalidOperationException("Collection must contain at least one item.");
+                }
+                var firstItem = firstItemEnumerator.Current;
+                byte discriminator = firstItem switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => (byte)10,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => (byte)20,
+                    null => throw new System.NullReferenceException("Item in collection cannot be null."),
+                    _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstItem?.GetType().FullName}")
+                };
+                foreach (var item in obj.ReadOnlyItems)
+                {
+                    switch (item)
+                    {
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword:
+                        {
+                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)10))
+                            {
+                                throw new System.IO.InvalidDataException("All items in collection ReadOnlyItems must have the same runtime type for single-type-id polymorphism.");
+                            }
+                            break;
+                        }
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield:
+                        {
+                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)20))
+                            {
+                                throw new System.IO.InvalidDataException("All items in collection ReadOnlyItems must have the same runtime type for single-type-id polymorphism.");
+                            }
+                            break;
+                        }
+                        case null:
+                            throw new System.NullReferenceException("Item in collection cannot be null.");
+                        default:
+                            throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+                    }
+                }
+            }
             StreamWriter.WriteInt32(stream, checked((int)(obj.ReadOnlyItems.Count)));
             if (obj.ReadOnlyItems.Count > 0)
             {

@@ -50,6 +50,10 @@ internal static class CollectionSerializer
             string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
 
         EmitNullSerializedElementValidation(sb, member);
+        if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+        {
+            PolymorphicCollectionValidationEmitter.Emit(sb, member, collectionInfo);
+        }
 
         if (collectionInfo.CountSize >= 0)
         {

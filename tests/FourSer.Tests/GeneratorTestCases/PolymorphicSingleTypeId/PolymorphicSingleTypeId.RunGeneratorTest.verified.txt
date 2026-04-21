@@ -29,6 +29,10 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
         {
             foreach (var item in obj.Animals)
             {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
                 size += item switch
                 {
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat cat => global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat.GetPacketSize(cat),
@@ -164,6 +168,43 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
         }
         else
         {
+            if (obj.Animals.Count > 0)
+            {
+                var firstItem = obj.Animals[0];
+                byte discriminator = firstItem switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat => (byte)1,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog => (byte)2,
+                    null => throw new System.NullReferenceException("Item in collection cannot be null."),
+                    _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstItem?.GetType().FullName}")
+                };
+                foreach (var item in obj.Animals)
+                {
+                    switch (item)
+                    {
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat:
+                        {
+                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)1))
+                            {
+                                throw new System.IO.InvalidDataException("All items in collection Animals must have the same runtime type for single-type-id polymorphism.");
+                            }
+                            break;
+                        }
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog:
+                        {
+                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)2))
+                            {
+                                throw new System.IO.InvalidDataException("All items in collection Animals must have the same runtime type for single-type-id polymorphism.");
+                            }
+                            break;
+                        }
+                        case null:
+                            throw new System.NullReferenceException("Item in collection cannot be null.");
+                        default:
+                            throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+                    }
+                }
+            }
             SpanWriter.WriteUInt16(ref data, checked((ushort)(obj.Animals.Count)));
             if (obj.Animals.Count > 0)
             {
@@ -254,6 +295,43 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
         }
         else
         {
+            if (obj.Animals.Count > 0)
+            {
+                var firstItem = obj.Animals[0];
+                byte discriminator = firstItem switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat => (byte)1,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog => (byte)2,
+                    null => throw new System.NullReferenceException("Item in collection cannot be null."),
+                    _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstItem?.GetType().FullName}")
+                };
+                foreach (var item in obj.Animals)
+                {
+                    switch (item)
+                    {
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat:
+                        {
+                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)1))
+                            {
+                                throw new System.IO.InvalidDataException("All items in collection Animals must have the same runtime type for single-type-id polymorphism.");
+                            }
+                            break;
+                        }
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog:
+                        {
+                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)2))
+                            {
+                                throw new System.IO.InvalidDataException("All items in collection Animals must have the same runtime type for single-type-id polymorphism.");
+                            }
+                            break;
+                        }
+                        case null:
+                            throw new System.NullReferenceException("Item in collection cannot be null.");
+                        default:
+                            throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+                    }
+                }
+            }
             StreamWriter.WriteUInt16(stream, checked((ushort)(obj.Animals.Count)));
             if (obj.Animals.Count > 0)
             {

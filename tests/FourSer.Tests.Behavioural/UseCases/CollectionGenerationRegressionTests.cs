@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,6 +21,32 @@ public partial class StackRoundTripPacket
     [SerializeCollection]
     public Stack<int> Values { get; set; } = new();
 }
+
+[GenerateSerializer]
+public partial class CountSizeReferenceEnumerablePacket
+{
+    public byte Count { get; set; }
+
+    [SerializeCollection(CountSizeReference = nameof(Count))]
+    public IEnumerable<int> Values { get; set; } = Enumerable.Empty<int>();
+}
+
+[GenerateSerializer]
+public partial class ImmutablePolymorphicPacket
+{
+    [SerializeCollection(PolymorphicMode = PolymorphicMode.IndividualTypeIds, TypeIdType = typeof(byte))]
+    [PolymorphicOption((byte)1, typeof(RegressionDog))]
+    [PolymorphicOption((byte)2, typeof(RegressionCat))]
+    public ImmutableArray<IRegressionAnimal> Animals { get; set; } = ImmutableArray<IRegressionAnimal>.Empty;
+}
+
+public interface IRegressionAnimal;
+
+[GenerateSerializer]
+public partial class RegressionDog : IRegressionAnimal;
+
+[GenerateSerializer]
+public partial class RegressionCat : IRegressionAnimal;
 
 public class CollectionGenerationRegressionTests
 {
@@ -59,5 +87,55 @@ public class CollectionGenerationRegressionTests
 
         var streamRoundTripped = StackRoundTripPacket.Deserialize(stream);
         Assert.Equal(original.Values.ToArray(), streamRoundTripped.Values.ToArray());
+    }
+
+    [Fact]
+    public void CountSizeReferenceEnumerables_ShouldOnlyEnumerateOnceDuringPacketSizing()
+    {
+        var packet = new CountSizeReferenceEnumerablePacket
+        {
+            Values = new SinglePassEnumerable<int>(Enumerable.Range(1, 3))
+        };
+
+        var size = CountSizeReferenceEnumerablePacket.GetPacketSize(packet);
+
+        Assert.Equal(sizeof(byte) + (3 * sizeof(int)), size);
+    }
+
+    [Fact]
+    public void PolymorphicImmutableCollections_ShouldValidateBeforeWriting()
+    {
+        var packet = new ImmutablePolymorphicPacket
+        {
+            Animals = ImmutableArray.Create<IRegressionAnimal>(new RegressionDog(), new RegressionLizard())
+        };
+
+        var buffer = Enumerable.Repeat((byte)0xCC, 16).ToArray();
+        Assert.Throws<InvalidDataException>(() => ImmutablePolymorphicPacket.Serialize(packet, buffer));
+        Assert.Equal(0xCC, buffer[0]);
+
+        using var stream = new MemoryStream();
+        Assert.Throws<InvalidDataException>(() => ImmutablePolymorphicPacket.Serialize(packet, stream));
+        Assert.Equal(0, stream.Length);
+    }
+
+    private sealed class RegressionLizard : IRegressionAnimal;
+
+    private sealed class SinglePassEnumerable<T>(IEnumerable<T> source) : IEnumerable<T>
+    {
+        private bool _enumerated;
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            if (_enumerated)
+            {
+                throw new InvalidOperationException("Sequence was enumerated more than once.");
+            }
+
+            _enumerated = true;
+            return source.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

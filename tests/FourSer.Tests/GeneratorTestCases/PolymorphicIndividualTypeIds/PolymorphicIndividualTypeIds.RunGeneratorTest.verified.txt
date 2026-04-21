@@ -29,6 +29,10 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
             foreach (var item in obj.Animals)
             {
                 size += sizeof(byte); // Size for polymorphic type id
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
                 size += item switch
                 {
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat cat => global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat.GetPacketSize(cat),
@@ -121,6 +125,27 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         }
         else
         {
+            if (obj.Animals.Count > 0)
+            {
+                foreach (var item in obj.Animals)
+                {
+                    switch (item)
+                    {
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat:
+                        {
+                            break;
+                        }
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog:
+                        {
+                            break;
+                        }
+                        case null:
+                            throw new System.NullReferenceException("Item in collection cannot be null.");
+                        default:
+                            throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+                    }
+                }
+            }
             SpanWriter.WriteByte(ref data, checked((byte)(obj.Animals.Count)));
             foreach(var item in obj.Animals)
             {
@@ -161,6 +186,27 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         }
         else
         {
+            if (obj.Animals.Count > 0)
+            {
+                foreach (var item in obj.Animals)
+                {
+                    switch (item)
+                    {
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat:
+                        {
+                            break;
+                        }
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog:
+                        {
+                            break;
+                        }
+                        case null:
+                            throw new System.NullReferenceException("Item in collection cannot be null.");
+                        default:
+                            throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+                    }
+                }
+            }
             StreamWriter.WriteByte(stream, checked((byte)(obj.Animals.Count)));
             foreach(var item in obj.Animals)
             {

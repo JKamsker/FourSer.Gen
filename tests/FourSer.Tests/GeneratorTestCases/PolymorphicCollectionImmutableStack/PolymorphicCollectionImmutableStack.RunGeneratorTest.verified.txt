@@ -29,6 +29,10 @@ public partial class Inventory : ISerializable<Inventory>
             foreach (var item in obj.Items)
             {
                 size += sizeof(byte); // Size for polymorphic type id
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
                 size += item switch
                 {
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Sword.GetPacketSize(sword),
@@ -134,6 +138,31 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
+            if (obj.Items.Count() > 0)
+            {
+                foreach (var item in obj.Items)
+                {
+                    switch (item)
+                    {
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Sword:
+                        {
+                            break;
+                        }
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Shield:
+                        {
+                            break;
+                        }
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Potion:
+                        {
+                            break;
+                        }
+                        case null:
+                            throw new System.NullReferenceException("Item in collection cannot be null.");
+                        default:
+                            throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+                    }
+                }
+            }
             SpanWriter.WriteInt32(ref data, checked((int)(obj.Items.Count())));
             foreach(var item in obj.Items)
             {
@@ -180,6 +209,31 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
+            if (obj.Items.Count() > 0)
+            {
+                foreach (var item in obj.Items)
+                {
+                    switch (item)
+                    {
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Sword:
+                        {
+                            break;
+                        }
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Shield:
+                        {
+                            break;
+                        }
+                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Potion:
+                        {
+                            break;
+                        }
+                        case null:
+                            throw new System.NullReferenceException("Item in collection cannot be null.");
+                        default:
+                            throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
+                    }
+                }
+            }
             StreamWriter.WriteInt32(stream, checked((int)(obj.Items.Count())));
             foreach(var item in obj.Items)
             {

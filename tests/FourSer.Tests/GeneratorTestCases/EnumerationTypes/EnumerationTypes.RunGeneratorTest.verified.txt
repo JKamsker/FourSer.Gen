@@ -31,9 +31,10 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         {
             foreach(var item in obj.Names) { size += StringEx.MeasureSize(item); }
         }
-        _ = checked((int)((obj.Data?.Count() ?? 0)));
         size += sizeof(int); // Count size for Data
-        size += (obj.Data?.Count() ?? 0) * sizeof(byte);
+        var dataSizedItems = obj.Data is null ? null : global::System.Linq.Enumerable.ToArray(obj.Data);
+        _ = checked((int)(dataSizedItems?.Length ?? 0));
+        size += (dataSizedItems?.Length ?? 0) * sizeof(byte);
         _ = checked((int)((obj.Data1?.Count ?? 0)));
         size += sizeof(int); // Count size for Data1
         size += (obj.Data1?.Count ?? 0) * sizeof(byte);
