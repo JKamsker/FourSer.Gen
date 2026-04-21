@@ -30,7 +30,7 @@ namespace FourSer.Analyzers.SerializeCollection
         {
             var symbol = context.Symbol;
 
-            var serializeCollectionAttribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializeCollectionAttribute");
+            var serializeCollectionAttribute = symbol.GetSerializeCollectionAttribute();
             if (serializeCollectionAttribute == null)
             {
                 return;
@@ -46,7 +46,7 @@ namespace FourSer.Analyzers.SerializeCollection
                 return;
             }
 
-            var polymorphicOptions = symbol.GetAttributes().Where(ad => ad.AttributeClass?.Name == "PolymorphicOptionAttribute").ToList();
+            var polymorphicOptions = symbol.GetPolymorphicOptionAttributes().ToList();
             if (!polymorphicOptions.Any())
             {
                 return;

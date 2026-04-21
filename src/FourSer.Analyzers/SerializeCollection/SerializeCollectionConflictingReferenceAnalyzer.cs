@@ -54,7 +54,7 @@ namespace FourSer.Analyzers.SerializeCollection
                     continue;
                 }
 
-                var attribute = member.GetAttributes().FirstOrDefault(ad => ad.AttributeClass is not null && ad.AttributeClass.IsSerializeCollectionAttribute());
+                var attribute = member.GetSerializeCollectionAttribute();
 
                 if (attribute == null)
                 {

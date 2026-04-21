@@ -34,7 +34,7 @@ namespace FourSer.Analyzers.SerializePolymorphic
         private void AnalyzeAttribute(SymbolAnalysisContext context)
         {
             var symbol = context.Symbol;
-            var serializePolymorphicAttribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializePolymorphicAttribute");
+            var serializePolymorphicAttribute = symbol.GetSerializePolymorphicAttribute();
 
             if (serializePolymorphicAttribute?.ApplicationSyntaxReference == null)
             {
@@ -71,19 +71,12 @@ namespace FourSer.Analyzers.SerializePolymorphic
                 typeIdTypeConstant.Kind == TypedConstantKind.Type &&
                 typeIdTypeConstant.Value is ITypeSymbol typeIdType)
             {
-                var referencedSymbol = symbol.ContainingType.GetMembers(referenceName!)
-                    .FirstOrDefault(m => (m is IPropertySymbol or IFieldSymbol) && !m.HasIgnoreAttribute());
+                var referencedSymbol = symbol.ContainingType.GetNonIgnoredPropertyOrField(referenceName!);
                 if (referencedSymbol == null) return;
 
-                bool mismatch = false;
-                if (referencedSymbol is IPropertySymbol propertySymbol)
-                {
-                    mismatch = !SymbolEqualityComparer.Default.Equals(propertySymbol.Type, typeIdType);
-                }
-                else if (referencedSymbol is IFieldSymbol fieldSymbol)
-                {
-                    mismatch = !SymbolEqualityComparer.Default.Equals(fieldSymbol.Type, typeIdType);
-                }
+                var referencedType = referencedSymbol.GetPropertyOrFieldType();
+                var mismatch = referencedType != null
+                    && !SymbolEqualityComparer.Default.Equals(referencedType, typeIdType);
 
                 if (mismatch && typeIdTypeArg != null)
                 {
@@ -92,7 +85,7 @@ namespace FourSer.Analyzers.SerializePolymorphic
             }
 
             // FSG2005
-            var serializeCollectionAttribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializeCollectionAttribute");
+            var serializeCollectionAttribute = symbol.GetSerializeCollectionAttribute();
             if (serializeCollectionAttribute?.ApplicationSyntaxReference != null)
             {
                 if (serializeCollectionAttribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken) is AttributeSyntax collectionAttributeSyntax)

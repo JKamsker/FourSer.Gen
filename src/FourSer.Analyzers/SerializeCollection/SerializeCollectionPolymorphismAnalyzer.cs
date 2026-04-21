@@ -90,8 +90,7 @@ namespace FourSer.Analyzers.SerializeCollection
         private void AnalyzeAttribute(SymbolAnalysisContext context)
         {
             var symbol = context.Symbol;
-            var serializeCollectionAttribute = symbol.GetAttributes()
-                .FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializeCollectionAttribute");
+            var serializeCollectionAttribute = symbol.GetSerializeCollectionAttribute();
 
             if (serializeCollectionAttribute?.ApplicationSyntaxReference == null)
             {
@@ -130,15 +129,9 @@ namespace FourSer.Analyzers.SerializeCollection
                 var referenceName = typeIdPropertyValue.Value as string;
                 if (string.IsNullOrEmpty(referenceName)) return;
 
-                var referencedSymbol = symbol.ContainingType.GetMembers(referenceName!)
-                    .FirstOrDefault(m => (m is IPropertySymbol or IFieldSymbol) && !m.HasIgnoreAttribute());
+                var referencedSymbol = symbol.ContainingType.GetNonIgnoredPropertyOrField(referenceName!);
                 if (referencedSymbol == null) return;
-                var fieldOrPropertyType = referencedSymbol switch
-                {
-                    IPropertySymbol propertySymbol => propertySymbol.Type,
-                    IFieldSymbol fieldSymbol => fieldSymbol.Type,
-                    _ => null
-                };
+                var fieldOrPropertyType = referencedSymbol.GetPropertyOrFieldType();
 
                 // FSG1010
                 AnalyzeTypeIdType(context, namedArguments, fieldOrPropertyType, arguments);
@@ -155,8 +148,7 @@ namespace FourSer.Analyzers.SerializeCollection
             }
 
             // FSG1013: Check for conflicting polymorphic settings
-            var serializePolymorphicAttribute = symbol.GetAttributes()
-                .FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializePolymorphicAttribute");
+            var serializePolymorphicAttribute = symbol.GetSerializePolymorphicAttribute();
             if (serializePolymorphicAttribute?.ApplicationSyntaxReference != null)
             {
                 AnalyzePolymorphicOptionTypeUniformness(context, serializePolymorphicAttribute, typeIdPropertyArg, typeIdTypeArg);
@@ -269,8 +261,7 @@ namespace FourSer.Analyzers.SerializeCollection
         // Gets first ``[PolymorphicOption((byte)1, typeof(CatBase))]`` id type from property or field
         private static ITypeSymbol? GetPolymorphicOptionType(ISymbol symbol)
         {
-            var polymorphicOptionAttributes = symbol.GetAttributes()
-                .Where(ad => ad.AttributeClass?.Name == "PolymorphicOptionAttribute");
+            var polymorphicOptionAttributes = symbol.GetPolymorphicOptionAttributes();
 
             foreach (var attribute in polymorphicOptionAttributes)
             {

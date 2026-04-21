@@ -76,4 +76,42 @@ public class PolymorphicOptionDefaultAnalyzerTests : AnalyzerTestBase
             }
         }.RunAsync();
     }
+
+    [Fact]
+    public async Task UnrelatedPolymorphicOptionAttribute_NoDiagnostics()
+    {
+        const string unrelatedAttributeSource = """
+        namespace Other;
+
+        [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = true)]
+        public sealed class PolymorphicOptionAttribute : System.Attribute
+        {
+            public PolymorphicOptionAttribute(int id, System.Type type)
+            {
+            }
+
+            public bool IsDefault { get; set; }
+        }
+        """;
+
+        const string source = """
+        using Other;
+
+        public class Example
+        {
+            [PolymorphicOption(1, typeof(int), IsDefault = true)]
+            [PolymorphicOption(2, typeof(string), IsDefault = true)]
+            public object? Value { get; set; }
+        }
+        """;
+
+        await new CSharpAnalyzerTest<PolymorphicOptionDefaultAnalyzer, DefaultVerifier>
+        {
+            ReferenceAssemblies = ReferenceAssemblies,
+            TestState =
+            {
+                Sources = { unrelatedAttributeSource, source }
+            }
+        }.RunAsync();
+    }
 }

@@ -94,4 +94,33 @@ public class MyData
             ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
+
+    [Fact]
+    public async Task UnrelatedSerializeCollectionAttribute_NoDiagnostic()
+    {
+        var unrelatedAttributeSource = @"
+namespace Other;
+
+[System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
+public sealed class SerializeCollectionAttribute : System.Attribute
+{
+    public string? CountSizeReference { get; set; }
+}";
+
+        var testCode = @"
+using Other;
+using System.Collections.Generic;
+
+public class MyData
+{
+    [SerializeCollection(CountSizeReference = ""NonExistent"")]
+    public List<int> A { get; set; }
+}";
+
+        await new CSharpAnalyzerTest<SerializeCollectionCountReferenceAnalyzer, DefaultVerifier>
+        {
+            TestState = { Sources = { unrelatedAttributeSource, testCode } },
+            ReferenceAssemblies = ReferenceAssemblies
+        }.RunAsync();
+    }
 }
