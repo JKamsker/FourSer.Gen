@@ -9,6 +9,18 @@ namespace FourSer.Gen;
 
 internal static class TypeInfoProvider
 {
+    private readonly record struct CollectionDefinitionInfo
+    (
+        string? ConcreteTypeName,
+        string? RangeFactoryTypeName,
+        bool IsPureEnumerable,
+        bool IsGenericCollection,
+        bool IsGenericList,
+        bool CanBeNull,
+        bool SupportsIndexing,
+        string? CountPropertyName
+    );
+
     private static readonly SymbolDisplayFormat s_typeNameFormat = new
     (
         SymbolDisplayGlobalNamespaceStyle.Omitted,
@@ -207,29 +219,144 @@ internal static class TypeInfoProvider
             && namedTypeSymbol.TypeArguments.Length == 1)
         {
             var originalDefinition = namedTypeSymbol.OriginalDefinition;
-            if (originalDefinition is INamedTypeSymbol originalNamedTypeSymbol)
+            if (originalDefinition is INamedTypeSymbol originalNamedTypeSymbol
+                && TryGetCollectionDefinitionInfo(originalNamedTypeSymbol, out _))
             {
-                var isCollection = originalNamedTypeSymbol.IsGenericList()
-                    || originalNamedTypeSymbol.IsGenericIList()
-                    || originalNamedTypeSymbol.IsGenericICollection()
-                    || originalNamedTypeSymbol.IsGenericIEnumerable()
-                    || originalNamedTypeSymbol.IsObjectModelCollection()
-                    || originalNamedTypeSymbol.IsObjectModelObservableCollection()
-                    || originalNamedTypeSymbol.IsGenericHashSet()
-                    || originalNamedTypeSymbol.IsGenericSortedSet()
-                    || originalNamedTypeSymbol.IsGenericQueue()
-                    || originalNamedTypeSymbol.IsGenericStack()
-                    || originalNamedTypeSymbol.IsGenericLinkedList()
-                    || originalNamedTypeSymbol.IsConcurrentConcurrentBag();
-
-                if (isCollection)
-                {
-                    return namedTypeSymbol.TypeArguments[0];
-                }
+                return namedTypeSymbol.TypeArguments[0];
             }
         }
 
         return null;
+    }
+
+    private static bool TryGetCollectionDefinitionInfo
+    (
+        INamedTypeSymbol originalNamedTypeSymbol,
+        out CollectionDefinitionInfo definitionInfo
+    )
+    {
+        if (originalNamedTypeSymbol.IsGenericList())
+        {
+            definitionInfo = new CollectionDefinitionInfo(null, null, false, true, true, true, true, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsGenericIList())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.List", null, false, true, false, true, true, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsGenericICollection())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.List", null, false, true, false, true, false, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsGenericIReadOnlyCollection())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.List", null, false, true, false, true, false, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsGenericIReadOnlyList())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.List", null, false, true, false, true, true, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsGenericIEnumerable())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.List", null, true, true, false, true, false, null);
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsObjectModelCollection())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.ObjectModel.Collection", null, false, false, false, true, true, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsObjectModelObservableCollection())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.ObjectModel.ObservableCollection", null, false, false, false, true, true, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsGenericHashSet())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.HashSet", null, false, false, false, true, false, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsGenericSortedSet())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.SortedSet", null, false, false, false, true, false, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsGenericQueue())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.Queue", null, false, false, false, true, false, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsGenericStack())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.Stack", null, false, false, false, true, false, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsGenericLinkedList())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.LinkedList", null, false, false, false, true, false, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsConcurrentConcurrentBag())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Concurrent.ConcurrentBag", null, false, false, false, true, false, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsImmutableList())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.List", "System.Collections.Immutable.ImmutableList", false, false, false, true, true, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsImmutableArray())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.List", "System.Collections.Immutable.ImmutableArray", false, false, false, false, true, "Length");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsImmutableHashSet())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.List", "System.Collections.Immutable.ImmutableHashSet", false, false, false, true, false, "Count");
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsImmutableQueue())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.List", "System.Collections.Immutable.ImmutableQueue", false, false, false, true, false, null);
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsImmutableStack())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.List", "System.Collections.Immutable.ImmutableStack", false, false, false, true, false, null);
+            return true;
+        }
+
+        if (originalNamedTypeSymbol.IsImmutableSortedSet())
+        {
+            definitionInfo = new CollectionDefinitionInfo("System.Collections.Generic.List", "System.Collections.Immutable.ImmutableSortedSet", false, false, false, true, false, "Count");
+            return true;
+        }
+
+        definitionInfo = default;
+        return false;
     }
 
     private static ImmutableArray<DefaultSerializerInfo> GetDefaultSerializers(INamedTypeSymbol typeSymbol, IAssemblySymbol assemblySymbol)
@@ -787,8 +914,12 @@ internal static class TypeInfoProvider
                 IsElementStringType: elementType.SpecialType == SpecialType.System_String,
                 HasElementGenerateSerializerAttribute: arrayElementHasGenerateSerializerAttribute,
                 ElementRequiresDisposal: arrayElementRequiresDisposal,
+                CanBeNull: true,
+                SupportsIndexing: true,
+                CountPropertyName: "Length",
                 IsArray: true,
                 ConcreteTypeName: null,
+                RangeFactoryTypeName: null,
                 IsPureEnumerable: false,
                 IsGenericCollection: isGenericCollection1,
                 CollectionAddMethod: collectionAddMethod,
@@ -809,73 +940,12 @@ internal static class TypeInfoProvider
         var originalDefinition = namedTypeSymbol.OriginalDefinition;
         var genericElementType = namedTypeSymbol.TypeArguments[0];
 
-        string? concreteTypeName = null;
-        var isCollection = false;
-        var isPureEnumerable = false;
-
         if (originalDefinition is not INamedTypeSymbol originalNamedTypeSymbol)
         {
             return (false, null);
         }
 
-        if (originalNamedTypeSymbol.IsGenericList())
-        {
-            isCollection = true;
-            concreteTypeName = null;
-        }
-        else if (originalNamedTypeSymbol.IsGenericIList() || originalNamedTypeSymbol.IsGenericICollection())
-        {
-            isCollection = true;
-            concreteTypeName = "System.Collections.Generic.List";
-        }
-        else if (originalNamedTypeSymbol.IsGenericIEnumerable())
-        {
-            isCollection = true;
-            isPureEnumerable = true;
-            concreteTypeName = "System.Collections.Generic.List";
-        }
-        else if (originalNamedTypeSymbol.IsObjectModelCollection())
-        {
-            isCollection = true;
-            concreteTypeName = "System.Collections.ObjectModel.Collection";
-        }
-        else if (originalNamedTypeSymbol.IsObjectModelObservableCollection())
-        {
-            isCollection = true;
-            concreteTypeName = "System.Collections.ObjectModel.ObservableCollection";
-        }
-        else if (originalNamedTypeSymbol.IsGenericHashSet())
-        {
-            isCollection = true;
-            concreteTypeName = "System.Collections.Generic.HashSet";
-        }
-        else if (originalNamedTypeSymbol.IsGenericSortedSet())
-        {
-            isCollection = true;
-            concreteTypeName = "System.Collections.Generic.SortedSet";
-        }
-        else if (originalNamedTypeSymbol.IsGenericQueue())
-        {
-            isCollection = true;
-            concreteTypeName = "System.Collections.Generic.Queue";
-        }
-        else if (originalNamedTypeSymbol.IsGenericStack())
-        {
-            isCollection = true;
-            concreteTypeName = "System.Collections.Generic.Stack";
-        }
-        else if (originalNamedTypeSymbol.IsGenericLinkedList())
-        {
-            isCollection = true;
-            concreteTypeName = "System.Collections.Generic.LinkedList";
-        }
-        else if (originalNamedTypeSymbol.IsConcurrentConcurrentBag())
-        {
-            isCollection = true;
-            concreteTypeName = "System.Collections.Concurrent.ConcurrentBag";
-        }
-
-        if (!isCollection)
+        if (!TryGetCollectionDefinitionInfo(originalNamedTypeSymbol, out var definitionInfo))
         {
             return (false, null);
         }
@@ -886,25 +956,25 @@ internal static class TypeInfoProvider
             && !HasUserProvidedDisposeMethod(namedGenericElementType)
             && RequiresDisposal(namedGenericElementType);
         
-        var isGenericCollection = originalNamedTypeSymbol.IsGenericICollection() 
-            || originalNamedTypeSymbol.IsGenericIList() 
-            || originalNamedTypeSymbol.IsGenericIEnumerable();
-        
         var addMethod = CollectionUtilities.GetCollectionAddMethod(typeSymbol);
 
         return (true, new CollectionTypeInfo
         (
-            genericElementType.ToDisplayString(s_typeNameFormat),
-            genericElementType.IsUnmanagedType,
-            genericElementType.SpecialType == SpecialType.System_String,        
-            hasGenerateSerializerAttribute,
-            genericElementRequiresDisposal,
-            false,
-            concreteTypeName,
-            isPureEnumerable,
-            isGenericCollection,
-            addMethod,
-            originalNamedTypeSymbol.IsGenericList()
+            ElementTypeName: genericElementType.ToDisplayString(s_typeNameFormat),
+            IsElementUnmanagedType: genericElementType.IsUnmanagedType,
+            IsElementStringType: genericElementType.SpecialType == SpecialType.System_String,
+            HasElementGenerateSerializerAttribute: hasGenerateSerializerAttribute,
+            ElementRequiresDisposal: genericElementRequiresDisposal,
+            CanBeNull: definitionInfo.CanBeNull,
+            SupportsIndexing: definitionInfo.SupportsIndexing,
+            CountPropertyName: definitionInfo.CountPropertyName,
+            IsArray: false,
+            ConcreteTypeName: definitionInfo.ConcreteTypeName,
+            RangeFactoryTypeName: definitionInfo.RangeFactoryTypeName,
+            IsPureEnumerable: definitionInfo.IsPureEnumerable,
+            IsGenericCollection: definitionInfo.IsGenericCollection,
+            CollectionAddMethod: addMethod,
+            isGenericList: definitionInfo.IsGenericList
         ));
     }
 
@@ -1052,25 +1122,32 @@ internal static class TypeInfoProvider
         }
 
         // Try to get the type from the typeIdProperty
-        var containingType = member.ContainingType;
-        var referencedSymbol = containingType.GetMembers(typeIdProperty!).FirstOrDefault();
+        var typeIdPropertyName = typeIdProperty;
+        if (!string.IsNullOrEmpty(typeIdPropertyName))
+        {
+            var containingType = member.ContainingType;
+            var referencedSymbol = containingType.GetMembers(typeIdPropertyName).FirstOrDefault();
 
-        typeIdTypeString = referencedSymbol switch
-        {
-            IPropertySymbol propertySymbol => propertySymbol.Type.ToDisplayString(s_typeNameFormat),
-            IFieldSymbol fieldSymbol => fieldSymbol.Type.ToDisplayString(s_typeNameFormat),
-            _ => typeIdTypeString
-        };
-        
-        if(!string.IsNullOrEmpty(typeIdTypeString))
-        {
-            return typeIdTypeString!;
+            typeIdTypeString = referencedSymbol switch
+            {
+                IPropertySymbol propertySymbol => propertySymbol.Type.ToDisplayString(s_typeNameFormat),
+                IFieldSymbol fieldSymbol => fieldSymbol.Type.ToDisplayString(s_typeNameFormat),
+                _ => typeIdTypeString
+            };
+
+            if (!string.IsNullOrEmpty(typeIdTypeString))
+            {
+                return typeIdTypeString!;
+            }
         }
 
-        typeIdTypeString = polymorphicOptions.FirstOrDefault().Key.GetType().Name;
-        if(!string.IsNullOrEmpty(typeIdTypeString))
+        if (PolymorphicUtilities.TryGetDefaultOption(polymorphicOptions, out var defaultOption))
         {
-            return typeIdTypeString!;
+            typeIdTypeString = defaultOption.Key.GetType().Name;
+            if (!string.IsNullOrEmpty(typeIdTypeString))
+            {
+                return typeIdTypeString!;
+            }
         }
         
         return "int";
@@ -1081,8 +1158,9 @@ internal static class TypeInfoProvider
         var polymorphicOptionsBuilder = ImmutableArray.CreateBuilder<PolymorphicOption>();
         foreach (var optionAttribute in options)
         {
-            var (key, type) = AttributeHelper.GetPolymorphicOption(optionAttribute);
-            polymorphicOptionsBuilder.Add(new(key, type.ToDisplayString()));
+            var (key, type, isDefault) = AttributeHelper.GetPolymorphicOption(optionAttribute);
+            var isSerializableType = type is INamedTypeSymbol namedTypeSymbol && HasGenerateSerializerAttribute(namedTypeSymbol);
+            polymorphicOptionsBuilder.Add(new(key, type.ToDisplayString(), isDefault, isSerializableType));
         }
 
         return polymorphicOptionsBuilder.ToImmutable();

@@ -1,10 +1,71 @@
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
+using System.Collections.Immutable;
 
 namespace FourSer.Gen.CodeGenerators.Core;
 
 public static class PolymorphicUtilities
 {
+    public static bool TryGetDefaultOption(ImmutableArray<PolymorphicOption> options, out PolymorphicOption option)
+    {
+        if (options.IsDefaultOrEmpty)
+        {
+            option = default;
+            return false;
+        }
+
+        var defaultOption = default(PolymorphicOption);
+        var defaultCount = 0;
+        foreach (var candidate in options)
+        {
+            if (!candidate.IsDefault)
+            {
+                continue;
+            }
+
+            defaultOption = candidate;
+            defaultCount++;
+            if (defaultCount > 1)
+            {
+                break;
+            }
+        }
+
+        option = defaultCount == 1
+            ? defaultOption
+            : options[0];
+
+        return true;
+    }
+
+    public static bool TryGetDefaultOption(PolymorphicInfo info, out PolymorphicOption option)
+    {
+        return TryGetDefaultOption(info.Options.Array, out option);
+    }
+
+    public static void EmitFirstCollectionItemAccess(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        string collectionAccessExpression,
+        string firstItemVariableName)
+    {
+        if (member.CollectionTypeInfo?.SupportsIndexing == true || member.IsList)
+        {
+            sb.WriteLine($"var {firstItemVariableName} = {collectionAccessExpression}[0];");
+            return;
+        }
+
+        var enumeratorVariableName = $"{firstItemVariableName}Enumerator";
+        sb.WriteLine($"using var {enumeratorVariableName} = {collectionAccessExpression}.GetEnumerator();");
+        sb.WriteLine($"if (!{enumeratorVariableName}.MoveNext())");
+        using (sb.BeginBlock())
+        {
+            sb.WriteLine("throw new System.InvalidOperationException(\"Collection must contain at least one item.\");");
+        }
+
+        sb.WriteLine($"var {firstItemVariableName} = {enumeratorVariableName}.Current;");
+    }
+
     /// <summary>
     ///     Formats the key for a polymorphic switch case.
     /// </summary>

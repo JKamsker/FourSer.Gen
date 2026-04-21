@@ -6,6 +6,9 @@ namespace FourSer.Gen.CodeGenerators.Core;
 
 public static class CollectionUtilities
 {
+    private const string IReadOnlyCollectionPrefix = "System.Collections.Generic.IReadOnlyCollection<";
+    private const string IReadOnlyListPrefix = "System.Collections.Generic.IReadOnlyList<";
+
     /// <summary>
     ///     Collection method mapping (consolidates 2 duplicate implementations)
     /// </summary>
@@ -21,6 +24,27 @@ public static class CollectionUtilities
         if (namedTypeSymbol.IsGenericLinkedList()) return "AddLast";
 
         return "Add";
+    }
+
+    public static bool CanUseDirectByteCollectionPath(MemberToGenerate member)
+    {
+        return member.CollectionTypeInfo?.IsArray == true || member.IsList;
+    }
+
+    public static bool ShouldDeserializeIntoStagingCollection(MemberToGenerate member)
+    {
+        if (member.CollectionTypeInfo is not { } collectionTypeInfo)
+        {
+            return false;
+        }
+
+        if (collectionTypeInfo.RangeFactoryTypeName is not null)
+        {
+            return true;
+        }
+
+        return member.TypeName.StartsWith(IReadOnlyCollectionPrefix, StringComparison.Ordinal)
+            || member.TypeName.StartsWith(IReadOnlyListPrefix, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -71,13 +95,24 @@ public static class CollectionUtilities
     /// <summary>
     ///     Collection assignment logic for interface types after deserialization.
     /// </summary>
-    public static string GenerateCollectionAssignment(MemberToGenerate member, string tempVarName)
+    public static string GenerateCollectionAssignment(MemberToGenerate member, string stagingVariableName, string finalTargetExpression)
     {
-        if (member.CollectionTypeInfo?.ConcreteTypeName != null)
+        var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
+        if (member.CollectionTypeInfo?.RangeFactoryTypeName is { } rangeFactoryTypeName)
         {
-            return $"obj.{member.Name} = {tempVarName};";
+            if (string.Equals(rangeFactoryTypeName, "System.Collections.Immutable.ImmutableStack", StringComparison.Ordinal))
+            {
+                return $"{finalTargetExpression} = {rangeFactoryTypeName}.CreateRange<{elementTypeName}>(global::System.Linq.Enumerable.Reverse({stagingVariableName}));";
+            }
+
+            return $"{finalTargetExpression} = {rangeFactoryTypeName}.CreateRange<{elementTypeName}>({stagingVariableName});";
         }
 
-        return string.Empty;
+        if (member.CollectionTypeInfo?.IsArray == true)
+        {
+            return $"{finalTargetExpression} = {stagingVariableName}.ToArray();";
+        }
+
+        return $"{finalTargetExpression} = {stagingVariableName};";
     }
 }

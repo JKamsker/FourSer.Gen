@@ -1,0 +1,1 @@
+FSG3003;PolymorphicOptionDefaultAnalyzer;Usage;Error;Only one PolymorphicOption can be marked as the default option

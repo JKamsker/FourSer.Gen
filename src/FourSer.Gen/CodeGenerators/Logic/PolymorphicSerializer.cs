@@ -217,10 +217,12 @@ internal static class PolymorphicSerializer
         PolymorphicInfo info
     )
     {
-        sb.WriteLineFormat($"if (obj.{member.Name}.Count > 0)");
+        var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}");
+        sb.WriteLineFormat("if ({0} > 0)", countExpression);
         using (sb.BeginBlock())
         {
-            sb.WriteLineFormat("switch (obj.{0}[0])", member.Name);
+            PolymorphicUtilities.EmitFirstCollectionItemAccess(sb, member, $"obj.{member.Name}", "firstItem");
+            sb.WriteLine("switch (firstItem)");
             using (sb.BeginBlock())
             {
                 foreach (var option in info.Options)
@@ -249,7 +251,7 @@ internal static class PolymorphicSerializer
                 sb.WriteLine("default:");
                 sb.WriteLineFormat
                 (
-                    "    throw new System.IO.InvalidDataException($\"Unknown type for item in {0}: {{obj.{0}[0].GetType().Name}}\");",
+                    "    throw new System.IO.InvalidDataException($\"Unknown type for item in {0}: {{firstItem.GetType().Name}}\");",
                     member.Name
                 );
             }
@@ -273,16 +275,16 @@ internal static class PolymorphicSerializer
 
         sb.WriteLine($"var {listItemsVar} = obj.{member.Name};");
 
-        var defaultOption = info.Options.FirstOrDefault();
-        if (defaultOption.Equals(default(PolymorphicOption)))
+        if (!PolymorphicUtilities.TryGetDefaultOption(info, out _))
         {
             return;
         }
 
         var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
-        var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
+        var nullableCountExpression = GeneratorUtilities.GetCountExpressionForAccess(member, listItemsVar, true);
+        var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, listItemsVar);
 
-        sb.WriteLine($"if ({listItemsVar} is null || {listItemsVar}.Count == 0)");
+        sb.WriteLineFormat("if ({0} == 0)", nullableCountExpression);
         using (sb.BeginBlock())
         {
             EmitNullOrEmptyCollectionHeader(sb, ctx, collectionInfo, info);
@@ -291,10 +293,9 @@ internal static class PolymorphicSerializer
         sb.WriteLine("else");
         using (sb.BeginBlock())
         {
-            var countExpression = $"{listItemsVar}.Count";
             SerializationWriterEmitter.EmitWrite(sb, ctx, countType, countExpression);
 
-            EmitDiscriminatorFromFirstItem(sb, ctx, listItemsVar, info, "discriminator");
+            EmitDiscriminatorFromFirstItem(sb, ctx, listItemsVar, member, info, "discriminator");
 
             sb.WriteLine("switch (discriminator)");
             using (sb.BeginBlock())
@@ -330,11 +331,12 @@ internal static class PolymorphicSerializer
         IndentedStringBuilder sb,
         SerializationWriterEmitter.WriterCtx ctx,
         string collectionName,
+        MemberToGenerate member,
         PolymorphicInfo info,
         string discriminatorVarName)
     {
         var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
-        sb.WriteLine($"var firstItem = {collectionName}[0];");
+        PolymorphicUtilities.EmitFirstCollectionItemAccess(sb, member, collectionName, "firstItem");
         sb.WriteLine($"var {discriminatorVarName} = firstItem switch");
         sb.WriteLine("{");
         sb.Indent();
@@ -362,19 +364,53 @@ internal static class PolymorphicSerializer
 
         if (polymorphicInfo.TypeIdPropertyIndex is null)
         {
-            var defaultOption = polymorphicInfo.Options.FirstOrDefault();
-            if (!defaultOption.Equals(default(PolymorphicOption)))
+            if (PolymorphicUtilities.TryGetDefaultOption(polymorphicInfo, out var defaultOption))
             {
                 SerializationWriterEmitter.EmitWriteTypeId(sb, ctx, defaultOption, polymorphicInfo);
             }
         }
     }
-    public static void GeneratePolymorphicEnumerableCollection(IndentedStringBuilder sb, MemberToGenerate member, PolymorphicInfo info, SerializationWriterEmitter.WriterCtx ctx)
+
+    public static void GeneratePolymorphicEnumerableCollection(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        PolymorphicInfo info,
+        SerializationWriterEmitter.WriterCtx ctx,
+        CollectionInfo collectionInfo)
     {
-        BeginCountReservation(sb, ctx, "int");
+        var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+        BeginCountReservation(sb, ctx, countType);
+
+        if (member.CollectionTypeInfo?.CanBeNull == true)
+        {
+            sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
+            using (sb.BeginBlock())
+            {
+                if (PolymorphicUtilities.TryGetDefaultOption(info, out var defaultOption))
+                {
+                    SerializationWriterEmitter.EmitWriteTypeId(sb, ctx, defaultOption, info);
+                }
+
+                if (ctx.IsSpan)
+                {
+                    EndCountReservation(sb, ctx, countType, "0");
+                }
+            }
+
+            sb.WriteLine("else");
+            using (sb.BeginBlock())
+            {
+                EmitPolymorphicCollectionEnumerator(sb, member);
+                EmitPolymorphicCollectionEmptyCase(sb, ctx, info, countType);
+                EmitPolymorphicCollectionNonEmptyCase(sb, ctx, info, countType);
+            }
+
+            return;
+        }
+
         EmitPolymorphicCollectionEnumerator(sb, member);
-        EmitPolymorphicCollectionEmptyCase(sb, ctx, info);
-        EmitPolymorphicCollectionNonEmptyCase(sb, ctx, info);
+        EmitPolymorphicCollectionEmptyCase(sb, ctx, info, countType);
+        EmitPolymorphicCollectionNonEmptyCase(sb, ctx, info, countType);
     }
 
     private static void BeginCountReservation(IndentedStringBuilder sb, SerializationWriterEmitter.WriterCtx ctx, string countType)
@@ -406,17 +442,21 @@ internal static class PolymorphicSerializer
     private static void EmitPolymorphicCollectionEmptyCase(
         IndentedStringBuilder sb,
         SerializationWriterEmitter.WriterCtx ctx,
-        PolymorphicInfo info)
+        PolymorphicInfo info,
+        string countType)
     {
-        var defaultOption = info.Options.FirstOrDefault();
         sb.WriteLine("if (!enumerator.MoveNext())");
         sb.WriteLine("{");
         sb.Indent();
-        SerializationWriterEmitter.EmitWriteTypeId(sb, ctx, defaultOption, info);
-    if (ctx.IsSpan)
-    {
-        EndCountReservation(sb, ctx, "int", "0");
-    }
+        if (PolymorphicUtilities.TryGetDefaultOption(info, out var defaultOption))
+        {
+            SerializationWriterEmitter.EmitWriteTypeId(sb, ctx, defaultOption, info);
+        }
+
+        if (ctx.IsSpan)
+        {
+            EndCountReservation(sb, ctx, countType, "0");
+        }
         sb.Unindent();
         sb.WriteLine("}");
     }
@@ -424,7 +464,8 @@ internal static class PolymorphicSerializer
     private static void EmitPolymorphicCollectionNonEmptyCase(
         IndentedStringBuilder sb,
         SerializationWriterEmitter.WriterCtx ctx,
-        PolymorphicInfo info)
+        PolymorphicInfo info,
+        string countType)
     {
         var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
         sb.WriteLine("else");
@@ -477,7 +518,7 @@ internal static class PolymorphicSerializer
                 }
             }
         }
-        EndCountReservation(sb, ctx, "int", "count");
+        EndCountReservation(sb, ctx, countType, "count");
         sb.Unindent();
         sb.WriteLine("}");
     }

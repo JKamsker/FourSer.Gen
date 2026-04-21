@@ -57,6 +57,47 @@ public class Issue59Tests
                 ReferenceAssemblies = ReferenceAssemblies
             }.RunAsync();
         }
+
+        [Fact]
+        public async Task Issue59_ReadOnlyPolymorphicCollectionAnalysis_NoDiagnostics()
+        {
+            var testCode =
+                // language=csharp
+                """
+                using FourSer.Contracts;
+                using System.Collections.Generic;
+
+                [GenerateSerializer]
+                public partial class Inventory
+                {
+                    [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId)]
+                    [SerializePolymorphic(TypeIdType = typeof(byte), PropertyName = "TypeId")]
+                    [PolymorphicOption((byte)10, typeof(Sword))]
+                    [PolymorphicOption((byte)20, typeof(Shield))]
+                    [PolymorphicOption((byte)30, typeof(Potion))]
+                    public IReadOnlyCollection<Item> Items { get; set; } = new List<Item>();
+
+                    public byte TypeId { get; set; }
+                }
+
+                public interface Item { }
+
+                [GenerateSerializer]
+                public partial class Sword : Item { }
+
+                [GenerateSerializer]
+                public partial class Shield : Item { }
+
+                [GenerateSerializer]
+                public partial class Potion : Item { }
+                """;
+
+            await new CSharpAnalyzerTest<PolymorphicOptionAssignableTypeAnalyzer, DefaultVerifier>
+            {
+                TestState = { Sources = { testCode } },
+                ReferenceAssemblies = ReferenceAssemblies
+            }.RunAsync();
+        }
     }
 
     public class SerializePolymorphicPropertyNameAnalyzerTests : AnalyzerTestBase

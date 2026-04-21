@@ -156,6 +156,16 @@ public static class SymbolExtensions
         return typeSymbol is { Name: "ICollection", Arity: 1, ContainingNamespace: { Name: "Generic", ContainingNamespace: { Name: "Collections", ContainingNamespace: { Name: "System", ContainingNamespace: { IsGlobalNamespace: true } } } } };
     }
 
+    public static bool IsGenericIReadOnlyCollection(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is { Name: "IReadOnlyCollection", Arity: 1, ContainingNamespace: { Name: "Generic", ContainingNamespace: { Name: "Collections", ContainingNamespace: { Name: "System", ContainingNamespace: { IsGlobalNamespace: true } } } } };
+    }
+
+    public static bool IsGenericIReadOnlyList(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is { Name: "IReadOnlyList", Arity: 1, ContainingNamespace: { Name: "Generic", ContainingNamespace: { Name: "Collections", ContainingNamespace: { Name: "System", ContainingNamespace: { IsGlobalNamespace: true } } } } };
+    }
+
     public static bool IsGenericIEnumerable(this INamedTypeSymbol typeSymbol)
     {
         return typeSymbol is { Name: "IEnumerable", Arity: 1, ContainingNamespace: { Name: "Generic", ContainingNamespace: { Name: "Collections", ContainingNamespace: { Name: "System", ContainingNamespace: { IsGlobalNamespace: true } } } } };
@@ -199,5 +209,35 @@ public static class SymbolExtensions
     public static bool IsConcurrentConcurrentBag(this INamedTypeSymbol typeSymbol)
     {
         return typeSymbol is { Name: "ConcurrentBag", Arity: 1, ContainingNamespace: { Name: "Concurrent", ContainingNamespace: { Name: "Collections", ContainingNamespace: { Name: "System", ContainingNamespace: { IsGlobalNamespace: true } } } } };
+    }
+
+    public static bool IsImmutableList(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is { Name: "ImmutableList", Arity: 1, ContainingNamespace: { Name: "Immutable", ContainingNamespace: { Name: "Collections", ContainingNamespace: { Name: "System", ContainingNamespace: { IsGlobalNamespace: true } } } } };
+    }
+
+    public static bool IsImmutableArray(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is { Name: "ImmutableArray", Arity: 1, ContainingNamespace: { Name: "Immutable", ContainingNamespace: { Name: "Collections", ContainingNamespace: { Name: "System", ContainingNamespace: { IsGlobalNamespace: true } } } } };
+    }
+
+    public static bool IsImmutableHashSet(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is { Name: "ImmutableHashSet", Arity: 1, ContainingNamespace: { Name: "Immutable", ContainingNamespace: { Name: "Collections", ContainingNamespace: { Name: "System", ContainingNamespace: { IsGlobalNamespace: true } } } } };
+    }
+
+    public static bool IsImmutableQueue(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is { Name: "ImmutableQueue", Arity: 1, ContainingNamespace: { Name: "Immutable", ContainingNamespace: { Name: "Collections", ContainingNamespace: { Name: "System", ContainingNamespace: { IsGlobalNamespace: true } } } } };
+    }
+
+    public static bool IsImmutableStack(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is { Name: "ImmutableStack", Arity: 1, ContainingNamespace: { Name: "Immutable", ContainingNamespace: { Name: "Collections", ContainingNamespace: { Name: "System", ContainingNamespace: { IsGlobalNamespace: true } } } } };
+    }
+
+    public static bool IsImmutableSortedSet(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is { Name: "ImmutableSortedSet", Arity: 1, ContainingNamespace: { Name: "Immutable", ContainingNamespace: { Name: "Collections", ContainingNamespace: { Name: "System", ContainingNamespace: { IsGlobalNamespace: true } } } } };
     }
 }

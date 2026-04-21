@@ -187,9 +187,11 @@ public class SerializerGenerator : IIncrementalGenerator
             return;
         }
 
+        var typeName = GetTypeDisplayName(typeToGenerate);
+
         try
         {
-            if (HasInvalidCollection(context, typeToGenerate) || HasInvalidPolymorphicConfiguration(context, typeToGenerate))
+            if (GenerationValidation.HasInvalidConfiguration(context, typeToGenerate, s_generatorConfigurationErrorRule, typeName))
             {
                 return;
             }
@@ -246,7 +248,7 @@ public class SerializerGenerator : IIncrementalGenerator
         catch (Exception ex)
         {
             context.ReportDiagnostic
-                (Diagnostic.Create(s_generatorErrorRule, Location.None, GetTypeDisplayName(typeToGenerate), ex.ToString()));
+                (Diagnostic.Create(s_generatorErrorRule, Location.None, typeName, ex.ToString()));
         }
     }
 
@@ -341,142 +343,6 @@ public class SerializerGenerator : IIncrementalGenerator
 
             sb.WriteLineFormat("this.{0} = default;", member.Name);
         }
-    }
-
-    private static bool HasInvalidCollection(SourceProductionContext context, TypeToGenerate typeToGenerate)
-    {
-        var typeName = GetTypeDisplayName(typeToGenerate);
-        foreach (var member in typeToGenerate.Members)
-        {
-            if (member.IsMemoryOwner)
-            {
-                if (member.CollectionInfo?.Unlimited == true)
-                {
-                    context.ReportDiagnostic
-                    (
-                        Diagnostic.Create
-                        (
-                            s_generatorConfigurationErrorRule,
-                            Location.None,
-                            typeName,
-                            $"IMemoryOwner<T> member '{member.Name}' is marked as Unlimited, which is not supported."
-                        )
-                    );
-                    return true;
-                }
-
-                if (member.CustomSerializer is not null)
-                {
-                    continue;
-                }
-
-                if (member.MemoryOwnerTypeInfo is not { } memoryOwnerTypeInfo)
-                {
-                    continue;
-                }
-
-                if (memoryOwnerTypeInfo.IsElementUnmanagedType
-                    || memoryOwnerTypeInfo.IsElementStringType
-                    || memoryOwnerTypeInfo.HasElementGenerateSerializerAttribute)
-                {
-                    continue;
-                }
-
-                context.ReportDiagnostic
-                (
-                    Diagnostic.Create
-                    (
-                        s_generatorConfigurationErrorRule,
-                        Location.None,
-                        typeName,
-                        $"IMemoryOwner<T> member '{member.Name}' has unsupported element type '{memoryOwnerTypeInfo.ElementTypeName}'. Add [GenerateSerializer] to the element type or apply [Serializer(...)] to the member."
-                    )
-                );
-                return true;
-            }
-
-            if (!member.IsCollection || member.CollectionTypeInfo is null)
-            {
-                continue;
-            }
-
-            if (member.CustomSerializer is not null)
-            {
-                continue;
-            }
-
-            var collectionTypeInfo = member.CollectionTypeInfo.Value;
-            if (collectionTypeInfo.IsElementUnmanagedType || collectionTypeInfo.IsElementStringType ||
-                collectionTypeInfo.HasElementGenerateSerializerAttribute)
-            {
-                continue;
-            }
-
-            context.ReportDiagnostic
-            (
-                Diagnostic.Create
-                (
-                    s_generatorConfigurationErrorRule,
-                    Location.None,
-                    typeName,
-                    $"Collection member '{member.Name}' has unsupported element type '{collectionTypeInfo.ElementTypeName}'. Add [GenerateSerializer] to the element type or apply [Serializer(...)] to the collection member."
-                )
-            );
-            return true;
-        }
-
-        return false;
-    }
-
-    private static bool HasInvalidPolymorphicConfiguration(SourceProductionContext context, TypeToGenerate typeToGenerate)
-    {
-        var typeName = GetTypeDisplayName(typeToGenerate);
-        foreach (var member in typeToGenerate.Members)
-        {
-            var collectionInfo = member.CollectionInfo;
-
-            var requestsPolymorphism =
-                (collectionInfo?.PolymorphicMode ?? PolymorphicMode.None) != PolymorphicMode.None
-                || !string.IsNullOrEmpty(collectionInfo?.TypeIdProperty)
-                || member.PolymorphicInfo is not null;
-
-            if (!requestsPolymorphism)
-            {
-                continue;
-            }
-
-            if (member.IsMemoryOwner)
-            {
-                context.ReportDiagnostic
-                (
-                    Diagnostic.Create
-                    (
-                        s_generatorConfigurationErrorRule,
-                        Location.None,
-                        typeName,
-                        $"IMemoryOwner<T> member '{member.Name}' does not support polymorphic serialization."
-                    )
-                );
-                return true;
-            }
-
-            if (member.PolymorphicInfo is not { } info || info.Options.IsEmpty)
-            {
-                context.ReportDiagnostic
-                (
-                    Diagnostic.Create
-                    (
-                        s_generatorConfigurationErrorRule,
-                        Location.None,
-                        typeName,
-                        $"Member '{member.Name}' is configured for polymorphic serialization but has no [PolymorphicOption]s."
-                    )
-                );
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private static void AddHelpers(IncrementalGeneratorPostInitializationContext context)

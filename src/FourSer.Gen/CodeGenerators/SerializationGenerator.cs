@@ -343,8 +343,7 @@ public static class SerializationGenerator
             var collectionName = collectionMember.Name;
             var countExpression = collectionMember.IsMemoryOwner
                 ? $"obj.{collectionName}?.Memory.Length ?? 0"
-                : $"obj.{collectionName}?.Count ?? 0";
-            var typeName = GeneratorUtilities.GetMethodFriendlyTypeName(member.TypeName);
+                : GeneratorUtilities.GetCountExpressionForAccess(collectionMember, $"obj.{collectionName}", true);
             SerializationWriterEmitter.EmitWrite(sb, ctx, member.TypeName, countExpression);
         }
     }
@@ -370,11 +369,16 @@ public static class SerializationGenerator
             }
             var info = referencedMember.PolymorphicInfo.Value;
             var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
+            var countExpression = GeneratorUtilities.GetCountExpressionForAccess(referencedMember, $"obj.{collectionName}", true);
 
-            var defaultOption = info.Options.FirstOrDefault();
+            if (!PolymorphicUtilities.TryGetDefaultOption(info, out var defaultOption))
+            {
+                throw new InvalidOperationException("Polymorphic members require at least one [PolymorphicOption].");
+            }
+
             var defaultKey = PolymorphicUtilities.FormatTypeIdKey(defaultOption.Key, info);
 
-            sb.WriteLineFormat($"if (obj.{collectionName} is null || obj.{collectionName}.Count == 0)");
+            sb.WriteLineFormat("if ({0} == 0)", countExpression);
             using (sb.BeginBlock())
             {
                 SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, defaultKey);
@@ -383,7 +387,7 @@ public static class SerializationGenerator
             sb.WriteLine("else");
             using (sb.BeginBlock())
             {
-                sb.WriteLine($"var firstItem = obj.{collectionName}[0];");
+                PolymorphicUtilities.EmitFirstCollectionItemAccess(sb, referencedMember, $"obj.{collectionName}", "firstItem");
                 sb.WriteLine("var discriminator = firstItem switch");
                 sb.WriteLine("{");
                 sb.Indent();

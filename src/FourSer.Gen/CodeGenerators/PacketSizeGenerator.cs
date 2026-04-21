@@ -132,32 +132,57 @@ public static class PacketSizeGenerator
         if (member.CustomSerializer is { } customSerializer)
         {
             var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
-            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
-            using var _ = sb.BeginBlock();
-            sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
-            using var __ = sb.BeginBlock();
-            sb.WriteLineFormat("size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.GetPacketSize(item);", serializerField);
+            if (member.CollectionTypeInfo?.CanBeNull == true)
+            {
+                sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
+                using var _ = sb.BeginBlock();
+                sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                using var __ = sb.BeginBlock();
+                sb.WriteLineFormat("size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.GetPacketSize(item);", serializerField);
+            }
+            else
+            {
+                sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                using var _ = sb.BeginBlock();
+                sb.WriteLineFormat("size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.GetPacketSize(item);", serializerField);
+            }
             return;
         }
 
         if (info.HasSerializer)
         {
-            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
-            using var _ = sb.BeginBlock();
-            sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
-            using var __ = sb.BeginBlock();
-            sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
+            if (member.CollectionTypeInfo?.CanBeNull == true)
+            {
+                sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
+                using var _ = sb.BeginBlock();
+                sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                using var __ = sb.BeginBlock();
+                sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
+            }
+            else
+            {
+                sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+                using var _ = sb.BeginBlock();
+                sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
+            }
         }
         else if (info.IsUnmanaged)
         {
-            var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name, true);
+            var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}", true);
             sb.WriteLineFormat("size += {0} * sizeof({1});", countExpression, info.TypeName);
         }
         else if (info.IsString)
         {
-            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
-            using var _ = sb.BeginBlock();
-            sb.WriteLineFormat("foreach(var item in obj.{0}) {{ size += StringEx.MeasureSize(item); }}", member.Name);
+            if (member.CollectionTypeInfo?.CanBeNull == true)
+            {
+                sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
+                using var _ = sb.BeginBlock();
+                sb.WriteLineFormat("foreach(var item in obj.{0}) {{ size += StringEx.MeasureSize(item); }}", member.Name);
+            }
+            else
+            {
+                sb.WriteLineFormat("foreach(var item in obj.{0}) {{ size += StringEx.MeasureSize(item); }}", member.Name);
+            }
         }
     }
 
@@ -276,11 +301,42 @@ public static class PacketSizeGenerator
             }
         }
 
-        sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
-        using var _ = sb.BeginBlock();
+        if (member.CollectionTypeInfo?.CanBeNull == true)
+        {
+            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
+            using var _ = sb.BeginBlock();
+
+            sb.WriteLineFormat("foreach (var item in obj.{0})", member.Name);
+            using var __ = sb.BeginBlock();
+
+            if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
+            {
+                sb.WriteLineFormat
+                    ("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
+            }
+
+            sb.WriteLine("size += item switch");
+            sb.WriteLine("{");
+            sb.Indent();
+            foreach (var option in info.Options)
+            {
+                var typeName = TypeHelper.GetGlobalTypeName(option.Type);
+                var varName = TypeHelper.GetSimpleTypeName(option.Type).ToCamelCase();
+                sb.WriteLineFormat("{0} {1} => {2}.GetPacketSize({1}),", typeName, varName, typeName);
+            }
+
+            sb.WriteLineFormat
+            (
+                "_ => throw new System.IO.InvalidDataException($\"Unknown item type in collection {0}: {{item.GetType().Name}}\")",
+                member.Name
+            );
+            sb.Unindent();
+            sb.WriteLine("};");
+            return;
+        }
 
         sb.WriteLineFormat("foreach (var item in obj.{0})", member.Name);
-        using var __ = sb.BeginBlock();
+        using var ___ = sb.BeginBlock();
 
         if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
         {

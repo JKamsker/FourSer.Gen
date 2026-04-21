@@ -149,6 +149,172 @@ public class GeneratorTests
     }
 
     [Fact]
+    public void InterfaceBasedPolymorphicCollections_ShouldNotReportFsg0002()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Polymorphism;
+
+        [GenerateSerializer]
+        public partial class InterfaceCollectionPacket
+        {
+            [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId)]
+            [PolymorphicOption((byte)1, typeof(Dog))]
+            [PolymorphicOption((byte)2, typeof(Cat))]
+            public IEnumerable<IAnimal> EnumerableAnimals { get; set; } = new List<IAnimal>();
+
+            [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId)]
+            [PolymorphicOption((byte)1, typeof(Dog))]
+            [PolymorphicOption((byte)2, typeof(Cat))]
+            public IReadOnlyCollection<IAnimal> ReadOnlyAnimals { get; set; } = new List<IAnimal>();
+        }
+
+        public interface IAnimal { }
+
+        [GenerateSerializer]
+        public partial class Dog : IAnimal { }
+
+        [GenerateSerializer]
+        public partial class Cat : IAnimal { }
+        """;
+
+        var compilation = CreateCompilation(AddDefaultUsings(source));
+        var runResult = GetRunResult(compilation, out _);
+
+        Assert.DoesNotContain(runResult.Diagnostics, d => d.Id == "FSG0002" && d.Severity == DiagnosticSeverity.Error);
+    }
+
+    [Fact]
+    public void SingleTypeIdTypeIdPropertyOnNonIndexableCollection_ShouldCompile()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Polymorphism;
+
+        [GenerateSerializer]
+        public partial class NonIndexableSingleTypeIdPacket
+        {
+            public byte AnimalType { get; set; }
+
+            [SerializeCollection(
+                PolymorphicMode = PolymorphicMode.SingleTypeId,
+                TypeIdProperty = nameof(AnimalType),
+                TypeIdType = typeof(byte))]
+            [PolymorphicOption((byte)1, typeof(Dog))]
+            [PolymorphicOption((byte)2, typeof(Cat), isDefault: true)]
+            public IReadOnlyCollection<IAnimal> Animals { get; set; } = new List<IAnimal>();
+        }
+
+        public interface IAnimal { }
+
+        [GenerateSerializer]
+        public partial class Dog : IAnimal { }
+
+        [GenerateSerializer]
+        public partial class Cat : IAnimal { }
+        """;
+
+        var compilation = CreateCompilation(AddDefaultUsings(source));
+        var runResult = GetRunResult(compilation, out var finalCompilation);
+
+        Assert.DoesNotContain(runResult.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+
+        using var ms = new MemoryStream();
+        var emitResult = finalCompilation.Emit(ms);
+        Assert.True(emitResult.Success, $"Compilation failed with errors: {string.Join(", ", emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.GetMessage()))}");
+    }
+
+    [Fact]
+    public void GeneratedDiscriminatorSelection_ShouldHonorIsDefault()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Polymorphism;
+
+        [GenerateSerializer]
+        public partial class DefaultedDiscriminatorPacket
+        {
+            public byte AnimalType { get; set; }
+
+            [SerializeCollection(
+                PolymorphicMode = PolymorphicMode.SingleTypeId,
+                TypeIdProperty = nameof(AnimalType),
+                TypeIdType = typeof(byte))]
+            [PolymorphicOption((byte)1, typeof(Dog))]
+            [PolymorphicOption((byte)2, typeof(Cat), isDefault: true)]
+            public IReadOnlyCollection<IAnimal> Animals { get; set; } = new List<IAnimal>();
+        }
+
+        public interface IAnimal { }
+
+        [GenerateSerializer]
+        public partial class Dog : IAnimal { }
+
+        [GenerateSerializer]
+        public partial class Cat : IAnimal { }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "DefaultedDiscriminatorPacket");
+
+        Assert.Contains("if ((obj.Animals?.Count ?? 0) == 0)", generatedCode);
+        Assert.Contains("StreamWriter.WriteByte(stream, (byte)((byte)2));", generatedCode);
+        Assert.Contains("SpanWriter.WriteByte(ref data, (byte)((byte)2));", generatedCode);
+        Assert.DoesNotContain("StreamWriter.WriteByte(stream, (byte)((byte)1));", generatedCode);
+        Assert.DoesNotContain("SpanWriter.WriteByte(ref data, (byte)((byte)1));", generatedCode);
+    }
+
+    [Fact]
+    public void AdditionalImmutablePolymorphicCollections_ShouldCompile()
+    {
+        const string source = """
+        using System.Collections.Immutable;
+
+        namespace FourSer.Tests.Custom.Polymorphism;
+
+        [GenerateSerializer]
+        public partial class ImmutableCollectionPacket
+        {
+            [SerializeCollection(PolymorphicMode = PolymorphicMode.IndividualTypeIds, TypeIdType = typeof(byte))]
+            [PolymorphicOption((byte)1, typeof(Dog))]
+            [PolymorphicOption((byte)2, typeof(Cat))]
+            public ImmutableList<IAnimal> AnimalList { get; set; } = ImmutableList<IAnimal>.Empty;
+
+            [SerializeCollection(PolymorphicMode = PolymorphicMode.IndividualTypeIds, TypeIdType = typeof(byte))]
+            [PolymorphicOption((byte)1, typeof(Dog))]
+            [PolymorphicOption((byte)2, typeof(Cat))]
+            public ImmutableHashSet<IAnimal> AnimalSet { get; set; } = ImmutableHashSet<IAnimal>.Empty;
+
+            [SerializeCollection(PolymorphicMode = PolymorphicMode.IndividualTypeIds, TypeIdType = typeof(byte))]
+            [PolymorphicOption((byte)1, typeof(Dog))]
+            [PolymorphicOption((byte)2, typeof(Cat))]
+            public ImmutableSortedSet<ComparableAnimal> SortedAnimals { get; set; } = ImmutableSortedSet<ComparableAnimal>.Empty;
+        }
+
+        public interface IAnimal { }
+
+        public interface ComparableAnimal : IAnimal, System.IComparable<ComparableAnimal> { }
+
+        [GenerateSerializer]
+        public partial class Dog : ComparableAnimal
+        {
+            public int CompareTo(ComparableAnimal? other) => 0;
+        }
+
+        [GenerateSerializer]
+        public partial class Cat : ComparableAnimal
+        {
+            public int CompareTo(ComparableAnimal? other) => 0;
+        }
+        """;
+
+        var compilation = CreateCompilation(AddDefaultUsings(source));
+        var runResult = GetRunResult(compilation, out var finalCompilation);
+
+        Assert.DoesNotContain(runResult.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+
+        using var ms = new MemoryStream();
+        var emitResult = finalCompilation.Emit(ms);
+        Assert.True(emitResult.Success, $"Compilation failed with errors: {string.Join(", ", emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.GetMessage()))}");
+    }
+
+    [Fact]
     public void InvalidNestedCollection_ShouldReportDiagnosticAndSkipGeneration()
     {
         var source = ReadSource("InvalidNestedCollection");
@@ -252,6 +418,7 @@ public class GeneratorTests
             "using System;",
             "using System.Collections.Concurrent;",
             "using System.Collections.Generic;",
+            "using System.Collections.Immutable;",
             "using FourSer.Consumer.Extensions;",
             "using FourSer.Contracts;"
         };
@@ -290,11 +457,7 @@ public class GeneratorTests
     private static string GenerateSerializerSource(string source, string? hintNameContains = null)
     {
         var compilation = CreateCompilation(source);
-        var generator = new SerializerGenerator();
-        var driver = CSharpGeneratorDriver.Create(generator);
-
-        driver = (CSharpGeneratorDriver)driver.RunGenerators(compilation);
-        var result = driver.GetRunResult();
+        var result = GetRunResult(compilation, out _);
 
         var sources = result.Results
             .SelectMany(r => r.GeneratedSources)
@@ -306,5 +469,16 @@ public class GeneratorTests
         }
 
         return string.Join("\n\n", sources.Select(g => g.SourceText.ToString()));
+    }
+
+    private static GeneratorDriverRunResult GetRunResult(CSharpCompilation compilation, out CSharpCompilation finalCompilation)
+    {
+        var generator = new SerializerGenerator();
+        var driver = CSharpGeneratorDriver.Create(generator);
+
+        driver = (CSharpGeneratorDriver)driver.RunGenerators(compilation);
+        var runResult = driver.GetRunResult();
+        finalCompilation = compilation.AddSyntaxTrees(runResult.GeneratedTrees);
+        return runResult;
     }
 }

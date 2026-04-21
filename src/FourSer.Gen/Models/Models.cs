@@ -151,8 +151,12 @@ public readonly record struct CollectionTypeInfo
     bool IsElementStringType,
     bool HasElementGenerateSerializerAttribute,
     bool ElementRequiresDisposal,
+    bool CanBeNull,
+    bool SupportsIndexing,
+    string? CountPropertyName,
     bool IsArray,
     string? ConcreteTypeName,
+    string? RangeFactoryTypeName,
     bool IsPureEnumerable,
     bool IsGenericCollection,
     string? CollectionAddMethod,
@@ -188,7 +192,9 @@ public readonly record struct CollectionInfo
 public readonly record struct PolymorphicOption
 (
     object Key,
-    string Type
+    string Type,
+    bool IsDefault,
+    bool IsSerializableType
 );
 
 /// <summary>

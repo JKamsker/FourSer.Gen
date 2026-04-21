@@ -50,34 +50,24 @@ public static class GeneratorUtilities
     /// </summary>
     public static string GetCountExpression(MemberToGenerate member, string memberName, bool nullable = false)
     {
-        // Arrays use .Length property
-        if (member.CollectionTypeInfo?.IsArray == true)
+        return GetCountExpressionForAccess(member, $"obj.{memberName}", nullable);
+    }
+
+    public static string GetCountExpressionForAccess(MemberToGenerate member, string accessExpression, bool nullable = false)
+    {
+        var canUseNullPropagation = nullable && (member.CollectionTypeInfo?.CanBeNull ?? true);
+        var countPropertyName = member.CollectionTypeInfo?.CountPropertyName;
+
+        if (!string.IsNullOrEmpty(countPropertyName))
         {
-            return nullable
-                ? $"(obj.{memberName}?.Length ?? 0)"
-                : $"obj.{memberName}.Length";
+            return canUseNullPropagation
+                ? $"({accessExpression}?.{countPropertyName} ?? 0)"
+                : $"{accessExpression}.{countPropertyName}";
         }
 
-        // IEnumerable and interface types that need Count() method
-        if (member.CollectionTypeInfo is { IsPureEnumerable: true })
-        {
-            return nullable
-                ? $"(obj.{memberName}?.Count() ?? 0)"
-                : $"obj.{memberName}.Count()";
-        }
-
-        if (member.CollectionTypeInfo?.IsGenericCollection == true)
-        {
-            return nullable
-                ? $"(obj.{memberName}?.Count ?? 0)"
-                : $"obj.{memberName}.Count";
-        }
-
-        // Most concrete collection types use .Count property
-        // List<T>, HashSet<T>, Queue<T>, Stack<T>, ConcurrentBag<T>, LinkedList<T>, Collection<T>, etc.
-        return nullable 
-            ? $"(obj.{memberName}?.Count ?? 0)"
-            : $"obj.{memberName}.Count";
+        return canUseNullPropagation
+            ? $"({accessExpression}?.Count() ?? 0)"
+            : $"{accessExpression}.Count()";
     }
 
     /// <summary>
