@@ -206,12 +206,41 @@ public class PolymorphicCollectionParityTests
     }
 
     [Fact]
-    public void DefaultConstructedImmutablePolymorphicCollections_ShouldKeepEmptyArray()
+    public void DefaultConstructedImmutablePolymorphicCollections_ShouldKeepEmptyCollections()
     {
         var original = new ImmutableCollectionPacket();
 
+        Assert.NotNull(original.ListAnimals);
+        Assert.Empty(original.ListAnimals);
         Assert.False(original.ArrayAnimals.IsDefault);
         Assert.Empty(original.ArrayAnimals);
+        Assert.NotNull(original.QueueAnimals);
+        Assert.Empty(original.QueueAnimals);
+        Assert.NotNull(original.StackAnimals);
+        Assert.Empty(original.StackAnimals);
+
+        var buffer = new byte[ImmutableCollectionPacket.GetPacketSize(original)];
+        ImmutableCollectionPacket.Serialize(original, buffer);
+
+        var roundTripped = ImmutableCollectionPacket.Deserialize(buffer);
+
+        Assert.NotNull(roundTripped.ListAnimals);
+        Assert.Empty(roundTripped.ListAnimals);
+        Assert.False(roundTripped.ArrayAnimals.IsDefault);
+        Assert.Empty(roundTripped.ArrayAnimals);
+        Assert.NotNull(roundTripped.QueueAnimals);
+        Assert.Empty(roundTripped.QueueAnimals);
+        Assert.NotNull(roundTripped.StackAnimals);
+        Assert.Empty(roundTripped.StackAnimals);
+    }
+
+    [Fact]
+    public void ExplicitlyDefaultedImmutableArray_ShouldSerializeAsEmpty()
+    {
+        var original = new ImmutableCollectionPacket
+        {
+            ArrayAnimals = default
+        };
 
         var buffer = new byte[ImmutableCollectionPacket.GetPacketSize(original)];
         ImmutableCollectionPacket.Serialize(original, buffer);

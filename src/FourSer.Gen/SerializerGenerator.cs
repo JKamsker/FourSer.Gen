@@ -349,11 +349,11 @@ public class SerializerGenerator : IIncrementalGenerator
     {
         if (member.CollectionTypeInfo is
             {
-                RangeFactoryTypeName: "System.Collections.Immutable.ImmutableArray",
+                RangeFactoryTypeName: { } rangeFactoryTypeName,
                 ElementTypeName: var elementTypeName
             })
         {
-            return $"System.Collections.Immutable.ImmutableArray<{TypeHelper.GetGlobalTypeName(elementTypeName)}>.Empty";
+            return $"{rangeFactoryTypeName}<{TypeHelper.GetGlobalTypeName(elementTypeName)}>.Empty";
         }
 
         return "default";

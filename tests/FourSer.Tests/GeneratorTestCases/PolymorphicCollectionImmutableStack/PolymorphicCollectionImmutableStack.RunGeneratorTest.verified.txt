@@ -47,7 +47,7 @@ public partial class Inventory : ISerializable<Inventory>
 
     public Inventory()
     {
-        this.Items = default;
+        this.Items = System.Collections.Immutable.ImmutableStack<global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.IItem>.Empty;
     }
 
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)

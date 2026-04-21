@@ -68,6 +68,11 @@ public static class GeneratorUtilities
     /// </param>
     public static string GetCountExpressionForAccess(MemberToGenerate member, string accessExpression, bool nullable = false)
     {
+        if (IsImmutableArrayCollection(member))
+        {
+            return $"({accessExpression}.IsDefaultOrEmpty ? 0 : {accessExpression}.Length)";
+        }
+
         var canUseNullPropagation = nullable && (member.CollectionTypeInfo?.CanBeNull ?? true);
         var countPropertyName = member.CollectionTypeInfo?.CountPropertyName;
 
@@ -81,6 +86,21 @@ public static class GeneratorUtilities
         return canUseNullPropagation
             ? $"({accessExpression}?.Count() ?? 0)"
             : $"{accessExpression}.Count()";
+    }
+
+    public static string? GetCollectionIterationGuard(MemberToGenerate member, string accessExpression)
+    {
+        if (IsImmutableArrayCollection(member))
+        {
+            return $"!{accessExpression}.IsDefaultOrEmpty";
+        }
+
+        return null;
+    }
+
+    private static bool IsImmutableArrayCollection(MemberToGenerate member)
+    {
+        return member.CollectionTypeInfo?.RangeFactoryTypeName == "System.Collections.Immutable.ImmutableArray";
     }
 
     /// <summary>

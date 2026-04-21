@@ -139,8 +139,6 @@ internal static class PolymorphicSerializer
         SerializationWriterEmitter.WriterCtx ctx
     )
     {
-        sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
-        using var __ = sb.BeginBlock();
         var itemMember = new MemberToGenerate
         (
             "item",
@@ -164,13 +162,29 @@ internal static class PolymorphicSerializer
             member.CustomSerializer
         );
 
-        GeneratePolymorphicItemSerialization
-        (
-            sb,
-            itemMember,
-            "item",
-            ctx
-        );
+        void EmitCollectionBody()
+        {
+            sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
+            using var __ = sb.BeginBlock();
+            GeneratePolymorphicItemSerialization
+            (
+                sb,
+                itemMember,
+                "item",
+                ctx
+            );
+        }
+
+        var enumerationGuard = GeneratorUtilities.GetCollectionIterationGuard(member, $"obj.{member.Name}");
+        if (enumerationGuard is not null)
+        {
+            sb.WriteLineFormat("if ({0})", enumerationGuard);
+            using var _ = sb.BeginBlock();
+            EmitCollectionBody();
+            return;
+        }
+
+        EmitCollectionBody();
     }
 
     private static void GenerateSingleTypeIdPolymorphicCollection

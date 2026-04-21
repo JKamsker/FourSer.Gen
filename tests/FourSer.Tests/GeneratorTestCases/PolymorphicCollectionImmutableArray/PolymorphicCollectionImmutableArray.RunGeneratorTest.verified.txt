@@ -23,16 +23,19 @@ public partial class Inventory : ISerializable<Inventory>
         if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Count size for Items
-        foreach (var item in obj.Items)
+        if (!obj.Items.IsDefaultOrEmpty)
         {
-            size += sizeof(byte); // Size for polymorphic type id
-            size += item switch
+            foreach (var item in obj.Items)
             {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Sword.GetPacketSize(sword),
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Shield shield => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Shield.GetPacketSize(shield),
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Potion potion => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Potion.GetPacketSize(potion),
-                _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
-            };
+                size += sizeof(byte); // Size for polymorphic type id
+                size += item switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Sword.GetPacketSize(sword),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Shield shield => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Shield.GetPacketSize(shield),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Potion potion => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Potion.GetPacketSize(potion),
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
+                };
+            }
         }
         return size;
     }
@@ -125,33 +128,36 @@ public partial class Inventory : ISerializable<Inventory>
     public static void Serialize(Inventory obj, ref System.Span<byte> data)
     {
         if (obj is null) return;
-        SpanWriter.WriteInt32(ref data, (int)(obj.Items.Length));
-        foreach(var item in obj.Items)
+        SpanWriter.WriteInt32(ref data, (int)((obj.Items.IsDefaultOrEmpty ? 0 : obj.Items.Length)));
+        if (!obj.Items.IsDefaultOrEmpty)
         {
-            switch (item)
+            foreach(var item in obj.Items)
             {
-                case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Sword typedInstance:
+                switch (item)
                 {
-                    SpanWriter.WriteByte(ref data, (byte)(10));
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Sword.Serialize(typedInstance, ref data);
-                    break;
+                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Sword typedInstance:
+                    {
+                        SpanWriter.WriteByte(ref data, (byte)(10));
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Sword.Serialize(typedInstance, ref data);
+                        break;
+                    }
+                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Shield typedInstance:
+                    {
+                        SpanWriter.WriteByte(ref data, (byte)(20));
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Shield.Serialize(typedInstance, ref data);
+                        break;
+                    }
+                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Potion typedInstance:
+                    {
+                        SpanWriter.WriteByte(ref data, (byte)(30));
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Potion.Serialize(typedInstance, ref data);
+                        break;
+                    }
+                    case null:
+                        throw new System.NullReferenceException($"Item in collection cannot be null.");
+                    default:
+                        throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
                 }
-                case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Shield typedInstance:
-                {
-                    SpanWriter.WriteByte(ref data, (byte)(20));
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Shield.Serialize(typedInstance, ref data);
-                    break;
-                }
-                case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Potion typedInstance:
-                {
-                    SpanWriter.WriteByte(ref data, (byte)(30));
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Potion.Serialize(typedInstance, ref data);
-                    break;
-                }
-                case null:
-                    throw new System.NullReferenceException($"Item in collection cannot be null.");
-                default:
-                    throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
             }
         }
     }
@@ -164,33 +170,36 @@ public partial class Inventory : ISerializable<Inventory>
     public static void Serialize(Inventory obj, System.IO.Stream stream)
     {
         if (obj is null) return;
-        StreamWriter.WriteInt32(stream, (int)(obj.Items.Length));
-        foreach(var item in obj.Items)
+        StreamWriter.WriteInt32(stream, (int)((obj.Items.IsDefaultOrEmpty ? 0 : obj.Items.Length)));
+        if (!obj.Items.IsDefaultOrEmpty)
         {
-            switch (item)
+            foreach(var item in obj.Items)
             {
-                case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Sword typedInstance:
+                switch (item)
                 {
-                    StreamWriter.WriteByte(stream, (byte)(10));
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Sword.Serialize(typedInstance, stream);
-                    break;
+                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Sword typedInstance:
+                    {
+                        StreamWriter.WriteByte(stream, (byte)(10));
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Sword.Serialize(typedInstance, stream);
+                        break;
+                    }
+                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Shield typedInstance:
+                    {
+                        StreamWriter.WriteByte(stream, (byte)(20));
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Shield.Serialize(typedInstance, stream);
+                        break;
+                    }
+                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Potion typedInstance:
+                    {
+                        StreamWriter.WriteByte(stream, (byte)(30));
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Potion.Serialize(typedInstance, stream);
+                        break;
+                    }
+                    case null:
+                        throw new System.NullReferenceException($"Item in collection cannot be null.");
+                    default:
+                        throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
                 }
-                case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Shield typedInstance:
-                {
-                    StreamWriter.WriteByte(stream, (byte)(20));
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Shield.Serialize(typedInstance, stream);
-                    break;
-                }
-                case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Potion typedInstance:
-                {
-                    StreamWriter.WriteByte(stream, (byte)(30));
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableArray.Potion.Serialize(typedInstance, stream);
-                    break;
-                }
-                case null:
-                    throw new System.NullReferenceException($"Item in collection cannot be null.");
-                default:
-                    throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
             }
         }
     }
