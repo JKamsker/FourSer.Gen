@@ -34,7 +34,7 @@ public partial class MyPacket : ISerializable<MyPacket>
 
     public MyPacket()
     {
-        this.Data = default;
+        this.Data = new System.Collections.Generic.List<byte>();
     }
 
     public static MyPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -67,7 +67,7 @@ public partial class MyPacket : ISerializable<MyPacket>
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Data.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Data.Count)));
             SpanWriter.WriteBytes(ref data, obj.Data);
         }
     }
@@ -86,7 +86,7 @@ public partial class MyPacket : ISerializable<MyPacket>
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Data.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Data.Count)));
             StreamWriter.WriteBytes(stream, obj.Data);
         }
     }

@@ -42,7 +42,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
     public EnumerableOfReferenceTypes()
     {
         this.Count = default;
-        this.MyList = default;
+        this.MyList = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity>();
     }
 
     public static EnumerableOfReferenceTypes Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -88,7 +88,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
                 myListCount++;
             }
         }
-        SpanWriter.WriteInt32(ref myListCountSpan, (int)(myListCount));
+        SpanWriter.WriteInt32(ref myListCountSpan, checked((int)(myListCount)));
     }
 
     public static void Serialize(EnumerableOfReferenceTypes obj, System.Span<byte> data)
@@ -116,7 +116,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         }
         var myListEndPosition = stream.Position;
         stream.Position = myListCountPosition;
-        StreamWriter.WriteInt32(stream, (int)(myListCount));
+        StreamWriter.WriteInt32(stream, checked((int)(myListCount)));
         stream.Position = myListEndPosition;
     }
 }

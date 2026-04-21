@@ -27,6 +27,17 @@ internal static class SerializationWriterEmitter
         );
     }
 
+    public static void EmitCheckedWrite(IndentedStringBuilder sb, WriterCtx ctx, string typeName, string value, string comment = "")
+    {
+        var refOrEmpty = ctx.IsSpan ? "ref " : "";
+        var friendlyTypeName = TypeHelper.GetMethodFriendlyTypeName(typeName);
+        var writeMethod = $"Write{friendlyTypeName}";
+        sb.WriteLineFormat(
+            "{0}.{1}({2}{3}, checked(({4})({5})));{6}",
+            ctx.Helper, writeMethod, refOrEmpty, ctx.Target, typeName, value, comment
+        );
+    }
+
     public static void EmitWriteString(IndentedStringBuilder sb, WriterCtx ctx, string value)
     {
         var refOrEmpty = ctx.IsSpan ? "ref " : "";

@@ -450,6 +450,7 @@ public static class DeserializationGenerator
         var finalTargetExpression = target;
         var finalTargetVariableName = target.StartsWith("var ", StringComparison.Ordinal) ? target.Substring(4) : target;
         var requiresStagingCollection = CollectionUtilities.ShouldDeserializeIntoStagingCollection(member);
+        var collectionAddMethodOverride = requiresStagingCollection ? "Add" : null;
         var collectionTargetVariableName = requiresStagingCollection ? $"{memberName}Staging" : finalTargetVariableName;
         var collectionTargetExpression = requiresStagingCollection ? $"var {collectionTargetVariableName}" : finalTargetExpression;
         string countVar;
@@ -561,7 +562,8 @@ public static class DeserializationGenerator
                         member,
                         collectionTargetVariableName,
                         "item",
-                        arrayIndexVariableName
+                        arrayIndexVariableName,
+                        collectionAddMethodOverride
                     );
                 }
 
@@ -627,7 +629,8 @@ public static class DeserializationGenerator
                                     member,
                                     collectionTargetVariableName,
                                     "item",
-                                    arrayIndexVariableName
+                                    arrayIndexVariableName,
+                                    collectionAddMethodOverride
                                 );
                             }
 
@@ -690,7 +693,8 @@ public static class DeserializationGenerator
                     member.CollectionTypeInfo.Value,
                     collectionTargetVariableName,
                     source,
-                    helper
+                    helper,
+                    collectionAddMethodOverride
                 );
             }
         }
@@ -1023,10 +1027,11 @@ public static class DeserializationGenerator
         CollectionTypeInfo elementInfo,
         string collectionTarget,
         string source,
-        string helper
+        string helper,
+        string? addMethodOverride = null
     )
     {
-        var addMethod = elementInfo.CollectionAddMethod ?? "Add";
+        var addMethod = addMethodOverride ?? elementInfo.CollectionAddMethod ?? "Add";
         var refOrEmpty = source == "buffer" ? "ref " : "";
 
         if (member.CustomSerializer is { } customSerializer)

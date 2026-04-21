@@ -34,7 +34,7 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
 
     public CollectionPacket()
     {
-        this.Numbers = default;
+        this.Numbers = new System.Collections.Generic.List<int>();
     }
 
     public static CollectionPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -77,7 +77,7 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Numbers.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Numbers.Count)));
             var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
             numbersBytes.CopyTo(data);
             data = data.Slice(numbersBytes.Length);
@@ -98,7 +98,7 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Numbers.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Numbers.Count)));
             var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
             stream.Write(numbersBytes);
         }

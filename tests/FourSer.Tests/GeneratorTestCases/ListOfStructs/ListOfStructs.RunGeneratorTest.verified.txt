@@ -109,7 +109,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
 
     public PacketWithListOfStructs()
     {
-        this.Structs = default;
+        this.Structs = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>();
     }
 
     public static PacketWithListOfStructs Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -150,7 +150,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Structs.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Structs.Count)));
             for (int i = 0; i < obj.Structs.Count; i++)
             {
                 global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.Serialize(obj.Structs[i], ref data);
@@ -172,7 +172,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Structs.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Structs.Count)));
             for (int i = 0; i < obj.Structs.Count; i++)
             {
                 global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.Serialize(obj.Structs[i], stream);

@@ -73,7 +73,7 @@ public partial class Child : ISerializable<Child>, IDisposable
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Numbers.Memory.Length));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Numbers.Memory.Length)));
             var numbersSpan = obj.Numbers.Memory.Span;
             SpanWriter.WriteBytes(ref data, System.Runtime.InteropServices.MemoryMarshal.AsBytes(numbersSpan));
         }
@@ -93,7 +93,7 @@ public partial class Child : ISerializable<Child>, IDisposable
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Numbers.Memory.Length));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Numbers.Memory.Length)));
             var numbersSpan = obj.Numbers.Memory.Span;
             StreamWriter.WriteBytes(stream, System.Runtime.InteropServices.MemoryMarshal.AsBytes(numbersSpan));
         }
@@ -184,7 +184,7 @@ public partial class Parent : ISerializable<Parent>, IDisposable
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Data.Memory.Length));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Data.Memory.Length)));
             var dataSpan = obj.Data.Memory.Span;
             SpanWriter.WriteBytes(ref data, dataSpan);
         }
@@ -209,7 +209,7 @@ public partial class Parent : ISerializable<Parent>, IDisposable
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Data.Memory.Length));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Data.Memory.Length)));
             var dataSpan = obj.Data.Memory.Span;
             StreamWriter.WriteBytes(stream, dataSpan);
         }

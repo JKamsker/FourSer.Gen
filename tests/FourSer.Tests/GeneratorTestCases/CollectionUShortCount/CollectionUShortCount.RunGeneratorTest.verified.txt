@@ -40,7 +40,7 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
 
     public UShortCountTest()
     {
-        this.Cats = default;
+        this.Cats = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat>();
     }
 
     public static UShortCountTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -81,7 +81,7 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         }
         else
         {
-            SpanWriter.WriteUInt16(ref data, (ushort)(obj.Cats.Count));
+            SpanWriter.WriteUInt16(ref data, checked((ushort)(obj.Cats.Count)));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat.Serialize(obj.Cats[i], ref data);
@@ -103,7 +103,7 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         }
         else
         {
-            StreamWriter.WriteUInt16(stream, (ushort)(obj.Cats.Count));
+            StreamWriter.WriteUInt16(stream, checked((ushort)(obj.Cats.Count)));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat.Serialize(obj.Cats[i], stream);

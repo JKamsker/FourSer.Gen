@@ -266,10 +266,10 @@ public class GeneratorTests
         var spanBranch = generatedCode.Substring(spanBranchStart, streamBranchStart - spanBranchStart);
         var streamBranch = generatedCode.Substring(streamBranchStart);
 
-        Assert.Contains("SpanWriter.WriteByte(ref data, (byte)(2));", spanBranch);
-        Assert.DoesNotContain("SpanWriter.WriteByte(ref data, (byte)(1));", spanBranch);
-        Assert.Contains("StreamWriter.WriteByte(stream, (byte)(2));", streamBranch);
-        Assert.DoesNotContain("StreamWriter.WriteByte(stream, (byte)(1));", streamBranch);
+        Assert.Contains("? obj.AnimalType : 2;", spanBranch);
+        Assert.DoesNotContain("? obj.AnimalType : 1;", spanBranch);
+        Assert.Contains("? obj.AnimalType : 2;", streamBranch);
+        Assert.DoesNotContain("? obj.AnimalType : 1;", streamBranch);
     }
 
     [Fact]
@@ -452,9 +452,10 @@ public class GeneratorTests
     }
 
     [Fact]
-    public void ImmutableArrayMembers_ShouldUseEmptyInitializationInParameterlessConstructor()
+    public void CollectionMembers_ShouldUseEmptyInitializationInParameterlessConstructor()
     {
         const string source = """
+        using System.Collections.Generic;
         using System.Collections.Immutable;
 
         namespace FourSer.Tests.Custom.Collections;
@@ -463,14 +464,70 @@ public class GeneratorTests
         public partial class ImmutableArrayPacket
         {
             [SerializeCollection]
+            public List<int> Items { get; set; } = new();
+
+            [SerializeCollection]
+            public int[] Numbers { get; set; } = System.Array.Empty<int>();
+
+            [SerializeCollection]
             public ImmutableArray<int> Values { get; set; } = ImmutableArray<int>.Empty;
         }
         """;
 
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "ImmutableArrayPacket");
 
+        Assert.Contains("this.Items = new System.Collections.Generic.List<int>();", generatedCode);
+        Assert.Contains("this.Numbers = global::System.Array.Empty<int>();", generatedCode);
         Assert.Contains("this.Values = System.Collections.Immutable.ImmutableArray<int>.Empty;", generatedCode);
         Assert.DoesNotContain("this.Values = default;", generatedCode);
+    }
+
+    [Fact]
+    public void StackCollections_ShouldDeserializeThroughStagingCollection()
+    {
+        const string source = """
+        using System.Collections.Generic;
+
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class StackPacket
+        {
+            [SerializeCollection]
+            public Stack<uint> Values { get; set; } = new();
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "StackPacket");
+
+        Assert.Contains("var valuesStaging = new System.Collections.Generic.List<uint>(valuesCount);", generatedCode);
+        Assert.Contains("valuesStaging.Add(SpanReader.ReadUInt32(ref buffer));", generatedCode);
+        Assert.Contains("var values = new System.Collections.Generic.Stack<uint>(global::System.Linq.Enumerable.Reverse(valuesStaging));", generatedCode);
+    }
+
+    [Fact]
+    public void NarrowCountCollections_ShouldUseCheckedWrites()
+    {
+        const string source = """
+        using System.Collections.Generic;
+
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class NarrowCountPacket
+        {
+            [SerializeCollection(CountType = typeof(byte))]
+            public HashSet<string> SmallSet { get; set; } = new();
+
+            [SerializeCollection(CountType = typeof(ushort))]
+            public Queue<int> MediumQueue { get; set; } = new();
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "NarrowCountPacket");
+
+        Assert.Contains("checked((byte)(obj.SmallSet.Count))", generatedCode);
+        Assert.Contains("checked((ushort)(obj.MediumQueue.Count))", generatedCode);
     }
 
     [Fact]

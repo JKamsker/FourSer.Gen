@@ -47,7 +47,7 @@ public partial class Inventory : ISerializable<Inventory>
 
     public Inventory()
     {
-        this.Items = default;
+        this.Items = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Item>();
     }
 
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -155,7 +155,7 @@ public partial class Inventory : ISerializable<Inventory>
             }
             else
             {
-                SpanWriter.WriteInt32(ref data, (int)(collectionItems.Count));
+                SpanWriter.WriteInt32(ref data, checked((int)(collectionItems.Count)));
                 var firstItem = collectionItems[0];
                 var discriminator = firstItem switch
                 {
@@ -219,7 +219,7 @@ public partial class Inventory : ISerializable<Inventory>
             }
             else
             {
-                StreamWriter.WriteInt32(stream, (int)(collectionItems.Count));
+                StreamWriter.WriteInt32(stream, checked((int)(collectionItems.Count)));
                 var firstItem = collectionItems[0];
                 var discriminator = firstItem switch
                 {

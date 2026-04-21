@@ -134,7 +134,7 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Items.Count()));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Items.Count())));
             foreach(var item in obj.Items)
             {
                 switch (item)
@@ -180,7 +180,7 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Items.Count()));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Items.Count())));
             foreach(var item in obj.Items)
             {
                 switch (item)

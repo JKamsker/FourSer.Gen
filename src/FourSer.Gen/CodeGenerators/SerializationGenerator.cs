@@ -344,7 +344,7 @@ public static class SerializationGenerator
             var countExpression = collectionMember.IsMemoryOwner
                 ? $"obj.{collectionName}?.Memory.Length ?? 0"
                 : GeneratorUtilities.GetCountExpressionForAccess(collectionMember, $"obj.{collectionName}", true);
-            SerializationWriterEmitter.EmitWrite(sb, ctx, member.TypeName, countExpression);
+            SerializationWriterEmitter.EmitCheckedWrite(sb, ctx, member.TypeName, countExpression);
         }
     }
 
@@ -370,6 +370,10 @@ public static class SerializationGenerator
             var info = referencedMember.PolymorphicInfo.Value;
             var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
             var countExpression = GeneratorUtilities.GetCountExpressionForAccess(referencedMember, $"obj.{collectionName}", true);
+            var propertyAccess = $"obj.{member.Name}";
+            var comparerTypeName = TypeHelper.GetGlobalTypeName(member.TypeName);
+            var hasExplicitTypeIdExpression =
+                $"!global::System.Collections.Generic.EqualityComparer<{comparerTypeName}>.Default.Equals({propertyAccess}, default)";
 
             if (!PolymorphicUtilities.TryGetDefaultOption(info, out var defaultOption))
             {
@@ -381,30 +385,41 @@ public static class SerializationGenerator
             sb.WriteLineFormat("if ({0} == 0)", countExpression);
             using (sb.BeginBlock())
             {
-                SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, defaultKey);
+                sb.WriteLineFormat("var discriminator = {0} ? {1} : {2};", hasExplicitTypeIdExpression, propertyAccess, defaultKey);
+                SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, "discriminator");
             }
 
             sb.WriteLine("else");
             using (sb.BeginBlock())
             {
-                PolymorphicUtilities.EmitFirstCollectionItemAccess(sb, referencedMember, $"obj.{collectionName}", "firstItem");
-                sb.WriteLine("var discriminator = firstItem switch");
-                sb.WriteLine("{");
-                sb.Indent();
-                foreach (var option in info.Options)
+                sb.WriteLineFormat("if ({0})", hasExplicitTypeIdExpression);
+                using (sb.BeginBlock())
                 {
-                    var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                    sb.WriteLineFormat("{0} => ({1}){2},", TypeHelper.GetGlobalTypeName(option.Type), typeIdType, key);
+                    SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, propertyAccess);
                 }
 
-                sb.WriteLine
-                (
-                    $"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")"
-                );
-                sb.Unindent();
-                sb.WriteLine("};");
+                sb.WriteLine("else");
+                using (sb.BeginBlock())
+                {
+                    PolymorphicUtilities.EmitFirstCollectionItemAccess(sb, referencedMember, $"obj.{collectionName}", "firstItem");
+                    sb.WriteLine("var discriminator = firstItem switch");
+                    sb.WriteLine("{");
+                    sb.Indent();
+                    foreach (var option in info.Options)
+                    {
+                        var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+                        sb.WriteLineFormat("{0} => {1},", TypeHelper.GetGlobalTypeName(option.Type), key);
+                    }
 
-                SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, "discriminator");
+                    sb.WriteLine
+                    (
+                        $"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")"
+                    );
+                    sb.Unindent();
+                    sb.WriteLine("};");
+
+                    SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, "discriminator");
+                }
             }
         }
         else

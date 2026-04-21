@@ -87,23 +87,23 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
 
     public EnumerationTypesPacket()
     {
-        this.Numbers = default;
-        this.Names = default;
-        this.Data = default;
-        this.Data1 = default;
-        this.Values = default;
-        this.UniqueIds = default;
-        this.ProcessingQueue = default;
-        this.ProcessingStack = default;
-        this.ArrayData = default;
-        this.Measurements = default;
-        this.Flags = default;
-        this.ObservableData = default;
-        this.Characters = default;
-        this.SortedValues = default;
-        this.SmallSet = default;
-        this.MediumQueue = default;
-        this.LargeBag = default;
+        this.Numbers = new System.Collections.Generic.List<int>();
+        this.Names = new System.Collections.Generic.List<string>();
+        this.Data = new System.Collections.Generic.List<byte>();
+        this.Data1 = new System.Collections.Generic.List<byte>();
+        this.Values = new System.Collections.Concurrent.ConcurrentBag<float>();
+        this.UniqueIds = new System.Collections.Generic.HashSet<long>();
+        this.ProcessingQueue = new System.Collections.Generic.Queue<ushort>();
+        this.ProcessingStack = new System.Collections.Generic.Stack<uint>();
+        this.ArrayData = global::System.Array.Empty<int>();
+        this.Measurements = new System.Collections.Generic.List<double>();
+        this.Flags = new System.Collections.ObjectModel.Collection<bool>();
+        this.ObservableData = new System.Collections.ObjectModel.ObservableCollection<short>();
+        this.Characters = new System.Collections.Generic.LinkedList<ushort>();
+        this.SortedValues = new System.Collections.Generic.SortedSet<long>();
+        this.SmallSet = new System.Collections.Generic.HashSet<string>();
+        this.MediumQueue = new System.Collections.Generic.Queue<int>();
+        this.LargeBag = new System.Collections.Concurrent.ConcurrentBag<long>();
     }
 
     public static EnumerationTypesPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -145,11 +145,12 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             processingQueue.Enqueue(SpanReader.ReadUInt16(ref buffer));
         }
         var processingStackCount = SpanReader.ReadInt32(ref buffer);
-        var processingStack = new System.Collections.Generic.Stack<uint>(processingStackCount);
+        var processingStackStaging = new System.Collections.Generic.List<uint>(processingStackCount);
         for (int i = 0; i < processingStackCount; i++)
         {
-            processingStack.Push(SpanReader.ReadUInt32(ref buffer));
+            processingStackStaging.Add(SpanReader.ReadUInt32(ref buffer));
         }
+        var processingStack = new System.Collections.Generic.Stack<uint>(global::System.Linq.Enumerable.Reverse(processingStackStaging));
         var arrayDataCount = SpanReader.ReadInt32(ref buffer);
         var arrayData = new int[arrayDataCount];
         int arrayDataByteCount = checked(arrayDataCount * 4);
@@ -249,11 +250,12 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             processingQueue.Enqueue(StreamReader.ReadUInt16(stream));
         }
         var processingStackCount = StreamReader.ReadInt32(stream);
-        var processingStack = new System.Collections.Generic.Stack<uint>(processingStackCount);
+        var processingStackStaging = new System.Collections.Generic.List<uint>(processingStackCount);
         for (int i = 0; i < processingStackCount; i++)
         {
-            processingStack.Push(StreamReader.ReadUInt32(stream));
+            processingStackStaging.Add(StreamReader.ReadUInt32(stream));
         }
+        var processingStack = new System.Collections.Generic.Stack<uint>(global::System.Linq.Enumerable.Reverse(processingStackStaging));
         var arrayDataCount = StreamReader.ReadInt32(stream);
         var arrayData = new int[arrayDataCount];
         var arrayDataBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(arrayData.AsSpan());
@@ -318,7 +320,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Numbers.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Numbers.Count)));
             var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
             numbersBytes.CopyTo(data);
             data = data.Slice(numbersBytes.Length);
@@ -329,7 +331,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Names.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Names.Count)));
             foreach (var item in obj.Names)
             {
                 SpanWriter.WriteString(ref data, item);
@@ -343,18 +345,18 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         {
             if (obj.Data is System.Collections.Generic.ICollection<byte> dataCollection)
             {
-                SpanWriter.WriteInt32(ref data, (int)(dataCollection.Count));
+                SpanWriter.WriteInt32(ref data, checked((int)(dataCollection.Count)));
                 SpanWriter.WriteBytes(ref data, dataCollection);
             }
             else if (obj.Data is System.Collections.Generic.IReadOnlyCollection<byte> dataReadOnlyCollection)
             {
-                SpanWriter.WriteInt32(ref data, (int)(dataReadOnlyCollection.Count));
+                SpanWriter.WriteInt32(ref data, checked((int)(dataReadOnlyCollection.Count)));
                 SpanWriter.WriteBytes(ref data, dataReadOnlyCollection);
             }
             else
             {
                 var dataSequence = global::System.Linq.Enumerable.ToArray(obj.Data);
-                SpanWriter.WriteInt32(ref data, (int)(dataSequence.Length));
+                SpanWriter.WriteInt32(ref data, checked((int)(dataSequence.Length)));
                 SpanWriter.WriteBytes(ref data, dataSequence);
             }
         }
@@ -364,7 +366,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Data1.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Data1.Count)));
             SpanWriter.WriteBytes(ref data, obj.Data1);
         }
         if (obj.Values is null)
@@ -373,7 +375,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Values.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Values.Count)));
             foreach (var item in obj.Values)
             {
                 SpanWriter.WriteSingle(ref data, (float)(item));
@@ -385,7 +387,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.UniqueIds.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.UniqueIds.Count)));
             foreach (var item in obj.UniqueIds)
             {
                 SpanWriter.WriteInt64(ref data, (long)(item));
@@ -397,7 +399,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.ProcessingQueue.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.ProcessingQueue.Count)));
             foreach (var item in obj.ProcessingQueue)
             {
                 SpanWriter.WriteUInt16(ref data, (ushort)(item));
@@ -409,7 +411,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.ProcessingStack.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.ProcessingStack.Count)));
             foreach (var item in obj.ProcessingStack)
             {
                 SpanWriter.WriteUInt32(ref data, (uint)(item));
@@ -421,7 +423,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.ArrayData.Length));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.ArrayData.Length)));
             var arrayDataBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(obj.ArrayData.AsSpan());
             arrayDataBytes.CopyTo(data);
             data = data.Slice(arrayDataBytes.Length);
@@ -432,7 +434,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Measurements.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Measurements.Count)));
             for (int i = 0; i < obj.Measurements.Count; i++)
             {
                 SpanWriter.WriteDouble(ref data, (double)(obj.Measurements[i]));
@@ -444,7 +446,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Flags.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Flags.Count)));
             for (int i = 0; i < obj.Flags.Count; i++)
             {
                 SpanWriter.WriteBoolean(ref data, (bool)(obj.Flags[i]));
@@ -456,7 +458,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.ObservableData.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.ObservableData.Count)));
             for (int i = 0; i < obj.ObservableData.Count; i++)
             {
                 SpanWriter.WriteInt16(ref data, (short)(obj.ObservableData[i]));
@@ -468,7 +470,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Characters.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Characters.Count)));
             foreach (var item in obj.Characters)
             {
                 SpanWriter.WriteUInt16(ref data, (ushort)(item));
@@ -480,7 +482,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.SortedValues.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.SortedValues.Count)));
             foreach (var item in obj.SortedValues)
             {
                 SpanWriter.WriteInt64(ref data, (long)(item));
@@ -492,7 +494,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteByte(ref data, (byte)(obj.SmallSet.Count));
+            SpanWriter.WriteByte(ref data, checked((byte)(obj.SmallSet.Count)));
             foreach (var item in obj.SmallSet)
             {
                 SpanWriter.WriteString(ref data, item);
@@ -504,7 +506,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            SpanWriter.WriteUInt16(ref data, (ushort)(obj.MediumQueue.Count));
+            SpanWriter.WriteUInt16(ref data, checked((ushort)(obj.MediumQueue.Count)));
             foreach (var item in obj.MediumQueue)
             {
                 SpanWriter.WriteInt32(ref data, (int)(item));
@@ -538,7 +540,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Numbers.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Numbers.Count)));
             var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
             stream.Write(numbersBytes);
         }
@@ -548,7 +550,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Names.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Names.Count)));
             foreach (var item in obj.Names)
             {
                 StreamWriter.WriteString(stream, item);
@@ -562,18 +564,18 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         {
             if (obj.Data is System.Collections.Generic.ICollection<byte> dataCollection)
             {
-                StreamWriter.WriteInt32(stream, (int)(dataCollection.Count));
+                StreamWriter.WriteInt32(stream, checked((int)(dataCollection.Count)));
                 StreamWriter.WriteBytes(stream, dataCollection);
             }
             else if (obj.Data is System.Collections.Generic.IReadOnlyCollection<byte> dataReadOnlyCollection)
             {
-                StreamWriter.WriteInt32(stream, (int)(dataReadOnlyCollection.Count));
+                StreamWriter.WriteInt32(stream, checked((int)(dataReadOnlyCollection.Count)));
                 StreamWriter.WriteBytes(stream, dataReadOnlyCollection);
             }
             else
             {
                 var dataSequence = global::System.Linq.Enumerable.ToArray(obj.Data);
-                StreamWriter.WriteInt32(stream, (int)(dataSequence.Length));
+                StreamWriter.WriteInt32(stream, checked((int)(dataSequence.Length)));
                 StreamWriter.WriteBytes(stream, dataSequence);
             }
         }
@@ -583,7 +585,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Data1.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Data1.Count)));
             StreamWriter.WriteBytes(stream, obj.Data1);
         }
         if (obj.Values is null)
@@ -592,7 +594,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Values.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Values.Count)));
             foreach (var item in obj.Values)
             {
                 StreamWriter.WriteSingle(stream, (float)(item));
@@ -604,7 +606,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.UniqueIds.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.UniqueIds.Count)));
             foreach (var item in obj.UniqueIds)
             {
                 StreamWriter.WriteInt64(stream, (long)(item));
@@ -616,7 +618,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.ProcessingQueue.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.ProcessingQueue.Count)));
             foreach (var item in obj.ProcessingQueue)
             {
                 StreamWriter.WriteUInt16(stream, (ushort)(item));
@@ -628,7 +630,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.ProcessingStack.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.ProcessingStack.Count)));
             foreach (var item in obj.ProcessingStack)
             {
                 StreamWriter.WriteUInt32(stream, (uint)(item));
@@ -640,7 +642,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.ArrayData.Length));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.ArrayData.Length)));
             var arrayDataBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(obj.ArrayData.AsSpan());
             stream.Write(arrayDataBytes);
         }
@@ -650,7 +652,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Measurements.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Measurements.Count)));
             for (int i = 0; i < obj.Measurements.Count; i++)
             {
                 StreamWriter.WriteDouble(stream, (double)(obj.Measurements[i]));
@@ -662,7 +664,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Flags.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Flags.Count)));
             for (int i = 0; i < obj.Flags.Count; i++)
             {
                 StreamWriter.WriteBoolean(stream, (bool)(obj.Flags[i]));
@@ -674,7 +676,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.ObservableData.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.ObservableData.Count)));
             for (int i = 0; i < obj.ObservableData.Count; i++)
             {
                 StreamWriter.WriteInt16(stream, (short)(obj.ObservableData[i]));
@@ -686,7 +688,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Characters.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Characters.Count)));
             foreach (var item in obj.Characters)
             {
                 StreamWriter.WriteUInt16(stream, (ushort)(item));
@@ -698,7 +700,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.SortedValues.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.SortedValues.Count)));
             foreach (var item in obj.SortedValues)
             {
                 StreamWriter.WriteInt64(stream, (long)(item));
@@ -710,7 +712,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteByte(stream, (byte)(obj.SmallSet.Count));
+            StreamWriter.WriteByte(stream, checked((byte)(obj.SmallSet.Count)));
             foreach (var item in obj.SmallSet)
             {
                 StreamWriter.WriteString(stream, item);
@@ -722,7 +724,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         else
         {
-            StreamWriter.WriteUInt16(stream, (ushort)(obj.MediumQueue.Count));
+            StreamWriter.WriteUInt16(stream, checked((ushort)(obj.MediumQueue.Count)));
             foreach (var item in obj.MediumQueue)
             {
                 StreamWriter.WriteInt32(stream, (int)(item));

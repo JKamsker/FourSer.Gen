@@ -63,8 +63,8 @@ public partial class Inventory : ISerializable<Inventory>
     public Inventory()
     {
         this.ItemType = default;
-        this.Items = default;
-        this.ReadOnlyItems = default;
+        this.Items = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>();
+        this.ReadOnlyItems = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>();
     }
 
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -195,23 +195,31 @@ public partial class Inventory : ISerializable<Inventory>
         if (obj is null) return;
         if ((obj.ReadOnlyItems?.Count ?? 0) == 0)
         {
-            SpanWriter.WriteByte(ref data, (byte)(20));
+            var discriminator = !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(obj.ItemType, default) ? obj.ItemType : 20;
+            SpanWriter.WriteByte(ref data, (byte)(discriminator));
         }
         else
         {
-            using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
-            if (!firstItemEnumerator.MoveNext())
+            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(obj.ItemType, default))
             {
-                throw new System.InvalidOperationException("Collection must contain at least one item.");
+                SpanWriter.WriteByte(ref data, (byte)(obj.ItemType));
             }
-            var firstItem = firstItemEnumerator.Current;
-            var discriminator = firstItem switch
+            else
             {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => (byte)10,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => (byte)20,
-                _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
-            };
-            SpanWriter.WriteByte(ref data, (byte)(discriminator));
+                using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
+                if (!firstItemEnumerator.MoveNext())
+                {
+                    throw new System.InvalidOperationException("Collection must contain at least one item.");
+                }
+                var firstItem = firstItemEnumerator.Current;
+                var discriminator = firstItem switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => 10,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => 20,
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
+                };
+                SpanWriter.WriteByte(ref data, (byte)(discriminator));
+            }
         }
         if (obj.Items is null)
         {
@@ -228,7 +236,7 @@ public partial class Inventory : ISerializable<Inventory>
             }
             else
             {
-                SpanWriter.WriteInt32(ref data, (int)(collectionItems.Count));
+                SpanWriter.WriteInt32(ref data, checked((int)(collectionItems.Count)));
                 var firstItem = collectionItems[0];
                 var discriminator = firstItem switch
                 {
@@ -264,18 +272,29 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.ReadOnlyItems.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.ReadOnlyItems.Count)));
             if (obj.ReadOnlyItems.Count > 0)
             {
-                using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
-                if (!firstItemEnumerator.MoveNext())
+                var hasExplicitDiscriminator = !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(obj.ItemType, default);
+                var discriminator = obj.ItemType;
+                if (!hasExplicitDiscriminator)
                 {
-                    throw new System.InvalidOperationException("Collection must contain at least one item.");
+                    using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
+                    if (!firstItemEnumerator.MoveNext())
+                    {
+                        throw new System.InvalidOperationException("Collection must contain at least one item.");
+                    }
+                    var firstItem = firstItemEnumerator.Current;
+                    discriminator = firstItem switch
+                    {
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => 10,
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => 20,
+                        _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
+                    };
                 }
-                var firstItem = firstItemEnumerator.Current;
-                switch (firstItem)
+                switch (discriminator)
                 {
-                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword:
+                    case 10:
                     {
                         foreach(var item in obj.ReadOnlyItems)
                         {
@@ -283,7 +302,7 @@ public partial class Inventory : ISerializable<Inventory>
                         }
                         break;
                     }
-                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield:
+                    case 20:
                     {
                         foreach(var item in obj.ReadOnlyItems)
                         {
@@ -292,7 +311,7 @@ public partial class Inventory : ISerializable<Inventory>
                         break;
                     }
                     default:
-                        throw new System.IO.InvalidDataException($"Unknown type for item in ReadOnlyItems: {firstItem.GetType().Name}");
+                        throw new System.IO.InvalidDataException($"Unknown type id for ReadOnlyItems: {discriminator}");
                 }
             }
         }
@@ -308,23 +327,31 @@ public partial class Inventory : ISerializable<Inventory>
         if (obj is null) return;
         if ((obj.ReadOnlyItems?.Count ?? 0) == 0)
         {
-            StreamWriter.WriteByte(stream, (byte)(20));
+            var discriminator = !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(obj.ItemType, default) ? obj.ItemType : 20;
+            StreamWriter.WriteByte(stream, (byte)(discriminator));
         }
         else
         {
-            using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
-            if (!firstItemEnumerator.MoveNext())
+            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(obj.ItemType, default))
             {
-                throw new System.InvalidOperationException("Collection must contain at least one item.");
+                StreamWriter.WriteByte(stream, (byte)(obj.ItemType));
             }
-            var firstItem = firstItemEnumerator.Current;
-            var discriminator = firstItem switch
+            else
             {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => (byte)10,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => (byte)20,
-                _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
-            };
-            StreamWriter.WriteByte(stream, (byte)(discriminator));
+                using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
+                if (!firstItemEnumerator.MoveNext())
+                {
+                    throw new System.InvalidOperationException("Collection must contain at least one item.");
+                }
+                var firstItem = firstItemEnumerator.Current;
+                var discriminator = firstItem switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => 10,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => 20,
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
+                };
+                StreamWriter.WriteByte(stream, (byte)(discriminator));
+            }
         }
         if (obj.Items is null)
         {
@@ -341,7 +368,7 @@ public partial class Inventory : ISerializable<Inventory>
             }
             else
             {
-                StreamWriter.WriteInt32(stream, (int)(collectionItems.Count));
+                StreamWriter.WriteInt32(stream, checked((int)(collectionItems.Count)));
                 var firstItem = collectionItems[0];
                 var discriminator = firstItem switch
                 {
@@ -377,18 +404,29 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.ReadOnlyItems.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.ReadOnlyItems.Count)));
             if (obj.ReadOnlyItems.Count > 0)
             {
-                using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
-                if (!firstItemEnumerator.MoveNext())
+                var hasExplicitDiscriminator = !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(obj.ItemType, default);
+                var discriminator = obj.ItemType;
+                if (!hasExplicitDiscriminator)
                 {
-                    throw new System.InvalidOperationException("Collection must contain at least one item.");
+                    using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
+                    if (!firstItemEnumerator.MoveNext())
+                    {
+                        throw new System.InvalidOperationException("Collection must contain at least one item.");
+                    }
+                    var firstItem = firstItemEnumerator.Current;
+                    discriminator = firstItem switch
+                    {
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => 10,
+                        global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => 20,
+                        _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
+                    };
                 }
-                var firstItem = firstItemEnumerator.Current;
-                switch (firstItem)
+                switch (discriminator)
                 {
-                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword:
+                    case 10:
                     {
                         foreach(var item in obj.ReadOnlyItems)
                         {
@@ -396,7 +434,7 @@ public partial class Inventory : ISerializable<Inventory>
                         }
                         break;
                     }
-                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield:
+                    case 20:
                     {
                         foreach(var item in obj.ReadOnlyItems)
                         {
@@ -405,7 +443,7 @@ public partial class Inventory : ISerializable<Inventory>
                         break;
                     }
                     default:
-                        throw new System.IO.InvalidDataException($"Unknown type for item in ReadOnlyItems: {firstItem.GetType().Name}");
+                        throw new System.IO.InvalidDataException($"Unknown type id for ReadOnlyItems: {discriminator}");
                 }
             }
         }

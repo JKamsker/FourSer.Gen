@@ -40,7 +40,7 @@ public partial class UIntCountTest : ISerializable<UIntCountTest>
 
     public UIntCountTest()
     {
-        this.Cats = default;
+        this.Cats = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.CollectionUIntCount.Cat>();
     }
 
     public static UIntCountTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -81,7 +81,7 @@ public partial class UIntCountTest : ISerializable<UIntCountTest>
         }
         else
         {
-            SpanWriter.WriteUInt32(ref data, (uint)(obj.Cats.Count));
+            SpanWriter.WriteUInt32(ref data, checked((uint)(obj.Cats.Count)));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 global::FourSer.Tests.GeneratorTestCases.CollectionUIntCount.Cat.Serialize(obj.Cats[i], ref data);
@@ -103,7 +103,7 @@ public partial class UIntCountTest : ISerializable<UIntCountTest>
         }
         else
         {
-            StreamWriter.WriteUInt32(stream, (uint)(obj.Cats.Count));
+            StreamWriter.WriteUInt32(stream, checked((uint)(obj.Cats.Count)));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 global::FourSer.Tests.GeneratorTestCases.CollectionUIntCount.Cat.Serialize(obj.Cats[i], stream);

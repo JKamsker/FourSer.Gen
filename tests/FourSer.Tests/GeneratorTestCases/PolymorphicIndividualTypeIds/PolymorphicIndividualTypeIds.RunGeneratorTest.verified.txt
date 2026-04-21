@@ -46,7 +46,7 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
 
     public PolymorphicIndividualTest()
     {
-        this.Animals = default;
+        this.Animals = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal>();
     }
 
     public static PolymorphicIndividualTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -121,7 +121,7 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         }
         else
         {
-            SpanWriter.WriteByte(ref data, (byte)(obj.Animals.Count));
+            SpanWriter.WriteByte(ref data, checked((byte)(obj.Animals.Count)));
             foreach(var item in obj.Animals)
             {
                 switch (item)
@@ -161,7 +161,7 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         }
         else
         {
-            StreamWriter.WriteByte(stream, (byte)(obj.Animals.Count));
+            StreamWriter.WriteByte(stream, checked((byte)(obj.Animals.Count)));
             foreach(var item in obj.Animals)
             {
                 switch (item)

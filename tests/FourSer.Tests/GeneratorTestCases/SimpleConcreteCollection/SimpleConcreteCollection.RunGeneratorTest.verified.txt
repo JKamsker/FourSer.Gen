@@ -40,7 +40,7 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
 
     public SimpleConcreteCollectionTest()
     {
-        this.Cats = default;
+        this.Cats = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat>();
     }
 
     public static SimpleConcreteCollectionTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -81,7 +81,7 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Cats.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Cats.Count)));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.Serialize(obj.Cats[i], ref data);
@@ -103,7 +103,7 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Cats.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Cats.Count)));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.Serialize(obj.Cats[i], stream);

@@ -116,7 +116,7 @@ public partial class MainObject : ISerializable<MainObject>
 
     public MainObject()
     {
-        this.Items = default;
+        this.Items = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>();
     }
 
     public static MainObject Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -157,7 +157,7 @@ public partial class MainObject : ISerializable<MainObject>
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, (int)(obj.Items.Count));
+            SpanWriter.WriteInt32(ref data, checked((int)(obj.Items.Count)));
             for (int i = 0; i < obj.Items.Count; i++)
             {
                 global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Serialize(obj.Items[i], ref data);
@@ -179,7 +179,7 @@ public partial class MainObject : ISerializable<MainObject>
         }
         else
         {
-            StreamWriter.WriteInt32(stream, (int)(obj.Items.Count));
+            StreamWriter.WriteInt32(stream, checked((int)(obj.Items.Count)));
             for (int i = 0; i < obj.Items.Count; i++)
             {
                 global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Serialize(obj.Items[i], stream);

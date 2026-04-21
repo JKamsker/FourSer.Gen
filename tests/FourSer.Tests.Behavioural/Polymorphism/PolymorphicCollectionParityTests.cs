@@ -351,6 +351,30 @@ public class PolymorphicCollectionParityTests
     }
 
     [Fact]
+    public void ExplicitTypeIdPropertyOnEmptyCollection_ShouldRoundtripProvidedDiscriminator()
+    {
+        var original = new DefaultedTypeIdPropertyPacket
+        {
+            AnimalType = 10,
+            Animals = Array.Empty<IAnimal>()
+        };
+
+        var buffer = new byte[DefaultedTypeIdPropertyPacket.GetPacketSize(original)];
+        DefaultedTypeIdPropertyPacket.Serialize(original, buffer);
+
+        Assert.Equal(10, buffer[0]);
+        Assert.Equal(0, buffer[1]);
+
+        var roundTripped = DefaultedTypeIdPropertyPacket.Deserialize(buffer);
+        Assert.Equal(10, roundTripped.AnimalType);
+        AssertAnimalSequence(original.Animals ?? Array.Empty<IAnimal>(), roundTripped.Animals ?? Array.Empty<IAnimal>());
+
+        var streamRoundTripped = RoundTripThroughStream(original, DefaultedTypeIdPropertyPacket.Serialize, DefaultedTypeIdPropertyPacket.Deserialize);
+        Assert.Equal(10, streamRoundTripped.AnimalType);
+        AssertAnimalSequence(original.Animals ?? Array.Empty<IAnimal>(), streamRoundTripped.Animals ?? Array.Empty<IAnimal>());
+    }
+
+    [Fact]
     public void NullPolymorphicMember_ShouldStillThrow()
     {
         var original = new InterfacePetOwner

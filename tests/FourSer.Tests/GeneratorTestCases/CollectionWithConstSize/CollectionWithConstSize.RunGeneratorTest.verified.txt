@@ -39,7 +39,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
 
     public EnumerableOfReferenceTypes()
     {
-        this.MyList = default;
+        this.MyList = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity>();
     }
 
     public static EnumerableOfReferenceTypes Deserialize(ref System.ReadOnlySpan<byte> buffer)

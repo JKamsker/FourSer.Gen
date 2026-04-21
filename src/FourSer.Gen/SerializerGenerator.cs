@@ -347,13 +347,9 @@ public class SerializerGenerator : IIncrementalGenerator
 
     private static string GetParameterlessInitializationExpression(MemberToGenerate member)
     {
-        if (member.CollectionTypeInfo is
-            {
-                RangeFactoryTypeName: { } rangeFactoryTypeName,
-                ElementTypeName: var elementTypeName
-            })
+        if (CodeGenerators.Core.CollectionUtilities.GenerateEmptyCollectionExpression(member) is { } emptyCollectionExpression)
         {
-            return $"{rangeFactoryTypeName}<{TypeHelper.GetGlobalTypeName(elementTypeName)}>.Empty";
+            return emptyCollectionExpression;
         }
 
         return "default";

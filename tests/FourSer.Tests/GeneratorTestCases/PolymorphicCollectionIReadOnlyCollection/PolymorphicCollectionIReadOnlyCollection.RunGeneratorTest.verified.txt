@@ -47,7 +47,7 @@ public partial class Inventory : ISerializable<Inventory>
 
     public Inventory()
     {
-        this.Items = default;
+        this.Items = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.IItem>();
     }
 
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -147,7 +147,7 @@ public partial class Inventory : ISerializable<Inventory>
         if (obj.Items is null)
         {
             SpanWriter.WriteByte(ref data, (byte)(10));
-            SpanWriter.WriteInt32(ref itemsCountSpan, (int)(0));
+            SpanWriter.WriteInt32(ref itemsCountSpan, checked((int)(0)));
         }
         else
         {
@@ -156,7 +156,7 @@ public partial class Inventory : ISerializable<Inventory>
             if (!itemsEnumerator.MoveNext())
             {
                 SpanWriter.WriteByte(ref data, (byte)(10));
-                SpanWriter.WriteInt32(ref itemsCountSpan, (int)(0));
+                SpanWriter.WriteInt32(ref itemsCountSpan, checked((int)(0)));
             }
             else
             {
@@ -201,7 +201,7 @@ public partial class Inventory : ISerializable<Inventory>
                         break;
                     }
                 }
-                SpanWriter.WriteInt32(ref itemsCountSpan, (int)(itemsCount));
+                SpanWriter.WriteInt32(ref itemsCountSpan, checked((int)(itemsCount)));
             }
         }
     }
@@ -277,7 +277,7 @@ public partial class Inventory : ISerializable<Inventory>
                 }
                 var itemsEndPosition = stream.Position;
                 stream.Position = itemsCountPosition;
-                StreamWriter.WriteInt32(stream, (int)(itemsCount));
+                StreamWriter.WriteInt32(stream, checked((int)(itemsCount)));
                 stream.Position = itemsEndPosition;
             }
         }

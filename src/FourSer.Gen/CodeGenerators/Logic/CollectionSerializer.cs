@@ -68,7 +68,7 @@ internal static class CollectionSerializer
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
             var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}");
-            SerializationWriterEmitter.EmitWrite(sb, ctx, countType, countExpression);
+            SerializationWriterEmitter.EmitCheckedWrite(sb, ctx, countType, countExpression);
         }
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
@@ -426,13 +426,13 @@ internal static class CollectionSerializer
             var endPositionVariableName = $"{variablePrefix}EndPosition";
             sb.WriteLineFormat("var {0} = stream.Position;", endPositionVariableName);
             sb.WriteLineFormat("stream.Position = {0};", countPositionVariableName);
-            SerializationWriterEmitter.EmitWrite(sb, ctx, countType, countExpr);
+            SerializationWriterEmitter.EmitCheckedWrite(sb, ctx, countType, countExpr);
             sb.WriteLineFormat("stream.Position = {0};", endPositionVariableName);
         }
         else
         {
             var countCtx = ctx with { Target = countSpanVariableName };
-            SerializationWriterEmitter.EmitWrite(sb, countCtx, countType, countExpr);
+            SerializationWriterEmitter.EmitCheckedWrite(sb, countCtx, countType, countExpr);
         }
     }
 
@@ -461,7 +461,7 @@ internal static class CollectionSerializer
 
         void EmitCountAndWrite(string collectionExpression, string countExpression)
         {
-            SerializationWriterEmitter.EmitWrite(sb, ctx, countType, countExpression);
+            SerializationWriterEmitter.EmitCheckedWrite(sb, ctx, countType, countExpression);
             SerializationWriterEmitter.EmitWriteBytes(sb, ctx, collectionExpression);
         }
 

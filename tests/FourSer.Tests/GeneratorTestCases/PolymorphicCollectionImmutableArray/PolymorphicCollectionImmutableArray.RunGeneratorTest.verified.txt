@@ -128,7 +128,7 @@ public partial class Inventory : ISerializable<Inventory>
     public static void Serialize(Inventory obj, ref System.Span<byte> data)
     {
         if (obj is null) return;
-        SpanWriter.WriteInt32(ref data, (int)((obj.Items.IsDefaultOrEmpty ? 0 : obj.Items.Length)));
+        SpanWriter.WriteInt32(ref data, checked((int)((obj.Items.IsDefaultOrEmpty ? 0 : obj.Items.Length))));
         if (!obj.Items.IsDefaultOrEmpty)
         {
             foreach(var item in obj.Items)
@@ -170,7 +170,7 @@ public partial class Inventory : ISerializable<Inventory>
     public static void Serialize(Inventory obj, System.IO.Stream stream)
     {
         if (obj is null) return;
-        StreamWriter.WriteInt32(stream, (int)((obj.Items.IsDefaultOrEmpty ? 0 : obj.Items.Length)));
+        StreamWriter.WriteInt32(stream, checked((int)((obj.Items.IsDefaultOrEmpty ? 0 : obj.Items.Length))));
         if (!obj.Items.IsDefaultOrEmpty)
         {
             foreach(var item in obj.Items)

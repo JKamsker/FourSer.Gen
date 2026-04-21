@@ -40,7 +40,7 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
 
     public IndividualTypeIdsTest()
     {
-        this.Cats = default;
+        this.Cats = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat>();
     }
 
     public static IndividualTypeIdsTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -81,7 +81,7 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
         }
         else
         {
-            SpanWriter.WriteByte(ref data, (byte)(obj.Cats.Count));
+            SpanWriter.WriteByte(ref data, checked((byte)(obj.Cats.Count)));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 global::FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat.Serialize(obj.Cats[i], ref data);
@@ -103,7 +103,7 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
         }
         else
         {
-            StreamWriter.WriteByte(stream, (byte)(obj.Cats.Count));
+            StreamWriter.WriteByte(stream, checked((byte)(obj.Cats.Count)));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 global::FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat.Serialize(obj.Cats[i], stream);
