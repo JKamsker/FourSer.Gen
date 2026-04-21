@@ -25,6 +25,24 @@ public partial class Inventory : ISerializable<Inventory>
         _ = checked((int)((obj.Items?.Count ?? 0)));
         size += sizeof(int); // Count size for Items
         size += sizeof(byte); // Size for polymorphic type id
+        byte itemsExpectedDiscriminator = default;
+        if ((obj.Items?.Count ?? 0) > 0)
+        {
+            using var firstSizedItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.IItem>)obj.Items).GetEnumerator();
+            if (!firstSizedItemEnumerator.MoveNext())
+            {
+                throw new System.InvalidOperationException("Collection must contain at least one item.");
+            }
+            var firstSizedItem = firstSizedItemEnumerator.Current;
+            itemsExpectedDiscriminator = firstSizedItem switch
+            {
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword => (byte)10,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield => (byte)20,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion => (byte)30,
+                null => throw new System.NullReferenceException("Item in collection cannot be null."),
+                _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstSizedItem?.GetType().FullName}")
+            };
+        }
         if (obj.Items is not null)
         {
             foreach (var item in obj.Items)
@@ -35,8 +53,11 @@ public partial class Inventory : ISerializable<Inventory>
                 }
                 size += item switch
                 {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword sword when !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemsExpectedDiscriminator, (byte)10) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword.GetPacketSize(sword),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield shield when !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemsExpectedDiscriminator, (byte)20) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield shield => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield.GetPacketSize(shield),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion potion when !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemsExpectedDiscriminator, (byte)30) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion potion => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion.GetPacketSize(potion),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
                 };

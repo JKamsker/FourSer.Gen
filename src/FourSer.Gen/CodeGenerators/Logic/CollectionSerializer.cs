@@ -660,6 +660,7 @@ internal static class CollectionSerializer
                 {
                     if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
                     {
+                        PolymorphicCollectionValidationEmitter.Emit(sb, member, collectionInfo);
                         PolymorphicSerializer.GeneratePolymorphicCollection
                         (
                             sb,
@@ -676,6 +677,7 @@ internal static class CollectionSerializer
             }
             else if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
             {
+                PolymorphicCollectionValidationEmitter.Emit(sb, member, collectionInfo);
                 PolymorphicSerializer.GeneratePolymorphicCollection
                 (
                     sb,

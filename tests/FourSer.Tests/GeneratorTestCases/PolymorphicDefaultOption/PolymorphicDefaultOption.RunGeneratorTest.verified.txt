@@ -26,6 +26,18 @@ public partial class Inventory : ISerializable<Inventory>
         _ = checked((int)((obj.Items?.Count ?? 0)));
         size += sizeof(int); // Count size for Items
         size += sizeof(byte); // Size for polymorphic type id
+        byte itemsExpectedDiscriminator = default;
+        if ((obj.Items?.Count ?? 0) > 0)
+        {
+            var firstSizedItem = obj.Items[0];
+            itemsExpectedDiscriminator = firstSizedItem switch
+            {
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => (byte)10,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => (byte)20,
+                null => throw new System.NullReferenceException("Item in collection cannot be null."),
+                _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstSizedItem?.GetType().FullName}")
+            };
+        }
         if (obj.Items is not null)
         {
             foreach (var item in obj.Items)
@@ -36,7 +48,9 @@ public partial class Inventory : ISerializable<Inventory>
                 }
                 size += item switch
                 {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword sword when !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemsExpectedDiscriminator, (byte)10) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword.GetPacketSize(sword),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield shield when !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemsExpectedDiscriminator, (byte)20) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield shield => global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield.GetPacketSize(shield),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
                 };
@@ -44,6 +58,23 @@ public partial class Inventory : ISerializable<Inventory>
         }
         _ = checked((int)((obj.ReadOnlyItems?.Count ?? 0)));
         size += sizeof(int); // Count size for ReadOnlyItems
+        byte readOnlyItemsExpectedDiscriminator = default;
+        if ((obj.ReadOnlyItems?.Count ?? 0) > 0)
+        {
+            using var firstSizedItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
+            if (!firstSizedItemEnumerator.MoveNext())
+            {
+                throw new System.InvalidOperationException("Collection must contain at least one item.");
+            }
+            var firstSizedItem = firstSizedItemEnumerator.Current;
+            readOnlyItemsExpectedDiscriminator = firstSizedItem switch
+            {
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => (byte)10,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => (byte)20,
+                null => throw new System.NullReferenceException("Item in collection cannot be null."),
+                _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstSizedItem?.GetType().FullName}")
+            };
+        }
         if (obj.ReadOnlyItems is not null)
         {
             foreach (var item in obj.ReadOnlyItems)
@@ -54,7 +85,9 @@ public partial class Inventory : ISerializable<Inventory>
                 }
                 size += item switch
                 {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword sword when !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(readOnlyItemsExpectedDiscriminator, (byte)10) => throw new System.IO.InvalidDataException("All items in collection ReadOnlyItems must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword.GetPacketSize(sword),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield shield when !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(readOnlyItemsExpectedDiscriminator, (byte)20) => throw new System.IO.InvalidDataException("All items in collection ReadOnlyItems must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield shield => global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield.GetPacketSize(shield),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type in collection ReadOnlyItems: {item.GetType().Name}")
                 };

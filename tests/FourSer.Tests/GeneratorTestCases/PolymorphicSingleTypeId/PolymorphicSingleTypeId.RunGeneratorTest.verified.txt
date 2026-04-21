@@ -25,6 +25,18 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
         size += sizeof(byte); // Size for unmanaged type AnimalTypeId
         _ = checked((ushort)((obj.Animals?.Count ?? 0)));
         size += sizeof(ushort); // Count size for Animals
+        byte animalsExpectedDiscriminator = default;
+        if ((obj.Animals?.Count ?? 0) > 0)
+        {
+            var firstSizedItem = obj.Animals[0];
+            animalsExpectedDiscriminator = firstSizedItem switch
+            {
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat => (byte)1,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog => (byte)2,
+                null => throw new System.NullReferenceException("Item in collection cannot be null."),
+                _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstSizedItem?.GetType().FullName}")
+            };
+        }
         if (obj.Animals is not null)
         {
             foreach (var item in obj.Animals)
@@ -35,7 +47,9 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
                 }
                 size += item switch
                 {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat cat when !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(animalsExpectedDiscriminator, (byte)1) => throw new System.IO.InvalidDataException("All items in collection Animals must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat cat => global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat.GetPacketSize(cat),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog dog when !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(animalsExpectedDiscriminator, (byte)2) => throw new System.IO.InvalidDataException("All items in collection Animals must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog dog => global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog.GetPacketSize(dog),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Animals: {item.GetType().Name}")
                 };

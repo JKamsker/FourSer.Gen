@@ -25,6 +25,19 @@ public partial class Inventory : ISerializable<Inventory>
         size += sizeof(long); // Size for unmanaged type TypeId
         _ = checked((int)((obj.Items?.Count ?? 0)));
         size += sizeof(int); // Count size for Items
+        long itemsExpectedDiscriminator = default;
+        if ((obj.Items?.Count ?? 0) > 0)
+        {
+            var firstSizedItem = obj.Items[0];
+            itemsExpectedDiscriminator = firstSizedItem switch
+            {
+                global::FourSer.TestUser.Sword => (long)10,
+                global::FourSer.TestUser.Shield => (long)20,
+                global::FourSer.TestUser.Potion => (long)30,
+                null => throw new System.NullReferenceException("Item in collection cannot be null."),
+                _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstSizedItem?.GetType().FullName}")
+            };
+        }
         if (obj.Items is not null)
         {
             foreach (var item in obj.Items)
@@ -35,8 +48,11 @@ public partial class Inventory : ISerializable<Inventory>
                 }
                 size += item switch
                 {
+                    global::FourSer.TestUser.Sword sword when !global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(itemsExpectedDiscriminator, (long)10) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.TestUser.Sword sword => global::FourSer.TestUser.Sword.GetPacketSize(sword),
+                    global::FourSer.TestUser.Shield shield when !global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(itemsExpectedDiscriminator, (long)20) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.TestUser.Shield shield => global::FourSer.TestUser.Shield.GetPacketSize(shield),
+                    global::FourSer.TestUser.Potion potion when !global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(itemsExpectedDiscriminator, (long)30) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.TestUser.Potion potion => global::FourSer.TestUser.Potion.GetPacketSize(potion),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
                 };

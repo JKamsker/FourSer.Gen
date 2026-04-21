@@ -360,6 +360,7 @@ public static partial class PacketSizeGenerator
         }
 
         collectionAccessExpression ??= $"obj.{member.Name}";
+        var expectedDiscriminatorVar = EmitSingleTypeIdPolymorphicSizeValidationPreamble(sb, member, collectionInfo, collectionAccessExpression);
         var enumerationGuard = collectionAccessExpression == $"obj.{member.Name}"
             ? GeneratorUtilities.GetCollectionIterationGuard(member, collectionAccessExpression)
             : $"{collectionAccessExpression} is not null";
@@ -392,6 +393,11 @@ public static partial class PacketSizeGenerator
             {
                 var typeName = TypeHelper.GetGlobalTypeName(option.Type);
                 var varName = TypeHelper.GetSimpleTypeName(option.Type).ToCamelCase();
+                if (expectedDiscriminatorVar is not null)
+                {
+                    var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+                    sb.WriteLineFormat("{0} {1} when !global::System.Collections.Generic.EqualityComparer<{2}>.Default.Equals({3}, ({2}){4}) => throw new System.IO.InvalidDataException(\"All items in collection {5} must have the same runtime type for single-type-id polymorphism.\"),", typeName, varName, info.EnumUnderlyingType ?? info.TypeIdType, expectedDiscriminatorVar, key, member.Name);
+                }
                 sb.WriteLineFormat("{0} {1} => {2}.GetPacketSize({1}),", typeName, varName, typeName);
             }
 
@@ -427,6 +433,11 @@ public static partial class PacketSizeGenerator
         {
             var typeName = TypeHelper.GetGlobalTypeName(option.Type);
             var varName = TypeHelper.GetSimpleTypeName(option.Type).ToCamelCase();
+            if (expectedDiscriminatorVar is not null)
+            {
+                var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+                sb.WriteLineFormat("{0} {1} when !global::System.Collections.Generic.EqualityComparer<{2}>.Default.Equals({3}, ({2}){4}) => throw new System.IO.InvalidDataException(\"All items in collection {5} must have the same runtime type for single-type-id polymorphism.\"),", typeName, varName, info.EnumUnderlyingType ?? info.TypeIdType, expectedDiscriminatorVar, key, member.Name);
+            }
             sb.WriteLineFormat("{0} {1} => {2}.GetPacketSize({1}),", typeName, varName, typeName);
         }
 
