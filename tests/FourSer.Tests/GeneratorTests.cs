@@ -327,6 +327,179 @@ public class GeneratorTests
     }
 
     [Fact]
+    public void UnlimitedConcreteCollections_ShouldCompile()
+    {
+        const string source = """
+        using System.Collections.ObjectModel;
+
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class UnlimitedQueuePacket
+        {
+            [SerializeCollection(Unlimited = true)]
+            public Queue<int> Items { get; set; } = new();
+        }
+
+        [GenerateSerializer]
+        public partial class UnlimitedStackPacket
+        {
+            [SerializeCollection(Unlimited = true)]
+            public Stack<int> Items { get; set; } = new();
+        }
+
+        [GenerateSerializer]
+        public partial class UnlimitedHashSetPacket
+        {
+            [SerializeCollection(Unlimited = true)]
+            public HashSet<int> Items { get; set; } = new();
+        }
+
+        [GenerateSerializer]
+        public partial class UnlimitedCollectionPacket
+        {
+            [SerializeCollection(Unlimited = true)]
+            public Collection<int> Items { get; set; } = new();
+        }
+
+        [GenerateSerializer]
+        public partial class UnlimitedObservableCollectionPacket
+        {
+            [SerializeCollection(Unlimited = true)]
+            public ObservableCollection<int> Items { get; set; } = new();
+        }
+        """;
+
+        var compilation = CreateCompilation(AddDefaultUsings(source));
+        var runResult = GetRunResult(compilation, out var finalCompilation);
+
+        Assert.DoesNotContain(runResult.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+
+        using var ms = new MemoryStream();
+        var emitResult = finalCompilation.Emit(ms);
+        Assert.True(emitResult.Success, $"Compilation failed with errors: {string.Join(", ", emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.GetMessage()))}");
+    }
+
+    [Fact]
+    public void PolymorphicArrayCollections_ShouldCompile()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Polymorphism;
+
+        [GenerateSerializer]
+        public partial class IndividualTypeIdArrayPacket
+        {
+            [SerializeCollection(PolymorphicMode = PolymorphicMode.IndividualTypeIds, TypeIdType = typeof(byte))]
+            [PolymorphicOption((byte)1, typeof(Dog))]
+            [PolymorphicOption((byte)2, typeof(Cat))]
+            public IAnimal[] Animals { get; set; } = Array.Empty<IAnimal>();
+        }
+
+        [GenerateSerializer]
+        public partial class SingleTypeIdArrayPacket
+        {
+            [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte))]
+            [PolymorphicOption((byte)1, typeof(Dog))]
+            [PolymorphicOption((byte)2, typeof(Cat))]
+            public IAnimal[] Animals { get; set; } = Array.Empty<IAnimal>();
+        }
+
+        public interface IAnimal { }
+
+        [GenerateSerializer]
+        public partial class Dog : IAnimal { }
+
+        [GenerateSerializer]
+        public partial class Cat : IAnimal { }
+        """;
+
+        var compilation = CreateCompilation(AddDefaultUsings(source));
+        var runResult = GetRunResult(compilation, out var finalCompilation);
+
+        Assert.DoesNotContain(runResult.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+
+        using var ms = new MemoryStream();
+        var emitResult = finalCompilation.Emit(ms);
+        Assert.True(emitResult.Success, $"Compilation failed with errors: {string.Join(", ", emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.GetMessage()))}");
+    }
+
+    [Fact]
+    public void CountedByteEnumerableSerialization_ShouldMaterializeAtMostOnce()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class ByteEnumerablePacket
+        {
+            [SerializeCollection]
+            public IEnumerable<byte>? Data { get; set; } = Array.Empty<byte>();
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "ByteEnumerablePacket");
+
+        Assert.Contains("global::System.Linq.Enumerable.ToArray(obj.Data)", generatedCode);
+        Assert.DoesNotContain("SpanWriter.WriteInt32(ref data, (int)(obj.Data.Count()))", generatedCode);
+        Assert.DoesNotContain("StreamWriter.WriteInt32(stream, (int)(obj.Data.Count()))", generatedCode);
+    }
+
+    [Fact]
+    public void PolymorphicEnumerableSerialization_ShouldDisposeEnumerators()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Polymorphism;
+
+        [GenerateSerializer]
+        public partial class Inventory
+        {
+            [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId)]
+            [PolymorphicOption((byte)1, typeof(Dog))]
+            [PolymorphicOption((byte)2, typeof(Cat))]
+            public IEnumerable<IAnimal> Animals { get; set; } = Array.Empty<IAnimal>();
+        }
+
+        public interface IAnimal { }
+
+        [GenerateSerializer]
+        public partial class Dog : IAnimal { }
+
+        [GenerateSerializer]
+        public partial class Cat : IAnimal { }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "Inventory");
+
+        Assert.Contains("using var animalsEnumerator = ((global::System.Collections.Generic.IEnumerable<", generatedCode);
+    }
+
+    [Fact]
+    public void MultipleNonNullableEnumerableCollections_ShouldUsePrefixedEndPositionLocals()
+    {
+        const string source = """
+        #nullable enable
+
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class EnumerablePacket
+        {
+            [SerializeCollection]
+            public IEnumerable<int> FirstValues { get; set; } = Array.Empty<int>();
+
+            [SerializeCollection]
+            public IEnumerable<int> SecondValues { get; set; } = Array.Empty<int>();
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "EnumerablePacket");
+
+        Assert.Contains("var firstValuesEndPosition = stream.Position;", generatedCode);
+        Assert.Contains("var secondValuesEndPosition = stream.Position;", generatedCode);
+        Assert.DoesNotContain("var endPosition = stream.Position;", generatedCode);
+    }
+
+    [Fact]
     public void InvalidNestedCollection_ShouldReportDiagnosticAndSkipGeneration()
     {
         var source = ReadSource("InvalidNestedCollection");

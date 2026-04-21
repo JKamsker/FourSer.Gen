@@ -114,10 +114,10 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
                 myListCount++;
             }
         }
-        var endPosition = stream.Position;
+        var myListEndPosition = stream.Position;
         stream.Position = myListCountPosition;
         StreamWriter.WriteInt32(stream, (int)(myListCount));
-        stream.Position = endPosition;
+        stream.Position = myListEndPosition;
     }
 }
 

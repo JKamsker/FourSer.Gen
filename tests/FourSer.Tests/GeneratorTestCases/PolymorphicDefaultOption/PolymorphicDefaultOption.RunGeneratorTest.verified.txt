@@ -121,7 +121,7 @@ public partial class Inventory : ISerializable<Inventory>
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for ReadOnlyItems: {itemType}");
         }
-        var readOnlyItems = readOnlyItemsStaging;
+        var readOnlyItems = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>(readOnlyItemsStaging);
         var obj = new Inventory(itemType, items, readOnlyItems);
         return obj;
     }
@@ -185,7 +185,7 @@ public partial class Inventory : ISerializable<Inventory>
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for ReadOnlyItems: {itemType}");
         }
-        var readOnlyItems = readOnlyItemsStaging;
+        var readOnlyItems = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>(readOnlyItemsStaging);
         var obj = new Inventory(itemType, items, readOnlyItems);
         return obj;
     }
@@ -199,7 +199,7 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
-            var firstItemEnumerator = obj.ReadOnlyItems.GetEnumerator();
+            using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
             if (!firstItemEnumerator.MoveNext())
             {
                 throw new System.InvalidOperationException("Collection must contain at least one item.");
@@ -221,7 +221,7 @@ public partial class Inventory : ISerializable<Inventory>
         else
         {
             var collectionItems = obj.Items;
-            if ((collectionItems?.Count ?? 0) == 0)
+            if (collectionItems.Count == 0)
             {
                 SpanWriter.WriteInt32(ref data, (int)(0));
                 SpanWriter.WriteByte(ref data, (byte)(20));
@@ -267,7 +267,7 @@ public partial class Inventory : ISerializable<Inventory>
             SpanWriter.WriteInt32(ref data, (int)(obj.ReadOnlyItems.Count));
             if (obj.ReadOnlyItems.Count > 0)
             {
-                var firstItemEnumerator = obj.ReadOnlyItems.GetEnumerator();
+                using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
                 if (!firstItemEnumerator.MoveNext())
                 {
                     throw new System.InvalidOperationException("Collection must contain at least one item.");
@@ -312,7 +312,7 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
-            var firstItemEnumerator = obj.ReadOnlyItems.GetEnumerator();
+            using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
             if (!firstItemEnumerator.MoveNext())
             {
                 throw new System.InvalidOperationException("Collection must contain at least one item.");
@@ -334,7 +334,7 @@ public partial class Inventory : ISerializable<Inventory>
         else
         {
             var collectionItems = obj.Items;
-            if ((collectionItems?.Count ?? 0) == 0)
+            if (collectionItems.Count == 0)
             {
                 StreamWriter.WriteInt32(stream, (int)(0));
                 StreamWriter.WriteByte(stream, (byte)(20));
@@ -380,7 +380,7 @@ public partial class Inventory : ISerializable<Inventory>
             StreamWriter.WriteInt32(stream, (int)(obj.ReadOnlyItems.Count));
             if (obj.ReadOnlyItems.Count > 0)
             {
-                var firstItemEnumerator = obj.ReadOnlyItems.GetEnumerator();
+                using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
                 if (!firstItemEnumerator.MoveNext())
                 {
                     throw new System.InvalidOperationException("Collection must contain at least one item.");

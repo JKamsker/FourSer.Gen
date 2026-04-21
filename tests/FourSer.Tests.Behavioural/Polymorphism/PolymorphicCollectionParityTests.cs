@@ -137,6 +137,11 @@ public class PolymorphicCollectionParityTests
         AssertAnimalSequence(
             [original.Pet],
             [roundTripped.Pet]);
+
+        var streamRoundTripped = RoundTripThroughStream(original, InterfacePetOwner.Serialize, InterfacePetOwner.Deserialize);
+        AssertAnimalSequence(
+            [original.Pet],
+            [streamRoundTripped.Pet]);
     }
 
     [Fact]
@@ -162,6 +167,13 @@ public class PolymorphicCollectionParityTests
         AssertAnimalSequence(original.EnumerableAnimals, roundTripped.EnumerableAnimals);
         AssertAnimalSequence(original.ReadOnlyCollectionAnimals, roundTripped.ReadOnlyCollectionAnimals);
         AssertAnimalSequence(original.ReadOnlyListAnimals, roundTripped.ReadOnlyListAnimals);
+
+        var streamRoundTripped = RoundTripThroughStream(original, InterfaceCollectionPacket.Serialize, InterfaceCollectionPacket.Deserialize);
+        AssertAnimalSequence(original.ListAnimals, streamRoundTripped.ListAnimals);
+        AssertAnimalSequence(original.CollectionAnimals, streamRoundTripped.CollectionAnimals);
+        AssertAnimalSequence(original.EnumerableAnimals, streamRoundTripped.EnumerableAnimals);
+        AssertAnimalSequence(original.ReadOnlyCollectionAnimals, streamRoundTripped.ReadOnlyCollectionAnimals);
+        AssertAnimalSequence(original.ReadOnlyListAnimals, streamRoundTripped.ReadOnlyListAnimals);
     }
 
     [Fact]
@@ -185,6 +197,12 @@ public class PolymorphicCollectionParityTests
         AssertAnimalSequence(original.ArrayAnimals, roundTripped.ArrayAnimals);
         AssertAnimalSequence(original.QueueAnimals, roundTripped.QueueAnimals);
         AssertAnimalSequence(original.StackAnimals, roundTripped.StackAnimals);
+
+        var streamRoundTripped = RoundTripThroughStream(original, ImmutableCollectionPacket.Serialize, ImmutableCollectionPacket.Deserialize);
+        AssertAnimalSequence(original.ListAnimals, streamRoundTripped.ListAnimals);
+        AssertAnimalSequence(original.ArrayAnimals, streamRoundTripped.ArrayAnimals);
+        AssertAnimalSequence(original.QueueAnimals, streamRoundTripped.QueueAnimals);
+        AssertAnimalSequence(original.StackAnimals, streamRoundTripped.StackAnimals);
     }
 
     [Fact]
@@ -200,6 +218,9 @@ public class PolymorphicCollectionParityTests
 
         Assert.Equal(0, buffer[0]);
         Assert.Equal(20, buffer[1]);
+
+        var streamRoundTripped = RoundTripThroughStream(original, DefaultedSingleTypeIdPacket.Serialize, DefaultedSingleTypeIdPacket.Deserialize);
+        AssertAnimalSequence(original.Animals ?? Array.Empty<IAnimal>(), streamRoundTripped.Animals ?? Array.Empty<IAnimal>());
     }
 
     [Fact]
@@ -215,6 +236,9 @@ public class PolymorphicCollectionParityTests
 
         Assert.Equal(0, buffer[0]);
         Assert.Equal(20, buffer[1]);
+
+        var streamRoundTripped = RoundTripThroughStream(original, DefaultedSingleTypeIdPacket.Serialize, DefaultedSingleTypeIdPacket.Deserialize);
+        AssertAnimalSequence(original.Animals ?? Array.Empty<IAnimal>(), streamRoundTripped.Animals ?? Array.Empty<IAnimal>());
     }
 
     [Fact]
@@ -234,6 +258,9 @@ public class PolymorphicCollectionParityTests
 
         var roundTripped = NonDefaultSingleTypeIdPacket.Deserialize(buffer);
         AssertAnimalSequence(animals, roundTripped.Animals);
+
+        var streamRoundTripped = RoundTripThroughStream(original, NonDefaultSingleTypeIdPacket.Serialize, NonDefaultSingleTypeIdPacket.Deserialize);
+        AssertAnimalSequence(animals, streamRoundTripped.Animals);
     }
 
     [Fact]
@@ -251,7 +278,11 @@ public class PolymorphicCollectionParityTests
         var roundTripped = DefaultedTypeIdPropertyPacket.Deserialize(buffer);
 
         Assert.Equal(10, roundTripped.AnimalType);
-        AssertAnimalSequence(animals, roundTripped.Animals);
+        AssertAnimalSequence(animals, roundTripped.Animals ?? Array.Empty<IAnimal>());
+
+        var streamRoundTripped = RoundTripThroughStream(original, DefaultedTypeIdPropertyPacket.Serialize, DefaultedTypeIdPropertyPacket.Deserialize);
+        Assert.Equal(10, streamRoundTripped.AnimalType);
+        AssertAnimalSequence(animals, streamRoundTripped.Animals ?? Array.Empty<IAnimal>());
     }
 
     [Fact]
@@ -267,6 +298,10 @@ public class PolymorphicCollectionParityTests
 
         Assert.Equal(20, buffer[0]);
         Assert.Equal(0, buffer[1]);
+
+        var streamRoundTripped = RoundTripThroughStream(original, DefaultedTypeIdPropertyPacket.Serialize, DefaultedTypeIdPropertyPacket.Deserialize);
+        Assert.Equal(20, streamRoundTripped.AnimalType);
+        AssertAnimalSequence(original.Animals ?? Array.Empty<IAnimal>(), streamRoundTripped.Animals ?? Array.Empty<IAnimal>());
     }
 
     [Fact]
@@ -307,6 +342,14 @@ public class PolymorphicCollectionParityTests
             new DogAnimal { Name = "Rex", BarkPitch = 4 },
             new DogAnimal { Name = "Bolt", BarkPitch = 8 }
         ];
+    }
+
+    private static T RoundTripThroughStream<T>(T original, Action<T, Stream> serialize, Func<Stream, T> deserialize)
+    {
+        using var stream = new MemoryStream();
+        serialize(original, stream);
+        stream.Position = 0;
+        return deserialize(stream);
     }
 
     private static void AssertAnimalSequence(IEnumerable<IAnimal> expected, IEnumerable<IAnimal> actual)

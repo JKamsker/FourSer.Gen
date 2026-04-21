@@ -87,7 +87,7 @@ public partial class Inventory : ISerializable<Inventory>
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for Items: {itemsTypeId}");
         }
-        var items = itemsStaging;
+        var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.IItem>(itemsStaging);
         var obj = new Inventory(items);
         return obj;
     }
@@ -134,7 +134,7 @@ public partial class Inventory : ISerializable<Inventory>
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for Items: {itemsTypeId}");
         }
-        var items = itemsStaging;
+        var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.IItem>(itemsStaging);
         var obj = new Inventory(items);
         return obj;
     }
@@ -152,7 +152,7 @@ public partial class Inventory : ISerializable<Inventory>
         else
         {
             int itemsCount = 0;
-            var itemsEnumerator = obj.Items.GetEnumerator();
+            using var itemsEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.IItem>)obj.Items).GetEnumerator();
             if (!itemsEnumerator.MoveNext())
             {
                 SpanWriter.WriteByte(ref data, (byte)(10));
@@ -227,7 +227,7 @@ public partial class Inventory : ISerializable<Inventory>
         else
         {
             int itemsCount = 0;
-            var itemsEnumerator = obj.Items.GetEnumerator();
+            using var itemsEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.IItem>)obj.Items).GetEnumerator();
             if (!itemsEnumerator.MoveNext())
             {
                 StreamWriter.WriteByte(stream, (byte)(10));
@@ -275,10 +275,10 @@ public partial class Inventory : ISerializable<Inventory>
                         break;
                     }
                 }
-                var endPosition = stream.Position;
+                var itemsEndPosition = stream.Position;
                 stream.Position = itemsCountPosition;
                 StreamWriter.WriteInt32(stream, (int)(itemsCount));
-                stream.Position = endPosition;
+                stream.Position = itemsEndPosition;
             }
         }
     }

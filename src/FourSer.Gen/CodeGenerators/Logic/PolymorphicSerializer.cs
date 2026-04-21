@@ -276,10 +276,9 @@ internal static class PolymorphicSerializer
         sb.WriteLine($"var {listItemsVar} = obj.{member.Name};");
 
         var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
-        var nullableCountExpression = GeneratorUtilities.GetCountExpressionForAccess(member, listItemsVar, true);
         var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, listItemsVar);
 
-        sb.WriteLineFormat("if ({0} == 0)", nullableCountExpression);
+        sb.WriteLineFormat("if ({0} == 0)", countExpression);
         using (sb.BeginBlock())
         {
             EmitNullOrEmptyCollectionHeader(sb, ctx, collectionInfo, info);
@@ -446,8 +445,16 @@ internal static class PolymorphicSerializer
         string countVariableName,
         string enumeratorVariableName)
     {
+        var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName
+            ?? throw new InvalidOperationException("Polymorphic collection members require element type information.");
         sb.WriteLineFormat("int {0} = 0;", countVariableName);
-        sb.WriteLineFormat("var {0} = obj.{1}.GetEnumerator();", enumeratorVariableName, member.Name);
+        sb.WriteLineFormat
+        (
+            "using var {0} = ((global::System.Collections.Generic.IEnumerable<{1}>)obj.{2}).GetEnumerator();",
+            enumeratorVariableName,
+            elementTypeName,
+            member.Name
+        );
     }
 
     private static void EmitPolymorphicCollectionEmptyCase(
@@ -551,10 +558,11 @@ internal static class PolymorphicSerializer
 
         if (!ctx.IsSpan)
         {
-            sb.WriteLine("var endPosition = stream.Position;");
+            var endPositionVariableName = $"{variablePrefix}EndPosition";
+            sb.WriteLineFormat("var {0} = stream.Position;", endPositionVariableName);
             sb.WriteLineFormat("stream.Position = {0};", countPositionVariableName);
             SerializationWriterEmitter.EmitWrite(sb, ctx, countType, countExpr);
-            sb.WriteLine("stream.Position = endPosition;");
+            sb.WriteLineFormat("stream.Position = {0};", endPositionVariableName);
         }
         else
         {

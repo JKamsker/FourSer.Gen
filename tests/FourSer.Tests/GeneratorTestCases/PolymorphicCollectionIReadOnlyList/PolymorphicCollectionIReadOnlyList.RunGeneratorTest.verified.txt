@@ -87,7 +87,7 @@ public partial class Inventory : ISerializable<Inventory>
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for Items: {itemsTypeId}");
         }
-        var items = itemsStaging;
+        var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyList.IItem>(itemsStaging);
         var obj = new Inventory(items);
         return obj;
     }
@@ -134,7 +134,7 @@ public partial class Inventory : ISerializable<Inventory>
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for Items: {itemsTypeId}");
         }
-        var items = itemsStaging;
+        var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyList.IItem>(itemsStaging);
         var obj = new Inventory(items);
         return obj;
     }
@@ -150,7 +150,7 @@ public partial class Inventory : ISerializable<Inventory>
         else
         {
             var collectionItems = obj.Items;
-            if ((collectionItems?.Count ?? 0) == 0)
+            if (collectionItems.Count == 0)
             {
                 SpanWriter.WriteInt32(ref data, (int)(0));
                 SpanWriter.WriteByte(ref data, (byte)(10));
@@ -214,7 +214,7 @@ public partial class Inventory : ISerializable<Inventory>
         else
         {
             var collectionItems = obj.Items;
-            if ((collectionItems?.Count ?? 0) == 0)
+            if (collectionItems.Count == 0)
             {
                 StreamWriter.WriteInt32(stream, (int)(0));
                 StreamWriter.WriteByte(stream, (byte)(10));

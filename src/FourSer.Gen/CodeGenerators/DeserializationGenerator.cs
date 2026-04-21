@@ -513,6 +513,14 @@ public static class DeserializationGenerator
                 {
                     throw new InvalidOperationException("Polymorphic collections require list type information.");
                 }
+                var arrayIndexVariableName = member.CollectionTypeInfo?.IsArray == true
+                    ? $"{memberName}Index"
+                    : null;
+                if (arrayIndexVariableName is not null)
+                {
+                    sb.WriteLineFormat("int {0} = 0;", arrayIndexVariableName);
+                }
+
                 sb.WriteLineFormat("for (int i = 0; i < {0}; i++)", loopLimitVar);
                 using (sb.BeginBlock())
                 {
@@ -547,8 +555,14 @@ public static class DeserializationGenerator
                         source,
                         helper
                     );
-                    var addMethod = member.CollectionTypeInfo.Value.CollectionAddMethod ?? "Add";
-                    sb.WriteLineFormat("{0}.{1}(item);", collectionTargetVariableName, addMethod);
+                    EmitCollectionItemWrite
+                    (
+                        sb,
+                        member,
+                        collectionTargetVariableName,
+                        "item",
+                        arrayIndexVariableName
+                    );
                 }
 
                 if (requiresStagingCollection)
@@ -576,6 +590,14 @@ public static class DeserializationGenerator
                     typeIdVar = (collectionInfo.TypeIdProperty ?? "typeId").ToCamelCase();
                 }
 
+                var arrayIndexVariableName = member.CollectionTypeInfo?.IsArray == true
+                    ? $"{memberName}Index"
+                    : null;
+                if (arrayIndexVariableName is not null)
+                {
+                    sb.WriteLineFormat("int {0} = 0;", arrayIndexVariableName);
+                }
+
                 sb.WriteLineFormat("switch ({0})", typeIdVar);
                 using (sb.BeginBlock())
                 {
@@ -599,7 +621,14 @@ public static class DeserializationGenerator
                             {
                                 sb.WriteLineFormat
                                     ("var item = {0}.Deserialize({1}{2});", TypeHelper.GetGlobalTypeName(option.Type), refOrEmpty, source);
-                                sb.WriteLineFormat("{0}.Add(item);", collectionTargetVariableName);
+                                EmitCollectionItemWrite
+                                (
+                                    sb,
+                                    member,
+                                    collectionTargetVariableName,
+                                    "item",
+                                    arrayIndexVariableName
+                                );
                             }
 
                             sb.WriteLine("break;");
@@ -607,8 +636,9 @@ public static class DeserializationGenerator
                     }
 
                     sb.WriteLine("default:");
-                    sb.WriteLineFormat
-                        ("    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{{1}}}\");", member.Name, typeIdVar!);
+                    var localName = member.Name;
+                    var localTypeId = typeIdVar ?? "null";
+                    sb.WriteLine($"    throw new System.IO.InvalidDataException($\"Unknown type id for {localName}: {{{localTypeId}}}\");");
                 }
 
                 if (requiresStagingCollection)
@@ -1023,5 +1053,28 @@ public static class DeserializationGenerator
                 "{0}.{1}({2}.Deserialize({3}{4}));", collectionTarget, addMethod, TypeHelper.GetGlobalTypeName(elementInfo.ElementTypeName), refOrEmpty, source
             );
         }
+    }
+
+    private static void EmitCollectionItemWrite(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        string collectionTargetVariableName,
+        string itemExpression,
+        string? arrayIndexVariableName,
+        string? addMethod = null)
+    {
+        if (member.CollectionTypeInfo?.IsArray == true)
+        {
+            if (arrayIndexVariableName is null)
+            {
+                throw new InvalidOperationException("Array collection writes require an index variable.");
+            }
+
+            sb.WriteLineFormat("{0}[{1}++] = {2};", collectionTargetVariableName, arrayIndexVariableName, itemExpression);
+            return;
+        }
+
+        var resolvedAddMethod = addMethod ?? member.CollectionTypeInfo?.CollectionAddMethod ?? "Add";
+        sb.WriteLineFormat("{0}.{1}({2});", collectionTargetVariableName, resolvedAddMethod, itemExpression);
     }
 }

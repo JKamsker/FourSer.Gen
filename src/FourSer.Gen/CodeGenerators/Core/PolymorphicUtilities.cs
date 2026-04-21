@@ -55,8 +55,13 @@ public static class PolymorphicUtilities
             return;
         }
 
+        var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName
+            ?? throw new InvalidOperationException("Polymorphic collection members require element type information.");
         var enumeratorVariableName = $"{firstItemVariableName}Enumerator";
-        sb.WriteLine($"var {enumeratorVariableName} = {collectionAccessExpression}.GetEnumerator();");
+        sb.WriteLine
+        (
+            $"using var {enumeratorVariableName} = ((global::System.Collections.Generic.IEnumerable<{elementTypeName}>){collectionAccessExpression}).GetEnumerator();"
+        );
         sb.WriteLine($"if (!{enumeratorVariableName}.MoveNext())");
         using (sb.BeginBlock())
         {

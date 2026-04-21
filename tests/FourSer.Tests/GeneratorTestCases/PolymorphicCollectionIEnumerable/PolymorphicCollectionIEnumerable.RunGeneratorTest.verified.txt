@@ -150,7 +150,7 @@ public partial class Inventory : ISerializable<Inventory>
         else
         {
             int itemsCount = 0;
-            var itemsEnumerator = obj.Items.GetEnumerator();
+            using var itemsEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Item>)obj.Items).GetEnumerator();
             if (!itemsEnumerator.MoveNext())
             {
                 SpanWriter.WriteByte(ref data, (Byte)(10));
@@ -225,7 +225,7 @@ public partial class Inventory : ISerializable<Inventory>
         else
         {
             int itemsCount = 0;
-            var itemsEnumerator = obj.Items.GetEnumerator();
+            using var itemsEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Item>)obj.Items).GetEnumerator();
             if (!itemsEnumerator.MoveNext())
             {
                 StreamWriter.WriteByte(stream, (Byte)(10));
@@ -273,10 +273,10 @@ public partial class Inventory : ISerializable<Inventory>
                         break;
                     }
                 }
-                var endPosition = stream.Position;
+                var itemsEndPosition = stream.Position;
                 stream.Position = itemsCountPosition;
                 StreamWriter.WriteInt32(stream, (int)(itemsCount));
-                stream.Position = endPosition;
+                stream.Position = itemsEndPosition;
             }
         }
     }

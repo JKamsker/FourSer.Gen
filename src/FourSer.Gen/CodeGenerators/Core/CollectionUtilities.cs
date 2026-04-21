@@ -109,6 +109,24 @@ public static class CollectionUtilities
             return $"{finalTargetExpression} = {stagingVariableName}.ToArray();";
         }
 
+        if (member.CollectionTypeInfo?.ConcreteTypeName is { } concreteTypeName)
+        {
+            var constructorArgument = concreteTypeName switch
+            {
+                "System.Collections.Generic.Stack" => $"global::System.Linq.Enumerable.Reverse({stagingVariableName})",
+                _ => stagingVariableName
+            };
+
+            var constructedCollectionExpression = concreteTypeName switch
+            {
+                "System.Collections.ObjectModel.Collection" => $"new {concreteTypeName}<{elementTypeName}>({stagingVariableName})",
+                "System.Collections.ObjectModel.ObservableCollection" => $"new {concreteTypeName}<{elementTypeName}>({stagingVariableName})",
+                _ => $"new {concreteTypeName}<{elementTypeName}>({constructorArgument})"
+            };
+
+            return $"{finalTargetExpression} = {constructedCollectionExpression};";
+        }
+
         return $"{finalTargetExpression} = {stagingVariableName};";
     }
 }

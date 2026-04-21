@@ -423,16 +423,100 @@ internal static class CollectionSerializer
 
         if (!ctx.IsSpan)
         {
-            sb.WriteLine("var endPosition = stream.Position;");
+            var endPositionVariableName = $"{variablePrefix}EndPosition";
+            sb.WriteLineFormat("var {0} = stream.Position;", endPositionVariableName);
             sb.WriteLineFormat("stream.Position = {0};", countPositionVariableName);
             SerializationWriterEmitter.EmitWrite(sb, ctx, countType, countExpr);
-            sb.WriteLine("stream.Position = endPosition;");
+            sb.WriteLineFormat("stream.Position = {0};", endPositionVariableName);
         }
         else
         {
             var countCtx = ctx with { Target = countSpanVariableName };
             SerializationWriterEmitter.EmitWrite(sb, countCtx, countType, countExpr);
         }
+    }
+
+    private static bool TryEmitPureEnumerableByteCollection(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        SerializationWriterEmitter.WriterCtx ctx,
+        CollectionInfo collectionInfo)
+    {
+        if (member.CollectionTypeInfo?.IsPureEnumerable != true || GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+        {
+            return false;
+        }
+
+        var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
+        if (!TypeHelper.IsByteCollection(elementTypeName))
+        {
+            return false;
+        }
+
+        var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+        var memberAccess = $"obj.{member.Name}";
+        var collectionVariableName = $"{member.Name.ToCamelCase()}Collection";
+        var readOnlyCollectionVariableName = $"{member.Name.ToCamelCase()}ReadOnlyCollection";
+        var sequenceVariableName = $"{member.Name.ToCamelCase()}Sequence";
+
+        void EmitCountAndBody(string collectionExpression, string countExpression)
+        {
+            SerializationWriterEmitter.EmitWrite(sb, ctx, countType, countExpression);
+            EmitForeach(sb, collectionExpression, (innerBuilder, itemVariableName) =>
+            {
+                GenerateCollectionElementSerialization
+                (
+                    innerBuilder,
+                    member,
+                    member.CollectionTypeInfo!.Value,
+                    itemVariableName,
+                    ctx
+                );
+            });
+        }
+
+        void EmitCountedSequenceBody()
+        {
+            sb.WriteLineFormat("if ({0} is System.Collections.Generic.ICollection<byte> {1})", memberAccess, collectionVariableName);
+            using (sb.BeginBlock())
+            {
+                EmitCountAndBody(collectionVariableName, $"{collectionVariableName}.Count");
+            }
+
+            sb.WriteLineFormat("else if ({0} is System.Collections.Generic.IReadOnlyCollection<byte> {1})", memberAccess, readOnlyCollectionVariableName);
+            using (sb.BeginBlock())
+            {
+                EmitCountAndBody(readOnlyCollectionVariableName, $"{readOnlyCollectionVariableName}.Count");
+            }
+
+            sb.WriteLine("else");
+            using (sb.BeginBlock())
+            {
+                sb.WriteLineFormat("var {0} = global::System.Linq.Enumerable.ToArray({1});", sequenceVariableName, memberAccess);
+                EmitCountAndBody(sequenceVariableName, $"{sequenceVariableName}.Length");
+            }
+        }
+
+        if (member.CollectionTypeInfo?.CanBeNull == true)
+        {
+            sb.WriteLineFormat("if ({0} is null)", memberAccess);
+            using (sb.BeginBlock())
+            {
+                SerializationWriterEmitter.EmitWrite(sb, ctx, countType, "0");
+            }
+
+            sb.WriteLine("else");
+            using (sb.BeginBlock())
+            {
+                EmitCountedSequenceBody();
+            }
+        }
+        else
+        {
+            EmitCountedSequenceBody();
+        }
+
+        return true;
     }
 
     private static void GenerateEnumerableCollection
@@ -633,6 +717,11 @@ internal static class CollectionSerializer
 
         var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
         var isByteCollection = TypeHelper.IsByteCollection(elementTypeName);
+
+        if (TryEmitPureEnumerableByteCollection(sb, member, ctx, collectionInfo))
+        {
+            return;
+        }
 
         if (member.CollectionTypeInfo?.IsPureEnumerable == true && !GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {

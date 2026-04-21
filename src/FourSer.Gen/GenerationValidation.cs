@@ -37,9 +37,20 @@ internal static class GenerationValidation
                     return true;
                 }
 
-                if (member.CustomSerializer is not null || member.MemoryOwnerTypeInfo is not { } memoryOwnerTypeInfo)
+                if (member.CustomSerializer is not null)
                 {
                     continue;
+                }
+
+                if (member.MemoryOwnerTypeInfo is not { } memoryOwnerTypeInfo)
+                {
+                    ReportConfigurationError(
+                        context,
+                        configurationErrorRule,
+                        member,
+                        typeName,
+                        $"IMemoryOwner<T> member '{member.Name}' is missing element type information. Use a supported IMemoryOwner<T> type or apply [Serializer(...)] to the member.");
+                    return true;
                 }
 
                 if (memoryOwnerTypeInfo.IsElementUnmanagedType
