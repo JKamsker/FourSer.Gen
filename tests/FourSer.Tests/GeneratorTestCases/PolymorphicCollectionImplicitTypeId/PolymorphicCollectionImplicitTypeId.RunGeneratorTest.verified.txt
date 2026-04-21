@@ -22,6 +22,7 @@ public partial class Inventory : ISerializable<Inventory>
     {
         if (obj is null) return 0;
         var size = 0;
+        _ = checked((int)((obj.Items?.Count ?? 0)));
         size += sizeof(int); // Count size for Items
         size += sizeof(byte); // Size for polymorphic type id
         if (obj.Items is not null)
@@ -47,7 +48,6 @@ public partial class Inventory : ISerializable<Inventory>
 
     public Inventory()
     {
-        this.Items = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Item>();
     }
 
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)

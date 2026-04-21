@@ -452,7 +452,7 @@ public class GeneratorTests
     }
 
     [Fact]
-    public void CollectionMembers_ShouldUseEmptyInitializationInParameterlessConstructor()
+    public void ParameterlessConstructor_ShouldPreserveSourceInitializers()
     {
         const string source = """
         using System.Collections.Generic;
@@ -475,11 +475,14 @@ public class GeneratorTests
         """;
 
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "ImmutableArrayPacket");
+        const string constructorSignature = "public ImmutableArrayPacket()";
+        var constructorStart = generatedCode.IndexOf(constructorSignature, StringComparison.Ordinal);
+        var deserializeStart = generatedCode.IndexOf("public static ImmutableArrayPacket Deserialize", StringComparison.Ordinal);
+        var constructorBody = generatedCode.Substring(constructorStart, deserializeStart - constructorStart);
 
-        Assert.Contains("this.Items = new System.Collections.Generic.List<int>();", generatedCode);
-        Assert.Contains("this.Numbers = global::System.Array.Empty<int>();", generatedCode);
-        Assert.Contains("this.Values = System.Collections.Immutable.ImmutableArray<int>.Empty;", generatedCode);
-        Assert.DoesNotContain("this.Values = default;", generatedCode);
+        Assert.DoesNotContain("this.Items =", constructorBody);
+        Assert.DoesNotContain("this.Numbers =", constructorBody);
+        Assert.DoesNotContain("this.Values =", constructorBody);
     }
 
     [Fact]

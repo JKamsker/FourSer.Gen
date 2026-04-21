@@ -22,11 +22,16 @@ public partial class UIntCountTest : ISerializable<UIntCountTest>
     {
         if (obj is null) return 0;
         var size = 0;
+        _ = checked((uint)((obj.Cats?.Count ?? 0)));
         size += sizeof(uint); // Count size for Cats
         if (obj.Cats is not null)
         {
             foreach(var item in obj.Cats)
             {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
                 size += global::FourSer.Tests.GeneratorTestCases.CollectionUIntCount.Cat.GetPacketSize(item);
             }
         }
@@ -40,14 +45,13 @@ public partial class UIntCountTest : ISerializable<UIntCountTest>
 
     public UIntCountTest()
     {
-        this.Cats = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.CollectionUIntCount.Cat>();
     }
 
     public static UIntCountTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         var catsCount = SpanReader.ReadUInt32(ref buffer);
-        var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionUIntCount.Cat>((int)catsCount);
-        for (int i = 0; i < (int)catsCount; i++)
+        var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionUIntCount.Cat>(checked((int)catsCount));
+        for (int i = 0; i < checked((int)catsCount); i++)
         {
             cats.Add(global::FourSer.Tests.GeneratorTestCases.CollectionUIntCount.Cat.Deserialize(ref buffer));
         }
@@ -63,8 +67,8 @@ public partial class UIntCountTest : ISerializable<UIntCountTest>
     public static UIntCountTest Deserialize(System.IO.Stream stream)
     {
         var catsCount = StreamReader.ReadUInt32(stream);
-        var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionUIntCount.Cat>((int)catsCount);
-        for (int i = 0; i < (int)catsCount; i++)
+        var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionUIntCount.Cat>(checked((int)catsCount));
+        for (int i = 0; i < checked((int)catsCount); i++)
         {
             cats.Add(global::FourSer.Tests.GeneratorTestCases.CollectionUIntCount.Cat.Deserialize(stream));
         }
@@ -81,9 +85,20 @@ public partial class UIntCountTest : ISerializable<UIntCountTest>
         }
         else
         {
+            for (int i = 0; i < obj.Cats.Count; i++)
+            {
+                if (obj.Cats[i] is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
+            }
             SpanWriter.WriteUInt32(ref data, checked((uint)(obj.Cats.Count)));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
+                if (obj.Cats[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member \"obj.Cats[i]\" cannot be null.");
+                }
                 global::FourSer.Tests.GeneratorTestCases.CollectionUIntCount.Cat.Serialize(obj.Cats[i], ref data);
             }
         }
@@ -103,9 +118,20 @@ public partial class UIntCountTest : ISerializable<UIntCountTest>
         }
         else
         {
+            for (int i = 0; i < obj.Cats.Count; i++)
+            {
+                if (obj.Cats[i] is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
+            }
             StreamWriter.WriteUInt32(stream, checked((uint)(obj.Cats.Count)));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
+                if (obj.Cats[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member \"obj.Cats[i]\" cannot be null.");
+                }
                 global::FourSer.Tests.GeneratorTestCases.CollectionUIntCount.Cat.Serialize(obj.Cats[i], stream);
             }
         }
@@ -150,8 +176,6 @@ public partial class Cat : ISerializable<Cat>
 
     public Cat()
     {
-        this.Id = default;
-        this.Name = default;
     }
 
     public static Cat Deserialize(ref System.ReadOnlySpan<byte> buffer)

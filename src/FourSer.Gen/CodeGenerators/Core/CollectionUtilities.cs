@@ -138,42 +138,4 @@ public static class CollectionUtilities
 
         return $"{finalTargetExpression} = {stagingVariableName};";
     }
-
-    public static string? GenerateEmptyCollectionExpression(MemberToGenerate member)
-    {
-        var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
-        if (string.IsNullOrEmpty(elementTypeName))
-        {
-            return null;
-        }
-
-        var globalElementTypeName = TypeHelper.GetGlobalTypeName(elementTypeName);
-
-        if (member.CollectionTypeInfo?.RangeFactoryTypeName is { } rangeFactoryTypeName)
-        {
-            return $"{rangeFactoryTypeName}<{globalElementTypeName}>.Empty";
-        }
-
-        if (member.CollectionTypeInfo?.IsArray == true)
-        {
-            return $"global::System.Array.Empty<{globalElementTypeName}>()";
-        }
-
-        if (member.IsList || member.CollectionTypeInfo?.IsGenericList == true)
-        {
-            return $"new System.Collections.Generic.List<{globalElementTypeName}>()";
-        }
-
-        if (member.CollectionTypeInfo?.ConcreteTypeName is { } concreteTypeName)
-        {
-            return $"new {concreteTypeName}<{globalElementTypeName}>()";
-        }
-
-        if (member.CollectionTypeInfo is not null)
-        {
-            return $"new System.Collections.Generic.List<{globalElementTypeName}>()";
-        }
-
-        return null;
-    }
 }

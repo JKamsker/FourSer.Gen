@@ -49,6 +49,8 @@ internal static class CollectionSerializer
         var isHandledByPolymorphic = collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId &&
             string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
 
+        EmitNullSerializedElementValidation(sb, member);
+
         if (collectionInfo.CountSize >= 0)
         {
             var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}");
@@ -220,6 +222,51 @@ internal static class CollectionSerializer
         }
     }
 
+    private static void EmitNullSerializedElementValidation(IndentedStringBuilder sb, MemberToGenerate member)
+    {
+        if (member.CustomSerializer is not null
+            || GeneratorUtilities.ShouldUsePolymorphicSerialization(member)
+            || member.CollectionTypeInfo?.IsPureEnumerable == true)
+        {
+            return;
+        }
+
+        var hasGeneratedSerializerElements =
+            member.ListTypeArgument is { HasGenerateSerializerAttribute: true, IsValueType: false, IsUnmanagedType: false, IsStringType: false }
+            || member.CollectionTypeInfo is
+            {
+                HasElementGenerateSerializerAttribute: true,
+                IsElementValueType: false,
+                IsElementUnmanagedType: false,
+                IsElementStringType: false
+            };
+
+        if (!hasGeneratedSerializerElements)
+        {
+            return;
+        }
+
+        if (member.CollectionTypeInfo?.SupportsIndexing == true || member.IsList)
+        {
+            var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}");
+            EmitForLoop(sb, countExpression, (s, indexVar) =>
+            {
+                s.WriteLineFormat("if (obj.{0}[{1}] is null)", member.Name, indexVar);
+                using var _ = s.BeginBlock();
+                s.WriteLine("throw new System.NullReferenceException(\"Collection item cannot be null.\");");
+            });
+
+            return;
+        }
+
+        EmitForeach(sb, $"obj.{member.Name}", (s, itemVar) =>
+        {
+            s.WriteLineFormat("if ({0} is null)", itemVar);
+            using var _ = s.BeginBlock();
+            s.WriteLine("throw new System.NullReferenceException(\"Collection item cannot be null.\");");
+        });
+    }
+
     private static void HandleNullCollection
     (
         IndentedStringBuilder sb,
@@ -306,19 +353,27 @@ internal static class CollectionSerializer
         string elementAccess,
         SerializationWriterEmitter.WriterCtx ctx,
         string typeName,
+        bool isValueType,
         bool hasGenerateSerializerAttribute,
         bool isUnmanagedType,
         bool isStringType)
     {
         if (hasGenerateSerializerAttribute)
         {
-            if (ctx.IsSpan)
+            if (isValueType)
             {
-                sb.WriteLineFormat("{0}.Serialize({1}, ref {2});", TypeHelper.GetGlobalTypeName(typeName), elementAccess, ctx.Target);
+                if (ctx.IsSpan)
+                {
+                    sb.WriteLineFormat("{0}.Serialize({1}, ref {2});", TypeHelper.GetGlobalTypeName(typeName), elementAccess, ctx.Target);
+                }
+                else
+                {
+                    sb.WriteLineFormat("{0}.Serialize({1}, {2});", TypeHelper.GetGlobalTypeName(typeName), elementAccess, ctx.Target);
+                }
             }
             else
             {
-                sb.WriteLineFormat("{0}.Serialize({1}, {2});", TypeHelper.GetGlobalTypeName(typeName), elementAccess, ctx.Target);
+                SerializationWriterEmitter.EmitSerializeNestedOrThrow(sb, ctx, typeName, elementAccess);
             }
         }
         else if (isUnmanagedType)
@@ -351,6 +406,7 @@ internal static class CollectionSerializer
             elementAccess,
             ctx,
             elementInfo.TypeName,
+            elementInfo.IsValueType,
             elementInfo.HasGenerateSerializerAttribute,
             elementInfo.IsUnmanagedType,
             elementInfo.IsStringType
@@ -377,6 +433,7 @@ internal static class CollectionSerializer
             elementAccess,
             ctx,
             elementInfo.ElementTypeName,
+            elementInfo.IsElementValueType,
             elementInfo.HasElementGenerateSerializerAttribute,
             elementInfo.IsElementUnmanagedType,
             elementInfo.IsElementStringType

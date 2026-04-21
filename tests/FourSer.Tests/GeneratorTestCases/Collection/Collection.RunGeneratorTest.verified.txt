@@ -22,6 +22,7 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
     {
         if (obj is null) return 0;
         var size = 0;
+        _ = checked((int)((obj.Numbers?.Count ?? 0)));
         size += sizeof(int); // Count size for Numbers
         size += (obj.Numbers?.Count ?? 0) * sizeof(int);
         return size;
@@ -34,7 +35,6 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
 
     public CollectionPacket()
     {
-        this.Numbers = new System.Collections.Generic.List<int>();
     }
 
     public static CollectionPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)

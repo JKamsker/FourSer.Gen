@@ -22,11 +22,16 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
     {
         if (obj is null) return 0;
         var size = 0;
+        _ = checked((int)((obj.Dogs?.Count ?? 0)));
         size += sizeof(int); // Count size for Dogs
         if (obj.Dogs is not null)
         {
             foreach(var item in obj.Dogs)
             {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
                 size += global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.GetPacketSize(item);
             }
         }
@@ -40,7 +45,6 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
 
     public ConcreteInheritanceTest()
     {
-        this.Dogs = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>();
     }
 
     public static ConcreteInheritanceTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -81,9 +85,20 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
         }
         else
         {
+            for (int i = 0; i < obj.Dogs.Count; i++)
+            {
+                if (obj.Dogs[i] is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
+            }
             SpanWriter.WriteInt32(ref data, checked((int)(obj.Dogs.Count)));
             for (int i = 0; i < obj.Dogs.Count; i++)
             {
+                if (obj.Dogs[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member \"obj.Dogs[i]\" cannot be null.");
+                }
                 global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.Serialize(obj.Dogs[i], ref data);
             }
         }
@@ -103,9 +118,20 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
         }
         else
         {
+            for (int i = 0; i < obj.Dogs.Count; i++)
+            {
+                if (obj.Dogs[i] is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
+            }
             StreamWriter.WriteInt32(stream, checked((int)(obj.Dogs.Count)));
             for (int i = 0; i < obj.Dogs.Count; i++)
             {
+                if (obj.Dogs[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member \"obj.Dogs[i]\" cannot be null.");
+                }
                 global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.Serialize(obj.Dogs[i], stream);
             }
         }
@@ -152,9 +178,6 @@ public partial class Dog : ISerializable<Dog>
 
     public Dog()
     {
-        this.Name = default;
-        this.Age = default;
-        this.Breed = default;
     }
 
     public static new Dog Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -240,8 +263,6 @@ public partial class Pet : ISerializable<Pet>
 
     public Pet()
     {
-        this.Name = default;
-        this.Age = default;
     }
 
     public static Pet Deserialize(ref System.ReadOnlySpan<byte> buffer)

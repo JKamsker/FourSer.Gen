@@ -22,6 +22,7 @@ public partial class MyPacket : ISerializable<MyPacket>
     {
         if (obj is null) return 0;
         var size = 0;
+        _ = checked((int)((obj.Data?.Count ?? 0)));
         size += sizeof(int); // Count size for Data
         size += (obj.Data?.Count ?? 0) * sizeof(byte);
         return size;
@@ -34,7 +35,6 @@ public partial class MyPacket : ISerializable<MyPacket>
 
     public MyPacket()
     {
-        this.Data = new System.Collections.Generic.List<byte>();
     }
 
     public static MyPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)

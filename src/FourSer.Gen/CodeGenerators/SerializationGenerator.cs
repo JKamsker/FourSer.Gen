@@ -386,39 +386,57 @@ public static class SerializationGenerator
             using (sb.BeginBlock())
             {
                 sb.WriteLineFormat("var discriminator = {0} ? {1} : {2};", hasExplicitTypeIdExpression, propertyAccess, defaultKey);
+                sb.WriteLine("switch (discriminator)");
+                using (sb.BeginBlock())
+                {
+                    foreach (var option in info.Options)
+                    {
+                        var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+                        sb.WriteLineFormat("case {0}:", key);
+                        sb.WriteLine("    break;");
+                    }
+
+                    sb.WriteLine("default:");
+                    sb.WriteLineFormat("    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{discriminator}}\");", collectionName);
+                }
                 SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, "discriminator");
             }
 
             sb.WriteLine("else");
             using (sb.BeginBlock())
             {
+                PolymorphicUtilities.EmitFirstCollectionItemAccess(sb, referencedMember, $"obj.{collectionName}", "firstItem");
+                sb.WriteLineFormat("{0} inferredDiscriminator = firstItem switch", comparerTypeName);
+                sb.WriteLine("{");
+                sb.Indent();
+                foreach (var option in info.Options)
+                {
+                    var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+                    sb.WriteLineFormat("{0} => {1},", TypeHelper.GetGlobalTypeName(option.Type), key);
+                }
+
+                sb.WriteLine
+                (
+                    $"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")"
+                );
+                sb.Unindent();
+                sb.WriteLine("};");
+
                 sb.WriteLineFormat("if ({0})", hasExplicitTypeIdExpression);
                 using (sb.BeginBlock())
                 {
+                    sb.WriteLineFormat("if (!global::System.Collections.Generic.EqualityComparer<{0}>.Default.Equals({1}, inferredDiscriminator))", comparerTypeName, propertyAccess);
+                    using (sb.BeginBlock())
+                    {
+                        sb.WriteLineFormat("throw new System.IO.InvalidDataException($\"Type id property {0} does not match the item type in {1}.\");", member.Name, collectionName);
+                    }
                     SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, propertyAccess);
                 }
 
                 sb.WriteLine("else");
                 using (sb.BeginBlock())
                 {
-                    PolymorphicUtilities.EmitFirstCollectionItemAccess(sb, referencedMember, $"obj.{collectionName}", "firstItem");
-                    sb.WriteLine("var discriminator = firstItem switch");
-                    sb.WriteLine("{");
-                    sb.Indent();
-                    foreach (var option in info.Options)
-                    {
-                        var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                        sb.WriteLineFormat("{0} => {1},", TypeHelper.GetGlobalTypeName(option.Type), key);
-                    }
-
-                    sb.WriteLine
-                    (
-                        $"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")"
-                    );
-                    sb.Unindent();
-                    sb.WriteLine("};");
-
-                    SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, "discriminator");
+                    SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, "inferredDiscriminator");
                 }
             }
         }

@@ -334,25 +334,6 @@ public class SerializerGenerator : IIncrementalGenerator
 
         sb.WriteLineFormat("public {0}()", typeToGenerate.Name);
         using var _ = sb.BeginBlock();
-        foreach (var member in typeToGenerate.Members)
-        {
-            if (member.IsReadOnly)
-            {
-                continue;
-            }
-
-            sb.WriteLineFormat("this.{0} = {1};", member.Name, GetParameterlessInitializationExpression(member));
-        }
-    }
-
-    private static string GetParameterlessInitializationExpression(MemberToGenerate member)
-    {
-        if (CodeGenerators.Core.CollectionUtilities.GenerateEmptyCollectionExpression(member) is { } emptyCollectionExpression)
-        {
-            return emptyCollectionExpression;
-        }
-
-        return "default";
     }
 
     private static void AddHelpers(IncrementalGeneratorPostInitializationContext context)

@@ -37,9 +37,6 @@ public partial class PacketWithPropertySerializer : ISerializable<PacketWithProp
 
     public PacketWithPropertySerializer()
     {
-        this.Id = default;
-        this.Name = default;
-        this.Description = default;
     }
 
     public static PacketWithPropertySerializer Deserialize(ref System.ReadOnlySpan<byte> buffer)

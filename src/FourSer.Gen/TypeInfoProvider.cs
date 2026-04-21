@@ -951,6 +951,7 @@ internal static class TypeInfoProvider
             listTypeArgumentInfo = new ListTypeArgumentInfo
             (
                 cti.ElementTypeName,
+                cti.IsElementValueType,
                 cti.IsElementUnmanagedType,
                 cti.IsElementStringType,
                 cti.HasElementGenerateSerializerAttribute
@@ -1143,6 +1144,7 @@ internal static class TypeInfoProvider
             return (true, new CollectionTypeInfo
             (
                 ElementTypeName: elementType.ToDisplayString(s_typeNameFormat),
+                IsElementValueType: elementType.IsValueType,
                 IsElementUnmanagedType: elementType.IsUnmanagedType,
                 IsElementStringType: elementType.SpecialType == SpecialType.System_String,
                 HasElementGenerateSerializerAttribute: arrayElementHasGenerateSerializerAttribute,
@@ -1195,6 +1197,7 @@ internal static class TypeInfoProvider
         return (true, new CollectionTypeInfo
         (
             ElementTypeName: genericElementType.ToDisplayString(s_typeNameFormat),
+            IsElementValueType: genericElementType.IsValueType,
             IsElementUnmanagedType: genericElementType.IsUnmanagedType,
             IsElementStringType: genericElementType.SpecialType == SpecialType.System_String,
             HasElementGenerateSerializerAttribute: hasGenerateSerializerAttribute,

@@ -33,7 +33,6 @@ public partial class Packet : ISerializable<Packet>
 
     public Packet()
     {
-        this.Name = default;
     }
 
     public static Packet Deserialize(ref System.ReadOnlySpan<byte> buffer)

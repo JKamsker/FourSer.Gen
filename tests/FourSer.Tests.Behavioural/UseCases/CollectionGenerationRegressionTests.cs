@@ -30,8 +30,9 @@ public class CollectionGenerationRegressionTests
             Values = Enumerable.Range(0, byte.MaxValue + 1).ToList()
         };
 
-        var buffer = new byte[ByteCountPacket.GetPacketSize(original)];
+        Assert.Throws<OverflowException>(() => ByteCountPacket.GetPacketSize(original));
 
+        var buffer = new byte[byte.MaxValue * sizeof(int) + sizeof(byte)];
         Assert.Throws<OverflowException>(() => ByteCountPacket.Serialize(original, buffer));
 
         using var stream = new MemoryStream();

@@ -22,11 +22,16 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
     {
         if (obj is null) return 0;
         var size = 0;
+        _ = checked((int)((obj.MyList?.Count() ?? 0)));
         size += sizeof(int); // Size for unmanaged type Count
         if (obj.MyList is not null)
         {
             foreach(var item in obj.MyList)
             {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
                 size += global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.GetPacketSize(item);
             }
         }
@@ -41,8 +46,6 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
 
     public EnumerableOfReferenceTypes()
     {
-        this.Count = default;
-        this.MyList = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity>();
     }
 
     public static EnumerableOfReferenceTypes Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -84,6 +87,10 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         {
             foreach (var item in obj.MyList)
             {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
                 global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.Serialize(item, ref data);
                 myListCount++;
             }
@@ -110,6 +117,10 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         {
             foreach (var item in obj.MyList)
             {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
                 global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.Serialize(item, stream);
                 myListCount++;
             }
@@ -159,8 +170,6 @@ public partial class Entity : ISerializable<Entity>
 
     public Entity()
     {
-        this.Id = default;
-        this.Name = default;
     }
 
     public static Entity Deserialize(ref System.ReadOnlySpan<byte> buffer)

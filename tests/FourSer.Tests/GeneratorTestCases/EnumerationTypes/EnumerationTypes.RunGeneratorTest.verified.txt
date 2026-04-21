@@ -22,42 +22,58 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
     {
         if (obj is null) return 0;
         var size = 0;
+        _ = checked((int)((obj.Numbers?.Count ?? 0)));
         size += sizeof(int); // Count size for Numbers
         size += (obj.Numbers?.Count ?? 0) * sizeof(int);
+        _ = checked((int)((obj.Names?.Count ?? 0)));
         size += sizeof(int); // Count size for Names
         if (obj.Names is not null)
         {
             foreach(var item in obj.Names) { size += StringEx.MeasureSize(item); }
         }
+        _ = checked((int)((obj.Data?.Count() ?? 0)));
         size += sizeof(int); // Count size for Data
         size += (obj.Data?.Count() ?? 0) * sizeof(byte);
+        _ = checked((int)((obj.Data1?.Count ?? 0)));
         size += sizeof(int); // Count size for Data1
         size += (obj.Data1?.Count ?? 0) * sizeof(byte);
+        _ = checked((int)((obj.Values?.Count ?? 0)));
         size += sizeof(int); // Count size for Values
         size += (obj.Values?.Count ?? 0) * sizeof(float);
+        _ = checked((int)((obj.UniqueIds?.Count ?? 0)));
         size += sizeof(int); // Count size for UniqueIds
         size += (obj.UniqueIds?.Count ?? 0) * sizeof(long);
+        _ = checked((int)((obj.ProcessingQueue?.Count ?? 0)));
         size += sizeof(int); // Count size for ProcessingQueue
         size += (obj.ProcessingQueue?.Count ?? 0) * sizeof(ushort);
+        _ = checked((int)((obj.ProcessingStack?.Count ?? 0)));
         size += sizeof(int); // Count size for ProcessingStack
         size += (obj.ProcessingStack?.Count ?? 0) * sizeof(uint);
+        _ = checked((int)((obj.ArrayData?.Length ?? 0)));
         size += sizeof(int); // Count size for ArrayData
         size += (obj.ArrayData?.Length ?? 0) * sizeof(int);
+        _ = checked((int)((obj.Measurements?.Count ?? 0)));
         size += sizeof(int); // Count size for Measurements
         size += (obj.Measurements?.Count ?? 0) * sizeof(double);
+        _ = checked((int)((obj.Flags?.Count ?? 0)));
         size += sizeof(int); // Count size for Flags
         size += (obj.Flags?.Count ?? 0) * sizeof(bool);
+        _ = checked((int)((obj.ObservableData?.Count ?? 0)));
         size += sizeof(int); // Count size for ObservableData
         size += (obj.ObservableData?.Count ?? 0) * sizeof(short);
+        _ = checked((int)((obj.Characters?.Count ?? 0)));
         size += sizeof(int); // Count size for Characters
         size += (obj.Characters?.Count ?? 0) * sizeof(ushort);
+        _ = checked((int)((obj.SortedValues?.Count ?? 0)));
         size += sizeof(int); // Count size for SortedValues
         size += (obj.SortedValues?.Count ?? 0) * sizeof(long);
+        _ = checked((byte)((obj.SmallSet?.Count ?? 0)));
         size += sizeof(byte); // Count size for SmallSet
         if (obj.SmallSet is not null)
         {
             foreach(var item in obj.SmallSet) { size += StringEx.MeasureSize(item); }
         }
+        _ = checked((ushort)((obj.MediumQueue?.Count ?? 0)));
         size += sizeof(ushort); // Count size for MediumQueue
         size += (obj.MediumQueue?.Count ?? 0) * sizeof(int);
         size += (obj.LargeBag?.Count ?? 0) * sizeof(long);
@@ -87,23 +103,6 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
 
     public EnumerationTypesPacket()
     {
-        this.Numbers = new System.Collections.Generic.List<int>();
-        this.Names = new System.Collections.Generic.List<string>();
-        this.Data = new System.Collections.Generic.List<byte>();
-        this.Data1 = new System.Collections.Generic.List<byte>();
-        this.Values = new System.Collections.Concurrent.ConcurrentBag<float>();
-        this.UniqueIds = new System.Collections.Generic.HashSet<long>();
-        this.ProcessingQueue = new System.Collections.Generic.Queue<ushort>();
-        this.ProcessingStack = new System.Collections.Generic.Stack<uint>();
-        this.ArrayData = global::System.Array.Empty<int>();
-        this.Measurements = new System.Collections.Generic.List<double>();
-        this.Flags = new System.Collections.ObjectModel.Collection<bool>();
-        this.ObservableData = new System.Collections.ObjectModel.ObservableCollection<short>();
-        this.Characters = new System.Collections.Generic.LinkedList<ushort>();
-        this.SortedValues = new System.Collections.Generic.SortedSet<long>();
-        this.SmallSet = new System.Collections.Generic.HashSet<string>();
-        this.MediumQueue = new System.Collections.Generic.Queue<int>();
-        this.LargeBag = new System.Collections.Concurrent.ConcurrentBag<long>();
     }
 
     public static EnumerationTypesPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)

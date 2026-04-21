@@ -135,12 +135,14 @@ public readonly record struct DefaultSerializerInfo(string TargetTypeName, strin
 ///     A model describing the type argument of a List&lt;T&gt;.
 /// </summary>
 /// <param name="TypeName">The name of the type argument.</param>
+/// <param name="IsValueType">Whether the type argument is a value type.</param>
 /// <param name="IsUnmanagedType">Whether the type is unmanaged.</param>
 /// <param name="IsStringType">Whether the type is a string.</param>
 /// <param name="HasGenerateSerializerAttribute">Whether the type has the [GenerateSerializer] attribute.</param>
 public readonly record struct ListTypeArgumentInfo
 (
     string TypeName,
+    bool IsValueType,
     bool IsUnmanagedType,
     bool IsStringType,
     bool HasGenerateSerializerAttribute
@@ -150,6 +152,7 @@ public readonly record struct ListTypeArgumentInfo
 ///     A model describing information about a collection type.
 /// </summary>
 /// <param name="ElementTypeName">The name of the element type.</param>
+/// <param name="IsElementValueType">Whether the element type is a value type.</param>
 /// <param name="IsElementUnmanagedType">Whether the element type is unmanaged.</param>
 /// <param name="IsElementStringType">Whether the element type is a string.</param>
 /// <param name="HasElementGenerateSerializerAttribute">Whether the element type has the [GenerateSerializer] attribute.</param>
@@ -172,6 +175,7 @@ public readonly record struct ListTypeArgumentInfo
 public readonly record struct CollectionTypeInfo
 (
     string ElementTypeName,
+    bool IsElementValueType,
     bool IsElementUnmanagedType,
     bool IsElementStringType,
     bool HasElementGenerateSerializerAttribute,

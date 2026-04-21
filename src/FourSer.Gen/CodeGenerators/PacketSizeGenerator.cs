@@ -32,6 +32,15 @@ public static class PacketSizeGenerator
 
     private static void GenerateMemberSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member, TypeToGenerate type)
     {
+        if (member.IsCountSizeReferenceFor is { } countRefIndex)
+        {
+            var referencedMember = type.Members[countRefIndex];
+            var countExpression = referencedMember.IsMemoryOwner
+                ? $"(obj.{referencedMember.Name}?.Memory.Length ?? 0)"
+                : GeneratorUtilities.GetCountExpressionForAccess(referencedMember, $"obj.{referencedMember.Name}", true);
+            EmitCheckedCountValidation(sb, member.TypeName, countExpression);
+        }
+
         var resolvedSerializer = GeneratorUtilities.ResolveSerializer(member, type);
         if (resolvedSerializer is { } serializer)
         {
@@ -77,6 +86,7 @@ public static class PacketSizeGenerator
 
     private readonly record struct ElementInfo(
         string TypeName,
+        bool IsValueType,
         bool IsUnmanaged,
         bool IsString,
         bool HasSerializer);
@@ -88,6 +98,7 @@ public static class PacketSizeGenerator
             return new ElementInfo
             (
                 listArg.TypeName,
+                listArg.IsValueType,
                 listArg.IsUnmanagedType,
                 listArg.IsStringType,
                 listArg.HasGenerateSerializerAttribute
@@ -99,6 +110,7 @@ public static class PacketSizeGenerator
             return new ElementInfo
             (
                 collInfo.ElementTypeName,
+                collInfo.IsElementValueType,
                 collInfo.IsElementUnmanagedType,
                 collInfo.IsElementStringType,
                 collInfo.HasElementGenerateSerializerAttribute
@@ -115,6 +127,7 @@ public static class PacketSizeGenerator
             return new ElementInfo
             (
                 info.ElementTypeName,
+                false,
                 info.IsElementUnmanagedType,
                 info.IsElementStringType,
                 info.HasElementGenerateSerializerAttribute
@@ -122,6 +135,18 @@ public static class PacketSizeGenerator
         }
 
         return null;
+    }
+
+    private static void EmitCheckedCountValidation(IndentedStringBuilder sb, string countType, string countExpression)
+    {
+        sb.WriteLineFormat("_ = checked(({0})({1}));", countType, countExpression);
+    }
+
+    private static void EmitNullCollectionItemGuard(IndentedStringBuilder sb, string itemExpression)
+    {
+        sb.WriteLineFormat("if ({0} is null)", itemExpression);
+        using var _ = sb.BeginBlock();
+        sb.WriteLine("throw new System.NullReferenceException(\"Collection item cannot be null.\");");
     }
 
     private static void GenerateStandardCollectionSizeCalculation(
@@ -162,12 +187,20 @@ public static class PacketSizeGenerator
                 using var _ = sb.BeginBlock();
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var __ = sb.BeginBlock();
+                if (!info.IsValueType)
+                {
+                    EmitNullCollectionItemGuard(sb, "item");
+                }
                 sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
             }
             else
             {
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var _ = sb.BeginBlock();
+                if (!info.IsValueType)
+                {
+                    EmitNullCollectionItemGuard(sb, "item");
+                }
                 sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
             }
         }
@@ -206,6 +239,8 @@ public static class PacketSizeGenerator
         )
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+            var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}", true);
+            EmitCheckedCountValidation(sb, countType, countExpression);
             var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
             sb.WriteLineFormat("size += {0}; // Count size for {1}", countSizeExpression, member.Name);
         }
@@ -238,6 +273,8 @@ public static class PacketSizeGenerator
         )
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+            var countExpression = $"(obj.{member.Name}?.Memory.Length ?? 0)";
+            EmitCheckedCountValidation(sb, countType, countExpression);
             var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
             sb.WriteLineFormat("size += {0}; // Count size for {1}", countSizeExpression, member.Name);
         }

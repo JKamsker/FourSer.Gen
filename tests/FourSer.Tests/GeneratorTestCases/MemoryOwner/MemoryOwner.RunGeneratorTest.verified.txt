@@ -22,6 +22,7 @@ public partial class Child : ISerializable<Child>, IDisposable
     {
         if (obj is null) return 0;
         var size = 0;
+        _ = checked((int)((obj.Numbers?.Memory.Length ?? 0)));
         size += sizeof(int); // Count size for Numbers
         size += (obj.Numbers?.Memory.Length ?? 0) * sizeof(int);
         return size;
@@ -34,7 +35,6 @@ public partial class Child : ISerializable<Child>, IDisposable
 
     public Child()
     {
-        this.Numbers = default;
     }
 
     public static Child Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -130,6 +130,7 @@ public partial class Parent : ISerializable<Parent>, IDisposable
     {
         if (obj is null) return 0;
         var size = 0;
+        _ = checked((int)((obj.Data?.Memory.Length ?? 0)));
         size += sizeof(int); // Count size for Data
         size += (obj.Data?.Memory.Length ?? 0) * sizeof(byte);
         size += global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.GetPacketSize(obj.DisposableProperty); // Size for nested type DisposableProperty
@@ -144,8 +145,6 @@ public partial class Parent : ISerializable<Parent>, IDisposable
 
     public Parent()
     {
-        this.Data = default;
-        this.DisposableProperty = default;
     }
 
     public static Parent Deserialize(ref System.ReadOnlySpan<byte> buffer)

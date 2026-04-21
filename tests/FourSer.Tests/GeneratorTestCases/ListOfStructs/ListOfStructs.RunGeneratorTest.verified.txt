@@ -91,6 +91,7 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
     {
         if (obj is null) return 0;
         var size = 0;
+        _ = checked((int)((obj.Structs?.Count ?? 0)));
         size += sizeof(int); // Count size for Structs
         if (obj.Structs is not null)
         {
@@ -109,7 +110,6 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
 
     public PacketWithListOfStructs()
     {
-        this.Structs = new System.Collections.Generic.List<global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>();
     }
 
     public static PacketWithListOfStructs Deserialize(ref System.ReadOnlySpan<byte> buffer)

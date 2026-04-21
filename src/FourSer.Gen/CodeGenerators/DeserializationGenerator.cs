@@ -412,7 +412,7 @@ public static class DeserializationGenerator
             // Implicit conversions to int exist for these types.
             "sbyte" or "byte" or "short" or "ushort" or "char" or "int" => countVar,
             // Explicit conversions are required for these (and for enums / other numeric types).
-            _ => $"(int){countVar}"
+            _ => $"checked((int){countVar})"
         };
     }
 
@@ -823,6 +823,7 @@ public static class DeserializationGenerator
             listTypeInfo = new
             (
                 elementType,
+                collectionTypeInfo.IsElementValueType,
                 collectionTypeInfo.IsElementUnmanagedType,
                 collectionTypeInfo.IsElementStringType,
                 collectionTypeInfo.HasElementGenerateSerializerAttribute
@@ -834,7 +835,7 @@ public static class DeserializationGenerator
             // Adding a comment to reflect that this is an undesirable state.
             sb.WriteLineFormat("// Fallback for unlimited collection {0} - element type could not be determined.", member.Name);
             elementType = "object"; // Fallback to object to avoid breaking compilation, though this is not ideal.
-            listTypeInfo = new(elementType, false, false, false);
+            listTypeInfo = new(elementType, false, false, false, false);
         }
 
 
