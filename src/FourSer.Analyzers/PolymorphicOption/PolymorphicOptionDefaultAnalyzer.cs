@@ -45,7 +45,7 @@ namespace FourSer.Analyzers.PolymorphicOption
         private static void AnalyzeSymbol(SymbolAnalysisContext context, ISymbol symbol)
         {
             var attributes = symbol.GetAttributes()
-                .Where(ad => ad.AttributeClass?.Name == "PolymorphicOptionAttribute")
+                .Where(ad => ad.AttributeClass?.ToDisplayString() == "FourSer.Contracts.PolymorphicOptionAttribute")
                 .ToList();
 
             if (attributes.Count < 2)
@@ -80,7 +80,7 @@ namespace FourSer.Analyzers.PolymorphicOption
             }
 
             return attribute.NamedArguments
-                .FirstOrDefault(arg => string.Equals(arg.Key, "IsDefault", StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault(arg => arg.Key == "IsDefault")
                 .Value.Value as bool? ?? false;
         }
 

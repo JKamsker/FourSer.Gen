@@ -56,7 +56,7 @@ public static class PolymorphicUtilities
         }
 
         var enumeratorVariableName = $"{firstItemVariableName}Enumerator";
-        sb.WriteLine($"using var {enumeratorVariableName} = {collectionAccessExpression}.GetEnumerator();");
+        sb.WriteLine($"var {enumeratorVariableName} = {collectionAccessExpression}.GetEnumerator();");
         sb.WriteLine($"if (!{enumeratorVariableName}.MoveNext())");
         using (sb.BeginBlock())
         {

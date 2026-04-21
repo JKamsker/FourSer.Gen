@@ -93,6 +93,15 @@ public partial class DefaultedSingleTypeIdPacket
 }
 
 [GenerateSerializer]
+public partial class NonDefaultSingleTypeIdPacket
+{
+    [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte), CountType = typeof(byte))]
+    [PolymorphicOption((byte)10, typeof(DogAnimal))]
+    [PolymorphicOption((byte)20, typeof(CatAnimal))]
+    public List<IAnimal> Animals { get; set; } = new();
+}
+
+[GenerateSerializer]
 public partial class DefaultedTypeIdPropertyPacket
 {
     public byte AnimalType { get; set; }
@@ -206,6 +215,25 @@ public class PolymorphicCollectionParityTests
 
         Assert.Equal(0, buffer[0]);
         Assert.Equal(20, buffer[1]);
+    }
+
+    [Fact]
+    public void NonEmptySingleTypeIdCollectionWithoutDefault_ShouldRoundtrip()
+    {
+        var animals = CreateDogSequence().ToList();
+        var original = new NonDefaultSingleTypeIdPacket
+        {
+            Animals = animals
+        };
+
+        var buffer = new byte[NonDefaultSingleTypeIdPacket.GetPacketSize(original)];
+        NonDefaultSingleTypeIdPacket.Serialize(original, buffer);
+
+        Assert.Equal(2, buffer[0]);
+        Assert.Equal(10, buffer[1]);
+
+        var roundTripped = NonDefaultSingleTypeIdPacket.Deserialize(buffer);
+        AssertAnimalSequence(animals, roundTripped.Animals);
     }
 
     [Fact]

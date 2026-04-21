@@ -144,7 +144,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
     public static void Serialize(InventoryWithCountSizeRef obj, ref System.Span<byte> data)
     {
         if (obj is null) return;
-        if (obj.Items is null || obj.Items.Count == 0)
+        if ((obj.Items?.Count ?? 0) == 0)
         {
             SpanWriter.WriteInt32(ref data, (int)(10));
         }
@@ -160,12 +160,13 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             };
             SpanWriter.WriteInt32(ref data, (int)(discriminator));
         }
-        SpanWriter.WriteInt32(ref data, (int)(obj.Items?.Count ?? 0));
+        SpanWriter.WriteInt32(ref data, (int)((obj.Items?.Count ?? 0)));
         if (obj.Items is not null)
         {
             if (obj.Items.Count > 0)
             {
-                switch (obj.Items[0])
+                var firstItem = obj.Items[0];
+                switch (firstItem)
                 {
                     case global::FourSer.TestUser.CollectionWithCountSizeReference.Sword:
                     {
@@ -192,7 +193,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
                         break;
                     }
                     default:
-                        throw new System.IO.InvalidDataException($"Unknown type for item in Items: {obj.Items[0].GetType().Name}");
+                        throw new System.IO.InvalidDataException($"Unknown type for item in Items: {firstItem.GetType().Name}");
                 }
             }
         }
@@ -206,7 +207,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
     public static void Serialize(InventoryWithCountSizeRef obj, System.IO.Stream stream)
     {
         if (obj is null) return;
-        if (obj.Items is null || obj.Items.Count == 0)
+        if ((obj.Items?.Count ?? 0) == 0)
         {
             StreamWriter.WriteInt32(stream, (int)(10));
         }
@@ -222,12 +223,13 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             };
             StreamWriter.WriteInt32(stream, (int)(discriminator));
         }
-        StreamWriter.WriteInt32(stream, (int)(obj.Items?.Count ?? 0));
+        StreamWriter.WriteInt32(stream, (int)((obj.Items?.Count ?? 0)));
         if (obj.Items is not null)
         {
             if (obj.Items.Count > 0)
             {
-                switch (obj.Items[0])
+                var firstItem = obj.Items[0];
+                switch (firstItem)
                 {
                     case global::FourSer.TestUser.CollectionWithCountSizeReference.Sword:
                     {
@@ -254,7 +256,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
                         break;
                     }
                     default:
-                        throw new System.IO.InvalidDataException($"Unknown type for item in Items: {obj.Items[0].GetType().Name}");
+                        throw new System.IO.InvalidDataException($"Unknown type for item in Items: {firstItem.GetType().Name}");
                 }
             }
         }

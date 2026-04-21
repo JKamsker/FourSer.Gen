@@ -31,6 +31,7 @@ internal static class GenerationValidation
                     ReportConfigurationError(
                         context,
                         configurationErrorRule,
+                        member,
                         typeName,
                         $"IMemoryOwner<T> member '{member.Name}' is marked as Unlimited, which is not supported.");
                     return true;
@@ -51,6 +52,7 @@ internal static class GenerationValidation
                 ReportConfigurationError(
                     context,
                     configurationErrorRule,
+                    member,
                     typeName,
                     $"IMemoryOwner<T> member '{member.Name}' has unsupported element type '{memoryOwnerTypeInfo.ElementTypeName}'. Add [GenerateSerializer] to the element type or apply [Serializer(...)] to the member.");
                 return true;
@@ -76,6 +78,7 @@ internal static class GenerationValidation
             ReportConfigurationError(
                 context,
                 configurationErrorRule,
+                member,
                 typeName,
                 $"Collection member '{member.Name}' has unsupported element type '{collectionTypeInfo.ElementTypeName}'. Add [GenerateSerializer] to the element type or apply [Serializer(...)] to the collection member.");
             return true;
@@ -102,6 +105,7 @@ internal static class GenerationValidation
                 ReportConfigurationError(
                     context,
                     configurationErrorRule,
+                    member,
                     typeName,
                     $"IMemoryOwner<T> member '{member.Name}' does not support polymorphic serialization.");
                 return true;
@@ -112,6 +116,7 @@ internal static class GenerationValidation
                 ReportConfigurationError(
                     context,
                     configurationErrorRule,
+                    member,
                     typeName,
                     $"Member '{member.Name}' is configured for polymorphic serialization but has no [PolymorphicOption]s.");
                 return true;
@@ -127,6 +132,7 @@ internal static class GenerationValidation
                 ReportConfigurationError(
                     context,
                     configurationErrorRule,
+                    member,
                     typeName,
                     $"Polymorphic option type '{option.Type}' on member '{member.Name}' is not serializable. Add [GenerateSerializer] to the option type or implement ISerializable<T>.");
                 return true;
@@ -147,13 +153,18 @@ internal static class GenerationValidation
     private static void ReportConfigurationError(
         SourceProductionContext context,
         DiagnosticDescriptor configurationErrorRule,
+        MemberToGenerate member,
         string typeName,
         string message)
     {
+        var location = member.DeclarationLocation is { } declarationLocation
+            ? Location.Create(declarationLocation.FilePath, declarationLocation.SourceSpan, declarationLocation.LineSpan)
+            : Location.None;
+
         context.ReportDiagnostic(
             Diagnostic.Create(
                 configurationErrorRule,
-                Location.None,
+                location,
                 typeName,
                 message));
     }

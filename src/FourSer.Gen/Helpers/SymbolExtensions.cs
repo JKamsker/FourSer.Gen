@@ -93,6 +93,32 @@ public static class SymbolExtensions
         };
     }
 
+    public static bool IsSerializePolymorphicAttribute(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is
+        {
+            Name: "SerializePolymorphicAttribute",
+            ContainingNamespace:
+            {
+                Name: "Contracts",
+                ContainingNamespace: { Name: "FourSer", ContainingNamespace: { IsGlobalNamespace: true } }
+            }
+        };
+    }
+
+    public static bool IsPolymorphicOptionAttribute(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is
+        {
+            Name: "PolymorphicOptionAttribute",
+            ContainingNamespace:
+            {
+                Name: "Contracts",
+                ContainingNamespace: { Name: "FourSer", ContainingNamespace: { IsGlobalNamespace: true } }
+            }
+        };
+    }
+
     public static bool IsIgnoredAttribute(this INamedTypeSymbol typeSymbol)
     {
         return typeSymbol is

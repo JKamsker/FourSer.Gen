@@ -8,6 +8,25 @@ namespace FourSer.Analyzers.Test.AnalyzerTests.PolymorphicOption;
 
 public class PolymorphicOptionDefaultAnalyzerTests : AnalyzerTestBase
 {
+    private const string ContractsSource = """
+    namespace FourSer.Contracts;
+
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
+    public sealed class SerializePolymorphicAttribute : System.Attribute
+    {
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = true)]
+    public sealed class PolymorphicOptionAttribute : System.Attribute
+    {
+        public PolymorphicOptionAttribute(int id, System.Type type)
+        {
+        }
+
+        public bool IsDefault { get; set; }
+    }
+    """;
+
     [Fact]
     public async Task MultipleDefaults_ReportDiagnostics()
     {
@@ -17,8 +36,8 @@ public class PolymorphicOptionDefaultAnalyzerTests : AnalyzerTestBase
         public class Example
         {
             [SerializePolymorphic]
-            [PolymorphicOption(1, typeof(int), isDefault: true)]
-            [PolymorphicOption(2, typeof(string), {|FSG3003:isDefault: true|})]
+            [PolymorphicOption(1, typeof(int), IsDefault = true)]
+            [PolymorphicOption(2, typeof(string), {|FSG3003:IsDefault = true|})]
             public object? Value { get; set; }
         }
         """;
@@ -26,7 +45,10 @@ public class PolymorphicOptionDefaultAnalyzerTests : AnalyzerTestBase
         await new CSharpAnalyzerTest<PolymorphicOptionDefaultAnalyzer, DefaultVerifier>
         {
             ReferenceAssemblies = ReferenceAssemblies,
-            TestCode = source
+            TestState =
+            {
+                Sources = { ContractsSource, source }
+            }
         }.RunAsync();
     }
 
@@ -39,7 +61,7 @@ public class PolymorphicOptionDefaultAnalyzerTests : AnalyzerTestBase
         public class Example
         {
             [SerializePolymorphic]
-            [PolymorphicOption(1, typeof(int), isDefault: true)]
+            [PolymorphicOption(1, typeof(int), IsDefault = true)]
             [PolymorphicOption(2, typeof(string))]
             public object? Value { get; set; }
         }
@@ -48,7 +70,10 @@ public class PolymorphicOptionDefaultAnalyzerTests : AnalyzerTestBase
         await new CSharpAnalyzerTest<PolymorphicOptionDefaultAnalyzer, DefaultVerifier>
         {
             ReferenceAssemblies = ReferenceAssemblies,
-            TestCode = source
+            TestState =
+            {
+                Sources = { ContractsSource, source }
+            }
         }.RunAsync();
     }
 }

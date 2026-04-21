@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis.Text;
+
 namespace FourSer.Gen.Models;
 
 /// <summary>
@@ -82,7 +84,21 @@ public sealed record MemberToGenerate
     int? IsCountSizeReferenceFor,
     int? IsTypeIdPropertyFor,
     CustomSerializerInfo? CustomSerializer,
-    bool RequiresDisposal = false
+    bool RequiresDisposal = false,
+    LocationInfo? DeclarationLocation = null
+);
+
+/// <summary>
+///     A lightweight representation of a source location used for diagnostics.
+/// </summary>
+/// <param name="FilePath">The absolute file path that contains the declaration.</param>
+/// <param name="SourceSpan">The source span for the declaration.</param>
+/// <param name="LineSpan">The line and column span for the declaration.</param>
+public readonly record struct LocationInfo
+(
+    string FilePath,
+    TextSpan SourceSpan,
+    LinePositionSpan LineSpan
 );
 
 /// <summary>
@@ -133,17 +149,26 @@ public readonly record struct ListTypeArgumentInfo
 /// <summary>
 ///     A model describing information about a collection type.
 /// </summary>
-/// <param name="CollectionTypeName">
-///     The full name of the collection type (e.g., "System.Collections.Generic.List<T>").
-/// </param>
 /// <param name="ElementTypeName">The name of the element type.</param>
 /// <param name="IsElementUnmanagedType">Whether the element type is unmanaged.</param>
 /// <param name="IsElementStringType">Whether the element type is a string.</param>
 /// <param name="HasElementGenerateSerializerAttribute">Whether the element type has the [GenerateSerializer] attribute.</param>
+/// <param name="ElementRequiresDisposal">Whether deserialized elements require generated disposal logic.</param>
+/// <param name="CanBeNull">Whether the collection member can be null.</param>
+/// <param name="SupportsIndexing">Whether the collection supports indexed access.</param>
+/// <param name="CountPropertyName">The property used to read the number of items, if one exists.</param>
 /// <param name="IsArray">Whether this is an array type.</param>
 /// <param name="ConcreteTypeName">
 ///     The concrete type to instantiate for interfaces (e.g., "List<T>" for "ICollection<T>").
 /// </param>
+/// <param name="RangeFactoryTypeName">
+///     The immutable factory type used to materialize the final collection from a staging list.
+/// </param>
+/// <param name="IsPureEnumerable">Whether the collection only guarantees enumeration.</param>
+/// <param name="IsGenericCollection">Whether the collection is one of the generic collection abstractions.</param>
+/// <param name="CollectionAddMethod">The method used to add an item during deserialization.</param>
+/// <param name="IsGenericList">Whether the declared type is List&lt;T&gt;.</param>
+/// <param name="IsReadOnlyInterface">Whether the declared member type is a read-only collection interface.</param>
 public readonly record struct CollectionTypeInfo
 (
     string ElementTypeName,
@@ -160,7 +185,8 @@ public readonly record struct CollectionTypeInfo
     bool IsPureEnumerable,
     bool IsGenericCollection,
     string? CollectionAddMethod,
-    bool isGenericList
+    bool IsGenericList,
+    bool IsReadOnlyInterface
 );
 
 /// <summary>
@@ -189,6 +215,8 @@ public readonly record struct CollectionInfo
 /// </summary>
 /// <param name="Key">The key used to identify the type.</param>
 /// <param name="Type">The type associated with the key.</param>
+/// <param name="IsDefault">Whether this option should be used as the default discriminator.</param>
+/// <param name="IsSerializableType">Whether the option type can be serialized by the generator.</param>
 public readonly record struct PolymorphicOption
 (
     object Key,

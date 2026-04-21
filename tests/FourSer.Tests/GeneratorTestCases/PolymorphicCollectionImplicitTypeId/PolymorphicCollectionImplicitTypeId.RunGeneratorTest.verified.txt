@@ -148,7 +148,7 @@ public partial class Inventory : ISerializable<Inventory>
         else
         {
             var collectionItems = obj.Items;
-            if (collectionItems is null || collectionItems.Count == 0)
+            if ((collectionItems?.Count ?? 0) == 0)
             {
                 SpanWriter.WriteInt32(ref data, (int)(0));
                 SpanWriter.WriteByte(ref data, (byte)(10));
@@ -212,7 +212,7 @@ public partial class Inventory : ISerializable<Inventory>
         else
         {
             var collectionItems = obj.Items;
-            if (collectionItems is null || collectionItems.Count == 0)
+            if ((collectionItems?.Count ?? 0) == 0)
             {
                 StreamWriter.WriteInt32(stream, (int)(0));
                 StreamWriter.WriteByte(stream, (byte)(10));

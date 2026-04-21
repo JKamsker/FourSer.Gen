@@ -23,38 +23,63 @@ public class PolymorphicOptionAttribute : Attribute
 {
     public object Id { get; }
     public Type Type { get; }
-    public bool IsDefault { get; }
+    public bool IsDefault { get; set; }
 
-    public PolymorphicOptionAttribute(int id, Type type, bool isDefault = false)
+    public PolymorphicOptionAttribute(int id, Type type)
+        : this(id, type, false)
+    {
+    }
+
+    public PolymorphicOptionAttribute(int id, Type type, bool isDefault)
     {
         Id = id;
         Type = type;
         IsDefault = isDefault;
     }
-    
-    public PolymorphicOptionAttribute(byte id, Type type, bool isDefault = false)
+
+    public PolymorphicOptionAttribute(byte id, Type type)
+        : this(id, type, false)
+    {
+    }
+
+    public PolymorphicOptionAttribute(byte id, Type type, bool isDefault)
     {
         Id = id;
         Type = type;
         IsDefault = isDefault;
     }
-    
-    public PolymorphicOptionAttribute(ushort id, Type type, bool isDefault = false)
+
+    public PolymorphicOptionAttribute(ushort id, Type type)
+        : this(id, type, false)
+    {
+    }
+
+    public PolymorphicOptionAttribute(ushort id, Type type, bool isDefault)
     {
         Id = id;
         Type = type;
         IsDefault = isDefault;
     }
-    
-    public PolymorphicOptionAttribute(long id, Type type, bool isDefault = false)
+
+    public PolymorphicOptionAttribute(long id, Type type)
+        : this(id, type, false)
+    {
+    }
+
+    public PolymorphicOptionAttribute(long id, Type type, bool isDefault)
     {
         Id = id;
         Type = type;
         IsDefault = isDefault;
     }
-    
+
     // For enum values
-    public PolymorphicOptionAttribute(object id, Type type, bool isDefault = false)
+    public PolymorphicOptionAttribute(object id, Type type)
+        : this(id, type, false)
+    {
+    }
+
+    public PolymorphicOptionAttribute(object id, Type type, bool isDefault)
     {
         Id = id;
         Type = type;

@@ -46,13 +46,26 @@ public static class GeneratorUtilities
     }
 
     /// <summary>
-    ///     Unified count expression generation (consolidates 4 duplicate implementations)
+    ///     Builds the count expression for a member using the conventional <c>obj.Member</c> access pattern.
     /// </summary>
+    /// <param name="member">The collection member being inspected.</param>
+    /// <param name="memberName">The member name without the <c>obj.</c> prefix.</param>
+    /// <param name="nullable">
+    ///     Whether the expression should tolerate null collections by using null propagation and a zero fallback.
+    /// </param>
     public static string GetCountExpression(MemberToGenerate member, string memberName, bool nullable = false)
     {
         return GetCountExpressionForAccess(member, $"obj.{memberName}", nullable);
     }
 
+    /// <summary>
+    ///     Builds the count expression for an arbitrary collection access expression.
+    /// </summary>
+    /// <param name="member">The collection member being inspected.</param>
+    /// <param name="accessExpression">The expression used to access the collection instance.</param>
+    /// <param name="nullable">
+    ///     Whether the expression should tolerate null collections by using null propagation and a zero fallback.
+    /// </param>
     public static string GetCountExpressionForAccess(MemberToGenerate member, string accessExpression, bool nullable = false)
     {
         var canUseNullPropagation = nullable && (member.CollectionTypeInfo?.CanBeNull ?? true);

@@ -275,11 +275,6 @@ internal static class PolymorphicSerializer
 
         sb.WriteLine($"var {listItemsVar} = obj.{member.Name};");
 
-        if (!PolymorphicUtilities.TryGetDefaultOption(info, out _))
-        {
-            return;
-        }
-
         var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
         var nullableCountExpression = GeneratorUtilities.GetCountExpressionForAccess(member, listItemsVar, true);
         var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, listItemsVar);
@@ -379,7 +374,11 @@ internal static class PolymorphicSerializer
         CollectionInfo collectionInfo)
     {
         var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
-        BeginCountReservation(sb, ctx, countType);
+        var variablePrefix = member.Name.ToCamelCase();
+        var countVariableName = $"{variablePrefix}Count";
+        var enumeratorVariableName = $"{variablePrefix}Enumerator";
+
+        BeginCountReservation(sb, ctx, countType, variablePrefix);
 
         if (member.CollectionTypeInfo?.CanBeNull == true)
         {
@@ -393,28 +392,36 @@ internal static class PolymorphicSerializer
 
                 if (ctx.IsSpan)
                 {
-                    EndCountReservation(sb, ctx, countType, "0");
+                    EndCountReservation(sb, ctx, countType, "0", variablePrefix);
                 }
             }
 
             sb.WriteLine("else");
             using (sb.BeginBlock())
             {
-                EmitPolymorphicCollectionEnumerator(sb, member);
-                EmitPolymorphicCollectionEmptyCase(sb, ctx, info, countType);
-                EmitPolymorphicCollectionNonEmptyCase(sb, ctx, info, countType);
+                EmitPolymorphicCollectionEnumerator(sb, member, countVariableName, enumeratorVariableName);
+                EmitPolymorphicCollectionEmptyCase(sb, ctx, info, countType, variablePrefix, enumeratorVariableName);
+                EmitPolymorphicCollectionNonEmptyCase(sb, ctx, info, countType, variablePrefix, countVariableName, enumeratorVariableName);
             }
 
             return;
         }
 
-        EmitPolymorphicCollectionEnumerator(sb, member);
-        EmitPolymorphicCollectionEmptyCase(sb, ctx, info, countType);
-        EmitPolymorphicCollectionNonEmptyCase(sb, ctx, info, countType);
+        EmitPolymorphicCollectionEnumerator(sb, member, countVariableName, enumeratorVariableName);
+        EmitPolymorphicCollectionEmptyCase(sb, ctx, info, countType, variablePrefix, enumeratorVariableName);
+        EmitPolymorphicCollectionNonEmptyCase(sb, ctx, info, countType, variablePrefix, countVariableName, enumeratorVariableName);
     }
 
     private static void BeginCountReservation(IndentedStringBuilder sb, SerializationWriterEmitter.WriterCtx ctx, string countType)
     {
+        BeginCountReservation(sb, ctx, countType, "count");
+    }
+
+    private static void BeginCountReservation(IndentedStringBuilder sb, SerializationWriterEmitter.WriterCtx ctx, string countType, string variablePrefix)
+    {
+        var countPositionVariableName = $"{variablePrefix}CountPosition";
+        var countSpanVariableName = $"{variablePrefix}CountSpan";
+
         if (!ctx.IsSpan)
         {
             sb.WriteLine("if (!stream.CanSeek)");
@@ -423,29 +430,35 @@ internal static class PolymorphicSerializer
                 sb.WriteLine("throw new NotSupportedException(\"Stream must be seekable to serialize this collection.\");");
             }
 
-            sb.WriteLine("var countPosition = stream.Position;");
+            sb.WriteLineFormat("var {0} = stream.Position;", countPositionVariableName);
             SerializationWriterEmitter.EmitWrite(sb, ctx, countType, "0", " // Placeholder for count");
         }
         else
         {
-            sb.WriteLine("var countSpan = data;");
+            sb.WriteLineFormat("var {0} = data;", countSpanVariableName);
             sb.WriteLine($"data = data.Slice(sizeof({countType}));");
         }
     }
 
-    private static void EmitPolymorphicCollectionEnumerator(IndentedStringBuilder sb, MemberToGenerate member)
+    private static void EmitPolymorphicCollectionEnumerator(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        string countVariableName,
+        string enumeratorVariableName)
     {
-        sb.WriteLine("int count = 0;");
-        sb.WriteLine($"using var enumerator = obj.{member.Name}.GetEnumerator();");
+        sb.WriteLineFormat("int {0} = 0;", countVariableName);
+        sb.WriteLineFormat("var {0} = obj.{1}.GetEnumerator();", enumeratorVariableName, member.Name);
     }
 
     private static void EmitPolymorphicCollectionEmptyCase(
         IndentedStringBuilder sb,
         SerializationWriterEmitter.WriterCtx ctx,
         PolymorphicInfo info,
-        string countType)
+        string countType,
+        string variablePrefix,
+        string enumeratorVariableName)
     {
-        sb.WriteLine("if (!enumerator.MoveNext())");
+        sb.WriteLineFormat("if (!{0}.MoveNext())", enumeratorVariableName);
         sb.WriteLine("{");
         sb.Indent();
         if (PolymorphicUtilities.TryGetDefaultOption(info, out var defaultOption))
@@ -455,7 +468,7 @@ internal static class PolymorphicSerializer
 
         if (ctx.IsSpan)
         {
-            EndCountReservation(sb, ctx, countType, "0");
+            EndCountReservation(sb, ctx, countType, "0", variablePrefix);
         }
         sb.Unindent();
         sb.WriteLine("}");
@@ -465,13 +478,16 @@ internal static class PolymorphicSerializer
         IndentedStringBuilder sb,
         SerializationWriterEmitter.WriterCtx ctx,
         PolymorphicInfo info,
-        string countType)
+        string countType,
+        string variablePrefix,
+        string countVariableName,
+        string enumeratorVariableName)
     {
         var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
         sb.WriteLine("else");
         sb.WriteLine("{");
         sb.Indent();
-        sb.WriteLine("var discriminator = enumerator.Current switch");
+        sb.WriteLineFormat("var discriminator = {0}.Current switch", enumeratorVariableName);
         sb.WriteLine("{");
         sb.Indent();
         foreach (var option in info.Options)
@@ -481,7 +497,7 @@ internal static class PolymorphicSerializer
         }
 
         sb.WriteLine
-            ($"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{enumerator.Current.GetType().Name}}\")");
+            ($"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{{enumeratorVariableName}.Current.GetType().Name}}\")");
         sb.Unindent();
         sb.WriteLine("};");
 
@@ -502,39 +518,47 @@ internal static class PolymorphicSerializer
                     {
                         if (ctx.IsSpan)
                         {
-                            sb.WriteLine($"{typeName}.Serialize(({typeName})enumerator.Current, ref data);");
+                            sb.WriteLine($"{typeName}.Serialize(({typeName}){enumeratorVariableName}.Current, ref data);");
                         }
                         else
                         {
-                            sb.WriteLine($"{typeName}.Serialize(({typeName})enumerator.Current, stream);");
+                            sb.WriteLine($"{typeName}.Serialize(({typeName}){enumeratorVariableName}.Current, stream);");
                         }
 
-                        sb.WriteLine("count++;");
+                        sb.WriteLineFormat("{0}++;", countVariableName);
                     }
 
-                    sb.WriteLine("while (enumerator.MoveNext());");
+                    sb.WriteLineFormat("while ({0}.MoveNext());", enumeratorVariableName);
 
                     sb.WriteLine("break;");
                 }
             }
         }
-        EndCountReservation(sb, ctx, countType, "count");
+        EndCountReservation(sb, ctx, countType, countVariableName, variablePrefix);
         sb.Unindent();
         sb.WriteLine("}");
     }
 
     private static void EndCountReservation(IndentedStringBuilder sb, SerializationWriterEmitter.WriterCtx ctx, string countType, string countExpr)
     {
+        EndCountReservation(sb, ctx, countType, countExpr, "count");
+    }
+
+    private static void EndCountReservation(IndentedStringBuilder sb, SerializationWriterEmitter.WriterCtx ctx, string countType, string countExpr, string variablePrefix)
+    {
+        var countPositionVariableName = $"{variablePrefix}CountPosition";
+        var countSpanVariableName = $"{variablePrefix}CountSpan";
+
         if (!ctx.IsSpan)
         {
             sb.WriteLine("var endPosition = stream.Position;");
-            sb.WriteLine("stream.Position = countPosition;");
+            sb.WriteLineFormat("stream.Position = {0};", countPositionVariableName);
             SerializationWriterEmitter.EmitWrite(sb, ctx, countType, countExpr);
             sb.WriteLine("stream.Position = endPosition;");
         }
         else
         {
-            var countCtx = ctx with { Target = "countSpan" };
+            var countCtx = ctx with { Target = countSpanVariableName };
             SerializationWriterEmitter.EmitWrite(sb, countCtx, countType, countExpr);
         }
     }

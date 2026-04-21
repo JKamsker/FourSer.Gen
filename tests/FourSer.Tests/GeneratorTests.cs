@@ -178,9 +178,13 @@ public class GeneratorTests
         """;
 
         var compilation = CreateCompilation(AddDefaultUsings(source));
-        var runResult = GetRunResult(compilation, out _);
+        var runResult = GetRunResult(compilation, out var finalCompilation);
 
         Assert.DoesNotContain(runResult.Diagnostics, d => d.Id == "FSG0002" && d.Severity == DiagnosticSeverity.Error);
+
+        using var ms = new MemoryStream();
+        var emitResult = finalCompilation.Emit(ms);
+        Assert.True(emitResult.Success, $"Compilation failed with errors: {string.Join(", ", emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.GetMessage()))}");
     }
 
     [Fact]
@@ -252,12 +256,20 @@ public class GeneratorTests
         """;
 
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "DefaultedDiscriminatorPacket");
+        const string emptyCollectionCheck = "if ((obj.Animals?.Count ?? 0) == 0)";
+        var spanBranchStart = generatedCode.IndexOf(emptyCollectionCheck, StringComparison.Ordinal);
+        var streamBranchStart = generatedCode.IndexOf(emptyCollectionCheck, spanBranchStart + emptyCollectionCheck.Length, StringComparison.Ordinal);
 
-        Assert.Contains("if ((obj.Animals?.Count ?? 0) == 0)", generatedCode);
-        Assert.Contains("StreamWriter.WriteByte(stream, (byte)((byte)2));", generatedCode);
-        Assert.Contains("SpanWriter.WriteByte(ref data, (byte)((byte)2));", generatedCode);
-        Assert.DoesNotContain("StreamWriter.WriteByte(stream, (byte)((byte)1));", generatedCode);
-        Assert.DoesNotContain("SpanWriter.WriteByte(ref data, (byte)((byte)1));", generatedCode);
+        Assert.True(spanBranchStart >= 0, "Expected to find the span empty-collection branch.");
+        Assert.True(streamBranchStart >= 0, "Expected to find the stream empty-collection branch.");
+
+        var spanBranch = generatedCode.Substring(spanBranchStart, streamBranchStart - spanBranchStart);
+        var streamBranch = generatedCode.Substring(streamBranchStart);
+
+        Assert.Contains("SpanWriter.WriteByte(ref data, (byte)(2));", spanBranch);
+        Assert.DoesNotContain("SpanWriter.WriteByte(ref data, (byte)(1));", spanBranch);
+        Assert.Contains("StreamWriter.WriteByte(stream, (byte)(2));", streamBranch);
+        Assert.DoesNotContain("StreamWriter.WriteByte(stream, (byte)(1));", streamBranch);
     }
 
     [Fact]
@@ -393,12 +405,10 @@ public class GeneratorTests
     {
         var assembly = Assembly.GetExecutingAssembly();
         var resourceName = $"FourSer.Tests.GeneratorTestCases.{testCaseName}.input.cs";
-        string source;
-        using (var stream = assembly.GetManifestResourceStream(resourceName))
-        using (var reader = new StreamReader(stream))
-        {
-            source = reader.ReadToEnd();
-        }
+        using var stream = assembly.GetManifestResourceStream(resourceName)
+            ?? throw new InvalidOperationException($"Resource '{resourceName}' not found.");
+        using var reader = new StreamReader(stream);
+        var source = reader.ReadToEnd();
 
         // source should not be null or empty
         if (string.IsNullOrEmpty(source))

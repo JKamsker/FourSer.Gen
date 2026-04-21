@@ -482,7 +482,7 @@ public static class DeserializationGenerator
             {
                 sb.WriteLineFormat("{0} = {1}.ReadBytes({2}{3}, (int){4});", target, helper, refOrEmpty, source, countVar);
             }
-            else if (member.CollectionTypeInfo?.isGenericList == true)
+            else if (member.CollectionTypeInfo?.IsGenericList == true)
             {
                 sb.WriteLineFormat
                     ("{0} = {1}.ReadBytes({2}{3}, (int){4}).ToList();", target, helper, refOrEmpty, source, countVar);
@@ -608,7 +608,7 @@ public static class DeserializationGenerator
 
                     sb.WriteLine("default:");
                     sb.WriteLineFormat
-                        ("    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{{1}}}\");", member.Name ?? "member", typeIdVar ?? "typeId");
+                        ("    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{{1}}}\");", member.Name, typeIdVar!);
                 }
 
                 if (requiresStagingCollection)

@@ -142,7 +142,7 @@ public partial class Inventory : ISerializable<Inventory>
     public static void Serialize(Inventory obj, ref System.Span<byte> data)
     {
         if (obj is null) return;
-        if (obj.Items is null || obj.Items.Count == 0)
+        if ((obj.Items?.Count ?? 0) == 0)
         {
             SpanWriter.WriteInt64(ref data, (long)(10));
         }
@@ -167,7 +167,8 @@ public partial class Inventory : ISerializable<Inventory>
             SpanWriter.WriteInt32(ref data, (int)(obj.Items.Count));
             if (obj.Items.Count > 0)
             {
-                switch (obj.Items[0])
+                var firstItem = obj.Items[0];
+                switch (firstItem)
                 {
                     case global::FourSer.TestUser.Sword:
                     {
@@ -194,7 +195,7 @@ public partial class Inventory : ISerializable<Inventory>
                         break;
                     }
                     default:
-                        throw new System.IO.InvalidDataException($"Unknown type for item in Items: {obj.Items[0].GetType().Name}");
+                        throw new System.IO.InvalidDataException($"Unknown type for item in Items: {firstItem.GetType().Name}");
                 }
             }
         }
@@ -208,7 +209,7 @@ public partial class Inventory : ISerializable<Inventory>
     public static void Serialize(Inventory obj, System.IO.Stream stream)
     {
         if (obj is null) return;
-        if (obj.Items is null || obj.Items.Count == 0)
+        if ((obj.Items?.Count ?? 0) == 0)
         {
             StreamWriter.WriteInt64(stream, (long)(10));
         }
@@ -233,7 +234,8 @@ public partial class Inventory : ISerializable<Inventory>
             StreamWriter.WriteInt32(stream, (int)(obj.Items.Count));
             if (obj.Items.Count > 0)
             {
-                switch (obj.Items[0])
+                var firstItem = obj.Items[0];
+                switch (firstItem)
                 {
                     case global::FourSer.TestUser.Sword:
                     {
@@ -260,7 +262,7 @@ public partial class Inventory : ISerializable<Inventory>
                         break;
                     }
                     default:
-                        throw new System.IO.InvalidDataException($"Unknown type for item in Items: {obj.Items[0].GetType().Name}");
+                        throw new System.IO.InvalidDataException($"Unknown type for item in Items: {firstItem.GetType().Name}");
                 }
             }
         }

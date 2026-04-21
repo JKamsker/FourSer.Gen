@@ -80,7 +80,8 @@ public class Issue59Tests
                     public byte TypeId { get; set; }
                 }
 
-                public interface Item { }
+                [GenerateSerializer]
+                public partial class Item { }
 
                 [GenerateSerializer]
                 public partial class Sword : Item { }

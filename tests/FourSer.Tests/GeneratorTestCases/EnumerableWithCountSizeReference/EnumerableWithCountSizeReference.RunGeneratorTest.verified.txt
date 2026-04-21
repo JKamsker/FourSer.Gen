@@ -77,19 +77,18 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
     public static void Serialize(EnumerableOfReferenceTypes obj, ref System.Span<byte> data)
     {
         if (obj is null) return;
-        var countSpan = data;
+        var myListCountSpan = data;
         data = data.Slice(sizeof(int));
-        int count = 0;
+        int myListCount = 0;
         if (obj.MyList is not null)
         {
-            using var enumerator = obj.MyList.GetEnumerator();
-            while (enumerator.MoveNext())
+            foreach (var item in obj.MyList)
             {
-                global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.Serialize(enumerator.Current, ref data);
-                count++;
+                global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.Serialize(item, ref data);
+                myListCount++;
             }
         }
-        SpanWriter.WriteInt32(ref countSpan, (int)(count));
+        SpanWriter.WriteInt32(ref myListCountSpan, (int)(myListCount));
     }
 
     public static void Serialize(EnumerableOfReferenceTypes obj, System.Span<byte> data)
@@ -104,21 +103,20 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         {
             throw new NotSupportedException("Stream must be seekable to serialize this collection.");
         }
-        var countPosition = stream.Position;
+        var myListCountPosition = stream.Position;
         StreamWriter.WriteInt32(stream, (int)(0)); // Placeholder for count
-        int count = 0;
+        int myListCount = 0;
         if (obj.MyList is not null)
         {
-            using var enumerator = obj.MyList.GetEnumerator();
-            while (enumerator.MoveNext())
+            foreach (var item in obj.MyList)
             {
-                global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.Serialize(enumerator.Current, stream);
-                count++;
+                global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.Serialize(item, stream);
+                myListCount++;
             }
         }
         var endPosition = stream.Position;
-        stream.Position = countPosition;
-        StreamWriter.WriteInt32(stream, (int)(count));
+        stream.Position = myListCountPosition;
+        StreamWriter.WriteInt32(stream, (int)(myListCount));
         stream.Position = endPosition;
     }
 }

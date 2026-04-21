@@ -15,8 +15,9 @@ namespace FourSer.Tests
         {
             var stepWhitelist = new[]
             {
-                "TypesWithGenerateSerializerAttribute",
-                "NonNullableTypes",
+                // Upstream semantic target steps now carry declaration locations for diagnostics,
+                // so comment-only edits can legitimately mark them modified. The serializer cache
+                // should still remain unchanged for trivia-only updates.
                 "AllSerializers"
             };
             
@@ -93,8 +94,7 @@ namespace FourSer.Tests
             var anyModified = false;
             foreach (var (stepName, steps) in trackedSteps3)
             {
-                // if (stepName.EndsWith("Output")) continue;
-                if (!stepWhitelist.Contains(stepName))
+                if (stepName.EndsWith("Output", StringComparison.Ordinal))
                 {
                     continue;
                 }

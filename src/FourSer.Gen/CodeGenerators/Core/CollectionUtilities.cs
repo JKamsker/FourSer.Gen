@@ -6,9 +6,6 @@ namespace FourSer.Gen.CodeGenerators.Core;
 
 public static class CollectionUtilities
 {
-    private const string IReadOnlyCollectionPrefix = "System.Collections.Generic.IReadOnlyCollection<";
-    private const string IReadOnlyListPrefix = "System.Collections.Generic.IReadOnlyList<";
-
     /// <summary>
     ///     Collection method mapping (consolidates 2 duplicate implementations)
     /// </summary>
@@ -43,8 +40,7 @@ public static class CollectionUtilities
             return true;
         }
 
-        return member.TypeName.StartsWith(IReadOnlyCollectionPrefix, StringComparison.Ordinal)
-            || member.TypeName.StartsWith(IReadOnlyListPrefix, StringComparison.Ordinal);
+        return collectionTypeInfo.IsReadOnlyInterface;
     }
 
     /// <summary>
