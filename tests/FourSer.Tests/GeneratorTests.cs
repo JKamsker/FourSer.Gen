@@ -439,9 +439,38 @@ public class GeneratorTests
 
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "ByteEnumerablePacket");
 
+        Assert.Contains("var data = SpanReader.ReadBytes(ref buffer, (int)dataCount);", generatedCode);
+        Assert.Contains("var data = StreamReader.ReadBytes(stream, (int)dataCount);", generatedCode);
+        Assert.Contains("SpanWriter.WriteBytes(ref data, dataCollection);", generatedCode);
+        Assert.Contains("StreamWriter.WriteBytes(stream, dataCollection);", generatedCode);
         Assert.Contains("global::System.Linq.Enumerable.ToArray(obj.Data)", generatedCode);
-        Assert.DoesNotContain("SpanWriter.WriteInt32(ref data, (int)(obj.Data.Count()))", generatedCode);
-        Assert.DoesNotContain("StreamWriter.WriteInt32(stream, (int)(obj.Data.Count()))", generatedCode);
+        Assert.Contains("SpanWriter.WriteBytes(ref data, dataSequence);", generatedCode);
+        Assert.Contains("StreamWriter.WriteBytes(stream, dataSequence);", generatedCode);
+        Assert.DoesNotContain("var data = new System.Collections.Generic.List<byte>(dataCount);", generatedCode);
+        Assert.DoesNotContain("data.Add(SpanReader.ReadByte(ref buffer));", generatedCode);
+        Assert.DoesNotContain("data.Add(StreamReader.ReadByte(stream));", generatedCode);
+    }
+
+    [Fact]
+    public void ImmutableArrayMembers_ShouldUseEmptyInitializationInParameterlessConstructor()
+    {
+        const string source = """
+        using System.Collections.Immutable;
+
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class ImmutableArrayPacket
+        {
+            [SerializeCollection]
+            public ImmutableArray<int> Values { get; set; } = ImmutableArray<int>.Empty;
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "ImmutableArrayPacket");
+
+        Assert.Contains("this.Values = System.Collections.Immutable.ImmutableArray<int>.Empty;", generatedCode);
+        Assert.DoesNotContain("this.Values = default;", generatedCode);
     }
 
     [Fact]

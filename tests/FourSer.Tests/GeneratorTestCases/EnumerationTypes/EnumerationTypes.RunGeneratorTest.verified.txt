@@ -123,11 +123,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             names.Add(SpanReader.ReadString(ref buffer));
         }
         var dataCount = SpanReader.ReadInt32(ref buffer);
-        var data = new System.Collections.Generic.List<byte>(dataCount);
-        for (int i = 0; i < dataCount; i++)
-        {
-            data.Add(SpanReader.ReadByte(ref buffer));
-        }
+        var data = SpanReader.ReadBytes(ref buffer, (int)dataCount);
         var data1Count = SpanReader.ReadInt32(ref buffer);
         var data1 = SpanReader.ReadBytes(ref buffer, (int)data1Count).ToList();
         var valuesCount = SpanReader.ReadInt32(ref buffer);
@@ -231,11 +227,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             names.Add(StreamReader.ReadString(stream));
         }
         var dataCount = StreamReader.ReadInt32(stream);
-        var data = new System.Collections.Generic.List<byte>(dataCount);
-        for (int i = 0; i < dataCount; i++)
-        {
-            data.Add(StreamReader.ReadByte(stream));
-        }
+        var data = StreamReader.ReadBytes(stream, (int)dataCount);
         var data1Count = StreamReader.ReadInt32(stream);
         var data1 = StreamReader.ReadBytes(stream, (int)data1Count).ToList();
         var valuesCount = StreamReader.ReadInt32(stream);
@@ -352,27 +344,18 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             if (obj.Data is System.Collections.Generic.ICollection<byte> dataCollection)
             {
                 SpanWriter.WriteInt32(ref data, (int)(dataCollection.Count));
-                foreach (var item in dataCollection)
-                {
-                    SpanWriter.WriteByte(ref data, (byte)(item));
-                }
+                SpanWriter.WriteBytes(ref data, dataCollection);
             }
             else if (obj.Data is System.Collections.Generic.IReadOnlyCollection<byte> dataReadOnlyCollection)
             {
                 SpanWriter.WriteInt32(ref data, (int)(dataReadOnlyCollection.Count));
-                foreach (var item in dataReadOnlyCollection)
-                {
-                    SpanWriter.WriteByte(ref data, (byte)(item));
-                }
+                SpanWriter.WriteBytes(ref data, dataReadOnlyCollection);
             }
             else
             {
                 var dataSequence = global::System.Linq.Enumerable.ToArray(obj.Data);
                 SpanWriter.WriteInt32(ref data, (int)(dataSequence.Length));
-                foreach (var item in dataSequence)
-                {
-                    SpanWriter.WriteByte(ref data, (byte)(item));
-                }
+                SpanWriter.WriteBytes(ref data, dataSequence);
             }
         }
         if (obj.Data1 is null)
@@ -580,27 +563,18 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
             if (obj.Data is System.Collections.Generic.ICollection<byte> dataCollection)
             {
                 StreamWriter.WriteInt32(stream, (int)(dataCollection.Count));
-                foreach (var item in dataCollection)
-                {
-                    StreamWriter.WriteByte(stream, (byte)(item));
-                }
+                StreamWriter.WriteBytes(stream, dataCollection);
             }
             else if (obj.Data is System.Collections.Generic.IReadOnlyCollection<byte> dataReadOnlyCollection)
             {
                 StreamWriter.WriteInt32(stream, (int)(dataReadOnlyCollection.Count));
-                foreach (var item in dataReadOnlyCollection)
-                {
-                    StreamWriter.WriteByte(stream, (byte)(item));
-                }
+                StreamWriter.WriteBytes(stream, dataReadOnlyCollection);
             }
             else
             {
                 var dataSequence = global::System.Linq.Enumerable.ToArray(obj.Data);
                 StreamWriter.WriteInt32(stream, (int)(dataSequence.Length));
-                foreach (var item in dataSequence)
-                {
-                    StreamWriter.WriteByte(stream, (byte)(item));
-                }
+                StreamWriter.WriteBytes(stream, dataSequence);
             }
         }
         if (obj.Data1 is null)

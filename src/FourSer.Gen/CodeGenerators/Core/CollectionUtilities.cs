@@ -25,7 +25,9 @@ public static class CollectionUtilities
 
     public static bool CanUseDirectByteCollectionPath(MemberToGenerate member)
     {
-        return member.CollectionTypeInfo?.IsArray == true || member.IsList;
+        return member.CollectionTypeInfo?.IsArray == true
+            || member.IsList
+            || member.CollectionTypeInfo?.IsGenericCollection == true;
     }
 
     public static bool ShouldDeserializeIntoStagingCollection(MemberToGenerate member)

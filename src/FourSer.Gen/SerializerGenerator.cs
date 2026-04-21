@@ -341,8 +341,22 @@ public class SerializerGenerator : IIncrementalGenerator
                 continue;
             }
 
-            sb.WriteLineFormat("this.{0} = default;", member.Name);
+            sb.WriteLineFormat("this.{0} = {1};", member.Name, GetParameterlessInitializationExpression(member));
         }
+    }
+
+    private static string GetParameterlessInitializationExpression(MemberToGenerate member)
+    {
+        if (member.CollectionTypeInfo is
+            {
+                RangeFactoryTypeName: "System.Collections.Immutable.ImmutableArray",
+                ElementTypeName: var elementTypeName
+            })
+        {
+            return $"System.Collections.Immutable.ImmutableArray<{TypeHelper.GetGlobalTypeName(elementTypeName)}>.Empty";
+        }
+
+        return "default";
     }
 
     private static void AddHelpers(IncrementalGeneratorPostInitializationContext context)

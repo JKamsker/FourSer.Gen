@@ -206,6 +206,23 @@ public class PolymorphicCollectionParityTests
     }
 
     [Fact]
+    public void DefaultConstructedImmutablePolymorphicCollections_ShouldKeepEmptyArray()
+    {
+        var original = new ImmutableCollectionPacket();
+
+        Assert.False(original.ArrayAnimals.IsDefault);
+        Assert.Empty(original.ArrayAnimals);
+
+        var buffer = new byte[ImmutableCollectionPacket.GetPacketSize(original)];
+        ImmutableCollectionPacket.Serialize(original, buffer);
+
+        var roundTripped = ImmutableCollectionPacket.Deserialize(buffer);
+
+        Assert.False(roundTripped.ArrayAnimals.IsDefault);
+        Assert.Empty(roundTripped.ArrayAnimals);
+    }
+
+    [Fact]
     public void EmptySingleTypeIdCollection_ShouldUseDefaultDiscriminator()
     {
         var original = new DefaultedSingleTypeIdPacket

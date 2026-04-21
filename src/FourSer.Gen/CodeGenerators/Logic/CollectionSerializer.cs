@@ -459,20 +459,10 @@ internal static class CollectionSerializer
         var readOnlyCollectionVariableName = $"{member.Name.ToCamelCase()}ReadOnlyCollection";
         var sequenceVariableName = $"{member.Name.ToCamelCase()}Sequence";
 
-        void EmitCountAndBody(string collectionExpression, string countExpression)
+        void EmitCountAndWrite(string collectionExpression, string countExpression)
         {
             SerializationWriterEmitter.EmitWrite(sb, ctx, countType, countExpression);
-            EmitForeach(sb, collectionExpression, (innerBuilder, itemVariableName) =>
-            {
-                GenerateCollectionElementSerialization
-                (
-                    innerBuilder,
-                    member,
-                    member.CollectionTypeInfo!.Value,
-                    itemVariableName,
-                    ctx
-                );
-            });
+            SerializationWriterEmitter.EmitWriteBytes(sb, ctx, collectionExpression);
         }
 
         void EmitCountedSequenceBody()
@@ -480,20 +470,20 @@ internal static class CollectionSerializer
             sb.WriteLineFormat("if ({0} is System.Collections.Generic.ICollection<byte> {1})", memberAccess, collectionVariableName);
             using (sb.BeginBlock())
             {
-                EmitCountAndBody(collectionVariableName, $"{collectionVariableName}.Count");
+                EmitCountAndWrite(collectionVariableName, $"{collectionVariableName}.Count");
             }
 
             sb.WriteLineFormat("else if ({0} is System.Collections.Generic.IReadOnlyCollection<byte> {1})", memberAccess, readOnlyCollectionVariableName);
             using (sb.BeginBlock())
             {
-                EmitCountAndBody(readOnlyCollectionVariableName, $"{readOnlyCollectionVariableName}.Count");
+                EmitCountAndWrite(readOnlyCollectionVariableName, $"{readOnlyCollectionVariableName}.Count");
             }
 
             sb.WriteLine("else");
             using (sb.BeginBlock())
             {
                 sb.WriteLineFormat("var {0} = global::System.Linq.Enumerable.ToArray({1});", sequenceVariableName, memberAccess);
-                EmitCountAndBody(sequenceVariableName, $"{sequenceVariableName}.Length");
+                EmitCountAndWrite(sequenceVariableName, $"{sequenceVariableName}.Length");
             }
         }
 
