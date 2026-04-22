@@ -266,10 +266,10 @@ public class GeneratorTests
         var spanBranch = generatedCode.Substring(spanBranchStart, streamBranchStart - spanBranchStart);
         var streamBranch = generatedCode.Substring(streamBranchStart);
 
-        Assert.Contains("? obj.AnimalType : 2;", spanBranch);
-        Assert.DoesNotContain("? obj.AnimalType : 1;", spanBranch);
-        Assert.Contains("? obj.AnimalType : 2;", streamBranch);
-        Assert.DoesNotContain("? obj.AnimalType : 1;", streamBranch);
+        Assert.Contains("SpanWriter.WriteByte(ref data, (byte)(2));", spanBranch);
+        Assert.DoesNotContain("obj.AnimalType", spanBranch);
+        Assert.Contains("StreamWriter.WriteByte(stream, (byte)(2));", streamBranch);
+        Assert.DoesNotContain("obj.AnimalType", streamBranch);
     }
 
     [Fact]

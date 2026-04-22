@@ -351,7 +351,7 @@ public class PolymorphicCollectionParityTests
     }
 
     [Fact]
-    public void ExplicitTypeIdPropertyOnEmptyCollection_ShouldRoundtripProvidedDiscriminator()
+    public void ExplicitTypeIdPropertyOnEmptyCollection_ShouldIgnorePropertyValueAndUseDefault()
     {
         var original = new DefaultedTypeIdPropertyPacket
         {
@@ -362,15 +362,15 @@ public class PolymorphicCollectionParityTests
         var buffer = new byte[DefaultedTypeIdPropertyPacket.GetPacketSize(original)];
         DefaultedTypeIdPropertyPacket.Serialize(original, buffer);
 
-        Assert.Equal(10, buffer[0]);
+        Assert.Equal(20, buffer[0]);
         Assert.Equal(0, buffer[1]);
 
         var roundTripped = DefaultedTypeIdPropertyPacket.Deserialize(buffer);
-        Assert.Equal(10, roundTripped.AnimalType);
+        Assert.Equal(20, roundTripped.AnimalType);
         AssertAnimalSequence(original.Animals ?? Array.Empty<IAnimal>(), roundTripped.Animals ?? Array.Empty<IAnimal>());
 
         var streamRoundTripped = RoundTripThroughStream(original, DefaultedTypeIdPropertyPacket.Serialize, DefaultedTypeIdPropertyPacket.Deserialize);
-        Assert.Equal(10, streamRoundTripped.AnimalType);
+        Assert.Equal(20, streamRoundTripped.AnimalType);
         AssertAnimalSequence(original.Animals ?? Array.Empty<IAnimal>(), streamRoundTripped.Animals ?? Array.Empty<IAnimal>());
     }
 

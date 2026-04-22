@@ -38,6 +38,17 @@ internal static class SerializationWriterEmitter
         );
     }
 
+    public static void EmitCountWrite(IndentedStringBuilder sb, WriterCtx ctx, string typeName, string value, string comment = "")
+    {
+        if (GeneratorUtilities.ShouldUseCheckedCountConversion(typeName))
+        {
+            EmitCheckedWrite(sb, ctx, typeName, value, comment);
+            return;
+        }
+
+        EmitWrite(sb, ctx, typeName, value, comment);
+    }
+
     public static void EmitWriteString(IndentedStringBuilder sb, WriterCtx ctx, string value)
     {
         var refOrEmpty = ctx.IsSpan ? "ref " : "";

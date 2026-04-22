@@ -344,7 +344,7 @@ public static class SerializationGenerator
             var countExpression = collectionMember.IsMemoryOwner
                 ? $"obj.{collectionName}?.Memory.Length ?? 0"
                 : GeneratorUtilities.GetCountExpressionForAccess(collectionMember, $"obj.{collectionName}", true);
-            SerializationWriterEmitter.EmitCheckedWrite(sb, ctx, member.TypeName, countExpression);
+            SerializationWriterEmitter.EmitCountWrite(sb, ctx, member.TypeName, countExpression);
         }
     }
 
@@ -370,10 +370,6 @@ public static class SerializationGenerator
             var info = referencedMember.PolymorphicInfo.Value;
             var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
             var countExpression = GeneratorUtilities.GetCountExpressionForAccess(referencedMember, $"obj.{collectionName}", true);
-            var propertyAccess = $"obj.{member.Name}";
-            var comparerTypeName = TypeHelper.GetGlobalTypeName(member.TypeName);
-            var hasExplicitTypeIdExpression =
-                $"!global::System.Collections.Generic.EqualityComparer<{comparerTypeName}>.Default.Equals({propertyAccess}, default)";
 
             if (!PolymorphicUtilities.TryGetDefaultOption(info, out var defaultOption))
             {
@@ -385,34 +381,20 @@ public static class SerializationGenerator
             sb.WriteLineFormat("if ({0} == 0)", countExpression);
             using (sb.BeginBlock())
             {
-                sb.WriteLineFormat("var discriminator = {0} ? {1} : {2};", hasExplicitTypeIdExpression, propertyAccess, defaultKey);
-                sb.WriteLine("switch (discriminator)");
-                using (sb.BeginBlock())
-                {
-                    foreach (var option in info.Options)
-                    {
-                        var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                        sb.WriteLineFormat("case {0}:", key);
-                        sb.WriteLine("    break;");
-                    }
-
-                    sb.WriteLine("default:");
-                    sb.WriteLineFormat("    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{discriminator}}\");", collectionName);
-                }
-                SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, "discriminator");
+                SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, defaultKey);
             }
 
             sb.WriteLine("else");
             using (sb.BeginBlock())
             {
                 PolymorphicUtilities.EmitFirstCollectionItemAccess(sb, referencedMember, $"obj.{collectionName}", "firstItem");
-                sb.WriteLineFormat("{0} inferredDiscriminator = firstItem switch", comparerTypeName);
+                sb.WriteLineFormat("{0} discriminator = firstItem switch", typeIdType);
                 sb.WriteLine("{");
                 sb.Indent();
                 foreach (var option in info.Options)
                 {
                     var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                    sb.WriteLineFormat("{0} => {1},", TypeHelper.GetGlobalTypeName(option.Type), key);
+                    sb.WriteLineFormat("{0} => ({1}){2},", TypeHelper.GetGlobalTypeName(option.Type), typeIdType, key);
                 }
 
                 sb.WriteLine
@@ -421,23 +403,7 @@ public static class SerializationGenerator
                 );
                 sb.Unindent();
                 sb.WriteLine("};");
-
-                sb.WriteLineFormat("if ({0})", hasExplicitTypeIdExpression);
-                using (sb.BeginBlock())
-                {
-                    sb.WriteLineFormat("if (!global::System.Collections.Generic.EqualityComparer<{0}>.Default.Equals({1}, inferredDiscriminator))", comparerTypeName, propertyAccess);
-                    using (sb.BeginBlock())
-                    {
-                        sb.WriteLineFormat("throw new System.IO.InvalidDataException($\"Type id property {0} does not match the item type in {1}.\");", member.Name, collectionName);
-                    }
-                    SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, propertyAccess);
-                }
-
-                sb.WriteLine("else");
-                using (sb.BeginBlock())
-                {
-                    SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, "inferredDiscriminator");
-                }
+                SerializationWriterEmitter.EmitWrite(sb, ctx, typeIdType, "discriminator");
             }
         }
         else

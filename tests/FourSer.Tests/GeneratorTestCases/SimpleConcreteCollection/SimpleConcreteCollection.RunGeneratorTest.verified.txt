@@ -22,16 +22,11 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
     {
         if (obj is null) return 0;
         var size = 0;
-        _ = checked((int)((obj.Cats?.Count ?? 0)));
         size += sizeof(int); // Count size for Cats
         if (obj.Cats is not null)
         {
             foreach(var item in obj.Cats)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
                 size += global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.GetPacketSize(item);
             }
         }
@@ -85,14 +80,7 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
         }
         else
         {
-            for (int i = 0; i < obj.Cats.Count; i++)
-            {
-                if (obj.Cats[i] is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
-            SpanWriter.WriteInt32(ref data, checked((int)(obj.Cats.Count)));
+            SpanWriter.WriteInt32(ref data, (int)(obj.Cats.Count));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 if (obj.Cats[i] is null)
@@ -118,14 +106,7 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
         }
         else
         {
-            for (int i = 0; i < obj.Cats.Count; i++)
-            {
-                if (obj.Cats[i] is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
-            StreamWriter.WriteInt32(stream, checked((int)(obj.Cats.Count)));
+            StreamWriter.WriteInt32(stream, (int)(obj.Cats.Count));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 if (obj.Cats[i] is null)

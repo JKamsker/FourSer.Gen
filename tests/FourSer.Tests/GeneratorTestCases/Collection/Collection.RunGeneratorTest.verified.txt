@@ -22,7 +22,6 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
     {
         if (obj is null) return 0;
         var size = 0;
-        _ = checked((int)((obj.Numbers?.Count ?? 0)));
         size += sizeof(int); // Count size for Numbers
         size += (obj.Numbers?.Count ?? 0) * sizeof(int);
         return size;
@@ -77,7 +76,7 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, checked((int)(obj.Numbers.Count)));
+            SpanWriter.WriteInt32(ref data, (int)(obj.Numbers.Count));
             var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
             numbersBytes.CopyTo(data);
             data = data.Slice(numbersBytes.Length);
@@ -98,7 +97,7 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         }
         else
         {
-            StreamWriter.WriteInt32(stream, checked((int)(obj.Numbers.Count)));
+            StreamWriter.WriteInt32(stream, (int)(obj.Numbers.Count));
             var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
             stream.Write(numbersBytes);
         }

@@ -103,10 +103,6 @@ public partial class MainObject : ISerializable<MainObject>
         {
             foreach(var item in obj.Items)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
                 size += global::FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item.GetPacketSize(item);
             }
         }
@@ -160,13 +156,6 @@ public partial class MainObject : ISerializable<MainObject>
         }
         else
         {
-            for (int i = 0; i < obj.Items.Count; i++)
-            {
-                if (obj.Items[i] is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
             SpanWriter.WriteByte(ref data, checked((byte)(obj.Items.Count)));
             for (int i = 0; i < obj.Items.Count; i++)
             {
@@ -193,13 +182,6 @@ public partial class MainObject : ISerializable<MainObject>
         }
         else
         {
-            for (int i = 0; i < obj.Items.Count; i++)
-            {
-                if (obj.Items[i] is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
             StreamWriter.WriteByte(stream, checked((byte)(obj.Items.Count)));
             for (int i = 0; i < obj.Items.Count; i++)
             {

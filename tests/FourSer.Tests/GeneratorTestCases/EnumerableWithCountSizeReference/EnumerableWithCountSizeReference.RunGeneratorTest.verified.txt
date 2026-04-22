@@ -24,15 +24,10 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         var size = 0;
         size += sizeof(int); // Size for unmanaged type Count
         var myListSizedItems = obj.MyList is null ? null : global::System.Linq.Enumerable.ToArray(obj.MyList);
-        _ = checked((int)(myListSizedItems?.Length ?? 0));
         if (myListSizedItems is not null)
         {
             foreach (var item in myListSizedItems)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
                 size += global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.GetPacketSize(item);
             }
         }
@@ -96,7 +91,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
                 myListCount++;
             }
         }
-        SpanWriter.WriteInt32(ref myListCountSpan, checked((int)(myListCount)));
+        SpanWriter.WriteInt32(ref myListCountSpan, (int)(myListCount));
     }
 
     public static void Serialize(EnumerableOfReferenceTypes obj, System.Span<byte> data)
@@ -128,7 +123,7 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         }
         var myListEndPosition = stream.Position;
         stream.Position = myListCountPosition;
-        StreamWriter.WriteInt32(stream, checked((int)(myListCount)));
+        StreamWriter.WriteInt32(stream, (int)(myListCount));
         stream.Position = myListEndPosition;
     }
 }

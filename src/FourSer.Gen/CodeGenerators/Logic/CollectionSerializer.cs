@@ -49,12 +49,6 @@ internal static class CollectionSerializer
         var isHandledByPolymorphic = collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId &&
             string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
 
-        EmitNullSerializedElementValidation(sb, member);
-        if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
-        {
-            PolymorphicCollectionValidationEmitter.Emit(sb, member, collectionInfo);
-        }
-
         if (collectionInfo.CountSize >= 0)
         {
             var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}");
@@ -74,7 +68,7 @@ internal static class CollectionSerializer
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
             var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}");
-            SerializationWriterEmitter.EmitCheckedWrite(sb, ctx, countType, countExpression);
+            SerializationWriterEmitter.EmitCountWrite(sb, ctx, countType, countExpression);
         }
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
@@ -224,51 +218,6 @@ internal static class CollectionSerializer
                 }
             });
         }
-    }
-
-    private static void EmitNullSerializedElementValidation(IndentedStringBuilder sb, MemberToGenerate member)
-    {
-        if (member.CustomSerializer is not null
-            || GeneratorUtilities.ShouldUsePolymorphicSerialization(member)
-            || member.CollectionTypeInfo?.IsPureEnumerable == true)
-        {
-            return;
-        }
-
-        var hasGeneratedSerializerElements =
-            member.ListTypeArgument is { HasGenerateSerializerAttribute: true, IsValueType: false, IsUnmanagedType: false, IsStringType: false }
-            || member.CollectionTypeInfo is
-            {
-                HasElementGenerateSerializerAttribute: true,
-                IsElementValueType: false,
-                IsElementUnmanagedType: false,
-                IsElementStringType: false
-            };
-
-        if (!hasGeneratedSerializerElements)
-        {
-            return;
-        }
-
-        if (member.CollectionTypeInfo?.SupportsIndexing == true || member.IsList)
-        {
-            var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}");
-            EmitForLoop(sb, countExpression, (s, indexVar) =>
-            {
-                s.WriteLineFormat("if (obj.{0}[{1}] is null)", member.Name, indexVar);
-                using var _ = s.BeginBlock();
-                s.WriteLine("throw new System.NullReferenceException(\"Collection item cannot be null.\");");
-            });
-
-            return;
-        }
-
-        EmitForeach(sb, $"obj.{member.Name}", (s, itemVar) =>
-        {
-            s.WriteLineFormat("if ({0} is null)", itemVar);
-            using var _ = s.BeginBlock();
-            s.WriteLine("throw new System.NullReferenceException(\"Collection item cannot be null.\");");
-        });
     }
 
     private static void HandleNullCollection
@@ -487,13 +436,13 @@ internal static class CollectionSerializer
             var endPositionVariableName = $"{variablePrefix}EndPosition";
             sb.WriteLineFormat("var {0} = stream.Position;", endPositionVariableName);
             sb.WriteLineFormat("stream.Position = {0};", countPositionVariableName);
-            SerializationWriterEmitter.EmitCheckedWrite(sb, ctx, countType, countExpr);
+            SerializationWriterEmitter.EmitCountWrite(sb, ctx, countType, countExpr);
             sb.WriteLineFormat("stream.Position = {0};", endPositionVariableName);
         }
         else
         {
             var countCtx = ctx with { Target = countSpanVariableName };
-            SerializationWriterEmitter.EmitCheckedWrite(sb, countCtx, countType, countExpr);
+            SerializationWriterEmitter.EmitCountWrite(sb, countCtx, countType, countExpr);
         }
     }
 
@@ -522,7 +471,7 @@ internal static class CollectionSerializer
 
         void EmitCountAndWrite(string collectionExpression, string countExpression)
         {
-            SerializationWriterEmitter.EmitCheckedWrite(sb, ctx, countType, countExpression);
+            SerializationWriterEmitter.EmitCountWrite(sb, ctx, countType, countExpression);
             SerializationWriterEmitter.EmitWriteBytes(sb, ctx, collectionExpression);
         }
 
@@ -660,7 +609,6 @@ internal static class CollectionSerializer
                 {
                     if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
                     {
-                        PolymorphicCollectionValidationEmitter.Emit(sb, member, collectionInfo);
                         PolymorphicSerializer.GeneratePolymorphicCollection
                         (
                             sb,
@@ -677,7 +625,6 @@ internal static class CollectionSerializer
             }
             else if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
             {
-                PolymorphicCollectionValidationEmitter.Emit(sb, member, collectionInfo);
                 PolymorphicSerializer.GeneratePolymorphicCollection
                 (
                     sb,

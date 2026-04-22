@@ -142,14 +142,12 @@ public static partial class PacketSizeGenerator
 
     private static void EmitCheckedCountValidation(IndentedStringBuilder sb, string countType, string countExpression)
     {
-        sb.WriteLineFormat("_ = checked(({0})({1}));", countType, countExpression);
-    }
+        if (!GeneratorUtilities.ShouldUseCheckedCountConversion(countType))
+        {
+            return;
+        }
 
-    private static void EmitNullCollectionItemGuard(IndentedStringBuilder sb, string itemExpression)
-    {
-        sb.WriteLineFormat("if ({0} is null)", itemExpression);
-        using var _ = sb.BeginBlock();
-        sb.WriteLine("throw new System.NullReferenceException(\"Collection item cannot be null.\");");
+        sb.WriteLineFormat("_ = checked(({0})({1}));", countType, countExpression);
     }
 
     private static void GenerateStandardCollectionSizeCalculation(
@@ -190,20 +188,12 @@ public static partial class PacketSizeGenerator
                 using var _ = sb.BeginBlock();
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var __ = sb.BeginBlock();
-                if (!info.IsValueType)
-                {
-                    EmitNullCollectionItemGuard(sb, "item");
-                }
                 sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
             }
             else
             {
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var _ = sb.BeginBlock();
-                if (!info.IsValueType)
-                {
-                    EmitNullCollectionItemGuard(sb, "item");
-                }
                 sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
             }
         }
@@ -360,14 +350,15 @@ public static partial class PacketSizeGenerator
         }
 
         collectionAccessExpression ??= $"obj.{member.Name}";
-        var expectedDiscriminatorVar = EmitSingleTypeIdPolymorphicSizeValidationPreamble(sb, member, collectionInfo, collectionAccessExpression);
         var enumerationGuard = collectionAccessExpression == $"obj.{member.Name}"
             ? GeneratorUtilities.GetCollectionIterationGuard(member, collectionAccessExpression)
-            : $"{collectionAccessExpression} is not null";
+            : null;
 
         if (member.CollectionTypeInfo?.CanBeNull == true || enumerationGuard is not null)
         {
-            var condition = enumerationGuard ?? $"{collectionAccessExpression} is not null";
+            var condition = collectionAccessExpression == $"obj.{member.Name}"
+                ? enumerationGuard ?? $"{collectionAccessExpression} is not null"
+                : $"{collectionAccessExpression} is not null";
             sb.WriteLineFormat("if ({0})", condition);
             using var _ = sb.BeginBlock();
 
@@ -377,13 +368,7 @@ public static partial class PacketSizeGenerator
             if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
             {
                 sb.WriteLineFormat
-                    ("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
-            }
-
-            sb.WriteLine("if (item is null)");
-            using (sb.BeginBlock())
-            {
-                sb.WriteLine("throw new System.NullReferenceException(\"Item in collection cannot be null.\");");
+                ("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
             }
 
             sb.WriteLine("size += item switch");
@@ -393,11 +378,6 @@ public static partial class PacketSizeGenerator
             {
                 var typeName = TypeHelper.GetGlobalTypeName(option.Type);
                 var varName = TypeHelper.GetSimpleTypeName(option.Type).ToCamelCase();
-                if (expectedDiscriminatorVar is not null)
-                {
-                    var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                    sb.WriteLineFormat("{0} {1} when !global::System.Collections.Generic.EqualityComparer<{2}>.Default.Equals({3}, ({2}){4}) => throw new System.IO.InvalidDataException(\"All items in collection {5} must have the same runtime type for single-type-id polymorphism.\"),", typeName, varName, info.EnumUnderlyingType ?? info.TypeIdType, expectedDiscriminatorVar, key, member.Name);
-                }
                 sb.WriteLineFormat("{0} {1} => {2}.GetPacketSize({1}),", typeName, varName, typeName);
             }
 
@@ -420,12 +400,6 @@ public static partial class PacketSizeGenerator
                 ("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
         }
 
-        sb.WriteLine("if (item is null)");
-        using (sb.BeginBlock())
-        {
-            sb.WriteLine("throw new System.NullReferenceException(\"Item in collection cannot be null.\");");
-        }
-
         sb.WriteLine("size += item switch");
         sb.WriteLine("{");
         sb.Indent();
@@ -433,11 +407,6 @@ public static partial class PacketSizeGenerator
         {
             var typeName = TypeHelper.GetGlobalTypeName(option.Type);
             var varName = TypeHelper.GetSimpleTypeName(option.Type).ToCamelCase();
-            if (expectedDiscriminatorVar is not null)
-            {
-                var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                sb.WriteLineFormat("{0} {1} when !global::System.Collections.Generic.EqualityComparer<{2}>.Default.Equals({3}, ({2}){4}) => throw new System.IO.InvalidDataException(\"All items in collection {5} must have the same runtime type for single-type-id polymorphism.\"),", typeName, varName, info.EnumUnderlyingType ?? info.TypeIdType, expectedDiscriminatorVar, key, member.Name);
-            }
             sb.WriteLineFormat("{0} {1} => {2}.GetPacketSize({1}),", typeName, varName, typeName);
         }
 

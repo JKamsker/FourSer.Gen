@@ -23,41 +23,15 @@ public partial class Inventory : ISerializable<Inventory>
         if (obj is null) return 0;
         var size = 0;
         size += sizeof(byte); // Size for unmanaged type ItemType
-        _ = checked((int)((obj.Items?.Count() ?? 0)));
         size += sizeof(int); // Count size for Items
-        byte itemsExpectedDiscriminator = default;
-        if ((obj.Items?.Count() ?? 0) > 0)
-        {
-            using var firstSizedItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.IItem>)obj.Items).GetEnumerator();
-            if (!firstSizedItemEnumerator.MoveNext())
-            {
-                throw new System.InvalidOperationException("Collection must contain at least one item.");
-            }
-            var firstSizedItem = firstSizedItemEnumerator.Current;
-            itemsExpectedDiscriminator = firstSizedItem switch
-            {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword => (byte)10,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield => (byte)20,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion => (byte)30,
-                null => throw new System.NullReferenceException("Item in collection cannot be null."),
-                _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstSizedItem?.GetType().FullName}")
-            };
-        }
         if (obj.Items is not null)
         {
             foreach (var item in obj.Items)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Item in collection cannot be null.");
-                }
                 size += item switch
                 {
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword sword when !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemsExpectedDiscriminator, (byte)10) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword.GetPacketSize(sword),
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield shield when !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemsExpectedDiscriminator, (byte)20) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield shield => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield.GetPacketSize(shield),
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion potion when !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemsExpectedDiscriminator, (byte)30) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion potion => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion.GetPacketSize(potion),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
                 };
@@ -170,19 +144,7 @@ public partial class Inventory : ISerializable<Inventory>
         if (obj is null) return;
         if ((obj.Items?.Count() ?? 0) == 0)
         {
-            var discriminator = !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(obj.ItemType, default) ? obj.ItemType : 10;
-            switch (discriminator)
-            {
-                case 10:
-                    break;
-                case 20:
-                    break;
-                case 30:
-                    break;
-                default:
-                    throw new System.IO.InvalidDataException($"Unknown type id for Items: {discriminator}");
-            }
-            SpanWriter.WriteByte(ref data, (byte)(discriminator));
+            SpanWriter.WriteByte(ref data, (byte)(10));
         }
         else
         {
@@ -192,25 +154,14 @@ public partial class Inventory : ISerializable<Inventory>
                 throw new System.InvalidOperationException("Collection must contain at least one item.");
             }
             var firstItem = firstItemEnumerator.Current;
-            byte inferredDiscriminator = firstItem switch
+            byte discriminator = firstItem switch
             {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword => 10,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield => 20,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion => 30,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword => (byte)10,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield => (byte)20,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion => (byte)30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
-            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(obj.ItemType, default))
-            {
-                if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(obj.ItemType, inferredDiscriminator))
-                {
-                    throw new System.IO.InvalidDataException($"Type id property ItemType does not match the item type in Items.");
-                }
-                SpanWriter.WriteByte(ref data, (byte)(obj.ItemType));
-            }
-            else
-            {
-                SpanWriter.WriteByte(ref data, (byte)(inferredDiscriminator));
-            }
+            SpanWriter.WriteByte(ref data, (byte)(discriminator));
         }
         if (obj.Items is null)
         {
@@ -218,6 +169,7 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
+            SpanWriter.WriteInt32(ref data, (int)(obj.Items.Count()));
             if (obj.Items.Count() > 0)
             {
                 using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.IItem>)obj.Items).GetEnumerator();
@@ -226,70 +178,13 @@ public partial class Inventory : ISerializable<Inventory>
                     throw new System.InvalidOperationException("Collection must contain at least one item.");
                 }
                 var firstItem = firstItemEnumerator.Current;
-                byte discriminator = firstItem switch
+                var discriminator = firstItem switch
                 {
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword => (byte)10,
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield => (byte)20,
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion => (byte)30,
-                    null => throw new System.NullReferenceException("Item in collection cannot be null."),
-                    _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstItem?.GetType().FullName}")
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword => 10,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield => 20,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion => 30,
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
                 };
-                foreach (var item in obj.Items)
-                {
-                    switch (item)
-                    {
-                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword:
-                        {
-                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)10))
-                            {
-                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
-                            }
-                            break;
-                        }
-                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield:
-                        {
-                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)20))
-                            {
-                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
-                            }
-                            break;
-                        }
-                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion:
-                        {
-                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)30))
-                            {
-                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
-                            }
-                            break;
-                        }
-                        case null:
-                            throw new System.NullReferenceException("Item in collection cannot be null.");
-                        default:
-                            throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
-                    }
-                }
-            }
-            SpanWriter.WriteInt32(ref data, checked((int)(obj.Items.Count())));
-            if (obj.Items.Count() > 0)
-            {
-                var hasExplicitDiscriminator = !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(obj.ItemType, default);
-                var discriminator = obj.ItemType;
-                if (!hasExplicitDiscriminator)
-                {
-                    using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.IItem>)obj.Items).GetEnumerator();
-                    if (!firstItemEnumerator.MoveNext())
-                    {
-                        throw new System.InvalidOperationException("Collection must contain at least one item.");
-                    }
-                    var firstItem = firstItemEnumerator.Current;
-                    discriminator = firstItem switch
-                    {
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword => 10,
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield => 20,
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion => 30,
-                        _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
-                    };
-                }
                 switch (discriminator)
                 {
                     case 10:
@@ -333,19 +228,7 @@ public partial class Inventory : ISerializable<Inventory>
         if (obj is null) return;
         if ((obj.Items?.Count() ?? 0) == 0)
         {
-            var discriminator = !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(obj.ItemType, default) ? obj.ItemType : 10;
-            switch (discriminator)
-            {
-                case 10:
-                    break;
-                case 20:
-                    break;
-                case 30:
-                    break;
-                default:
-                    throw new System.IO.InvalidDataException($"Unknown type id for Items: {discriminator}");
-            }
-            StreamWriter.WriteByte(stream, (byte)(discriminator));
+            StreamWriter.WriteByte(stream, (byte)(10));
         }
         else
         {
@@ -355,25 +238,14 @@ public partial class Inventory : ISerializable<Inventory>
                 throw new System.InvalidOperationException("Collection must contain at least one item.");
             }
             var firstItem = firstItemEnumerator.Current;
-            byte inferredDiscriminator = firstItem switch
+            byte discriminator = firstItem switch
             {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword => 10,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield => 20,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion => 30,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword => (byte)10,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield => (byte)20,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion => (byte)30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
-            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(obj.ItemType, default))
-            {
-                if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(obj.ItemType, inferredDiscriminator))
-                {
-                    throw new System.IO.InvalidDataException($"Type id property ItemType does not match the item type in Items.");
-                }
-                StreamWriter.WriteByte(stream, (byte)(obj.ItemType));
-            }
-            else
-            {
-                StreamWriter.WriteByte(stream, (byte)(inferredDiscriminator));
-            }
+            StreamWriter.WriteByte(stream, (byte)(discriminator));
         }
         if (obj.Items is null)
         {
@@ -381,6 +253,7 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
+            StreamWriter.WriteInt32(stream, (int)(obj.Items.Count()));
             if (obj.Items.Count() > 0)
             {
                 using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.IItem>)obj.Items).GetEnumerator();
@@ -389,70 +262,13 @@ public partial class Inventory : ISerializable<Inventory>
                     throw new System.InvalidOperationException("Collection must contain at least one item.");
                 }
                 var firstItem = firstItemEnumerator.Current;
-                byte discriminator = firstItem switch
+                var discriminator = firstItem switch
                 {
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword => (byte)10,
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield => (byte)20,
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion => (byte)30,
-                    null => throw new System.NullReferenceException("Item in collection cannot be null."),
-                    _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstItem?.GetType().FullName}")
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword => 10,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield => 20,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion => 30,
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
                 };
-                foreach (var item in obj.Items)
-                {
-                    switch (item)
-                    {
-                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword:
-                        {
-                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)10))
-                            {
-                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
-                            }
-                            break;
-                        }
-                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield:
-                        {
-                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)20))
-                            {
-                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
-                            }
-                            break;
-                        }
-                        case global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion:
-                        {
-                            if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(discriminator, (byte)30))
-                            {
-                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
-                            }
-                            break;
-                        }
-                        case null:
-                            throw new System.NullReferenceException("Item in collection cannot be null.");
-                        default:
-                            throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
-                    }
-                }
-            }
-            StreamWriter.WriteInt32(stream, checked((int)(obj.Items.Count())));
-            if (obj.Items.Count() > 0)
-            {
-                var hasExplicitDiscriminator = !global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(obj.ItemType, default);
-                var discriminator = obj.ItemType;
-                if (!hasExplicitDiscriminator)
-                {
-                    using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.IItem>)obj.Items).GetEnumerator();
-                    if (!firstItemEnumerator.MoveNext())
-                    {
-                        throw new System.InvalidOperationException("Collection must contain at least one item.");
-                    }
-                    var firstItem = firstItemEnumerator.Current;
-                    discriminator = firstItem switch
-                    {
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Sword => 10,
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Shield => 20,
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableQueue.Potion => 30,
-                        _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
-                    };
-                }
                 switch (discriminator)
                 {
                     case 10:

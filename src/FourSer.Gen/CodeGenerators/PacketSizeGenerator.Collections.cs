@@ -58,10 +58,6 @@ public static partial class PacketSizeGenerator
             using var _ = sb.BeginBlock();
             sb.WriteLineFormat("foreach (var item in {0})", itemsVar);
             using var __ = sb.BeginBlock();
-            if (!info.IsValueType)
-            {
-                EmitNullCollectionItemGuard(sb, "item");
-            }
             sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
             return;
         }
@@ -78,46 +74,5 @@ public static partial class PacketSizeGenerator
             using var _ = sb.BeginBlock();
             sb.WriteLineFormat("foreach (var item in {0}) {{ size += StringEx.MeasureSize(item); }}", itemsVar);
         }
-    }
-
-    private static string? EmitSingleTypeIdPolymorphicSizeValidationPreamble(
-        IndentedStringBuilder sb,
-        MemberToGenerate member,
-        CollectionInfo collectionInfo,
-        string collectionAccessExpression)
-    {
-        if (member.PolymorphicInfo is not { } info || collectionInfo.PolymorphicMode != PolymorphicMode.SingleTypeId)
-        {
-            return null;
-        }
-
-        var discriminatorType = info.EnumUnderlyingType ?? info.TypeIdType;
-        var discriminatorVar = $"{member.Name.ToCamelCase()}ExpectedDiscriminator";
-        var countExpression = collectionAccessExpression == $"obj.{member.Name}"
-            ? GeneratorUtilities.GetCountExpressionForAccess(member, collectionAccessExpression, true)
-            : $"({collectionAccessExpression}?.Length ?? 0)";
-
-        sb.WriteLineFormat("{0} {1} = default;", discriminatorType, discriminatorVar);
-        sb.WriteLineFormat("if ({0} > 0)", countExpression);
-        using (sb.BeginBlock())
-        {
-            PolymorphicUtilities.EmitFirstCollectionItemAccess(sb, member, collectionAccessExpression, "firstSizedItem");
-            sb.WriteLineFormat("{0} = firstSizedItem switch", discriminatorVar);
-            sb.WriteLine("{");
-            sb.Indent();
-            foreach (var option in info.Options)
-            {
-                var typeName = TypeHelper.GetGlobalTypeName(option.Type);
-                var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                sb.WriteLineFormat("{0} => ({1}){2},", typeName, discriminatorType, key);
-            }
-
-            sb.WriteLine("null => throw new System.NullReferenceException(\"Item in collection cannot be null.\"),");
-            sb.WriteLine("_ => throw new System.IO.InvalidDataException($\"Unknown type for item: {firstSizedItem?.GetType().FullName}\")");
-            sb.Unindent();
-            sb.WriteLine("};");
-        }
-
-        return discriminatorVar;
     }
 }

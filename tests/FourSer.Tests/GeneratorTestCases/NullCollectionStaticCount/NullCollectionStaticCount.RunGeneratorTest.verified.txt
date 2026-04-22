@@ -97,16 +97,11 @@ public partial class MainObject : ISerializable<MainObject>
     {
         if (obj is null) return 0;
         var size = 0;
-        _ = checked((int)((obj.Items?.Count ?? 0)));
         size += sizeof(int); // Count size for Items
         if (obj.Items is not null)
         {
             foreach(var item in obj.Items)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
                 size += global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.GetPacketSize(item);
             }
         }
@@ -160,14 +155,7 @@ public partial class MainObject : ISerializable<MainObject>
         }
         else
         {
-            for (int i = 0; i < obj.Items.Count; i++)
-            {
-                if (obj.Items[i] is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
-            SpanWriter.WriteInt32(ref data, checked((int)(obj.Items.Count)));
+            SpanWriter.WriteInt32(ref data, (int)(obj.Items.Count));
             for (int i = 0; i < obj.Items.Count; i++)
             {
                 if (obj.Items[i] is null)
@@ -193,14 +181,7 @@ public partial class MainObject : ISerializable<MainObject>
         }
         else
         {
-            for (int i = 0; i < obj.Items.Count; i++)
-            {
-                if (obj.Items[i] is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
-            StreamWriter.WriteInt32(stream, checked((int)(obj.Items.Count)));
+            StreamWriter.WriteInt32(stream, (int)(obj.Items.Count));
             for (int i = 0; i < obj.Items.Count; i++)
             {
                 if (obj.Items[i] is null)

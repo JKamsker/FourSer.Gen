@@ -22,7 +22,6 @@ public partial class MyPacket : ISerializable<MyPacket>
     {
         if (obj is null) return 0;
         var size = 0;
-        _ = checked((int)((obj.Data?.Count ?? 0)));
         size += sizeof(int); // Count size for Data
         size += (obj.Data?.Count ?? 0) * sizeof(byte);
         return size;
@@ -67,7 +66,7 @@ public partial class MyPacket : ISerializable<MyPacket>
         }
         else
         {
-            SpanWriter.WriteInt32(ref data, checked((int)(obj.Data.Count)));
+            SpanWriter.WriteInt32(ref data, (int)(obj.Data.Count));
             SpanWriter.WriteBytes(ref data, obj.Data);
         }
     }
@@ -86,7 +85,7 @@ public partial class MyPacket : ISerializable<MyPacket>
         }
         else
         {
-            StreamWriter.WriteInt32(stream, checked((int)(obj.Data.Count)));
+            StreamWriter.WriteInt32(stream, (int)(obj.Data.Count));
             StreamWriter.WriteBytes(stream, obj.Data);
         }
     }

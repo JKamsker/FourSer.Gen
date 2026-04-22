@@ -28,10 +28,6 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         {
             foreach(var item in obj.Cats)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
                 size += global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat.GetPacketSize(item);
             }
         }
@@ -85,13 +81,6 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         }
         else
         {
-            for (int i = 0; i < obj.Cats.Count; i++)
-            {
-                if (obj.Cats[i] is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
             SpanWriter.WriteUInt16(ref data, checked((ushort)(obj.Cats.Count)));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
@@ -118,13 +107,6 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         }
         else
         {
-            for (int i = 0; i < obj.Cats.Count; i++)
-            {
-                if (obj.Cats[i] is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
             StreamWriter.WriteUInt16(stream, checked((ushort)(obj.Cats.Count)));
             for (int i = 0; i < obj.Cats.Count; i++)
             {

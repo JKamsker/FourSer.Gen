@@ -22,16 +22,11 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
     {
         if (obj is null) return 0;
         var size = 0;
-        _ = checked((ulong)((obj.Cats?.Count ?? 0)));
         size += sizeof(ulong); // Count size for Cats
         if (obj.Cats is not null)
         {
             foreach(var item in obj.Cats)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
                 size += global::FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat.GetPacketSize(item);
             }
         }
@@ -85,14 +80,7 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
         }
         else
         {
-            for (int i = 0; i < obj.Cats.Count; i++)
-            {
-                if (obj.Cats[i] is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
-            SpanWriter.WriteUInt64(ref data, checked((ulong)(obj.Cats.Count)));
+            SpanWriter.WriteUInt64(ref data, (ulong)(obj.Cats.Count));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 if (obj.Cats[i] is null)
@@ -118,14 +106,7 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
         }
         else
         {
-            for (int i = 0; i < obj.Cats.Count; i++)
-            {
-                if (obj.Cats[i] is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
-            StreamWriter.WriteUInt64(stream, checked((ulong)(obj.Cats.Count)));
+            StreamWriter.WriteUInt64(stream, (ulong)(obj.Cats.Count));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
                 if (obj.Cats[i] is null)

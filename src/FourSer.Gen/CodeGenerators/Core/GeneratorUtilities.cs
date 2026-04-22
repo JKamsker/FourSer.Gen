@@ -103,6 +103,15 @@ public static class GeneratorUtilities
         return member.CollectionTypeInfo?.RangeFactoryTypeName == "System.Collections.Immutable.ImmutableArray";
     }
 
+    public static bool ShouldUseCheckedCountConversion(string typeName)
+    {
+        return typeName switch
+        {
+            "byte" or "sbyte" or "short" or "ushort" => true,
+            _ => false
+        };
+    }
+
     /// <summary>
     ///     Unified polymorphic check (consolidates 4 duplicate implementations)
     /// </summary>

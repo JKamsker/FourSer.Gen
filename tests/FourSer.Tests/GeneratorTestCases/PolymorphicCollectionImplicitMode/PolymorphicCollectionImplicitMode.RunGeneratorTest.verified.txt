@@ -23,36 +23,15 @@ public partial class Inventory : ISerializable<Inventory>
         if (obj is null) return 0;
         var size = 0;
         size += sizeof(long); // Size for unmanaged type TypeId
-        _ = checked((int)((obj.Items?.Count ?? 0)));
         size += sizeof(int); // Count size for Items
-        long itemsExpectedDiscriminator = default;
-        if ((obj.Items?.Count ?? 0) > 0)
-        {
-            var firstSizedItem = obj.Items[0];
-            itemsExpectedDiscriminator = firstSizedItem switch
-            {
-                global::FourSer.TestUser.Sword => (long)10,
-                global::FourSer.TestUser.Shield => (long)20,
-                global::FourSer.TestUser.Potion => (long)30,
-                null => throw new System.NullReferenceException("Item in collection cannot be null."),
-                _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstSizedItem?.GetType().FullName}")
-            };
-        }
         if (obj.Items is not null)
         {
             foreach (var item in obj.Items)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Item in collection cannot be null.");
-                }
                 size += item switch
                 {
-                    global::FourSer.TestUser.Sword sword when !global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(itemsExpectedDiscriminator, (long)10) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.TestUser.Sword sword => global::FourSer.TestUser.Sword.GetPacketSize(sword),
-                    global::FourSer.TestUser.Shield shield when !global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(itemsExpectedDiscriminator, (long)20) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.TestUser.Shield shield => global::FourSer.TestUser.Shield.GetPacketSize(shield),
-                    global::FourSer.TestUser.Potion potion when !global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(itemsExpectedDiscriminator, (long)30) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.TestUser.Potion potion => global::FourSer.TestUser.Potion.GetPacketSize(potion),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
                 };
@@ -163,42 +142,19 @@ public partial class Inventory : ISerializable<Inventory>
         if (obj is null) return;
         if ((obj.Items?.Count ?? 0) == 0)
         {
-            var discriminator = !global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(obj.TypeId, default) ? obj.TypeId : 10;
-            switch (discriminator)
-            {
-                case 10:
-                    break;
-                case 20:
-                    break;
-                case 30:
-                    break;
-                default:
-                    throw new System.IO.InvalidDataException($"Unknown type id for Items: {discriminator}");
-            }
-            SpanWriter.WriteInt64(ref data, (long)(discriminator));
+            SpanWriter.WriteInt64(ref data, (long)(10));
         }
         else
         {
             var firstItem = obj.Items[0];
-            long inferredDiscriminator = firstItem switch
+            long discriminator = firstItem switch
             {
-                global::FourSer.TestUser.Sword => 10,
-                global::FourSer.TestUser.Shield => 20,
-                global::FourSer.TestUser.Potion => 30,
+                global::FourSer.TestUser.Sword => (long)10,
+                global::FourSer.TestUser.Shield => (long)20,
+                global::FourSer.TestUser.Potion => (long)30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
-            if (!global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(obj.TypeId, default))
-            {
-                if (!global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(obj.TypeId, inferredDiscriminator))
-                {
-                    throw new System.IO.InvalidDataException($"Type id property TypeId does not match the item type in Items.");
-                }
-                SpanWriter.WriteInt64(ref data, (long)(obj.TypeId));
-            }
-            else
-            {
-                SpanWriter.WriteInt64(ref data, (long)(inferredDiscriminator));
-            }
+            SpanWriter.WriteInt64(ref data, (long)(discriminator));
         }
         if (obj.Items is null)
         {
@@ -206,68 +162,17 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
+            SpanWriter.WriteInt32(ref data, (int)(obj.Items.Count));
             if (obj.Items.Count > 0)
             {
                 var firstItem = obj.Items[0];
-                long discriminator = firstItem switch
+                var discriminator = firstItem switch
                 {
-                    global::FourSer.TestUser.Sword => (long)10,
-                    global::FourSer.TestUser.Shield => (long)20,
-                    global::FourSer.TestUser.Potion => (long)30,
-                    null => throw new System.NullReferenceException("Item in collection cannot be null."),
-                    _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstItem?.GetType().FullName}")
+                    global::FourSer.TestUser.Sword => 10,
+                    global::FourSer.TestUser.Shield => 20,
+                    global::FourSer.TestUser.Potion => 30,
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
                 };
-                foreach (var item in obj.Items)
-                {
-                    switch (item)
-                    {
-                        case global::FourSer.TestUser.Sword:
-                        {
-                            if (!global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(discriminator, (long)10))
-                            {
-                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
-                            }
-                            break;
-                        }
-                        case global::FourSer.TestUser.Shield:
-                        {
-                            if (!global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(discriminator, (long)20))
-                            {
-                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
-                            }
-                            break;
-                        }
-                        case global::FourSer.TestUser.Potion:
-                        {
-                            if (!global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(discriminator, (long)30))
-                            {
-                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
-                            }
-                            break;
-                        }
-                        case null:
-                            throw new System.NullReferenceException("Item in collection cannot be null.");
-                        default:
-                            throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
-                    }
-                }
-            }
-            SpanWriter.WriteInt32(ref data, checked((int)(obj.Items.Count)));
-            if (obj.Items.Count > 0)
-            {
-                var hasExplicitDiscriminator = !global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(obj.TypeId, default);
-                var discriminator = obj.TypeId;
-                if (!hasExplicitDiscriminator)
-                {
-                    var firstItem = obj.Items[0];
-                    discriminator = firstItem switch
-                    {
-                        global::FourSer.TestUser.Sword => 10,
-                        global::FourSer.TestUser.Shield => 20,
-                        global::FourSer.TestUser.Potion => 30,
-                        _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
-                    };
-                }
                 switch (discriminator)
                 {
                     case 10:
@@ -311,42 +216,19 @@ public partial class Inventory : ISerializable<Inventory>
         if (obj is null) return;
         if ((obj.Items?.Count ?? 0) == 0)
         {
-            var discriminator = !global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(obj.TypeId, default) ? obj.TypeId : 10;
-            switch (discriminator)
-            {
-                case 10:
-                    break;
-                case 20:
-                    break;
-                case 30:
-                    break;
-                default:
-                    throw new System.IO.InvalidDataException($"Unknown type id for Items: {discriminator}");
-            }
-            StreamWriter.WriteInt64(stream, (long)(discriminator));
+            StreamWriter.WriteInt64(stream, (long)(10));
         }
         else
         {
             var firstItem = obj.Items[0];
-            long inferredDiscriminator = firstItem switch
+            long discriminator = firstItem switch
             {
-                global::FourSer.TestUser.Sword => 10,
-                global::FourSer.TestUser.Shield => 20,
-                global::FourSer.TestUser.Potion => 30,
+                global::FourSer.TestUser.Sword => (long)10,
+                global::FourSer.TestUser.Shield => (long)20,
+                global::FourSer.TestUser.Potion => (long)30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
-            if (!global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(obj.TypeId, default))
-            {
-                if (!global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(obj.TypeId, inferredDiscriminator))
-                {
-                    throw new System.IO.InvalidDataException($"Type id property TypeId does not match the item type in Items.");
-                }
-                StreamWriter.WriteInt64(stream, (long)(obj.TypeId));
-            }
-            else
-            {
-                StreamWriter.WriteInt64(stream, (long)(inferredDiscriminator));
-            }
+            StreamWriter.WriteInt64(stream, (long)(discriminator));
         }
         if (obj.Items is null)
         {
@@ -354,68 +236,17 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
+            StreamWriter.WriteInt32(stream, (int)(obj.Items.Count));
             if (obj.Items.Count > 0)
             {
                 var firstItem = obj.Items[0];
-                long discriminator = firstItem switch
+                var discriminator = firstItem switch
                 {
-                    global::FourSer.TestUser.Sword => (long)10,
-                    global::FourSer.TestUser.Shield => (long)20,
-                    global::FourSer.TestUser.Potion => (long)30,
-                    null => throw new System.NullReferenceException("Item in collection cannot be null."),
-                    _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstItem?.GetType().FullName}")
+                    global::FourSer.TestUser.Sword => 10,
+                    global::FourSer.TestUser.Shield => 20,
+                    global::FourSer.TestUser.Potion => 30,
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
                 };
-                foreach (var item in obj.Items)
-                {
-                    switch (item)
-                    {
-                        case global::FourSer.TestUser.Sword:
-                        {
-                            if (!global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(discriminator, (long)10))
-                            {
-                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
-                            }
-                            break;
-                        }
-                        case global::FourSer.TestUser.Shield:
-                        {
-                            if (!global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(discriminator, (long)20))
-                            {
-                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
-                            }
-                            break;
-                        }
-                        case global::FourSer.TestUser.Potion:
-                        {
-                            if (!global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(discriminator, (long)30))
-                            {
-                                throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism.");
-                            }
-                            break;
-                        }
-                        case null:
-                            throw new System.NullReferenceException("Item in collection cannot be null.");
-                        default:
-                            throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
-                    }
-                }
-            }
-            StreamWriter.WriteInt32(stream, checked((int)(obj.Items.Count)));
-            if (obj.Items.Count > 0)
-            {
-                var hasExplicitDiscriminator = !global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(obj.TypeId, default);
-                var discriminator = obj.TypeId;
-                if (!hasExplicitDiscriminator)
-                {
-                    var firstItem = obj.Items[0];
-                    discriminator = firstItem switch
-                    {
-                        global::FourSer.TestUser.Sword => 10,
-                        global::FourSer.TestUser.Shield => 20,
-                        global::FourSer.TestUser.Potion => 30,
-                        _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
-                    };
-                }
                 switch (discriminator)
                 {
                     case 10:

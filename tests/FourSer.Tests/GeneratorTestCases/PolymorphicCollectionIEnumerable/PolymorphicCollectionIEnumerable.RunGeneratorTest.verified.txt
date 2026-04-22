@@ -24,41 +24,15 @@ public partial class Inventory : ISerializable<Inventory>
         var size = 0;
         size += sizeof(int); // Count size for Items
         var itemsSizedItems = obj.Items is null ? null : global::System.Linq.Enumerable.ToArray(obj.Items);
-        _ = checked((int)(itemsSizedItems?.Length ?? 0));
         size += sizeof(Byte); // Size for polymorphic type id
-        Byte itemsExpectedDiscriminator = default;
-        if ((itemsSizedItems?.Length ?? 0) > 0)
-        {
-            using var firstSizedItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Item>)itemsSizedItems).GetEnumerator();
-            if (!firstSizedItemEnumerator.MoveNext())
-            {
-                throw new System.InvalidOperationException("Collection must contain at least one item.");
-            }
-            var firstSizedItem = firstSizedItemEnumerator.Current;
-            itemsExpectedDiscriminator = firstSizedItem switch
-            {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword => (Byte)10,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield => (Byte)20,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion => (Byte)30,
-                null => throw new System.NullReferenceException("Item in collection cannot be null."),
-                _ => throw new System.IO.InvalidDataException($"Unknown type for item: {firstSizedItem?.GetType().FullName}")
-            };
-        }
         if (itemsSizedItems is not null)
         {
             foreach (var item in itemsSizedItems)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Item in collection cannot be null.");
-                }
                 size += item switch
                 {
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword sword when !global::System.Collections.Generic.EqualityComparer<Byte>.Default.Equals(itemsExpectedDiscriminator, (Byte)10) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword.GetPacketSize(sword),
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield shield when !global::System.Collections.Generic.EqualityComparer<Byte>.Default.Equals(itemsExpectedDiscriminator, (Byte)20) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield shield => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield.GetPacketSize(shield),
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion potion when !global::System.Collections.Generic.EqualityComparer<Byte>.Default.Equals(itemsExpectedDiscriminator, (Byte)30) => throw new System.IO.InvalidDataException("All items in collection Items must have the same runtime type for single-type-id polymorphism."),
                     global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion potion => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion.GetPacketSize(potion),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
                 };
@@ -171,7 +145,7 @@ public partial class Inventory : ISerializable<Inventory>
         if (obj.Items is null)
         {
             SpanWriter.WriteByte(ref data, (Byte)(10));
-            SpanWriter.WriteInt32(ref itemsCountSpan, checked((int)(0)));
+            SpanWriter.WriteInt32(ref itemsCountSpan, (int)(0));
         }
         else
         {
@@ -180,7 +154,7 @@ public partial class Inventory : ISerializable<Inventory>
             if (!itemsEnumerator.MoveNext())
             {
                 SpanWriter.WriteByte(ref data, (Byte)(10));
-                SpanWriter.WriteInt32(ref itemsCountSpan, checked((int)(0)));
+                SpanWriter.WriteInt32(ref itemsCountSpan, (int)(0));
             }
             else
             {
@@ -225,7 +199,7 @@ public partial class Inventory : ISerializable<Inventory>
                         break;
                     }
                 }
-                SpanWriter.WriteInt32(ref itemsCountSpan, checked((int)(itemsCount)));
+                SpanWriter.WriteInt32(ref itemsCountSpan, (int)(itemsCount));
             }
         }
     }
@@ -301,7 +275,7 @@ public partial class Inventory : ISerializable<Inventory>
                 }
                 var itemsEndPosition = stream.Position;
                 stream.Position = itemsCountPosition;
-                StreamWriter.WriteInt32(stream, checked((int)(itemsCount)));
+                StreamWriter.WriteInt32(stream, (int)(itemsCount));
                 stream.Position = itemsEndPosition;
             }
         }

@@ -237,37 +237,26 @@ internal static class PolymorphicSerializer
         }
 
         var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}");
-        var typeIdAccess = $"obj.{info.TypeIdProperty}";
-        var comparerTypeName = TypeHelper.GetGlobalTypeName(info.TypeIdType);
-        var hasExplicitTypeIdExpression =
-            $"!global::System.Collections.Generic.EqualityComparer<{comparerTypeName}>.Default.Equals({typeIdAccess}, default)";
-
         sb.WriteLineFormat("if ({0} > 0)", countExpression);
         using (sb.BeginBlock())
         {
-            sb.WriteLineFormat("var hasExplicitDiscriminator = {0};", hasExplicitTypeIdExpression);
-            sb.WriteLineFormat("var discriminator = {0};", typeIdAccess);
-            sb.WriteLine("if (!hasExplicitDiscriminator)");
-            using (sb.BeginBlock())
+            PolymorphicUtilities.EmitFirstCollectionItemAccess(sb, member, $"obj.{member.Name}", "firstItem");
+            sb.WriteLine("var discriminator = firstItem switch");
+            sb.WriteLine("{");
+            sb.Indent();
+            foreach (var option in info.Options)
             {
-                PolymorphicUtilities.EmitFirstCollectionItemAccess(sb, member, $"obj.{member.Name}", "firstItem");
-                sb.WriteLine("discriminator = firstItem switch");
-                sb.WriteLine("{");
-                sb.Indent();
-                foreach (var option in info.Options)
-                {
-                    var typeName = TypeHelper.GetGlobalTypeName(option.Type);
-                    var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-                    sb.WriteLineFormat("{0} => {1},", typeName, key);
-                }
-
-                sb.WriteLine
-                (
-                    $"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")"
-                );
-                sb.Unindent();
-                sb.WriteLine("};");
+                var typeName = TypeHelper.GetGlobalTypeName(option.Type);
+                var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
+                sb.WriteLineFormat("{0} => {1},", typeName, key);
             }
+
+            sb.WriteLine
+            (
+                $"_ => throw new System.IO.InvalidDataException($\"Unknown item type: {{firstItem.GetType().Name}}\")"
+            );
+            sb.Unindent();
+            sb.WriteLine("};");
 
             sb.WriteLine("switch (discriminator)");
             using (sb.BeginBlock())
@@ -335,7 +324,7 @@ internal static class PolymorphicSerializer
         sb.WriteLine("else");
         using (sb.BeginBlock())
         {
-            SerializationWriterEmitter.EmitCheckedWrite(sb, ctx, countType, countExpression);
+            SerializationWriterEmitter.EmitCountWrite(sb, ctx, countType, countExpression);
 
             EmitDiscriminatorFromFirstItem(sb, ctx, listItemsVar, member, info, "discriminator");
 
@@ -609,13 +598,13 @@ internal static class PolymorphicSerializer
             var endPositionVariableName = $"{variablePrefix}EndPosition";
             sb.WriteLineFormat("var {0} = stream.Position;", endPositionVariableName);
             sb.WriteLineFormat("stream.Position = {0};", countPositionVariableName);
-            SerializationWriterEmitter.EmitCheckedWrite(sb, ctx, countType, countExpr);
+            SerializationWriterEmitter.EmitCountWrite(sb, ctx, countType, countExpr);
             sb.WriteLineFormat("stream.Position = {0};", endPositionVariableName);
         }
         else
         {
             var countCtx = ctx with { Target = countSpanVariableName };
-            SerializationWriterEmitter.EmitCheckedWrite(sb, countCtx, countType, countExpr);
+            SerializationWriterEmitter.EmitCountWrite(sb, countCtx, countType, countExpr);
         }
     }
 }

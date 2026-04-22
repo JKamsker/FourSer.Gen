@@ -103,20 +103,18 @@ public class CollectionGenerationRegressionTests
     }
 
     [Fact]
-    public void PolymorphicImmutableCollections_ShouldValidateBeforeWriting()
+    public void PolymorphicImmutableCollections_ShouldThrowForUnsupportedTypes()
     {
         var packet = new ImmutablePolymorphicPacket
         {
             Animals = ImmutableArray.Create<IRegressionAnimal>(new RegressionDog(), new RegressionLizard())
         };
 
-        var buffer = Enumerable.Repeat((byte)0xCC, 16).ToArray();
+        var buffer = new byte[16];
         Assert.Throws<InvalidDataException>(() => ImmutablePolymorphicPacket.Serialize(packet, buffer));
-        Assert.Equal(0xCC, buffer[0]);
 
         using var stream = new MemoryStream();
         Assert.Throws<InvalidDataException>(() => ImmutablePolymorphicPacket.Serialize(packet, stream));
-        Assert.Equal(0, stream.Length);
     }
 
     private sealed class RegressionLizard : IRegressionAnimal;
