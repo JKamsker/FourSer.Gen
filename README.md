@@ -615,6 +615,38 @@ var received = LoginAckPacket.Deserialize(readSpan);
 - .NET 9.0 or later
 - C# 12.0 or later (for static abstract interface members)
 
+## Generator Optimization Options
+
+The generator now ships with an internal planning and optimization pipeline between type discovery and C# emission. The default package setting is `AggressivePortable`.
+
+You can override the optimizer from MSBuild:
+
+```xml
+<PropertyGroup>
+  <FourSerOptimizationLevel>AggressivePortable</FourSerOptimizationLevel>
+  <FourSerMinBatchBytes>8</FourSerMinBatchBytes>
+  <FourSerStackallocThreshold>256</FourSerStackallocThreshold>
+  <FourSerMaxBatchBytes>8192</FourSerMaxBatchBytes>
+  <FourSerEmitOptimizationComments>false</FourSerEmitOptimizationComments>
+</PropertyGroup>
+```
+
+Available values for `FourSerOptimizationLevel`:
+
+- `Off`: disables batching, string fusion, and collection fast paths while keeping planning and validation active.
+- `Conservative`: enables guard/count/type-id caching, constant size folding, and primitive batching.
+- `AggressivePortable`: adds portable collection fast paths and fused stream string writes.
+- `AggressiveNativeLayout`: adds runtime-guarded native-layout bulk paths with portable fallback.
+
+Notes:
+
+- `AggressivePortable` is the default imported by `FourSer.Gen.props`.
+- `AggressiveNativeLayout` is opt-in and always keeps a portable fallback path.
+- Optimizer diagnostics `FSGOPT001` to `FSGOPT004` are informational and are emitted only when a fast path is evaluated and declined.
+- The branch currently assumes `.NET 9+` consumer capabilities.
+
+For the internal architecture and pass order, see [docs/optimizer-design.md](docs/optimizer-design.md).
+
 ## Building
 
 ```bash
