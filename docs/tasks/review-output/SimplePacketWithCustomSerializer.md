@@ -1,0 +1,17 @@
+# SimplePacketWithCustomSerializer Review
+
+## Verdict
+Partially correct. The snapshot does route `Name` through the class-level default serializer as expected for the span-based APIs (`tests/FourSer.Tests/GeneratorTestCases/SimplePacketWithCustomSerializer/input.cs:28-33`, `tests/FourSer.Tests/GeneratorTestCases/SimplePacketWithCustomSerializer/SimplePacketWithCustomSerializer.RunGeneratorTest.verified.txt:29`, `:48`, `:75`). It does not fully match likely user expectations for the generated type, though, because the emitted public stream overloads delegate to `MyCustomStringSerializer.Serialize(string, Stream)` and `Deserialize(Stream)`, and those methods are placeholders in this fixture (`tests/FourSer.Tests/GeneratorTestCases/SimplePacketWithCustomSerializer/input.cs:17`, `:25`). As generated, `Serialize(Stream)` drops `Name`, and `Deserialize(Stream)` always reconstructs it as `""` (`tests/FourSer.Tests/GeneratorTestCases/SimplePacketWithCustomSerializer/SimplePacketWithCustomSerializer.RunGeneratorTest.verified.txt:58-64`, `:84-91`).
+
+## Findings
+- High: `tests/FourSer.Tests/GeneratorTestCases/SimplePacketWithCustomSerializer/SimplePacketWithCustomSerializer.RunGeneratorTest.verified.txt:58-64` and `:84-91` call the custom serializer's stream APIs for `Name`. In the concrete test input, `Serialize(string, Stream)` is a no-op and `Deserialize(Stream)` returns `""` (`tests/FourSer.Tests/GeneratorTestCases/SimplePacketWithCustomSerializer/input.cs:17`, `:25`), even though `ISerializer<T>` exposes both stream methods as part of the contract (`src/FourSer.Contracts/ISerializer.cs:7-32`). For this exact input, stream round-trips are incorrect.
+- Low: `tests/FourSer.Tests/GeneratorTestCases/SimplePacketWithCustomSerializer/SimplePacketWithCustomSerializer.RunGeneratorTest.verified.txt:2-15` emits the full shared using/header block even though this case only needs a subset. The extra imports are redundant generated code and add noise, but they do not change behavior.
+
+## Performance opportunities
+- The current stream path performs two separate operations, `StreamWriter.WriteInt32` and then a delegated custom-serializer stream call (`tests/FourSer.Tests/GeneratorTestCases/SimplePacketWithCustomSerializer/SimplePacketWithCustomSerializer.RunGeneratorTest.verified.txt:84-91`). If span/stream wire-format parity is intended to hold generally (`tests/FourSer.Tests/OptimizationLevelParityTests.cs:29-34`), the generator could instead rent a buffer sized via `GetPacketSize`, reuse the span serializer, and emit a single `stream.Write(...)`. That would reduce IO and avoid dependence on a separate custom stream implementation.
+- No other material batching opportunity stands out in this fixture. The packet has only one primitive plus one custom-serialized field, so once generation hands off to the custom serializer there is little left to batch.
+
+## Open questions / assumptions
+- Assumed users expect all generated overloads on `SimplePacket` to be usable, not only the span-based path.
+- Assumed the narrower intent of this fixture is serializer-selection coverage, because `tests/FourSer.Tests/GeneratorTestCases/SimplePacketWithCustomSerializer/input.cs:17` explicitly says the custom stream serializer is "not needed for this test".
+- `dotnet test tests/FourSer.Tests/FourSer.Tests.csproj --filter "SimplePacketWithCustomSerializer"` could not be executed to completion locally because this machine does not have `Microsoft.NETCore.App 9.0.0` installed; the report is based on static inspection.

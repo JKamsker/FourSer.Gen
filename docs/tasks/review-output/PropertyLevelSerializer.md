@@ -1,0 +1,20 @@
+# PropertyLevelSerializer Review
+
+## Verdict
+Partially correct. The snapshot matches the likely intent of this fixture for serializer selection: the property-level `[Serializer(typeof(MyCustomStringSerializer))]` is applied only to `Name`, while `Description` stays on the built-in string path (`tests/FourSer.Tests/GeneratorTestCases/PropertyLevelSerializer/input.cs:33-36`, `tests/FourSer.Tests/GeneratorTestCases/PropertyLevelSerializer/PropertyLevelSerializer.RunGeneratorTest.verified.txt:29-30`, `:51-52`, `:81-83`, `:98-128`). That aligns with the documented property-level override behavior in `README.md:454-471`.
+
+It is not fully functional for the concrete input, though, because the generated public `Stream` overloads delegate to `MyCustomStringSerializer.Serialize(string, Stream)` and `Deserialize(Stream)`, and those methods are placeholders in `tests/FourSer.Tests/GeneratorTestCases/PropertyLevelSerializer/input.cs:17` and `:25`. As emitted, `Serialize(Stream)` omits `Name` and `Deserialize(Stream)` always returns `""`.
+
+## Findings
+- High: `tests/FourSer.Tests/GeneratorTestCases/PropertyLevelSerializer/PropertyLevelSerializer.RunGeneratorTest.verified.txt:62-70` and `:91-99` call the custom serializer's stream APIs for `Name`. In `tests/FourSer.Tests/GeneratorTestCases/PropertyLevelSerializer/input.cs:17` and `:25`, `Serialize(string, Stream)` is a no-op and `Deserialize(Stream)` always returns `""`, even though `ISerializer<T>` requires those methods as part of the contract (`src/FourSer.Contracts/ISerializer.cs:17-32`). For this exact test input, stream round-trips lose `Name`, so the generated type is not functionally correct across all emitted overloads.
+- Low: `tests/FourSer.Tests/GeneratorTestCases/PropertyLevelSerializer/PropertyLevelSerializer.RunGeneratorTest.verified.txt:2-15` emits the full shared import and alias header, but this case only needs a subset. That is redundant generated code rather than a functional issue. It comes from the unconditional header template in `src/FourSer.Gen/SerializerGenerator.cs:294-310`.
+
+## Performance opportunities
+- No meaningful additional batching is available inside the emitted stream path around `Name`; once a property resolves to a custom serializer, generation hands off directly to that serializer (`src/FourSer.Gen/CodeGenerators/Planning/SerializePlanBuilder.cs:139-153`) and batching is disabled (`src/FourSer.Gen/CodeGenerators/Core/BatchingUtilities.cs:122-124`). That leaves `Id`, `Name`, and `Description` as separate stream operations in `tests/FourSer.Tests/GeneratorTestCases/PropertyLevelSerializer/PropertyLevelSerializer.RunGeneratorTest.verified.txt:97-128`.
+- `Description` is already using the fused stream string writer at `tests/FourSer.Tests/GeneratorTestCases/PropertyLevelSerializer/PropertyLevelSerializer.RunGeneratorTest.verified.txt:99-128`, so the default-string path is reasonably optimized for IO. The remaining opportunity would be an opt-in custom-serializer fallback that uses `GetPacketSize` plus span serialization into a temporary buffer for stream writes, but that would need an explicit contract decision because custom serializers may intentionally choose different span and stream formats.
+- Minor code-size and compile-time only: the inlined fused string block for `Description` duplicates generic helper-style logic per generated type. That reduces stream writes, but it does grow generated source.
+
+## Open questions / assumptions
+- Assumed users expect both span and stream overloads to be usable, not just the snapshot text to compile.
+- Assumed the main intent of this fixture is property-level override precedence, and on that narrower point the snapshot aligns with likely user expectations.
+- `dotnet test tests/FourSer.Tests/FourSer.Tests.csproj --filter "FullyQualifiedName~GeneratorTests.RunGeneratorTest"` could not be completed locally because the machine does not have `Microsoft.NETCore.App 9.0.0` installed; the verdict is based on static inspection plus a small local sanity reproduction of the emitted flow.
