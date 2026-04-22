@@ -685,6 +685,33 @@ To run all tests, use the following command from the root of the repository:
 dotnet test
 ```
 
+To accept all `Verify` snapshot updates on PowerShell:
+
+```powershell
+Get-ChildItem . -Recurse -Filter *.received.txt |
+    ForEach-Object {
+        Copy-Item -LiteralPath $_.FullName -Destination ($_.FullName -replace '\.received\.txt$', '.verified.txt') -Force
+    }
+```
+
+## Benchmarking
+
+`src/FourSer.Gen.Benchmark.Simple` benchmarks both generator and runtime behavior from in-memory compilations. It reports:
+
+- full generator run time
+- tracked incremental step timings
+- generated source count and size
+- runtime `GetPacketSize`
+- runtime span serialize and deserialize
+- runtime stream serialize and deserialize
+- per-operation allocations from `GC.GetAllocatedBytesForCurrentThread`
+
+Example:
+
+```bash
+dotnet run --project src/FourSer.Gen.Benchmark.Simple/FourSer.Gen.Benchmark.Simple.csproj -- --levels=Off,Conservative,AggressivePortable,AggressiveNativeLayout --cases=SimplePacket --generation-iterations=5 --runtime-iterations=1000
+```
+
 ## Contributing
 
 This project uses source generators to provide compile-time serialization code generation. When adding new features:

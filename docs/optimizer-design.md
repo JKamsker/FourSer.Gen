@@ -117,6 +117,16 @@ The optimizer-specific informational diagnostics are:
 
 They are intended for "fast path skipped" and "fallback chosen" reporting when the optimizer actively evaluates an optimization and declines it.
 
+## Verification
+
+The branch is validated with:
+
+- snapshot/source-shape coverage across optimization levels in `tests/FourSer.Tests`
+- cross-level byte-parity and round-trip coverage for representative packets
+- default-level behavioural coverage in `tests/FourSer.Tests.Behavioural`
+- package-consumer smoke coverage in `tests/Serializer.Package.Tests`
+- generation and runtime benchmarking in `src/FourSer.Gen.Benchmark.Simple`
+
 ## Current Boundaries
 
 This branch preserves current observable behavior, including existing type-id property mutation side effects during serialization.
