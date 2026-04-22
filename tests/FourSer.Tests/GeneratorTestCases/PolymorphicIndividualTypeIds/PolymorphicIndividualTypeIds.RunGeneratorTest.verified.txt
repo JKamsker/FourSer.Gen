@@ -22,6 +22,7 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
     {
         if (obj is null) return 0;
         var size = 0;
+        _ = checked((byte)((obj.Animals?.Count ?? 0)));
         size += sizeof(byte); // Count size for Animals
         if (obj.Animals is not null)
         {
@@ -46,7 +47,6 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
 
     public PolymorphicIndividualTest()
     {
-        this.Animals = default;
     }
 
     public static PolymorphicIndividualTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -121,7 +121,7 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         }
         else
         {
-            SpanWriter.WriteByte(ref data, (byte)(obj.Animals.Count));
+            SpanWriter.WriteByte(ref data, checked((byte)(obj.Animals.Count)));
             foreach(var item in obj.Animals)
             {
                 switch (item)
@@ -161,7 +161,7 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         }
         else
         {
-            StreamWriter.WriteByte(stream, (byte)(obj.Animals.Count));
+            StreamWriter.WriteByte(stream, checked((byte)(obj.Animals.Count)));
             foreach(var item in obj.Animals)
             {
                 switch (item)
@@ -226,8 +226,6 @@ public partial class Cat : ISerializable<Cat>
 
     public Cat()
     {
-        this.Id = default;
-        this.Name = default;
     }
 
     public static new Cat Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -309,8 +307,6 @@ public partial class Dog : ISerializable<Dog>
 
     public Dog()
     {
-        this.Id = default;
-        this.Breed = default;
     }
 
     public static new Dog Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -390,7 +386,6 @@ public partial class Animal : ISerializable<Animal>
 
     public Animal()
     {
-        this.Id = default;
     }
 
     public static Animal Deserialize(ref System.ReadOnlySpan<byte> buffer)

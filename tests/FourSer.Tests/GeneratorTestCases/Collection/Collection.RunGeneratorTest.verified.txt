@@ -34,7 +34,6 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
 
     public CollectionPacket()
     {
-        this.Numbers = default;
     }
 
     public static CollectionPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)

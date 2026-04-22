@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using FourSer.Analyzers.Helpers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -40,7 +41,7 @@ namespace FourSer.Analyzers.PolymorphicOption
 
         private void AnalyzeSymbol(SymbolAnalysisContext context, ISymbol symbol, ITypeSymbol memberType)
         {
-            var attributes = symbol.GetAttributes().Where(ad => ad.AttributeClass?.Name == "PolymorphicOptionAttribute").ToList();
+            var attributes = symbol.GetPolymorphicOptionAttributes().ToList();
 
             if (!attributes.Any())
             {

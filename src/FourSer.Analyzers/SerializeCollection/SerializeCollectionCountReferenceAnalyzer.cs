@@ -36,7 +36,7 @@ namespace FourSer.Analyzers.SerializeCollection
         private void AnalyzeAttribute(SymbolAnalysisContext context)
         {
             var symbol = context.Symbol;
-            var attribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializeCollectionAttribute");
+            var attribute = symbol.GetSerializeCollectionAttribute();
 
             if (attribute?.ApplicationSyntaxReference == null)
             {
@@ -60,9 +60,7 @@ namespace FourSer.Analyzers.SerializeCollection
                 return;
             }
 
-            var containingType = symbol.ContainingType;
-            var referencedSymbol = containingType.GetMembers(referenceName!)
-                .FirstOrDefault(m => (m is IPropertySymbol or IFieldSymbol) && !m.HasIgnoreAttribute());
+            var referencedSymbol = symbol.ContainingType.GetNonIgnoredPropertyOrField(referenceName!);
 
             var attributeSyntax = (AttributeSyntax?)attribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
             var argumentSyntax = attributeSyntax?.ArgumentList?.Arguments.FirstOrDefault(a => a.NameEquals?.Name.Identifier.ValueText == "CountSizeReference");
@@ -78,19 +76,15 @@ namespace FourSer.Analyzers.SerializeCollection
                 return;
             }
 
-            if (referencedSymbol is IPropertySymbol propertySymbol)
+            var referencedType = referencedSymbol.GetPropertyOrFieldType();
+            if (referencedType == null)
             {
-                if (!IsValidType(propertySymbol.Type))
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(WrongTypeRule, argumentSyntax.GetLocation(), referenceName));
-                }
+                return;
             }
-            else if (referencedSymbol is IFieldSymbol fieldSymbol)
+
+            if (!IsValidType(referencedType))
             {
-                if (!IsValidType(fieldSymbol.Type))
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(WrongTypeRule, argumentSyntax.GetLocation(), referenceName));
-                }
+                context.ReportDiagnostic(Diagnostic.Create(WrongTypeRule, argumentSyntax.GetLocation(), referenceName));
             }
 
             var symbolDeclaration = symbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();

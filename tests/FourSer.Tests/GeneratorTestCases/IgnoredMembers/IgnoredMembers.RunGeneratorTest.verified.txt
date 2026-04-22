@@ -33,7 +33,6 @@ public partial class IgnoredMembersPacket : ISerializable<IgnoredMembersPacket>
 
     public IgnoredMembersPacket()
     {
-        this.Included = default;
     }
 
     public static IgnoredMembersPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)

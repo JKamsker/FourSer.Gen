@@ -34,7 +34,6 @@ public partial class Child : ISerializable<Child>, IDisposable
 
     public Child()
     {
-        this.Numbers = default;
     }
 
     public static Child Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -144,8 +143,6 @@ public partial class Parent : ISerializable<Parent>, IDisposable
 
     public Parent()
     {
-        this.Data = default;
-        this.DisposableProperty = default;
     }
 
     public static Parent Deserialize(ref System.ReadOnlySpan<byte> buffer)

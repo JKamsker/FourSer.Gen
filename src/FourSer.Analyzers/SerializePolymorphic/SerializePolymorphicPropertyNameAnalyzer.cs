@@ -36,7 +36,7 @@ namespace FourSer.Analyzers.SerializePolymorphic
         private void AnalyzeAttribute(SymbolAnalysisContext context)
         {
             var symbol = context.Symbol;
-            var attribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializePolymorphicAttribute");
+            var attribute = symbol.GetSerializePolymorphicAttribute();
 
             if (attribute?.ApplicationSyntaxReference == null)
             {
@@ -67,9 +67,7 @@ namespace FourSer.Analyzers.SerializePolymorphic
                 return;
             }
 
-            var containingType = symbol.ContainingType;
-            var referencedSymbol = containingType.GetMembers(referenceName!)
-                .FirstOrDefault(m => (m is IPropertySymbol or IFieldSymbol) && !m.HasIgnoreAttribute());
+            var referencedSymbol = symbol.ContainingType.GetNonIgnoredPropertyOrField(referenceName!);
 
             var attributeSyntax = (AttributeSyntax)attribute.ApplicationSyntaxReference.GetSyntax(context.CancellationToken);
             AttributeArgumentSyntax? argumentSyntax = null;
@@ -94,19 +92,15 @@ namespace FourSer.Analyzers.SerializePolymorphic
                 return;
             }
 
-            if (referencedSymbol is IPropertySymbol propertySymbol)
+            var referencedType = referencedSymbol.GetPropertyOrFieldType();
+            if (referencedType == null)
             {
-                if (!IsValidType(propertySymbol.Type))
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(WrongTypeRule, location, referenceName));
-                }
+                return;
             }
-            else if (referencedSymbol is IFieldSymbol fieldSymbol)
+
+            if (!IsValidType(referencedType))
             {
-                if (!IsValidType(fieldSymbol.Type))
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(WrongTypeRule, location, referenceName));
-                }
+                context.ReportDiagnostic(Diagnostic.Create(WrongTypeRule, location, referenceName));
             }
 
             var symbolDeclaration = symbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();

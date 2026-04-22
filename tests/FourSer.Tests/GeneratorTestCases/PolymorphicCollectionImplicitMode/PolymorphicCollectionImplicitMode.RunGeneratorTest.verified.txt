@@ -48,8 +48,6 @@ public partial class Inventory : ISerializable<Inventory>
 
     public Inventory()
     {
-        this.TypeId = default;
-        this.Items = default;
     }
 
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -142,14 +140,14 @@ public partial class Inventory : ISerializable<Inventory>
     public static void Serialize(Inventory obj, ref System.Span<byte> data)
     {
         if (obj is null) return;
-        if (obj.Items is null || obj.Items.Count == 0)
+        if ((obj.Items?.Count ?? 0) == 0)
         {
             SpanWriter.WriteInt64(ref data, (long)(10));
         }
         else
         {
             var firstItem = obj.Items[0];
-            var discriminator = firstItem switch
+            long discriminator = firstItem switch
             {
                 global::FourSer.TestUser.Sword => (long)10,
                 global::FourSer.TestUser.Shield => (long)20,
@@ -167,9 +165,17 @@ public partial class Inventory : ISerializable<Inventory>
             SpanWriter.WriteInt32(ref data, (int)(obj.Items.Count));
             if (obj.Items.Count > 0)
             {
-                switch (obj.Items[0])
+                var firstItem = obj.Items[0];
+                var discriminator = firstItem switch
                 {
-                    case global::FourSer.TestUser.Sword:
+                    global::FourSer.TestUser.Sword => 10,
+                    global::FourSer.TestUser.Shield => 20,
+                    global::FourSer.TestUser.Potion => 30,
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
+                };
+                switch (discriminator)
+                {
+                    case 10:
                     {
                         foreach(var item in obj.Items)
                         {
@@ -177,7 +183,7 @@ public partial class Inventory : ISerializable<Inventory>
                         }
                         break;
                     }
-                    case global::FourSer.TestUser.Shield:
+                    case 20:
                     {
                         foreach(var item in obj.Items)
                         {
@@ -185,7 +191,7 @@ public partial class Inventory : ISerializable<Inventory>
                         }
                         break;
                     }
-                    case global::FourSer.TestUser.Potion:
+                    case 30:
                     {
                         foreach(var item in obj.Items)
                         {
@@ -194,7 +200,7 @@ public partial class Inventory : ISerializable<Inventory>
                         break;
                     }
                     default:
-                        throw new System.IO.InvalidDataException($"Unknown type for item in Items: {obj.Items[0].GetType().Name}");
+                        throw new System.IO.InvalidDataException($"Unknown type id for Items: {discriminator}");
                 }
             }
         }
@@ -208,14 +214,14 @@ public partial class Inventory : ISerializable<Inventory>
     public static void Serialize(Inventory obj, System.IO.Stream stream)
     {
         if (obj is null) return;
-        if (obj.Items is null || obj.Items.Count == 0)
+        if ((obj.Items?.Count ?? 0) == 0)
         {
             StreamWriter.WriteInt64(stream, (long)(10));
         }
         else
         {
             var firstItem = obj.Items[0];
-            var discriminator = firstItem switch
+            long discriminator = firstItem switch
             {
                 global::FourSer.TestUser.Sword => (long)10,
                 global::FourSer.TestUser.Shield => (long)20,
@@ -233,9 +239,17 @@ public partial class Inventory : ISerializable<Inventory>
             StreamWriter.WriteInt32(stream, (int)(obj.Items.Count));
             if (obj.Items.Count > 0)
             {
-                switch (obj.Items[0])
+                var firstItem = obj.Items[0];
+                var discriminator = firstItem switch
                 {
-                    case global::FourSer.TestUser.Sword:
+                    global::FourSer.TestUser.Sword => 10,
+                    global::FourSer.TestUser.Shield => 20,
+                    global::FourSer.TestUser.Potion => 30,
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
+                };
+                switch (discriminator)
+                {
+                    case 10:
                     {
                         foreach(var item in obj.Items)
                         {
@@ -243,7 +257,7 @@ public partial class Inventory : ISerializable<Inventory>
                         }
                         break;
                     }
-                    case global::FourSer.TestUser.Shield:
+                    case 20:
                     {
                         foreach(var item in obj.Items)
                         {
@@ -251,7 +265,7 @@ public partial class Inventory : ISerializable<Inventory>
                         }
                         break;
                     }
-                    case global::FourSer.TestUser.Potion:
+                    case 30:
                     {
                         foreach(var item in obj.Items)
                         {
@@ -260,7 +274,7 @@ public partial class Inventory : ISerializable<Inventory>
                         break;
                     }
                     default:
-                        throw new System.IO.InvalidDataException($"Unknown type for item in Items: {obj.Items[0].GetType().Name}");
+                        throw new System.IO.InvalidDataException($"Unknown type id for Items: {discriminator}");
                 }
             }
         }

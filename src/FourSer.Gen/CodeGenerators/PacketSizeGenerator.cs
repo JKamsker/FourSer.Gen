@@ -7,7 +7,7 @@ namespace FourSer.Gen.CodeGenerators;
 /// <summary>
 ///     Generates GetPacketSize method implementations
 /// </summary>
-public static class PacketSizeGenerator
+public static partial class PacketSizeGenerator
 {
     public static void GenerateGetSize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
     {
@@ -32,6 +32,18 @@ public static class PacketSizeGenerator
 
     private static void GenerateMemberSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member, TypeToGenerate type)
     {
+        if (member.IsCountSizeReferenceFor is { } countRefIndex)
+        {
+            var referencedMember = type.Members[countRefIndex];
+            if (!ShouldDeferCollectionCountValidation(referencedMember))
+            {
+                var countExpression = referencedMember.IsMemoryOwner
+                    ? $"(obj.{referencedMember.Name}?.Memory.Length ?? 0)"
+                    : GeneratorUtilities.GetCountExpressionForAccess(referencedMember, $"obj.{referencedMember.Name}", true);
+                EmitCheckedCountValidation(sb, member.TypeName, countExpression);
+            }
+        }
+
         var resolvedSerializer = GeneratorUtilities.ResolveSerializer(member, type);
         if (resolvedSerializer is { } serializer)
         {
@@ -45,7 +57,7 @@ public static class PacketSizeGenerator
         }
         else if (member.IsList || member.IsCollection)
         {
-            GenerateCollectionSizeCalculation(sb, member);
+            GenerateCollectionSizeCalculation(sb, member, type);
         }
         else if (member.PolymorphicInfo is { } info)
         {
@@ -77,6 +89,7 @@ public static class PacketSizeGenerator
 
     private readonly record struct ElementInfo(
         string TypeName,
+        bool IsValueType,
         bool IsUnmanaged,
         bool IsString,
         bool HasSerializer);
@@ -88,6 +101,7 @@ public static class PacketSizeGenerator
             return new ElementInfo
             (
                 listArg.TypeName,
+                listArg.IsValueType,
                 listArg.IsUnmanagedType,
                 listArg.IsStringType,
                 listArg.HasGenerateSerializerAttribute
@@ -99,6 +113,7 @@ public static class PacketSizeGenerator
             return new ElementInfo
             (
                 collInfo.ElementTypeName,
+                collInfo.IsElementValueType,
                 collInfo.IsElementUnmanagedType,
                 collInfo.IsElementStringType,
                 collInfo.HasElementGenerateSerializerAttribute
@@ -115,6 +130,7 @@ public static class PacketSizeGenerator
             return new ElementInfo
             (
                 info.ElementTypeName,
+                false,
                 info.IsElementUnmanagedType,
                 info.IsElementStringType,
                 info.HasElementGenerateSerializerAttribute
@@ -124,49 +140,92 @@ public static class PacketSizeGenerator
         return null;
     }
 
+    private static void EmitCheckedCountValidation(IndentedStringBuilder sb, string countType, string countExpression)
+    {
+        if (!GeneratorUtilities.ShouldUseCheckedCountConversion(countType))
+        {
+            return;
+        }
+
+        sb.WriteLineFormat("_ = checked(({0})({1}));", countType, countExpression);
+    }
+
     private static void GenerateStandardCollectionSizeCalculation(
         IndentedStringBuilder sb,
         MemberToGenerate member,
         ElementInfo info)
     {
+        var collectionAccessExpression = $"obj.{member.Name}";
+        var enumerationGuard = GeneratorUtilities.GetCollectionIterationGuard(member, collectionAccessExpression);
+
         if (member.CustomSerializer is { } customSerializer)
         {
             var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
-            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
-            using var _ = sb.BeginBlock();
-            sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
-            using var __ = sb.BeginBlock();
-            sb.WriteLineFormat("size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.GetPacketSize(item);", serializerField);
+            if (member.CollectionTypeInfo?.CanBeNull == true || enumerationGuard is not null)
+            {
+                var condition = enumerationGuard ?? $"{collectionAccessExpression} is not null";
+                sb.WriteLineFormat("if ({0})", condition);
+                using var _ = sb.BeginBlock();
+                sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
+                using var __ = sb.BeginBlock();
+                sb.WriteLineFormat("size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.GetPacketSize(item);", serializerField);
+            }
+            else
+            {
+                sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
+                using var _ = sb.BeginBlock();
+                sb.WriteLineFormat("size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.GetPacketSize(item);", serializerField);
+            }
             return;
         }
 
         if (info.HasSerializer)
         {
-            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
-            using var _ = sb.BeginBlock();
-            sb.WriteLineFormat("foreach(var item in obj.{0})", member.Name);
-            using var __ = sb.BeginBlock();
-            sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
+            if (member.CollectionTypeInfo?.CanBeNull == true || enumerationGuard is not null)
+            {
+                var condition = enumerationGuard ?? $"{collectionAccessExpression} is not null";
+                sb.WriteLineFormat("if ({0})", condition);
+                using var _ = sb.BeginBlock();
+                sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
+                using var __ = sb.BeginBlock();
+                sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
+            }
+            else
+            {
+                sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
+                using var _ = sb.BeginBlock();
+                sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
+            }
         }
         else if (info.IsUnmanaged)
         {
-            var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name, true);
+            var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}", true);
             sb.WriteLineFormat("size += {0} * sizeof({1});", countExpression, info.TypeName);
         }
         else if (info.IsString)
         {
-            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
-            using var _ = sb.BeginBlock();
-            sb.WriteLineFormat("foreach(var item in obj.{0}) {{ size += StringEx.MeasureSize(item); }}", member.Name);
+            if (member.CollectionTypeInfo?.CanBeNull == true || enumerationGuard is not null)
+            {
+                var condition = enumerationGuard ?? $"{collectionAccessExpression} is not null";
+                sb.WriteLineFormat("if ({0})", condition);
+                using var _ = sb.BeginBlock();
+                sb.WriteLineFormat("foreach(var item in {0}) {{ size += StringEx.MeasureSize(item); }}", collectionAccessExpression);
+            }
+            else
+            {
+                sb.WriteLineFormat("foreach(var item in {0}) {{ size += StringEx.MeasureSize(item); }}", collectionAccessExpression);
+            }
         }
     }
 
-    private static void GenerateCollectionSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member)
+    private static void GenerateCollectionSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member, TypeToGenerate type)
     {
         if (member.CollectionInfo is not { } collectionInfo)
         {
             return;
         }
+
+        var deferredCountValidationType = GetDeferredCountValidationType(member, type);
 
         if (
             !collectionInfo.Unlimited
@@ -175,8 +234,19 @@ public static class PacketSizeGenerator
         )
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+            if (deferredCountValidationType is null)
+            {
+                var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}", true);
+                EmitCheckedCountValidation(sb, countType, countExpression);
+            }
             var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
             sb.WriteLineFormat("size += {0}; // Count size for {1}", countSizeExpression, member.Name);
+        }
+
+        if (deferredCountValidationType is not null)
+        {
+            GenerateDeferredCountValidationCollectionSizeCalculation(sb, member, type, deferredCountValidationType);
+            return;
         }
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
@@ -207,6 +277,8 @@ public static class PacketSizeGenerator
         )
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+            var countExpression = $"(obj.{member.Name}?.Memory.Length ?? 0)";
+            EmitCheckedCountValidation(sb, countType, countExpression);
             var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
             sb.WriteLineFormat("size += {0}; // Count size for {1}", countSizeExpression, member.Name);
         }
@@ -259,7 +331,8 @@ public static class PacketSizeGenerator
     (
         IndentedStringBuilder sb,
         MemberToGenerate member,
-        CollectionInfo collectionInfo
+        CollectionInfo collectionInfo,
+        string? collectionAccessExpression = null
     )
     {
         if (member.PolymorphicInfo is not { } info)
@@ -276,11 +349,50 @@ public static class PacketSizeGenerator
             }
         }
 
-        sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
-        using var _ = sb.BeginBlock();
+        collectionAccessExpression ??= $"obj.{member.Name}";
+        var enumerationGuard = collectionAccessExpression == $"obj.{member.Name}"
+            ? GeneratorUtilities.GetCollectionIterationGuard(member, collectionAccessExpression)
+            : null;
 
-        sb.WriteLineFormat("foreach (var item in obj.{0})", member.Name);
-        using var __ = sb.BeginBlock();
+        if (member.CollectionTypeInfo?.CanBeNull == true || enumerationGuard is not null)
+        {
+            var condition = collectionAccessExpression == $"obj.{member.Name}"
+                ? enumerationGuard ?? $"{collectionAccessExpression} is not null"
+                : $"{collectionAccessExpression} is not null";
+            sb.WriteLineFormat("if ({0})", condition);
+            using var _ = sb.BeginBlock();
+
+            sb.WriteLineFormat("foreach (var item in {0})", collectionAccessExpression);
+            using var __ = sb.BeginBlock();
+
+            if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
+            {
+                sb.WriteLineFormat
+                ("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
+            }
+
+            sb.WriteLine("size += item switch");
+            sb.WriteLine("{");
+            sb.Indent();
+            foreach (var option in info.Options)
+            {
+                var typeName = TypeHelper.GetGlobalTypeName(option.Type);
+                var varName = TypeHelper.GetSimpleTypeName(option.Type).ToCamelCase();
+                sb.WriteLineFormat("{0} {1} => {2}.GetPacketSize({1}),", typeName, varName, typeName);
+            }
+
+            sb.WriteLineFormat
+            (
+                "_ => throw new System.IO.InvalidDataException($\"Unknown item type in collection {0}: {{item.GetType().Name}}\")",
+                member.Name
+            );
+            sb.Unindent();
+            sb.WriteLine("};");
+            return;
+        }
+
+        sb.WriteLineFormat("foreach (var item in {0})", collectionAccessExpression);
+        using var ___ = sb.BeginBlock();
 
         if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
         {

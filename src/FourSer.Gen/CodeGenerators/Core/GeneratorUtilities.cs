@@ -46,38 +46,70 @@ public static class GeneratorUtilities
     }
 
     /// <summary>
-    ///     Unified count expression generation (consolidates 4 duplicate implementations)
+    ///     Builds the count expression for a member using the conventional <c>obj.Member</c> access pattern.
     /// </summary>
+    /// <param name="member">The collection member being inspected.</param>
+    /// <param name="memberName">The member name without the <c>obj.</c> prefix.</param>
+    /// <param name="nullable">
+    ///     Whether the expression should tolerate null collections by using null propagation and a zero fallback.
+    /// </param>
     public static string GetCountExpression(MemberToGenerate member, string memberName, bool nullable = false)
     {
-        // Arrays use .Length property
-        if (member.CollectionTypeInfo?.IsArray == true)
+        return GetCountExpressionForAccess(member, $"obj.{memberName}", nullable);
+    }
+
+    /// <summary>
+    ///     Builds the count expression for an arbitrary collection access expression.
+    /// </summary>
+    /// <param name="member">The collection member being inspected.</param>
+    /// <param name="accessExpression">The expression used to access the collection instance.</param>
+    /// <param name="nullable">
+    ///     Whether the expression should tolerate null collections by using null propagation and a zero fallback.
+    /// </param>
+    public static string GetCountExpressionForAccess(MemberToGenerate member, string accessExpression, bool nullable = false)
+    {
+        if (IsImmutableArrayCollection(member))
         {
-            return nullable
-                ? $"(obj.{memberName}?.Length ?? 0)"
-                : $"obj.{memberName}.Length";
+            return $"({accessExpression}.IsDefaultOrEmpty ? 0 : {accessExpression}.Length)";
         }
 
-        // IEnumerable and interface types that need Count() method
-        if (member.CollectionTypeInfo is { IsPureEnumerable: true })
+        var canUseNullPropagation = nullable && (member.CollectionTypeInfo?.CanBeNull ?? true);
+        var countPropertyName = member.CollectionTypeInfo?.CountPropertyName;
+
+        if (!string.IsNullOrEmpty(countPropertyName))
         {
-            return nullable
-                ? $"(obj.{memberName}?.Count() ?? 0)"
-                : $"obj.{memberName}.Count()";
+            return canUseNullPropagation
+                ? $"({accessExpression}?.{countPropertyName} ?? 0)"
+                : $"{accessExpression}.{countPropertyName}";
         }
 
-        if (member.CollectionTypeInfo?.IsGenericCollection == true)
+        return canUseNullPropagation
+            ? $"({accessExpression}?.Count() ?? 0)"
+            : $"{accessExpression}.Count()";
+    }
+
+    public static string? GetCollectionIterationGuard(MemberToGenerate member, string accessExpression)
+    {
+        if (IsImmutableArrayCollection(member))
         {
-            return nullable
-                ? $"(obj.{memberName}?.Count ?? 0)"
-                : $"obj.{memberName}.Count";
+            return $"!{accessExpression}.IsDefaultOrEmpty";
         }
 
-        // Most concrete collection types use .Count property
-        // List<T>, HashSet<T>, Queue<T>, Stack<T>, ConcurrentBag<T>, LinkedList<T>, Collection<T>, etc.
-        return nullable 
-            ? $"(obj.{memberName}?.Count ?? 0)"
-            : $"obj.{memberName}.Count";
+        return null;
+    }
+
+    private static bool IsImmutableArrayCollection(MemberToGenerate member)
+    {
+        return member.CollectionTypeInfo?.RangeFactoryTypeName == "System.Collections.Immutable.ImmutableArray";
+    }
+
+    public static bool ShouldUseCheckedCountConversion(string typeName)
+    {
+        return typeName switch
+        {
+            "byte" or "sbyte" or "short" or "ushort" => true,
+            _ => false
+        };
     }
 
     /// <summary>

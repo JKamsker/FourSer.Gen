@@ -88,4 +88,34 @@ public class MyData
             ReferenceAssemblies = ReferenceAssemblies
         }.RunAsync();
     }
+
+    [Fact]
+    public async Task UnrelatedSerializePolymorphicAttribute_NoDiagnostic()
+    {
+        var unrelatedAttributeSource = @"
+namespace Other;
+
+[System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
+public sealed class SerializePolymorphicAttribute : System.Attribute
+{
+    public SerializePolymorphicAttribute(string propertyName)
+    {
+    }
+}";
+
+        var testCode = @"
+using Other;
+
+public class MyData
+{
+    [SerializePolymorphic(""NonExistent"")]
+    public object A { get; set; }
+}";
+
+        await new CSharpAnalyzerTest<SerializePolymorphicPropertyNameAnalyzer, DefaultVerifier>
+        {
+            TestState = { Sources = { unrelatedAttributeSource, testCode } },
+            ReferenceAssemblies = ReferenceAssemblies
+        }.RunAsync();
+    }
 }

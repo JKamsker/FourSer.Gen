@@ -412,7 +412,7 @@ public static class DeserializationGenerator
             // Implicit conversions to int exist for these types.
             "sbyte" or "byte" or "short" or "ushort" or "char" or "int" => countVar,
             // Explicit conversions are required for these (and for enums / other numeric types).
-            _ => $"(int){countVar}"
+            _ => $"checked((int){countVar})"
         };
     }
 
@@ -447,6 +447,12 @@ public static class DeserializationGenerator
         }
 
         var memberName = (member.Name ?? string.Empty).ToCamelCase();
+        var finalTargetExpression = target;
+        var finalTargetVariableName = target.StartsWith("var ", StringComparison.Ordinal) ? target.Substring(4) : target;
+        var requiresStagingCollection = CollectionUtilities.ShouldDeserializeIntoStagingCollection(member);
+        var collectionAddMethodOverride = requiresStagingCollection ? "Add" : null;
+        var collectionTargetVariableName = requiresStagingCollection ? $"{memberName}Staging" : finalTargetVariableName;
+        var collectionTargetExpression = requiresStagingCollection ? $"var {collectionTargetVariableName}" : finalTargetExpression;
         string countVar;
         string countType;
 
@@ -471,13 +477,13 @@ public static class DeserializationGenerator
         var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
         var isByteCollection = TypeHelper.IsByteCollection(elementTypeName);
 
-        if (isByteCollection)
+        if (isByteCollection && CollectionUtilities.CanUseDirectByteCollectionPath(member))
         {
             if (member.CollectionTypeInfo?.IsArray == true)
             {
                 sb.WriteLineFormat("{0} = {1}.ReadBytes({2}{3}, (int){4});", target, helper, refOrEmpty, source, countVar);
             }
-            else if (member.CollectionTypeInfo?.isGenericList == true)
+            else if (member.CollectionTypeInfo?.IsGenericList == true)
             {
                 sb.WriteLineFormat
                     ("{0} = {1}.ReadBytes({2}{3}, (int){4}).ToList();", target, helper, refOrEmpty, source, countVar);
@@ -496,7 +502,7 @@ public static class DeserializationGenerator
             return;
         }
 
-        sb.WriteLine(CollectionUtilities.GenerateCollectionInstantiation(member, capacityVar, target));
+        sb.WriteLine(CollectionUtilities.GenerateCollectionInstantiation(member, capacityVar, collectionTargetExpression));
 
         var loopLimitVar = capacityVar;
 
@@ -508,41 +514,63 @@ public static class DeserializationGenerator
                 {
                     throw new InvalidOperationException("Polymorphic collections require list type information.");
                 }
+                var arrayIndexVariableName = member.CollectionTypeInfo?.IsArray == true
+                    ? $"{memberName}Index"
+                    : null;
+                if (arrayIndexVariableName is not null)
+                {
+                    sb.WriteLineFormat("int {0} = 0;", arrayIndexVariableName);
+                }
+
                 sb.WriteLineFormat("for (int i = 0; i < {0}; i++)", loopLimitVar);
-                using var _ = sb.BeginBlock();
-                sb.WriteLineFormat("{0} item;", member.ListTypeArgument.Value.TypeName);
-                var itemMember = new MemberToGenerate
-                (
-                    "item",
-                    member.ListTypeArgument!.Value.TypeName,
-                    false, // is value type
-                    member.ListTypeArgument.Value.IsUnmanagedType,
-                    member.ListTypeArgument.Value.IsStringType,
-                    member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
-                    false,
-                    null,
-                    null,
-                    member.PolymorphicInfo,
-                    false,
-                    null,
-                    false,
-                    null,
-                    false,
-                    false,
-                    null,
-                    null,
-                    member.CustomSerializer
-                );
-                GeneratePolymorphicItemDeserialization
-                (
-                    sb,
-                    itemMember,
-                    "item",
-                    source,
-                    helper
-                );
-                var addMethod = member.CollectionTypeInfo.Value.CollectionAddMethod ?? "Add";
-                sb.WriteLineFormat("{0}.{1}(item);", memberName, addMethod);
+                using (sb.BeginBlock())
+                {
+                    sb.WriteLineFormat("{0} item;", member.ListTypeArgument.Value.TypeName);
+                    var itemMember = new MemberToGenerate
+                    (
+                        "item",
+                        member.ListTypeArgument!.Value.TypeName,
+                        false, // is value type
+                        member.ListTypeArgument.Value.IsUnmanagedType,
+                        member.ListTypeArgument.Value.IsStringType,
+                        member.ListTypeArgument.Value.HasGenerateSerializerAttribute,
+                        false,
+                        null,
+                        null,
+                        member.PolymorphicInfo,
+                        false,
+                        null,
+                        false,
+                        null,
+                        false,
+                        false,
+                        null,
+                        null,
+                        member.CustomSerializer
+                    );
+                    GeneratePolymorphicItemDeserialization
+                    (
+                        sb,
+                        itemMember,
+                        "item",
+                        source,
+                        helper
+                    );
+                    EmitCollectionItemWrite
+                    (
+                        sb,
+                        member,
+                        collectionTargetVariableName,
+                        "item",
+                        arrayIndexVariableName,
+                        collectionAddMethodOverride
+                    );
+                }
+
+                if (requiresStagingCollection)
+                {
+                    sb.WriteLine(CollectionUtilities.GenerateCollectionAssignment(member, collectionTargetVariableName, finalTargetExpression));
+                }
                 return;
             }
 
@@ -564,84 +592,116 @@ public static class DeserializationGenerator
                     typeIdVar = (collectionInfo.TypeIdProperty ?? "typeId").ToCamelCase();
                 }
 
-                sb.WriteLineFormat("switch ({0})", typeIdVar);
-                using var _ = sb.BeginBlock();
-                foreach (var option in info.Options)
+                var arrayIndexVariableName = member.CollectionTypeInfo?.IsArray == true
+                    ? $"{memberName}Index"
+                    : null;
+                if (arrayIndexVariableName is not null)
                 {
-                    var key = option.Key.ToString();
-                    if (info.EnumUnderlyingType is not null)
-                    {
-                        key = $"({info.TypeIdType}){key}";
-                    }
-                    else if (info.TypeIdType.EndsWith("Enum"))
-                    {
-                        key = $"{info.TypeIdType}.{key}";
-                    }
-
-                    sb.WriteLineFormat("case {0}:", key);
-                    using (sb.BeginBlock())
-                    {
-                        sb.WriteLineFormat("for (int i = 0; i < {0}; i++)", loopLimitVar);
-                        using (sb.BeginBlock())
-                        {
-                            sb.WriteLineFormat
-                                ("var item = {0}.Deserialize({1}{2});", TypeHelper.GetGlobalTypeName(option.Type), refOrEmpty, source);
-                            sb.WriteLineFormat("{0}.Add(item);", memberName);
-                        }
-
-                        sb.WriteLine("break;");
-                    }
+                    sb.WriteLineFormat("int {0} = 0;", arrayIndexVariableName);
                 }
 
-                sb.WriteLine("default:");
-                sb.WriteLineFormat
-                    ("    throw new System.IO.InvalidDataException($\"Unknown type id for {0}: {{{1}}}\");", member.Name ?? "member", typeIdVar ?? "typeId");
+                sb.WriteLineFormat("switch ({0})", typeIdVar);
+                using (sb.BeginBlock())
+                {
+                    foreach (var option in info.Options)
+                    {
+                        var key = option.Key.ToString();
+                        if (info.EnumUnderlyingType is not null)
+                        {
+                            key = $"({info.TypeIdType}){key}";
+                        }
+                        else if (info.TypeIdType.EndsWith("Enum"))
+                        {
+                            key = $"{info.TypeIdType}.{key}";
+                        }
+
+                        sb.WriteLineFormat("case {0}:", key);
+                        using (sb.BeginBlock())
+                        {
+                            sb.WriteLineFormat("for (int i = 0; i < {0}; i++)", loopLimitVar);
+                            using (sb.BeginBlock())
+                            {
+                                sb.WriteLineFormat
+                                    ("var item = {0}.Deserialize({1}{2});", TypeHelper.GetGlobalTypeName(option.Type), refOrEmpty, source);
+                                EmitCollectionItemWrite
+                                (
+                                    sb,
+                                    member,
+                                    collectionTargetVariableName,
+                                    "item",
+                                    arrayIndexVariableName,
+                                    collectionAddMethodOverride
+                                );
+                            }
+
+                            sb.WriteLine("break;");
+                        }
+                    }
+
+                    sb.WriteLine("default:");
+                    var localName = member.Name;
+                    var localTypeId = typeIdVar ?? "null";
+                    sb.WriteLine($"    throw new System.IO.InvalidDataException($\"Unknown type id for {localName}: {{{localTypeId}}}\");");
+                }
+
+                if (requiresStagingCollection)
+                {
+                    sb.WriteLine(CollectionUtilities.GenerateCollectionAssignment(member, collectionTargetVariableName, finalTargetExpression));
+                }
                 return;
             }
         }
 
         sb.WriteLineFormat("for (int i = 0; i < {0}; i++)", loopLimitVar);
-        using var block = sb.BeginBlock();
-        if (member.CollectionTypeInfo?.IsArray == true)
+        using (sb.BeginBlock())
         {
-            GenerateArrayElementDeserialization
-            (
-                sb,
-                member,
-                member.CollectionTypeInfo.Value,
-                memberName,
-                "i",
-                source,
-                helper
-            );
-        }
-        else if (member.IsList)
-        {
-            if (member.ListTypeArgument is null)
+            if (member.CollectionTypeInfo?.IsArray == true)
             {
-                throw new InvalidOperationException("List deserialization requires element type information.");
+                GenerateArrayElementDeserialization
+                (
+                    sb,
+                    member,
+                    member.CollectionTypeInfo.Value,
+                    collectionTargetVariableName,
+                    "i",
+                    source,
+                    helper
+                );
             }
-            GenerateListElementDeserialization
-            (
-                sb,
-                member,
-                member.ListTypeArgument.Value,
-                memberName,
-                source,
-                helper
-            );
+            else if (member.IsList)
+            {
+                if (member.ListTypeArgument is null)
+                {
+                    throw new InvalidOperationException("List deserialization requires element type information.");
+                }
+                GenerateListElementDeserialization
+                (
+                    sb,
+                    member,
+                    member.ListTypeArgument.Value,
+                    collectionTargetVariableName,
+                    source,
+                    helper
+                );
+            }
+            else if (member.CollectionTypeInfo is not null)
+            {
+                GenerateCollectionElementDeserialization
+                (
+                    sb,
+                    member,
+                    member.CollectionTypeInfo.Value,
+                    collectionTargetVariableName,
+                    source,
+                    helper,
+                    collectionAddMethodOverride
+                );
+            }
         }
-        else if (member.CollectionTypeInfo is not null)
+
+        if (requiresStagingCollection)
         {
-            GenerateCollectionElementDeserialization
-            (
-                sb,
-                member,
-                member.CollectionTypeInfo.Value,
-                memberName,
-                source,
-                helper
-            );
+            sb.WriteLine(CollectionUtilities.GenerateCollectionAssignment(member, collectionTargetVariableName, finalTargetExpression));
         }
     }
 
@@ -763,6 +823,7 @@ public static class DeserializationGenerator
             listTypeInfo = new
             (
                 elementType,
+                collectionTypeInfo.IsElementValueType,
                 collectionTypeInfo.IsElementUnmanagedType,
                 collectionTypeInfo.IsElementStringType,
                 collectionTypeInfo.HasElementGenerateSerializerAttribute
@@ -774,7 +835,7 @@ public static class DeserializationGenerator
             // Adding a comment to reflect that this is an undesirable state.
             sb.WriteLineFormat("// Fallback for unlimited collection {0} - element type could not be determined.", member.Name);
             elementType = "object"; // Fallback to object to avoid breaking compilation, though this is not ideal.
-            listTypeInfo = new(elementType, false, false, false);
+            listTypeInfo = new(elementType, false, false, false, false);
         }
 
 
@@ -793,14 +854,7 @@ public static class DeserializationGenerator
             );
         }
 
-        if (member.CollectionTypeInfo?.IsArray == true)
-        {
-            sb.WriteLineFormat("{0} = {1}.ToArray();", target, tempCollectionVar);
-        }
-        else
-        {
-            sb.WriteLineFormat("{0} = {1};", target, tempCollectionVar);
-        }
+        sb.WriteLine(CollectionUtilities.GenerateCollectionAssignment(member, tempCollectionVar, target));
     }
 
     private static void GeneratePolymorphicDeserialization
@@ -974,10 +1028,11 @@ public static class DeserializationGenerator
         CollectionTypeInfo elementInfo,
         string collectionTarget,
         string source,
-        string helper
+        string helper,
+        string? addMethodOverride = null
     )
     {
-        var addMethod = elementInfo.CollectionAddMethod ?? "Add";
+        var addMethod = addMethodOverride ?? elementInfo.CollectionAddMethod ?? "Add";
         var refOrEmpty = source == "buffer" ? "ref " : "";
 
         if (member.CustomSerializer is { } customSerializer)
@@ -1004,5 +1059,28 @@ public static class DeserializationGenerator
                 "{0}.{1}({2}.Deserialize({3}{4}));", collectionTarget, addMethod, TypeHelper.GetGlobalTypeName(elementInfo.ElementTypeName), refOrEmpty, source
             );
         }
+    }
+
+    private static void EmitCollectionItemWrite(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        string collectionTargetVariableName,
+        string itemExpression,
+        string? arrayIndexVariableName,
+        string? addMethod = null)
+    {
+        if (member.CollectionTypeInfo?.IsArray == true)
+        {
+            if (arrayIndexVariableName is null)
+            {
+                throw new InvalidOperationException("Array collection writes require an index variable.");
+            }
+
+            sb.WriteLineFormat("{0}[{1}++] = {2};", collectionTargetVariableName, arrayIndexVariableName, itemExpression);
+            return;
+        }
+
+        var resolvedAddMethod = addMethod ?? member.CollectionTypeInfo?.CollectionAddMethod ?? "Add";
+        sb.WriteLineFormat("{0}.{1}({2});", collectionTargetVariableName, resolvedAddMethod, itemExpression);
     }
 }

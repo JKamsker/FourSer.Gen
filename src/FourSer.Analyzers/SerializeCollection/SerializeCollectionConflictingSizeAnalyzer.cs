@@ -44,7 +44,7 @@ namespace FourSer.Analyzers.SerializeCollection
         private void AnalyzeAttribute(SymbolAnalysisContext context)
         {
             var symbol = context.Symbol;
-            var attribute = symbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass?.Name == "SerializeCollectionAttribute");
+            var attribute = symbol.GetSerializeCollectionAttribute();
 
             if (attribute == null || attribute.ApplicationSyntaxReference == null)
             {

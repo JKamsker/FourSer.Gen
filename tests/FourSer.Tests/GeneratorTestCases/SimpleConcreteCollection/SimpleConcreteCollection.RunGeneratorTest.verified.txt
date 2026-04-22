@@ -40,7 +40,6 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
 
     public SimpleConcreteCollectionTest()
     {
-        this.Cats = default;
     }
 
     public static SimpleConcreteCollectionTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -84,6 +83,10 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
             SpanWriter.WriteInt32(ref data, (int)(obj.Cats.Count));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
+                if (obj.Cats[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member \"obj.Cats[i]\" cannot be null.");
+                }
                 global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.Serialize(obj.Cats[i], ref data);
             }
         }
@@ -106,6 +109,10 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
             StreamWriter.WriteInt32(stream, (int)(obj.Cats.Count));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
+                if (obj.Cats[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member \"obj.Cats[i]\" cannot be null.");
+                }
                 global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.Serialize(obj.Cats[i], stream);
             }
         }
@@ -150,8 +157,6 @@ public partial class Cat : ISerializable<Cat>
 
     public Cat()
     {
-        this.Id = default;
-        this.Name = default;
     }
 
     public static Cat Deserialize(ref System.ReadOnlySpan<byte> buffer)

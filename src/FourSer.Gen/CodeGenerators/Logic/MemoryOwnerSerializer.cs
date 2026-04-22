@@ -107,7 +107,7 @@ internal static class MemoryOwnerSerializer
         {
             var countExpression = $"obj.{member.Name}.Memory.Length";
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
-            SerializationWriterEmitter.EmitWrite(sb, ctx, countType, countExpression);
+            SerializationWriterEmitter.EmitCountWrite(sb, ctx, countType, countExpression);
         }
 
         var spanVar = $"{member.Name.ToCamelCase()}Span";
@@ -206,4 +206,3 @@ internal static class MemoryOwnerSerializer
         }
     }
 }
-

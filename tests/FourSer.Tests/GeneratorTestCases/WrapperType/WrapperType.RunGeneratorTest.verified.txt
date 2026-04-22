@@ -33,7 +33,6 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
 
     public WrapperUserClass()
     {
-        this.Name = default;
     }
 
     public static WrapperUserClass Deserialize(ref System.ReadOnlySpan<byte> buffer)

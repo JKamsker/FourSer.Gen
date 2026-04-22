@@ -109,7 +109,6 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
 
     public PacketWithListOfStructs()
     {
-        this.Structs = default;
     }
 
     public static PacketWithListOfStructs Deserialize(ref System.ReadOnlySpan<byte> buffer)

@@ -22,6 +22,7 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
     {
         if (obj is null) return 0;
         var size = 0;
+        _ = checked((ushort)((obj.Cats?.Count ?? 0)));
         size += sizeof(ushort); // Count size for Cats
         if (obj.Cats is not null)
         {
@@ -40,7 +41,6 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
 
     public UShortCountTest()
     {
-        this.Cats = default;
     }
 
     public static UShortCountTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -81,9 +81,13 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         }
         else
         {
-            SpanWriter.WriteUInt16(ref data, (ushort)(obj.Cats.Count));
+            SpanWriter.WriteUInt16(ref data, checked((ushort)(obj.Cats.Count)));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
+                if (obj.Cats[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member \"obj.Cats[i]\" cannot be null.");
+                }
                 global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat.Serialize(obj.Cats[i], ref data);
             }
         }
@@ -103,9 +107,13 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         }
         else
         {
-            StreamWriter.WriteUInt16(stream, (ushort)(obj.Cats.Count));
+            StreamWriter.WriteUInt16(stream, checked((ushort)(obj.Cats.Count)));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
+                if (obj.Cats[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member \"obj.Cats[i]\" cannot be null.");
+                }
                 global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat.Serialize(obj.Cats[i], stream);
             }
         }
@@ -150,8 +158,6 @@ public partial class Cat : ISerializable<Cat>
 
     public Cat()
     {
-        this.Id = default;
-        this.Name = default;
     }
 
     public static Cat Deserialize(ref System.ReadOnlySpan<byte> buffer)

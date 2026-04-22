@@ -51,7 +51,7 @@ internal static class CollectionSerializer
 
         if (collectionInfo.CountSize >= 0)
         {
-            var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
+            var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}");
             sb.WriteLineFormat("if ({0} != {1})", countExpression, collectionInfo.CountSize);
             using (sb.BeginBlock())
             {
@@ -67,8 +67,8 @@ internal static class CollectionSerializer
         else if (collectionInfo is { Unlimited: false, CountSizeReferenceIndex: null } && !isHandledByPolymorphic)
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
-            var countExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
-            SerializationWriterEmitter.EmitWrite(sb, ctx, countType, countExpression);
+            var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}");
+            SerializationWriterEmitter.EmitCountWrite(sb, ctx, countType, countExpression);
         }
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
@@ -86,7 +86,7 @@ internal static class CollectionSerializer
         var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
         var isByteCollection = TypeHelper.IsByteCollection(elementTypeName);
 
-        if (isByteCollection)
+        if (isByteCollection && CollectionUtilities.CanUseDirectByteCollectionPath(member))
         {
             SerializationWriterEmitter.EmitWriteBytes(sb, ctx, $"obj.{member.Name}");
             return;
@@ -172,9 +172,9 @@ internal static class CollectionSerializer
         SerializationWriterEmitter.WriterCtx ctx
     )
     {
-        if (member.CollectionTypeInfo?.IsArray == true || member.IsList)
+        if (member.CollectionTypeInfo?.SupportsIndexing == true || member.IsList)
         {
-            var loopCountExpression = GeneratorUtilities.GetCountExpression(member, member.Name);
+            var loopCountExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}");
             EmitForLoop(sb, loopCountExpression, (s, indexVar) =>
             {
                 if (member.ListTypeArgument is not null)
@@ -226,26 +226,28 @@ internal static class CollectionSerializer
         MemberToGenerate member,
         SerializationWriterEmitter.WriterCtx ctx,
         CollectionInfo collectionInfo,
-        bool isNotListOrArray
+        bool isNotIndexable
     )
     {
         var isPolymorphicSingleTypeId = GeneratorUtilities.ShouldUsePolymorphicSerialization(member)
             && collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId
             && string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
 
-        if (isPolymorphicSingleTypeId && !isNotListOrArray)
+        if (isPolymorphicSingleTypeId && !isNotIndexable)
         {
             var info = member.PolymorphicInfo!.Value;
-            var defaultOption = info.Options.FirstOrDefault();
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
             SerializationWriterEmitter.EmitWrite(sb, ctx, countType, "0");
-            SerializationWriterEmitter.EmitWriteTypeId
-            (
-                sb,
-                ctx,
-                defaultOption,
-                info
-            );
+            if (PolymorphicUtilities.TryGetDefaultOption(info, out var defaultOption))
+            {
+                SerializationWriterEmitter.EmitWriteTypeId
+                (
+                    sb,
+                    ctx,
+                    defaultOption,
+                    info
+                );
+            }
         }
         else if (!collectionInfo.Unlimited)
         {
@@ -304,19 +306,27 @@ internal static class CollectionSerializer
         string elementAccess,
         SerializationWriterEmitter.WriterCtx ctx,
         string typeName,
+        bool isValueType,
         bool hasGenerateSerializerAttribute,
         bool isUnmanagedType,
         bool isStringType)
     {
         if (hasGenerateSerializerAttribute)
         {
-            if (ctx.IsSpan)
+            if (isValueType)
             {
-                sb.WriteLineFormat("{0}.Serialize({1}, ref {2});", TypeHelper.GetGlobalTypeName(typeName), elementAccess, ctx.Target);
+                if (ctx.IsSpan)
+                {
+                    sb.WriteLineFormat("{0}.Serialize({1}, ref {2});", TypeHelper.GetGlobalTypeName(typeName), elementAccess, ctx.Target);
+                }
+                else
+                {
+                    sb.WriteLineFormat("{0}.Serialize({1}, {2});", TypeHelper.GetGlobalTypeName(typeName), elementAccess, ctx.Target);
+                }
             }
             else
             {
-                sb.WriteLineFormat("{0}.Serialize({1}, {2});", TypeHelper.GetGlobalTypeName(typeName), elementAccess, ctx.Target);
+                SerializationWriterEmitter.EmitSerializeNestedOrThrow(sb, ctx, typeName, elementAccess);
             }
         }
         else if (isUnmanagedType)
@@ -349,6 +359,7 @@ internal static class CollectionSerializer
             elementAccess,
             ctx,
             elementInfo.TypeName,
+            elementInfo.IsValueType,
             elementInfo.HasGenerateSerializerAttribute,
             elementInfo.IsUnmanagedType,
             elementInfo.IsStringType
@@ -375,6 +386,7 @@ internal static class CollectionSerializer
             elementAccess,
             ctx,
             elementInfo.ElementTypeName,
+            elementInfo.IsElementValueType,
             elementInfo.HasElementGenerateSerializerAttribute,
             elementInfo.IsElementUnmanagedType,
             elementInfo.IsElementStringType
@@ -383,6 +395,14 @@ internal static class CollectionSerializer
 
     private static void BeginCountReservation(IndentedStringBuilder sb, SerializationWriterEmitter.WriterCtx ctx, string countType)
     {
+        BeginCountReservation(sb, ctx, countType, "count");
+    }
+
+    private static void BeginCountReservation(IndentedStringBuilder sb, SerializationWriterEmitter.WriterCtx ctx, string countType, string variablePrefix)
+    {
+        var countPositionVariableName = $"{variablePrefix}CountPosition";
+        var countSpanVariableName = $"{variablePrefix}CountSpan";
+
         if (!ctx.IsSpan)
         {
             sb.WriteLine("if (!stream.CanSeek)");
@@ -391,30 +411,112 @@ internal static class CollectionSerializer
                 sb.WriteLine("throw new NotSupportedException(\"Stream must be seekable to serialize this collection.\");");
             }
 
-            sb.WriteLine("var countPosition = stream.Position;");
+            sb.WriteLineFormat("var {0} = stream.Position;", countPositionVariableName);
             SerializationWriterEmitter.EmitWrite(sb, ctx, countType, "0", " // Placeholder for count");
         }
         else
         {
-            sb.WriteLine("var countSpan = data;");
+            sb.WriteLineFormat("var {0} = data;", countSpanVariableName);
             sb.WriteLine($"data = data.Slice(sizeof({countType}));");
         }
     }
 
     private static void EndCountReservation(IndentedStringBuilder sb, SerializationWriterEmitter.WriterCtx ctx, string countType, string countExpr)
     {
+        EndCountReservation(sb, ctx, countType, countExpr, "count");
+    }
+
+    private static void EndCountReservation(IndentedStringBuilder sb, SerializationWriterEmitter.WriterCtx ctx, string countType, string countExpr, string variablePrefix)
+    {
+        var countPositionVariableName = $"{variablePrefix}CountPosition";
+        var countSpanVariableName = $"{variablePrefix}CountSpan";
+
         if (!ctx.IsSpan)
         {
-            sb.WriteLine("var endPosition = stream.Position;");
-            sb.WriteLine("stream.Position = countPosition;");
-            SerializationWriterEmitter.EmitWrite(sb, ctx, countType, countExpr);
-            sb.WriteLine("stream.Position = endPosition;");
+            var endPositionVariableName = $"{variablePrefix}EndPosition";
+            sb.WriteLineFormat("var {0} = stream.Position;", endPositionVariableName);
+            sb.WriteLineFormat("stream.Position = {0};", countPositionVariableName);
+            SerializationWriterEmitter.EmitCountWrite(sb, ctx, countType, countExpr);
+            sb.WriteLineFormat("stream.Position = {0};", endPositionVariableName);
         }
         else
         {
-            var countCtx = ctx with { Target = "countSpan" };
-            SerializationWriterEmitter.EmitWrite(sb, countCtx, countType, countExpr);
+            var countCtx = ctx with { Target = countSpanVariableName };
+            SerializationWriterEmitter.EmitCountWrite(sb, countCtx, countType, countExpr);
         }
+    }
+
+    private static bool TryEmitPureEnumerableByteCollection(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        SerializationWriterEmitter.WriterCtx ctx,
+        CollectionInfo collectionInfo)
+    {
+        if (member.CollectionTypeInfo?.IsPureEnumerable != true || GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+        {
+            return false;
+        }
+
+        var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
+        if (!TypeHelper.IsByteCollection(elementTypeName))
+        {
+            return false;
+        }
+
+        var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+        var memberAccess = $"obj.{member.Name}";
+        var collectionVariableName = $"{member.Name.ToCamelCase()}Collection";
+        var readOnlyCollectionVariableName = $"{member.Name.ToCamelCase()}ReadOnlyCollection";
+        var sequenceVariableName = $"{member.Name.ToCamelCase()}Sequence";
+
+        void EmitCountAndWrite(string collectionExpression, string countExpression)
+        {
+            SerializationWriterEmitter.EmitCountWrite(sb, ctx, countType, countExpression);
+            SerializationWriterEmitter.EmitWriteBytes(sb, ctx, collectionExpression);
+        }
+
+        void EmitCountedSequenceBody()
+        {
+            sb.WriteLineFormat("if ({0} is System.Collections.Generic.ICollection<byte> {1})", memberAccess, collectionVariableName);
+            using (sb.BeginBlock())
+            {
+                EmitCountAndWrite(collectionVariableName, $"{collectionVariableName}.Count");
+            }
+
+            sb.WriteLineFormat("else if ({0} is System.Collections.Generic.IReadOnlyCollection<byte> {1})", memberAccess, readOnlyCollectionVariableName);
+            using (sb.BeginBlock())
+            {
+                EmitCountAndWrite(readOnlyCollectionVariableName, $"{readOnlyCollectionVariableName}.Count");
+            }
+
+            sb.WriteLine("else");
+            using (sb.BeginBlock())
+            {
+                sb.WriteLineFormat("var {0} = global::System.Linq.Enumerable.ToArray({1});", sequenceVariableName, memberAccess);
+                EmitCountAndWrite(sequenceVariableName, $"{sequenceVariableName}.Length");
+            }
+        }
+
+        if (member.CollectionTypeInfo?.CanBeNull == true)
+        {
+            sb.WriteLineFormat("if ({0} is null)", memberAccess);
+            using (sb.BeginBlock())
+            {
+                SerializationWriterEmitter.EmitWrite(sb, ctx, countType, "0");
+            }
+
+            sb.WriteLine("else");
+            using (sb.BeginBlock())
+            {
+                EmitCountedSequenceBody();
+            }
+        }
+        else
+        {
+            EmitCountedSequenceBody();
+        }
+
+        return true;
     }
 
     private static void GenerateEnumerableCollection
@@ -426,15 +528,36 @@ internal static class CollectionSerializer
     )
     {
         var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+        var variablePrefix = member.Name.ToCamelCase();
+        var countVariableName = $"{variablePrefix}Count";
 
-        BeginCountReservation(sb, ctx, countType);
+        BeginCountReservation(sb, ctx, countType, variablePrefix);
 
-        sb.WriteLine("int count = 0;");
-        sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
-        using (sb.BeginBlock())
+        sb.WriteLineFormat("int {0} = 0;", countVariableName);
+        if (member.CollectionTypeInfo?.CanBeNull == true)
         {
-            sb.WriteLine($"using var enumerator = obj.{member.Name}.GetEnumerator();");
-            sb.WriteLine("while (enumerator.MoveNext())");
+            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
+            using (sb.BeginBlock())
+            {
+                sb.WriteLineFormat("foreach (var item in obj.{0})", member.Name);
+                using (sb.BeginBlock())
+                {
+                    var elementInfo = member.CollectionTypeInfo!.Value;
+                    GenerateCollectionElementSerialization
+                    (
+                        sb,
+                        member,
+                        elementInfo,
+                        "item",
+                        ctx
+                    );
+                    sb.WriteLineFormat("{0}++;", countVariableName);
+                }
+            }
+        }
+        else
+        {
+            sb.WriteLineFormat("foreach (var item in obj.{0})", member.Name);
             using (sb.BeginBlock())
             {
                 var elementInfo = member.CollectionTypeInfo!.Value;
@@ -443,23 +566,26 @@ internal static class CollectionSerializer
                     sb,
                     member,
                     elementInfo,
-                    "enumerator.Current",
+                    "item",
                     ctx
                 );
-                sb.WriteLine("count++;");
+                sb.WriteLineFormat("{0}++;", countVariableName);
             }
         }
 
-        EndCountReservation(sb, ctx, countType, "count");
+        EndCountReservation(sb, ctx, countType, countVariableName, variablePrefix);
     }
 
     private static void EmitFixedCollection(IndentedStringBuilder sb, MemberToGenerate member, SerializationWriterEmitter.WriterCtx ctx, TypeToGenerate type)
     {
         var collectionInfo = member.CollectionInfo ?? throw new InvalidOperationException("Collection attribute is required for fixed collections.");
-        sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
-        using (sb.BeginBlock())
+        if (member.CollectionTypeInfo?.CanBeNull != false)
         {
-            sb.WriteLineFormat("throw new System.ArgumentNullException(nameof(obj.{0}), \"Fixed-size collections cannot be null.\");", member.Name);
+            sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
+            using (sb.BeginBlock())
+            {
+                sb.WriteLineFormat("throw new System.ArgumentNullException(nameof(obj.{0}), \"Fixed-size collections cannot be null.\");", member.Name);
+            }
         }
 
         HandleNonNullCollection
@@ -476,23 +602,40 @@ internal static class CollectionSerializer
     {
         if (collectionInfo.CountSizeReferenceIndex is not null)
         {
-            sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
-            using (sb.BeginBlock())
+            if (member.CollectionTypeInfo?.CanBeNull == true)
             {
-                if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+                sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
+                using (sb.BeginBlock())
                 {
-                    PolymorphicSerializer.GeneratePolymorphicCollection
-                    (
-                        sb,
-                        member,
-                        ctx,
-                        collectionInfo
-                    );
+                    if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+                    {
+                        PolymorphicSerializer.GeneratePolymorphicCollection
+                        (
+                            sb,
+                            member,
+                            ctx,
+                            collectionInfo
+                        );
+                    }
+                    else
+                    {
+                        GenerateStandardCollectionBody(sb, member, ctx);
+                    }
                 }
-                else
-                {
-                    GenerateStandardCollectionBody(sb, member, ctx);
-                }
+            }
+            else if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+            {
+                PolymorphicSerializer.GeneratePolymorphicCollection
+                (
+                    sb,
+                    member,
+                    ctx,
+                    collectionInfo
+                );
+            }
+            else
+            {
+                GenerateStandardCollectionBody(sb, member, ctx);
             }
 
             return true;
@@ -502,8 +645,8 @@ internal static class CollectionSerializer
 
     private static bool TryEmitSingleTypeIdPolymorphic(IndentedStringBuilder sb, MemberToGenerate member, SerializationWriterEmitter.WriterCtx ctx, CollectionInfo collectionInfo)
     {
-        var isNotListOrArray = !member.IsList && member.CollectionTypeInfo?.IsArray != true;
-        var useSingleTypeIdPolymorphicSerialization = isNotListOrArray
+        var isNotIndexable = member.CollectionTypeInfo?.SupportsIndexing != true && !member.IsList;
+        var useSingleTypeIdPolymorphicSerialization = isNotIndexable
             && GeneratorUtilities.ShouldUsePolymorphicSerialization(member)
             && collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId
             && string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
@@ -515,7 +658,7 @@ internal static class CollectionSerializer
                 return true; // it was handled, but did nothing.
             }
 
-            PolymorphicSerializer.GeneratePolymorphicEnumerableCollection(sb, member, info, ctx);
+            PolymorphicSerializer.GeneratePolymorphicEnumerableCollection(sb, member, info, ctx, collectionInfo);
 
             return true;
         }
@@ -524,7 +667,20 @@ internal static class CollectionSerializer
 
     private static void EmitNullOrNonNullCollection(IndentedStringBuilder sb, MemberToGenerate member, SerializationWriterEmitter.WriterCtx ctx, CollectionInfo collectionInfo, TypeToGenerate type)
     {
-        var isNotListOrArray = !member.IsList && member.CollectionTypeInfo?.IsArray != true;
+        if (member.CollectionTypeInfo?.CanBeNull == false)
+        {
+            HandleNonNullCollection
+            (
+                sb,
+                member,
+                ctx,
+                collectionInfo,
+                type
+            );
+            return;
+        }
+
+        var isNotIndexable = member.CollectionTypeInfo?.SupportsIndexing != true && !member.IsList;
         sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
         using (sb.BeginBlock())
         {
@@ -534,7 +690,7 @@ internal static class CollectionSerializer
                 member,
                 ctx,
                 collectionInfo,
-                isNotListOrArray
+                isNotIndexable
             );
         }
 
@@ -562,6 +718,11 @@ internal static class CollectionSerializer
         var elementTypeName = member.ListTypeArgument?.TypeName ?? member.CollectionTypeInfo?.ElementTypeName;
         var isByteCollection = TypeHelper.IsByteCollection(elementTypeName);
 
+        if (TryEmitPureEnumerableByteCollection(sb, member, ctx, collectionInfo))
+        {
+            return;
+        }
+
         if (member.CollectionTypeInfo?.IsPureEnumerable == true && !GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
             if (!isByteCollection)
@@ -587,7 +748,11 @@ internal static class CollectionSerializer
             return;
         }
 
-        if (!member.IsList && member.CollectionTypeInfo?.IsArray != true && member.CollectionTypeInfo?.IsPureEnumerable == true && !isByteCollection)
+        if (!member.IsList
+            && member.CollectionTypeInfo?.IsArray != true
+            && member.CollectionTypeInfo?.IsPureEnumerable == true
+            && !isByteCollection
+            && !GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
             GenerateEnumerableCollection
             (

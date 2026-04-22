@@ -34,7 +34,6 @@ public partial class MyPacket : ISerializable<MyPacket>
 
     public MyPacket()
     {
-        this.Data = default;
     }
 
     public static MyPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)

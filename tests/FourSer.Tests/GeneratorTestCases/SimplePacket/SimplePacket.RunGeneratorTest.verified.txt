@@ -37,9 +37,6 @@ public partial class LoginPacket : ISerializable<LoginPacket>
 
     public LoginPacket()
     {
-        this.Result = default;
-        this.UserID = default;
-        this.Username = default;
     }
 
     public static LoginPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)

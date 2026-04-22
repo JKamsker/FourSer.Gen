@@ -40,14 +40,13 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
 
     public ULongCountTest()
     {
-        this.Cats = default;
     }
 
     public static ULongCountTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         var catsCount = SpanReader.ReadUInt64(ref buffer);
-        var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat>((int)catsCount);
-        for (int i = 0; i < (int)catsCount; i++)
+        var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat>(checked((int)catsCount));
+        for (int i = 0; i < checked((int)catsCount); i++)
         {
             cats.Add(global::FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat.Deserialize(ref buffer));
         }
@@ -63,8 +62,8 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
     public static ULongCountTest Deserialize(System.IO.Stream stream)
     {
         var catsCount = StreamReader.ReadUInt64(stream);
-        var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat>((int)catsCount);
-        for (int i = 0; i < (int)catsCount; i++)
+        var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat>(checked((int)catsCount));
+        for (int i = 0; i < checked((int)catsCount); i++)
         {
             cats.Add(global::FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat.Deserialize(stream));
         }
@@ -84,6 +83,10 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
             SpanWriter.WriteUInt64(ref data, (ulong)(obj.Cats.Count));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
+                if (obj.Cats[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member \"obj.Cats[i]\" cannot be null.");
+                }
                 global::FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat.Serialize(obj.Cats[i], ref data);
             }
         }
@@ -106,6 +109,10 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
             StreamWriter.WriteUInt64(stream, (ulong)(obj.Cats.Count));
             for (int i = 0; i < obj.Cats.Count; i++)
             {
+                if (obj.Cats[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member \"obj.Cats[i]\" cannot be null.");
+                }
                 global::FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat.Serialize(obj.Cats[i], stream);
             }
         }
@@ -150,8 +157,6 @@ public partial class Cat : ISerializable<Cat>
 
     public Cat()
     {
-        this.Id = default;
-        this.Name = default;
     }
 
     public static Cat Deserialize(ref System.ReadOnlySpan<byte> buffer)

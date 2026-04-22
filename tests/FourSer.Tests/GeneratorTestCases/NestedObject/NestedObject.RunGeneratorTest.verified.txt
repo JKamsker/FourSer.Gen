@@ -35,8 +35,6 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
 
     public ContainerPacket()
     {
-        this.Id = default;
-        this.Data = default;
     }
 
     public static ContainerPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -126,8 +124,6 @@ public partial class NestedData : ISerializable<NestedData>
 
     public NestedData()
     {
-        this.Name = default;
-        this.Value = default;
     }
 
     public static NestedData Deserialize(ref System.ReadOnlySpan<byte> buffer)

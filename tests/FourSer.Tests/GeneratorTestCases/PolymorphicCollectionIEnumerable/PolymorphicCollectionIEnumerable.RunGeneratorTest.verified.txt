@@ -23,10 +23,11 @@ public partial class Inventory : ISerializable<Inventory>
         if (obj is null) return 0;
         var size = 0;
         size += sizeof(int); // Count size for Items
+        var itemsSizedItems = obj.Items is null ? null : global::System.Linq.Enumerable.ToArray(obj.Items);
         size += sizeof(Byte); // Size for polymorphic type id
-        if (obj.Items is not null)
+        if (itemsSizedItems is not null)
         {
-            foreach (var item in obj.Items)
+            foreach (var item in itemsSizedItems)
             {
                 size += item switch
                 {
@@ -47,7 +48,6 @@ public partial class Inventory : ISerializable<Inventory>
 
     public Inventory()
     {
-        this.Items = default;
     }
 
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -140,59 +140,67 @@ public partial class Inventory : ISerializable<Inventory>
     public static void Serialize(Inventory obj, ref System.Span<byte> data)
     {
         if (obj is null) return;
-        var countSpan = data;
+        var itemsCountSpan = data;
         data = data.Slice(sizeof(int));
-        int count = 0;
-        using var enumerator = obj.Items.GetEnumerator();
-        if (!enumerator.MoveNext())
+        if (obj.Items is null)
         {
             SpanWriter.WriteByte(ref data, (Byte)(10));
-            SpanWriter.WriteInt32(ref countSpan, (int)(0));
+            SpanWriter.WriteInt32(ref itemsCountSpan, (int)(0));
         }
         else
         {
-            var discriminator = enumerator.Current switch
+            int itemsCount = 0;
+            using var itemsEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Item>)obj.Items).GetEnumerator();
+            if (!itemsEnumerator.MoveNext())
             {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword => (Byte)10,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield => (Byte)20,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion => (Byte)30,
-                _ => throw new System.IO.InvalidDataException($"Unknown item type: {enumerator.Current.GetType().Name}")
-            };
-            SpanWriter.WriteByte(ref data, (Byte)(discriminator));
-            switch (discriminator)
-            {
-                case 10:
-                {
-                    do
-                    {
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword)enumerator.Current, ref data);
-                        count++;
-                    }
-                    while (enumerator.MoveNext());
-                    break;
-                }
-                case 20:
-                {
-                    do
-                    {
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield)enumerator.Current, ref data);
-                        count++;
-                    }
-                    while (enumerator.MoveNext());
-                    break;
-                }
-                case 30:
-                {
-                    do
-                    {
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion)enumerator.Current, ref data);
-                        count++;
-                    }
-                    while (enumerator.MoveNext());
-                    break;
-                }
+                SpanWriter.WriteByte(ref data, (Byte)(10));
+                SpanWriter.WriteInt32(ref itemsCountSpan, (int)(0));
             }
-            SpanWriter.WriteInt32(ref countSpan, (int)(count));
+            else
+            {
+                var discriminator = itemsEnumerator.Current switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword => (Byte)10,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield => (Byte)20,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion => (Byte)30,
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {itemsEnumerator.Current.GetType().Name}")
+                };
+                SpanWriter.WriteByte(ref data, (Byte)(discriminator));
+                switch (discriminator)
+                {
+                    case 10:
+                    {
+                        do
+                        {
+                            global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword)itemsEnumerator.Current, ref data);
+                            itemsCount++;
+                        }
+                        while (itemsEnumerator.MoveNext());
+                        break;
+                    }
+                    case 20:
+                    {
+                        do
+                        {
+                            global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield)itemsEnumerator.Current, ref data);
+                            itemsCount++;
+                        }
+                        while (itemsEnumerator.MoveNext());
+                        break;
+                    }
+                    case 30:
+                    {
+                        do
+                        {
+                            global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion)itemsEnumerator.Current, ref data);
+                            itemsCount++;
+                        }
+                        while (itemsEnumerator.MoveNext());
+                        break;
+                    }
+                }
+                SpanWriter.WriteInt32(ref itemsCountSpan, (int)(itemsCount));
+            }
         }
     }
 
@@ -208,61 +216,68 @@ public partial class Inventory : ISerializable<Inventory>
         {
             throw new NotSupportedException("Stream must be seekable to serialize this collection.");
         }
-        var countPosition = stream.Position;
+        var itemsCountPosition = stream.Position;
         StreamWriter.WriteInt32(stream, (int)(0)); // Placeholder for count
-        int count = 0;
-        using var enumerator = obj.Items.GetEnumerator();
-        if (!enumerator.MoveNext())
+        if (obj.Items is null)
         {
             StreamWriter.WriteByte(stream, (Byte)(10));
         }
         else
         {
-            var discriminator = enumerator.Current switch
+            int itemsCount = 0;
+            using var itemsEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Item>)obj.Items).GetEnumerator();
+            if (!itemsEnumerator.MoveNext())
             {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword => (Byte)10,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield => (Byte)20,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion => (Byte)30,
-                _ => throw new System.IO.InvalidDataException($"Unknown item type: {enumerator.Current.GetType().Name}")
-            };
-            StreamWriter.WriteByte(stream, (Byte)(discriminator));
-            switch (discriminator)
-            {
-                case 10:
-                {
-                    do
-                    {
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword)enumerator.Current, stream);
-                        count++;
-                    }
-                    while (enumerator.MoveNext());
-                    break;
-                }
-                case 20:
-                {
-                    do
-                    {
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield)enumerator.Current, stream);
-                        count++;
-                    }
-                    while (enumerator.MoveNext());
-                    break;
-                }
-                case 30:
-                {
-                    do
-                    {
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion)enumerator.Current, stream);
-                        count++;
-                    }
-                    while (enumerator.MoveNext());
-                    break;
-                }
+                StreamWriter.WriteByte(stream, (Byte)(10));
             }
-            var endPosition = stream.Position;
-            stream.Position = countPosition;
-            StreamWriter.WriteInt32(stream, (int)(count));
-            stream.Position = endPosition;
+            else
+            {
+                var discriminator = itemsEnumerator.Current switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword => (Byte)10,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield => (Byte)20,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion => (Byte)30,
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {itemsEnumerator.Current.GetType().Name}")
+                };
+                StreamWriter.WriteByte(stream, (Byte)(discriminator));
+                switch (discriminator)
+                {
+                    case 10:
+                    {
+                        do
+                        {
+                            global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Sword)itemsEnumerator.Current, stream);
+                            itemsCount++;
+                        }
+                        while (itemsEnumerator.MoveNext());
+                        break;
+                    }
+                    case 20:
+                    {
+                        do
+                        {
+                            global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Shield)itemsEnumerator.Current, stream);
+                            itemsCount++;
+                        }
+                        while (itemsEnumerator.MoveNext());
+                        break;
+                    }
+                    case 30:
+                    {
+                        do
+                        {
+                            global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion.Serialize((global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIEnumerable.Potion)itemsEnumerator.Current, stream);
+                            itemsCount++;
+                        }
+                        while (itemsEnumerator.MoveNext());
+                        break;
+                    }
+                }
+                var itemsEndPosition = stream.Position;
+                stream.Position = itemsCountPosition;
+                StreamWriter.WriteInt32(stream, (int)(itemsCount));
+                stream.Position = itemsEndPosition;
+            }
         }
     }
 }

@@ -35,8 +35,6 @@ public partial class SimplePacket : ISerializable<SimplePacket>
 
     public SimplePacket()
     {
-        this.Id = default;
-        this.Name = default;
     }
 
     public static SimplePacket Deserialize(ref System.ReadOnlySpan<byte> buffer)

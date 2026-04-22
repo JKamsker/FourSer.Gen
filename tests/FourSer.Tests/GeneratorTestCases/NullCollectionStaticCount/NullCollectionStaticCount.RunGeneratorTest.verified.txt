@@ -33,7 +33,6 @@ public partial class Item : ISerializable<Item>
 
     public Item()
     {
-        this.Id = default;
     }
 
     public static Item Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -116,7 +115,6 @@ public partial class MainObject : ISerializable<MainObject>
 
     public MainObject()
     {
-        this.Items = default;
     }
 
     public static MainObject Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -160,6 +158,10 @@ public partial class MainObject : ISerializable<MainObject>
             SpanWriter.WriteInt32(ref data, (int)(obj.Items.Count));
             for (int i = 0; i < obj.Items.Count; i++)
             {
+                if (obj.Items[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member \"obj.Items[i]\" cannot be null.");
+                }
                 global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Serialize(obj.Items[i], ref data);
             }
         }
@@ -182,6 +184,10 @@ public partial class MainObject : ISerializable<MainObject>
             StreamWriter.WriteInt32(stream, (int)(obj.Items.Count));
             for (int i = 0; i < obj.Items.Count; i++)
             {
+                if (obj.Items[i] is null)
+                {
+                    throw new System.NullReferenceException($"Member \"obj.Items[i]\" cannot be null.");
+                }
                 global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Serialize(obj.Items[i], stream);
             }
         }

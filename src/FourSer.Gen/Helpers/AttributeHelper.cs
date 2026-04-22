@@ -10,27 +10,33 @@ public static class AttributeHelper
     public static AttributeData? GetCollectionAttribute(ISymbol member)
     {
         return member.GetAttributes()
-            .FirstOrDefault(a => a.AttributeClass?.Name == "SerializeCollectionAttribute");
+            .FirstOrDefault(a => a.AttributeClass is not null && a.AttributeClass.IsSerializeCollectionAttribute());
     }
 
     public static AttributeData? GetPolymorphicAttribute(ISymbol member)
     {
         return member.GetAttributes()
-            .FirstOrDefault(a => a.AttributeClass?.Name == "SerializePolymorphicAttribute");
+            .FirstOrDefault(a => a.AttributeClass is not null && a.AttributeClass.IsSerializePolymorphicAttribute());
     }
 
     public static List<AttributeData> GetPolymorphicOptions(ISymbol member)
     {
         return member.GetAttributes()
-            .Where(a => a.AttributeClass?.Name == "PolymorphicOptionAttribute")
+            .Where(a => a.AttributeClass is not null && a.AttributeClass.IsPolymorphicOptionAttribute())
             .ToList();
     }
 
-    public static (object Key, ITypeSymbol Type) GetPolymorphicOption(AttributeData optionAttribute)
+    public static (object Key, ITypeSymbol Type, bool IsDefault) GetPolymorphicOption(AttributeData optionAttribute)
     {
         var key = optionAttribute.ConstructorArguments[0].Value!;
         var type = (ITypeSymbol)optionAttribute.ConstructorArguments[1].Value!;
-        return (key, type);
+        var isDefault = optionAttribute.ConstructorArguments.Length > 2
+            ? optionAttribute.ConstructorArguments[2].Value as bool? ?? false
+            : optionAttribute.NamedArguments
+                .FirstOrDefault(arg => arg.Key == "IsDefault")
+                .Value.Value as bool? ?? false;
+
+        return (key, type, isDefault);
     }
 
     public static bool HasGenerateSerializerAttribute(ITypeSymbol typeSymbol)

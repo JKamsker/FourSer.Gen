@@ -49,9 +49,6 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
 
     public InventoryWithCountSizeRef()
     {
-        this.TypeId = default;
-        this.Count = default;
-        this.Items = default;
     }
 
     public static InventoryWithCountSizeRef Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -144,14 +141,14 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
     public static void Serialize(InventoryWithCountSizeRef obj, ref System.Span<byte> data)
     {
         if (obj is null) return;
-        if (obj.Items is null || obj.Items.Count == 0)
+        if ((obj.Items?.Count ?? 0) == 0)
         {
             SpanWriter.WriteInt32(ref data, (int)(10));
         }
         else
         {
             var firstItem = obj.Items[0];
-            var discriminator = firstItem switch
+            int discriminator = firstItem switch
             {
                 global::FourSer.TestUser.CollectionWithCountSizeReference.Sword => (int)10,
                 global::FourSer.TestUser.CollectionWithCountSizeReference.Shield => (int)20,
@@ -160,14 +157,22 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             };
             SpanWriter.WriteInt32(ref data, (int)(discriminator));
         }
-        SpanWriter.WriteInt32(ref data, (int)(obj.Items?.Count ?? 0));
+        SpanWriter.WriteInt32(ref data, (int)((obj.Items?.Count ?? 0)));
         if (obj.Items is not null)
         {
             if (obj.Items.Count > 0)
             {
-                switch (obj.Items[0])
+                var firstItem = obj.Items[0];
+                var discriminator = firstItem switch
                 {
-                    case global::FourSer.TestUser.CollectionWithCountSizeReference.Sword:
+                    global::FourSer.TestUser.CollectionWithCountSizeReference.Sword => 10,
+                    global::FourSer.TestUser.CollectionWithCountSizeReference.Shield => 20,
+                    global::FourSer.TestUser.CollectionWithCountSizeReference.Potion => 30,
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
+                };
+                switch (discriminator)
+                {
+                    case 10:
                     {
                         foreach(var item in obj.Items)
                         {
@@ -175,7 +180,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
                         }
                         break;
                     }
-                    case global::FourSer.TestUser.CollectionWithCountSizeReference.Shield:
+                    case 20:
                     {
                         foreach(var item in obj.Items)
                         {
@@ -183,7 +188,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
                         }
                         break;
                     }
-                    case global::FourSer.TestUser.CollectionWithCountSizeReference.Potion:
+                    case 30:
                     {
                         foreach(var item in obj.Items)
                         {
@@ -192,7 +197,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
                         break;
                     }
                     default:
-                        throw new System.IO.InvalidDataException($"Unknown type for item in Items: {obj.Items[0].GetType().Name}");
+                        throw new System.IO.InvalidDataException($"Unknown type id for Items: {discriminator}");
                 }
             }
         }
@@ -206,14 +211,14 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
     public static void Serialize(InventoryWithCountSizeRef obj, System.IO.Stream stream)
     {
         if (obj is null) return;
-        if (obj.Items is null || obj.Items.Count == 0)
+        if ((obj.Items?.Count ?? 0) == 0)
         {
             StreamWriter.WriteInt32(stream, (int)(10));
         }
         else
         {
             var firstItem = obj.Items[0];
-            var discriminator = firstItem switch
+            int discriminator = firstItem switch
             {
                 global::FourSer.TestUser.CollectionWithCountSizeReference.Sword => (int)10,
                 global::FourSer.TestUser.CollectionWithCountSizeReference.Shield => (int)20,
@@ -222,14 +227,22 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
             };
             StreamWriter.WriteInt32(stream, (int)(discriminator));
         }
-        StreamWriter.WriteInt32(stream, (int)(obj.Items?.Count ?? 0));
+        StreamWriter.WriteInt32(stream, (int)((obj.Items?.Count ?? 0)));
         if (obj.Items is not null)
         {
             if (obj.Items.Count > 0)
             {
-                switch (obj.Items[0])
+                var firstItem = obj.Items[0];
+                var discriminator = firstItem switch
                 {
-                    case global::FourSer.TestUser.CollectionWithCountSizeReference.Sword:
+                    global::FourSer.TestUser.CollectionWithCountSizeReference.Sword => 10,
+                    global::FourSer.TestUser.CollectionWithCountSizeReference.Shield => 20,
+                    global::FourSer.TestUser.CollectionWithCountSizeReference.Potion => 30,
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
+                };
+                switch (discriminator)
+                {
+                    case 10:
                     {
                         foreach(var item in obj.Items)
                         {
@@ -237,7 +250,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
                         }
                         break;
                     }
-                    case global::FourSer.TestUser.CollectionWithCountSizeReference.Shield:
+                    case 20:
                     {
                         foreach(var item in obj.Items)
                         {
@@ -245,7 +258,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
                         }
                         break;
                     }
-                    case global::FourSer.TestUser.CollectionWithCountSizeReference.Potion:
+                    case 30:
                     {
                         foreach(var item in obj.Items)
                         {
@@ -254,7 +267,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
                         break;
                     }
                     default:
-                        throw new System.IO.InvalidDataException($"Unknown type for item in Items: {obj.Items[0].GetType().Name}");
+                        throw new System.IO.InvalidDataException($"Unknown type id for Items: {discriminator}");
                 }
             }
         }

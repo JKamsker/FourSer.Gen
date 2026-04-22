@@ -31,7 +31,6 @@ public partial class MyGlobalClass : ISerializable<MyGlobalClass>
 
     public MyGlobalClass()
     {
-        this.MyProperty = default;
     }
 
     public static MyGlobalClass Deserialize(ref System.ReadOnlySpan<byte> buffer)

@@ -27,6 +27,28 @@ internal static class SerializationWriterEmitter
         );
     }
 
+    public static void EmitCheckedWrite(IndentedStringBuilder sb, WriterCtx ctx, string typeName, string value, string comment = "")
+    {
+        var refOrEmpty = ctx.IsSpan ? "ref " : "";
+        var friendlyTypeName = TypeHelper.GetMethodFriendlyTypeName(typeName);
+        var writeMethod = $"Write{friendlyTypeName}";
+        sb.WriteLineFormat(
+            "{0}.{1}({2}{3}, checked(({4})({5})));{6}",
+            ctx.Helper, writeMethod, refOrEmpty, ctx.Target, typeName, value, comment
+        );
+    }
+
+    public static void EmitCountWrite(IndentedStringBuilder sb, WriterCtx ctx, string typeName, string value, string comment = "")
+    {
+        if (GeneratorUtilities.ShouldUseCheckedCountConversion(typeName))
+        {
+            EmitCheckedWrite(sb, ctx, typeName, value, comment);
+            return;
+        }
+
+        EmitWrite(sb, ctx, typeName, value, comment);
+    }
+
     public static void EmitWriteString(IndentedStringBuilder sb, WriterCtx ctx, string value)
     {
         var refOrEmpty = ctx.IsSpan ? "ref " : "";
@@ -51,10 +73,9 @@ internal static class SerializationWriterEmitter
         sb.WriteLineFormat("if ({0} is null)", instanceName);
         using (sb.BeginBlock())
         {
-            // Item of list?
-            if(instanceName == "typedInstance")
+            if (instanceName == "typedInstance" || instanceName == "item")
             {
-                sb.WriteLineFormat("throw new System.NullReferenceException($\"Instance of type \\\"{0}\\\" cannot be null.\");", typeName);
+                sb.WriteLine("throw new System.NullReferenceException(\"Collection item cannot be null.\");");
             }
             else
             {
@@ -65,14 +86,7 @@ internal static class SerializationWriterEmitter
 
         if (ctx.IsSpan)
         {
-            sb.WriteLineFormat
-            (
-                "var bytesWritten = {0}.Serialize({1}, {2});",
-                TypeHelper.GetGlobalTypeName(typeName),
-                instanceName,
-                ctx.Target
-            );
-            sb.WriteLine($"{ctx.Target} = {ctx.Target}.Slice(bytesWritten);");
+            sb.WriteLineFormat("{0}.Serialize({1}, ref {2});", TypeHelper.GetGlobalTypeName(typeName), instanceName, ctx.Target);
         }
         else
         {

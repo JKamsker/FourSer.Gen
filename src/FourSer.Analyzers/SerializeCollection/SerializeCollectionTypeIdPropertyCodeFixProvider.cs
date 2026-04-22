@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Composition;
 using System.Linq;
+using FourSer.Analyzers.Helpers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -63,9 +64,7 @@ namespace FourSer.Analyzers.SerializeCollection
 
             var propertyType = "int"; // Default
 
-            var polymorphicOptionAttributes = symbol.GetAttributes()
-                .Where(ad => ad.AttributeClass?.Name == "PolymorphicOptionAttribute")
-                .ToList();
+            var polymorphicOptionAttributes = symbol.GetPolymorphicOptionAttributes().ToList();
 
             if (polymorphicOptionAttributes.Any())
             {
