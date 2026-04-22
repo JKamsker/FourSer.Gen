@@ -44,11 +44,12 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
     public static EnumerableOfReferenceTypes Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity> myList;
-        myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity>(10);
-        for (int i = 0; i < 10; i++)
+        var myListValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity>(checked((int)10));
+        for (int i = 0; i < checked((int)10); i++)
         {
-            myList.Add(global::FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity.Deserialize(ref buffer));
+            myListValue.Add(global::FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity.Deserialize(ref buffer));
         }
+        myList = myListValue;
         var obj = new EnumerableOfReferenceTypes(myList);
         return obj;
     }
@@ -61,11 +62,12 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
     public static EnumerableOfReferenceTypes Deserialize(System.IO.Stream stream)
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity> myList;
-        myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity>(10);
-        for (int i = 0; i < 10; i++)
+        var myListValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity>(checked((int)10));
+        for (int i = 0; i < checked((int)10); i++)
         {
-            myList.Add(global::FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity.Deserialize(stream));
+            myListValue.Add(global::FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity.Deserialize(stream));
         }
+        myList = myListValue;
         var obj = new EnumerableOfReferenceTypes(myList);
         return obj;
     }

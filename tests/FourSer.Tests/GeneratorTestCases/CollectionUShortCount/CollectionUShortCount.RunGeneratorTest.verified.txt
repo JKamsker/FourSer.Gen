@@ -47,11 +47,12 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat> cats;
         var catsCount = SpanReader.ReadUInt16(ref buffer);
-        cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat>(catsCount);
-        for (int i = 0; i < catsCount; i++)
+        var catsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat>(checked((int)catsCount));
+        for (int i = 0; i < checked((int)catsCount); i++)
         {
-            cats.Add(global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat.Deserialize(ref buffer));
+            catsValue.Add(global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat.Deserialize(ref buffer));
         }
+        cats = catsValue;
         var obj = new UShortCountTest(cats);
         return obj;
     }
@@ -65,11 +66,12 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat> cats;
         var catsCount = StreamReader.ReadUInt16(stream);
-        cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat>(catsCount);
-        for (int i = 0; i < catsCount; i++)
+        var catsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat>(checked((int)catsCount));
+        for (int i = 0; i < checked((int)catsCount); i++)
         {
-            cats.Add(global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat.Deserialize(stream));
+            catsValue.Add(global::FourSer.Tests.GeneratorTestCases.CollectionUShortCount.Cat.Deserialize(stream));
         }
+        cats = catsValue;
         var obj = new UShortCountTest(cats);
         return obj;
     }

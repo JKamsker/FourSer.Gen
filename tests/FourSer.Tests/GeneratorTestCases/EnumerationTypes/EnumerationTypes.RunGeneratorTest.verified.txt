@@ -110,13 +110,21 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         System.Collections.Generic.Queue<int> mediumQueue;
         System.Collections.Concurrent.ConcurrentBag<long> largeBag;
         var numbersCount = SpanReader.ReadInt32(ref buffer);
-        var numbersArray = new int[numbersCount];
-        int numbersByteCount = checked(numbersCount * 4);
-        var numbersSpan = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, int>(buffer.Slice(0, numbersByteCount));
-        numbersSpan.CopyTo(numbersArray);
-        buffer = buffer.Slice(numbersByteCount);
-        numbers = new System.Collections.Generic.List<int>(numbersCount);
-        numbers.AddRange(numbersArray);
+        var numbersValue = new System.Collections.Generic.List<int>(checked((int)numbersCount));
+        System.Runtime.InteropServices.CollectionsMarshal.SetCount(numbersValue, checked((int)numbersCount));
+        if (global::System.BitConverter.IsLittleEndian)
+        {
+            var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(numbersValue));
+            SpanReader.ReadBytes(ref buffer, collectionBytes);
+        }
+        else
+        {
+            for (int i = 0; i < checked((int)numbersCount); i++)
+            {
+                System.Runtime.InteropServices.CollectionsMarshal.AsSpan(numbersValue)[i] = SpanReader.ReadInt32(ref buffer);
+            }
+        }
+        numbers = numbersValue;
         var namesCount = SpanReader.ReadInt32(ref buffer);
         names = new System.Collections.Generic.List<string>(namesCount);
         for (int i = 0; i < namesCount; i++)
@@ -126,7 +134,10 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         var dataCount = SpanReader.ReadInt32(ref buffer);
         var data = SpanReader.ReadBytes(ref buffer, (int)dataCount);
         var data1Count = SpanReader.ReadInt32(ref buffer);
-        data1 = SpanReader.ReadBytes(ref buffer, (int)data1Count).ToList();
+        var data1Value = new System.Collections.Generic.List<byte>(checked((int)data1Count));
+        System.Runtime.InteropServices.CollectionsMarshal.SetCount(data1Value, checked((int)data1Count));
+        SpanReader.ReadBytes(ref buffer, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(data1Value));
+        data1 = data1Value;
         var valuesCount = SpanReader.ReadInt32(ref buffer);
         values = new System.Collections.Concurrent.ConcurrentBag<float>();
         for (int i = 0; i < valuesCount; i++)
@@ -153,11 +164,20 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         var processingStack = new System.Collections.Generic.Stack<uint>(global::System.Linq.Enumerable.Reverse(processingStackStaging));
         var arrayDataCount = SpanReader.ReadInt32(ref buffer);
-        arrayData = new int[arrayDataCount];
-        int arrayDataByteCount = checked(arrayDataCount * 4);
-        var arrayDataSpan = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, int>(buffer.Slice(0, arrayDataByteCount));
-        arrayDataSpan.CopyTo(arrayData);
-        buffer = buffer.Slice(arrayDataByteCount);
+        var arrayDataValue = new int[checked((int)arrayDataCount)];
+        if (global::System.BitConverter.IsLittleEndian)
+        {
+            var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(arrayDataValue.AsSpan());
+            SpanReader.ReadBytes(ref buffer, collectionBytes);
+        }
+        else
+        {
+            for (int i = 0; i < checked((int)arrayDataCount); i++)
+            {
+                arrayDataValue[i] = SpanReader.ReadInt32(ref buffer);
+            }
+        }
+        arrayData = arrayDataValue;
         var measurementsCount = SpanReader.ReadInt32(ref buffer);
         measurements = new System.Collections.Generic.List<double>(measurementsCount);
         for (int i = 0; i < measurementsCount; i++)
@@ -232,11 +252,21 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         System.Collections.Generic.Queue<int> mediumQueue;
         System.Collections.Concurrent.ConcurrentBag<long> largeBag;
         var numbersCount = StreamReader.ReadInt32(stream);
-        var numbersArray = new int[numbersCount];
-        var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(numbersArray.AsSpan());
-        stream.ReadExactly(numbersBytes);
-        numbers = new System.Collections.Generic.List<int>(numbersCount);
-        numbers.AddRange(numbersArray);
+        var numbersValue = new System.Collections.Generic.List<int>(checked((int)numbersCount));
+        System.Runtime.InteropServices.CollectionsMarshal.SetCount(numbersValue, checked((int)numbersCount));
+        if (global::System.BitConverter.IsLittleEndian)
+        {
+            var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(numbersValue));
+            stream.ReadExactly(collectionBytes);
+        }
+        else
+        {
+            for (int i = 0; i < checked((int)numbersCount); i++)
+            {
+                System.Runtime.InteropServices.CollectionsMarshal.AsSpan(numbersValue)[i] = StreamReader.ReadInt32(stream);
+            }
+        }
+        numbers = numbersValue;
         var namesCount = StreamReader.ReadInt32(stream);
         names = new System.Collections.Generic.List<string>(namesCount);
         for (int i = 0; i < namesCount; i++)
@@ -246,7 +276,10 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         var dataCount = StreamReader.ReadInt32(stream);
         var data = StreamReader.ReadBytes(stream, (int)dataCount);
         var data1Count = StreamReader.ReadInt32(stream);
-        data1 = StreamReader.ReadBytes(stream, (int)data1Count).ToList();
+        var data1Value = new System.Collections.Generic.List<byte>(checked((int)data1Count));
+        System.Runtime.InteropServices.CollectionsMarshal.SetCount(data1Value, checked((int)data1Count));
+        stream.ReadExactly(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(data1Value));
+        data1 = data1Value;
         var valuesCount = StreamReader.ReadInt32(stream);
         values = new System.Collections.Concurrent.ConcurrentBag<float>();
         for (int i = 0; i < valuesCount; i++)
@@ -273,9 +306,20 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         var processingStack = new System.Collections.Generic.Stack<uint>(global::System.Linq.Enumerable.Reverse(processingStackStaging));
         var arrayDataCount = StreamReader.ReadInt32(stream);
-        arrayData = new int[arrayDataCount];
-        var arrayDataBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(arrayData.AsSpan());
-        stream.ReadExactly(arrayDataBytes);
+        var arrayDataValue = new int[checked((int)arrayDataCount)];
+        if (global::System.BitConverter.IsLittleEndian)
+        {
+            var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(arrayDataValue.AsSpan());
+            stream.ReadExactly(collectionBytes);
+        }
+        else
+        {
+            for (int i = 0; i < checked((int)arrayDataCount); i++)
+            {
+                arrayDataValue[i] = StreamReader.ReadInt32(stream);
+            }
+        }
+        arrayData = arrayDataValue;
         var measurementsCount = StreamReader.ReadInt32(stream);
         measurements = new System.Collections.Generic.List<double>(measurementsCount);
         for (int i = 0; i < measurementsCount; i++)
@@ -337,9 +381,18 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         else
         {
             SpanWriter.WriteInt32(ref data, (int)(obj.Numbers.Count));
-            var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
-            numbersBytes.CopyTo(data);
-            data = data.Slice(numbersBytes.Length);
+            if (global::System.BitConverter.IsLittleEndian)
+            {
+                var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
+                SpanWriter.WriteBytes(ref data, collectionBytes);
+            }
+            else
+            {
+                for (int i = 0; i < System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers).Length; i++)
+                {
+                    SpanWriter.WriteInt32(ref data, (int)(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers)[i]));
+                }
+            }
         }
         if (obj.Names is null)
         {
@@ -383,7 +436,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         else
         {
             SpanWriter.WriteInt32(ref data, (int)(obj.Data1.Count));
-            SpanWriter.WriteBytes(ref data, obj.Data1);
+            SpanWriter.WriteBytes(ref data, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Data1));
         }
         if (obj.Values is null)
         {
@@ -440,9 +493,18 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         else
         {
             SpanWriter.WriteInt32(ref data, (int)(obj.ArrayData.Length));
-            var arrayDataBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(obj.ArrayData.AsSpan());
-            arrayDataBytes.CopyTo(data);
-            data = data.Slice(arrayDataBytes.Length);
+            if (global::System.BitConverter.IsLittleEndian)
+            {
+                var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(obj.ArrayData.AsSpan());
+                SpanWriter.WriteBytes(ref data, collectionBytes);
+            }
+            else
+            {
+                for (int i = 0; i < obj.ArrayData.AsSpan().Length; i++)
+                {
+                    SpanWriter.WriteInt32(ref data, (int)(obj.ArrayData.AsSpan()[i]));
+                }
+            }
         }
         if (obj.Measurements is null)
         {
@@ -557,8 +619,18 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         else
         {
             StreamWriter.WriteInt32(stream, (int)(obj.Numbers.Count));
-            var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
-            stream.Write(numbersBytes);
+            if (global::System.BitConverter.IsLittleEndian)
+            {
+                var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
+                StreamWriter.WriteBytes(stream, collectionBytes);
+            }
+            else
+            {
+                for (int i = 0; i < System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers).Length; i++)
+                {
+                    StreamWriter.WriteInt32(stream, (int)(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers)[i]));
+                }
+            }
         }
         if (obj.Names is null)
         {
@@ -602,7 +674,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         else
         {
             StreamWriter.WriteInt32(stream, (int)(obj.Data1.Count));
-            StreamWriter.WriteBytes(stream, obj.Data1);
+            StreamWriter.WriteBytes(stream, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Data1));
         }
         if (obj.Values is null)
         {
@@ -659,8 +731,18 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         else
         {
             StreamWriter.WriteInt32(stream, (int)(obj.ArrayData.Length));
-            var arrayDataBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(obj.ArrayData.AsSpan());
-            stream.Write(arrayDataBytes);
+            if (global::System.BitConverter.IsLittleEndian)
+            {
+                var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(obj.ArrayData.AsSpan());
+                StreamWriter.WriteBytes(stream, collectionBytes);
+            }
+            else
+            {
+                for (int i = 0; i < obj.ArrayData.AsSpan().Length; i++)
+                {
+                    StreamWriter.WriteInt32(stream, (int)(obj.ArrayData.AsSpan()[i]));
+                }
+            }
         }
         if (obj.Measurements is null)
         {

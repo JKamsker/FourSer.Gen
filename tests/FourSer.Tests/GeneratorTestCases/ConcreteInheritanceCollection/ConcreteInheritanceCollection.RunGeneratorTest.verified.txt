@@ -46,11 +46,12 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog> dogs;
         var dogsCount = SpanReader.ReadInt32(ref buffer);
-        dogs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(dogsCount);
-        for (int i = 0; i < dogsCount; i++)
+        var dogsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(checked((int)dogsCount));
+        for (int i = 0; i < checked((int)dogsCount); i++)
         {
-            dogs.Add(global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.Deserialize(ref buffer));
+            dogsValue.Add(global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.Deserialize(ref buffer));
         }
+        dogs = dogsValue;
         var obj = new ConcreteInheritanceTest(dogs);
         return obj;
     }
@@ -64,11 +65,12 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog> dogs;
         var dogsCount = StreamReader.ReadInt32(stream);
-        dogs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(dogsCount);
-        for (int i = 0; i < dogsCount; i++)
+        var dogsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(checked((int)dogsCount));
+        for (int i = 0; i < checked((int)dogsCount); i++)
         {
-            dogs.Add(global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.Deserialize(stream));
+            dogsValue.Add(global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.Deserialize(stream));
         }
+        dogs = dogsValue;
         var obj = new ConcreteInheritanceTest(dogs);
         return obj;
     }

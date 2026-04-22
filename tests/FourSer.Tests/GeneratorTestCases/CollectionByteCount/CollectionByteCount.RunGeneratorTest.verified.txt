@@ -47,11 +47,12 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat> cats;
         var catsCount = SpanReader.ReadByte(ref buffer);
-        cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat>(catsCount);
-        for (int i = 0; i < catsCount; i++)
+        var catsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat>(checked((int)catsCount));
+        for (int i = 0; i < checked((int)catsCount); i++)
         {
-            cats.Add(global::FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat.Deserialize(ref buffer));
+            catsValue.Add(global::FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat.Deserialize(ref buffer));
         }
+        cats = catsValue;
         var obj = new IndividualTypeIdsTest(cats);
         return obj;
     }
@@ -65,11 +66,12 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat> cats;
         var catsCount = StreamReader.ReadByte(stream);
-        cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat>(catsCount);
-        for (int i = 0; i < catsCount; i++)
+        var catsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat>(checked((int)catsCount));
+        for (int i = 0; i < checked((int)catsCount); i++)
         {
-            cats.Add(global::FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat.Deserialize(stream));
+            catsValue.Add(global::FourSer.Tests.GeneratorTestCases.CollectionByteCount.Cat.Deserialize(stream));
         }
+        cats = catsValue;
         var obj = new IndividualTypeIdsTest(cats);
         return obj;
     }

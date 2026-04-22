@@ -124,11 +124,12 @@ public partial class MainObject : ISerializable<MainObject>
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item> items;
         var itemsCount = SpanReader.ReadByte(ref buffer);
-        items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item>(itemsCount);
-        for (int i = 0; i < itemsCount; i++)
+        var itemsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item>(checked((int)itemsCount));
+        for (int i = 0; i < checked((int)itemsCount); i++)
         {
-            items.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item.Deserialize(ref buffer));
+            itemsValue.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item.Deserialize(ref buffer));
         }
+        items = itemsValue;
         var obj = new MainObject(items);
         return obj;
     }
@@ -142,11 +143,12 @@ public partial class MainObject : ISerializable<MainObject>
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item> items;
         var itemsCount = StreamReader.ReadByte(stream);
-        items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item>(itemsCount);
-        for (int i = 0; i < itemsCount; i++)
+        var itemsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item>(checked((int)itemsCount));
+        for (int i = 0; i < checked((int)itemsCount); i++)
         {
-            items.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item.Deserialize(stream));
+            itemsValue.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item.Deserialize(stream));
         }
+        items = itemsValue;
         var obj = new MainObject(items);
         return obj;
     }

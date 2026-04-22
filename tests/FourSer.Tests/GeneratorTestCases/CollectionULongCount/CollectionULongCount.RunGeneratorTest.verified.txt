@@ -46,11 +46,12 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat> cats;
         var catsCount = SpanReader.ReadUInt64(ref buffer);
-        cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat>(checked((int)catsCount));
+        var catsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat>(checked((int)catsCount));
         for (int i = 0; i < checked((int)catsCount); i++)
         {
-            cats.Add(global::FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat.Deserialize(ref buffer));
+            catsValue.Add(global::FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat.Deserialize(ref buffer));
         }
+        cats = catsValue;
         var obj = new ULongCountTest(cats);
         return obj;
     }
@@ -64,11 +65,12 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat> cats;
         var catsCount = StreamReader.ReadUInt64(stream);
-        cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat>(checked((int)catsCount));
+        var catsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat>(checked((int)catsCount));
         for (int i = 0; i < checked((int)catsCount); i++)
         {
-            cats.Add(global::FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat.Deserialize(stream));
+            catsValue.Add(global::FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat.Deserialize(stream));
         }
+        cats = catsValue;
         var obj = new ULongCountTest(cats);
         return obj;
     }

@@ -19,13 +19,19 @@ internal sealed class BatchPrimitiveRunsPass : IPlanPass
         }
 
         var factsByName = plan.Facts.Members.Array.ToDictionary(f => f.Name, StringComparer.Ordinal);
-        var rewritten = RewriteRoot(plan, factsByName);
-        return plan with { Ops = rewritten };
+        var diagnostics = plan.Diagnostics.Array.ToList();
+        var rewritten = RewriteRoot(plan, factsByName, diagnostics);
+        return plan with
+        {
+            Ops = rewritten,
+            Diagnostics = diagnostics.ToEquatableArray(),
+        };
     }
 
     private static EquatableArray<PlanOp> RewriteRoot(
         MethodPlan plan,
-        IReadOnlyDictionary<string, MemberPlanFacts> factsByName)
+        IReadOnlyDictionary<string, MemberPlanFacts> factsByName,
+        List<PlanDiagnostic> diagnostics)
     {
         var rewritten = new List<PlanOp>();
         var pending = new List<(PlanOp Op, BatchMemberPlan BatchMember)>();
@@ -37,7 +43,7 @@ internal sealed class BatchPrimitiveRunsPass : IPlanPass
             {
                 if (pendingSize + batchMember.Size > plan.Facts.Options.MaxBatchBytes && pending.Count > 0)
                 {
-                    FlushPending(plan, rewritten, pending, pendingSize);
+                    FlushPending(plan, rewritten, pending, pendingSize, diagnostics);
                     pending.Clear();
                     pendingSize = 0;
                 }
@@ -47,13 +53,13 @@ internal sealed class BatchPrimitiveRunsPass : IPlanPass
                 continue;
             }
 
-            FlushPending(plan, rewritten, pending, pendingSize);
+            FlushPending(plan, rewritten, pending, pendingSize, diagnostics);
             pending.Clear();
             pendingSize = 0;
             rewritten.Add(op);
         }
 
-        FlushPending(plan, rewritten, pending, pendingSize);
+        FlushPending(plan, rewritten, pending, pendingSize, diagnostics);
         return rewritten.ToEquatableArray();
     }
 
@@ -61,7 +67,8 @@ internal sealed class BatchPrimitiveRunsPass : IPlanPass
         MethodPlan plan,
         List<PlanOp> rewritten,
         List<(PlanOp Op, BatchMemberPlan BatchMember)> pending,
-        int pendingSize)
+        int pendingSize,
+        List<PlanDiagnostic> diagnostics)
     {
         if (pending.Count == 0)
         {
@@ -70,6 +77,7 @@ internal sealed class BatchPrimitiveRunsPass : IPlanPass
 
         if (pendingSize < plan.Facts.Options.MinBatchBytes)
         {
+            TryAddSkippedBatchDiagnostic(plan, pending, pendingSize, diagnostics);
             rewritten.AddRange(pending.Select(static item => item.Op));
             return;
         }
@@ -105,6 +113,23 @@ internal sealed class BatchPrimitiveRunsPass : IPlanPass
             BufferName: bufferName,
             SourceExpression: plan.TargetKind == TargetKind.Span ? "buffer" : "stream",
             UseRef: plan.TargetKind == TargetKind.Span));
+    }
+
+    private static void TryAddSkippedBatchDiagnostic(
+        MethodPlan plan,
+        IReadOnlyList<(PlanOp Op, BatchMemberPlan BatchMember)> pending,
+        int pendingSize,
+        List<PlanDiagnostic> diagnostics)
+    {
+        var memberName = pending[0].BatchMember.MemberName;
+        var declarationLocation = plan.Facts.Type.Members
+            .FirstOrDefault(member => string.Equals(member.Name, memberName, StringComparison.Ordinal))
+            ?.DeclarationLocation;
+
+        diagnostics.Add(new PlanDiagnostic(
+            OptimizationDiagnosticKind.BatchingOrFusionSkipped,
+            $"Primitive batch for '{memberName}' stayed scalar because {pendingSize} bytes is below the configured minimum of {plan.Facts.Options.MinBatchBytes}.",
+            declarationLocation));
     }
 
     private static IEnumerable<BatchMemberPlan> WithOffsets(IEnumerable<BatchMemberPlan> members)

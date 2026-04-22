@@ -7,19 +7,18 @@ internal sealed class TypeIdCachingPass : IPlanPass
 {
     public MethodPlan Apply(MethodPlan plan)
     {
-        if (!plan.Facts.Options.EnablesTypeIdCaching)
-        {
-            return plan;
-        }
-
-        var seen = new Dictionary<string, string>(StringComparer.Ordinal);
-        var rewritten = RewriteSequence(plan.Ops, seen);
+        var enableCaching = plan.Facts.Options.EnablesTypeIdCaching;
+        var seen = enableCaching
+            ? new Dictionary<string, string>(StringComparer.Ordinal)
+            : null;
+        var rewritten = RewriteSequence(plan.Ops, seen, enableCaching);
         return plan with { Ops = rewritten };
     }
 
     private static EquatableArray<PlanOp> RewriteSequence(
         EquatableArray<PlanOp> ops,
-        Dictionary<string, string> seen)
+        Dictionary<string, string>? seen,
+        bool enableCaching)
     {
         var rewritten = new List<PlanOp>();
         foreach (var op in ops)
@@ -28,9 +27,17 @@ internal sealed class TypeIdCachingPass : IPlanPass
             {
                 case TypeIdResolveOp resolve:
                 {
-                    var key = resolve.Key ?? resolve.InstanceExpression;
-                    if (!seen.TryGetValue(key, out var existingLocal))
+                    if (!enableCaching)
                     {
+                        rewritten.Add(new DeclareLocalOp(resolve.TypeIdTypeName, resolve.TargetLocalName, resolve.FallbackExpression));
+                        rewritten.Add(resolve);
+                        break;
+                    }
+
+                    var key = resolve.Key ?? resolve.InstanceExpression;
+                    if (seen is null || !seen.TryGetValue(key, out var existingLocal))
+                    {
+                        seen ??= new Dictionary<string, string>(StringComparer.Ordinal);
                         seen[key] = resolve.TargetLocalName;
                         rewritten.Add(new DeclareLocalOp(resolve.TypeIdTypeName, resolve.TargetLocalName, resolve.FallbackExpression));
                         rewritten.Add(resolve);
@@ -47,17 +54,17 @@ internal sealed class TypeIdCachingPass : IPlanPass
                 case GuardOp guard:
                     rewritten.Add(guard with
                     {
-                        Body = RewriteSequence(guard.Body, seen),
-                        ElseBody = RewriteSequence(guard.ElseBody, seen),
+                        Body = RewriteSequence(guard.Body, seen, enableCaching),
+                        ElseBody = RewriteSequence(guard.ElseBody, seen, enableCaching),
                     });
                     break;
                 case PolymorphicSwitchOp polySwitch:
                     rewritten.Add(polySwitch with
                     {
                         Cases = polySwitch.Cases.Array
-                            .Select(c => c with { Body = RewriteSequence(c.Body, seen) })
+                            .Select(c => c with { Body = RewriteSequence(c.Body, seen, enableCaching) })
                             .ToEquatableArray(),
-                        DefaultBody = RewriteSequence(polySwitch.DefaultBody, seen),
+                        DefaultBody = RewriteSequence(polySwitch.DefaultBody, seen, enableCaching),
                     });
                     break;
                 default:

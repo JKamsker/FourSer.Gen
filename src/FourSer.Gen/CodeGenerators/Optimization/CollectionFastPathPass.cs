@@ -52,6 +52,11 @@ internal sealed class CollectionFastPathPass : IPlanPass
         MethodPlan methodPlan,
         List<PlanDiagnostic> diagnostics)
     {
+        var declarationLocation = methodPlan.Facts.Type.Members
+            .First(member => member.Name == plan.MemberName)
+            .DeclarationLocation;
+        var nativeLayoutSkipped = false;
+
         if (methodPlan.Facts.Options.EnablesNativeLayout && methodPlan.Facts.Capabilities.HasCollectionsMarshalAsSpan)
         {
             if (CanUseNativeLayout(plan))
@@ -67,11 +72,13 @@ internal sealed class CollectionFastPathPass : IPlanPass
             diagnostics.Add(new PlanDiagnostic(
                 OptimizationDiagnosticKind.NativeLayoutSkipped,
                 $"Native-layout bulk path skipped for '{plan.MemberName}'.",
-                methodPlan.Facts.Type.Members.First(m => m.Name == plan.MemberName).DeclarationLocation));
+                declarationLocation));
+            nativeLayoutSkipped = true;
         }
 
         if (CanUseByteExact(plan))
         {
+            TryAddFallbackChosenDiagnostic(plan, diagnostics, declarationLocation, nativeLayoutSkipped, "byte-exact");
             return plan with
             {
                 BulkLayoutMode = BulkLayoutMode.ByteExact,
@@ -81,6 +88,7 @@ internal sealed class CollectionFastPathPass : IPlanPass
 
         if (CanUsePortablePrimitive(plan))
         {
+            TryAddFallbackChosenDiagnostic(plan, diagnostics, declarationLocation, nativeLayoutSkipped, "portable primitive");
             return plan with
             {
                 BulkLayoutMode = BulkLayoutMode.PortablePrimitive,
@@ -91,9 +99,27 @@ internal sealed class CollectionFastPathPass : IPlanPass
         diagnostics.Add(new PlanDiagnostic(
             OptimizationDiagnosticKind.FastPathSkipped,
             $"Portable collection fast path skipped for '{plan.MemberName}'.",
-            methodPlan.Facts.Type.Members.First(m => m.Name == plan.MemberName).DeclarationLocation));
+            declarationLocation));
 
         return plan;
+    }
+
+    private static void TryAddFallbackChosenDiagnostic(
+        CollectionPlan plan,
+        List<PlanDiagnostic> diagnostics,
+        LocationInfo? declarationLocation,
+        bool nativeLayoutSkipped,
+        string fallbackName)
+    {
+        if (!nativeLayoutSkipped)
+        {
+            return;
+        }
+
+        diagnostics.Add(new PlanDiagnostic(
+            OptimizationDiagnosticKind.FallbackChosen,
+            $"Optimizer chose the {fallbackName} fallback for '{plan.MemberName}' after rejecting the native-layout path.",
+            declarationLocation));
     }
 
     private static bool CanUseByteExact(CollectionPlan plan)

@@ -56,6 +56,11 @@ internal static class PlanCollectionEmitter
     public static void EmitCollectionRead(PlanEmitterContext context, CollectionReadOp op)
     {
         var member = context.GetMember(op.Key ?? op.CollectionPlan.MemberName);
+        if (PlannedCollectionReadEmitter.TryEmit(context, op, member))
+        {
+            return;
+        }
+
         if (op.CollectionPlan.IsMemoryOwner)
         {
             DeserializationGenerator.GenerateMemoryOwnerDeserialization(
@@ -80,6 +85,11 @@ internal static class PlanCollectionEmitter
     public static void EmitCollectionWrite(PlanEmitterContext context, CollectionWriteOp op)
     {
         var member = context.GetMember(op.Key ?? op.CollectionPlan.MemberName);
+        if (PlannedCollectionWriteEmitter.TryEmit(context, op, member))
+        {
+            return;
+        }
+
         var writerContext = new SerializationWriterEmitter.WriterCtx(
             op.TargetExpression,
             op.HelperName,

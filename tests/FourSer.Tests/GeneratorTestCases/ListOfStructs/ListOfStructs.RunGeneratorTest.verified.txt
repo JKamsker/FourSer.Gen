@@ -117,11 +117,12 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct> structs;
         var structsCount = SpanReader.ReadInt32(ref buffer);
-        structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
-        for (int i = 0; i < structsCount; i++)
+        var structsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(checked((int)structsCount));
+        for (int i = 0; i < checked((int)structsCount); i++)
         {
-            structs.Add(global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.Deserialize(ref buffer));
+            structsValue.Add(global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.Deserialize(ref buffer));
         }
+        structs = structsValue;
         var obj = new PacketWithListOfStructs(structs);
         return obj;
     }
@@ -135,11 +136,12 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct> structs;
         var structsCount = StreamReader.ReadInt32(stream);
-        structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
-        for (int i = 0; i < structsCount; i++)
+        var structsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(checked((int)structsCount));
+        for (int i = 0; i < checked((int)structsCount); i++)
         {
-            structs.Add(global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.Deserialize(stream));
+            structsValue.Add(global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.Deserialize(stream));
         }
+        structs = structsValue;
         var obj = new PacketWithListOfStructs(structs);
         return obj;
     }

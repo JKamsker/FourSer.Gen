@@ -123,11 +123,12 @@ public partial class MainObject : ISerializable<MainObject>
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item> items;
         var itemsCount = SpanReader.ReadInt32(ref buffer);
-        items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>(itemsCount);
-        for (int i = 0; i < itemsCount; i++)
+        var itemsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>(checked((int)itemsCount));
+        for (int i = 0; i < checked((int)itemsCount); i++)
         {
-            items.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Deserialize(ref buffer));
+            itemsValue.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Deserialize(ref buffer));
         }
+        items = itemsValue;
         var obj = new MainObject(items);
         return obj;
     }
@@ -141,11 +142,12 @@ public partial class MainObject : ISerializable<MainObject>
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item> items;
         var itemsCount = StreamReader.ReadInt32(stream);
-        items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>(itemsCount);
-        for (int i = 0; i < itemsCount; i++)
+        var itemsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>(checked((int)itemsCount));
+        for (int i = 0; i < checked((int)itemsCount); i++)
         {
-            items.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Deserialize(stream));
+            itemsValue.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Deserialize(stream));
         }
+        items = itemsValue;
         var obj = new MainObject(items);
         return obj;
     }

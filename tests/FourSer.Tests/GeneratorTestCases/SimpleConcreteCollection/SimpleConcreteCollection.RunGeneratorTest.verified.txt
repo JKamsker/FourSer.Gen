@@ -46,11 +46,12 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat> cats;
         var catsCount = SpanReader.ReadInt32(ref buffer);
-        cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat>(catsCount);
-        for (int i = 0; i < catsCount; i++)
+        var catsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat>(checked((int)catsCount));
+        for (int i = 0; i < checked((int)catsCount); i++)
         {
-            cats.Add(global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.Deserialize(ref buffer));
+            catsValue.Add(global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.Deserialize(ref buffer));
         }
+        cats = catsValue;
         var obj = new SimpleConcreteCollectionTest(cats);
         return obj;
     }
@@ -64,11 +65,12 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat> cats;
         var catsCount = StreamReader.ReadInt32(stream);
-        cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat>(catsCount);
-        for (int i = 0; i < catsCount; i++)
+        var catsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat>(checked((int)catsCount));
+        for (int i = 0; i < checked((int)catsCount); i++)
         {
-            cats.Add(global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.Deserialize(stream));
+            catsValue.Add(global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.Deserialize(stream));
         }
+        cats = catsValue;
         var obj = new SimpleConcreteCollectionTest(cats);
         return obj;
     }

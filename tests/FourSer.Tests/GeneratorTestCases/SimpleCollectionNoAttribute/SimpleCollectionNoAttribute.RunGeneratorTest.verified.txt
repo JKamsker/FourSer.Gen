@@ -40,7 +40,10 @@ public partial class MyPacket : ISerializable<MyPacket>
     {
         System.Collections.Generic.List<byte> data;
         var dataCount = SpanReader.ReadInt32(ref buffer);
-        data = SpanReader.ReadBytes(ref buffer, (int)dataCount).ToList();
+        var dataValue = new System.Collections.Generic.List<byte>(checked((int)dataCount));
+        System.Runtime.InteropServices.CollectionsMarshal.SetCount(dataValue, checked((int)dataCount));
+        SpanReader.ReadBytes(ref buffer, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(dataValue));
+        data = dataValue;
         var obj = new MyPacket(data);
         return obj;
     }
@@ -54,7 +57,10 @@ public partial class MyPacket : ISerializable<MyPacket>
     {
         System.Collections.Generic.List<byte> data;
         var dataCount = StreamReader.ReadInt32(stream);
-        data = StreamReader.ReadBytes(stream, (int)dataCount).ToList();
+        var dataValue = new System.Collections.Generic.List<byte>(checked((int)dataCount));
+        System.Runtime.InteropServices.CollectionsMarshal.SetCount(dataValue, checked((int)dataCount));
+        stream.ReadExactly(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(dataValue));
+        data = dataValue;
         var obj = new MyPacket(data);
         return obj;
     }
@@ -69,7 +75,7 @@ public partial class MyPacket : ISerializable<MyPacket>
         else
         {
             SpanWriter.WriteInt32(ref data, (int)(obj.Data.Count));
-            SpanWriter.WriteBytes(ref data, obj.Data);
+            SpanWriter.WriteBytes(ref data, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Data));
         }
     }
 
@@ -88,7 +94,7 @@ public partial class MyPacket : ISerializable<MyPacket>
         else
         {
             StreamWriter.WriteInt32(stream, (int)(obj.Data.Count));
-            StreamWriter.WriteBytes(stream, obj.Data);
+            StreamWriter.WriteBytes(stream, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Data));
         }
     }
 }

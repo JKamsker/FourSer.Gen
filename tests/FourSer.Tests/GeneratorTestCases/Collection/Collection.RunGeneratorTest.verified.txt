@@ -40,13 +40,21 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
     {
         System.Collections.Generic.List<int> numbers;
         var numbersCount = SpanReader.ReadInt32(ref buffer);
-        var numbersArray = new int[numbersCount];
-        int numbersByteCount = checked(numbersCount * 4);
-        var numbersSpan = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, int>(buffer.Slice(0, numbersByteCount));
-        numbersSpan.CopyTo(numbersArray);
-        buffer = buffer.Slice(numbersByteCount);
-        numbers = new System.Collections.Generic.List<int>(numbersCount);
-        numbers.AddRange(numbersArray);
+        var numbersValue = new System.Collections.Generic.List<int>(checked((int)numbersCount));
+        System.Runtime.InteropServices.CollectionsMarshal.SetCount(numbersValue, checked((int)numbersCount));
+        if (global::System.BitConverter.IsLittleEndian)
+        {
+            var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(numbersValue));
+            SpanReader.ReadBytes(ref buffer, collectionBytes);
+        }
+        else
+        {
+            for (int i = 0; i < checked((int)numbersCount); i++)
+            {
+                System.Runtime.InteropServices.CollectionsMarshal.AsSpan(numbersValue)[i] = SpanReader.ReadInt32(ref buffer);
+            }
+        }
+        numbers = numbersValue;
         var obj = new CollectionPacket(numbers);
         return obj;
     }
@@ -60,11 +68,21 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
     {
         System.Collections.Generic.List<int> numbers;
         var numbersCount = StreamReader.ReadInt32(stream);
-        var numbersArray = new int[numbersCount];
-        var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(numbersArray.AsSpan());
-        stream.ReadExactly(numbersBytes);
-        numbers = new System.Collections.Generic.List<int>(numbersCount);
-        numbers.AddRange(numbersArray);
+        var numbersValue = new System.Collections.Generic.List<int>(checked((int)numbersCount));
+        System.Runtime.InteropServices.CollectionsMarshal.SetCount(numbersValue, checked((int)numbersCount));
+        if (global::System.BitConverter.IsLittleEndian)
+        {
+            var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(numbersValue));
+            stream.ReadExactly(collectionBytes);
+        }
+        else
+        {
+            for (int i = 0; i < checked((int)numbersCount); i++)
+            {
+                System.Runtime.InteropServices.CollectionsMarshal.AsSpan(numbersValue)[i] = StreamReader.ReadInt32(stream);
+            }
+        }
+        numbers = numbersValue;
         var obj = new CollectionPacket(numbers);
         return obj;
     }
@@ -79,9 +97,18 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         else
         {
             SpanWriter.WriteInt32(ref data, (int)(obj.Numbers.Count));
-            var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
-            numbersBytes.CopyTo(data);
-            data = data.Slice(numbersBytes.Length);
+            if (global::System.BitConverter.IsLittleEndian)
+            {
+                var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
+                SpanWriter.WriteBytes(ref data, collectionBytes);
+            }
+            else
+            {
+                for (int i = 0; i < System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers).Length; i++)
+                {
+                    SpanWriter.WriteInt32(ref data, (int)(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers)[i]));
+                }
+            }
         }
     }
 
@@ -100,8 +127,18 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
         else
         {
             StreamWriter.WriteInt32(stream, (int)(obj.Numbers.Count));
-            var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
-            stream.Write(numbersBytes);
+            if (global::System.BitConverter.IsLittleEndian)
+            {
+                var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
+                StreamWriter.WriteBytes(stream, collectionBytes);
+            }
+            else
+            {
+                for (int i = 0; i < System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers).Length; i++)
+                {
+                    StreamWriter.WriteInt32(stream, (int)(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers)[i]));
+                }
+            }
         }
     }
 }
