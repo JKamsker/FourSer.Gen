@@ -22,7 +22,7 @@ public partial class Inventory : ISerializable<Inventory>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(long); // Size for unmanaged type TypeId
+        size += 8;
         size += sizeof(int); // Count size for Items
         if (obj.Items is not null)
         {
@@ -52,9 +52,13 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var typeId = SpanReader.ReadInt64(ref buffer);
+        long typeId;
+        System.Collections.Generic.List<FourSer.TestUser.Item> items = default;
+        var typeIdBatchSpan = buffer.Slice(0, 8);
+        buffer = buffer.Slice(8);
+        typeId = System.Buffers.Binary.BinaryPrimitives.ReadInt64LittleEndian(typeIdBatchSpan);
         var itemsCount = SpanReader.ReadInt32(ref buffer);
-        var items = new System.Collections.Generic.List<FourSer.TestUser.Item>(itemsCount);
+        items = new System.Collections.Generic.List<FourSer.TestUser.Item>(itemsCount);
         switch (typeId)
         {
             case 10:
@@ -98,9 +102,13 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static Inventory Deserialize(System.IO.Stream stream)
     {
-        var typeId = StreamReader.ReadInt64(stream);
+        long typeId;
+        System.Collections.Generic.List<FourSer.TestUser.Item> items = default;
+        Span<byte> typeIdBatchBuffer = stackalloc byte[8];
+        stream.ReadExactly(typeIdBatchBuffer);
+        typeId = System.Buffers.Binary.BinaryPrimitives.ReadInt64LittleEndian(typeIdBatchBuffer);
         var itemsCount = StreamReader.ReadInt32(stream);
-        var items = new System.Collections.Generic.List<FourSer.TestUser.Item>(itemsCount);
+        items = new System.Collections.Generic.List<FourSer.TestUser.Item>(itemsCount);
         switch (typeId)
         {
             case 10:
@@ -146,15 +154,16 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
+            long itemsDiscriminator;
             var firstItem = obj.Items[0];
-            long discriminator = firstItem switch
+            itemsDiscriminator = firstItem switch
             {
-                global::FourSer.TestUser.Sword => (long)10,
-                global::FourSer.TestUser.Shield => (long)20,
-                global::FourSer.TestUser.Potion => (long)30,
+                global::FourSer.TestUser.Sword => 10,
+                global::FourSer.TestUser.Shield => 20,
+                global::FourSer.TestUser.Potion => 30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
-            SpanWriter.WriteInt64(ref data, (long)(discriminator));
+            SpanWriter.WriteInt64(ref data, (long)(itemsDiscriminator));
         }
         if (obj.Items is null)
         {
@@ -220,15 +229,16 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
+            long itemsDiscriminator;
             var firstItem = obj.Items[0];
-            long discriminator = firstItem switch
+            itemsDiscriminator = firstItem switch
             {
-                global::FourSer.TestUser.Sword => (long)10,
-                global::FourSer.TestUser.Shield => (long)20,
-                global::FourSer.TestUser.Potion => (long)30,
+                global::FourSer.TestUser.Sword => 10,
+                global::FourSer.TestUser.Shield => 20,
+                global::FourSer.TestUser.Potion => 30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
-            StreamWriter.WriteInt64(stream, (long)(discriminator));
+            StreamWriter.WriteInt64(stream, (long)(itemsDiscriminator));
         }
         if (obj.Items is null)
         {

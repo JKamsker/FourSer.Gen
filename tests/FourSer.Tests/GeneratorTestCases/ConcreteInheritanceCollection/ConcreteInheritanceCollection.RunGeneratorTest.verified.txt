@@ -44,8 +44,9 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
 
     public static ConcreteInheritanceTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
+        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog> dogs;
         var dogsCount = SpanReader.ReadInt32(ref buffer);
-        var dogs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(dogsCount);
+        dogs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(dogsCount);
         for (int i = 0; i < dogsCount; i++)
         {
             dogs.Add(global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.Deserialize(ref buffer));
@@ -61,8 +62,9 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
 
     public static ConcreteInheritanceTest Deserialize(System.IO.Stream stream)
     {
+        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog> dogs;
         var dogsCount = StreamReader.ReadInt32(stream);
-        var dogs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(dogsCount);
+        dogs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog>(dogsCount);
         for (int i = 0; i < dogsCount; i++)
         {
             dogs.Add(global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.Deserialize(stream));
@@ -144,9 +146,9 @@ public partial class Dog : ISerializable<Dog>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += StringEx.MeasureSize(obj.Name); // Size for string Name
-        size += sizeof(int); // Size for unmanaged type Age
-        size += StringEx.MeasureSize(obj.Breed); // Size for string Breed
+        size += StringEx.MeasureSize(obj.Name);
+        size += 4;
+        size += StringEx.MeasureSize(obj.Breed);
         return size;
     }
 
@@ -163,9 +165,12 @@ public partial class Dog : ISerializable<Dog>
 
     public static new Dog Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var name = SpanReader.ReadString(ref buffer);
-        var age = SpanReader.ReadInt32(ref buffer);
-        var breed = SpanReader.ReadString(ref buffer);
+        string name;
+        int age;
+        string breed;
+        name = SpanReader.ReadString(ref buffer);
+        age = SpanReader.ReadInt32(ref buffer);
+        breed = SpanReader.ReadString(ref buffer);
         var obj = new Dog(name, age, breed);
         return obj;
     }
@@ -177,9 +182,12 @@ public partial class Dog : ISerializable<Dog>
 
     public static new Dog Deserialize(System.IO.Stream stream)
     {
-        var name = StreamReader.ReadString(stream);
-        var age = StreamReader.ReadInt32(stream);
-        var breed = StreamReader.ReadString(stream);
+        string name;
+        int age;
+        string breed;
+        name = StreamReader.ReadString(stream);
+        age = StreamReader.ReadInt32(stream);
+        breed = StreamReader.ReadString(stream);
         var obj = new Dog(name, age, breed);
         return obj;
     }
@@ -200,9 +208,69 @@ public partial class Dog : ISerializable<Dog>
     public static void Serialize(Dog obj, System.IO.Stream stream)
     {
         if (obj is null) return;
-        StreamWriter.WriteString(stream, obj.Name);
+        if (string.IsNullOrEmpty(obj.Name))
+        {
+            stream.WriteInt32(0);
+        }
+        else
+        {
+            var nameStringByteCount = System.Text.Encoding.UTF8.GetByteCount(obj.Name);
+            var nameStringTotalBytes = nameStringByteCount + sizeof(int);
+            if (nameStringTotalBytes <= 256)
+            {
+                Span<byte> nameStringBuffer = stackalloc byte[nameStringTotalBytes];
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
+                var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
+                stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
+            }
+            else
+            {
+                var nameStringBufferRented = System.Buffers.ArrayPool<byte>.Shared.Rent(nameStringTotalBytes);
+                try
+                {
+                    var nameStringBuffer = nameStringBufferRented.AsSpan(0, nameStringTotalBytes);
+                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
+                    var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
+                    stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(nameStringBufferRented);
+                }
+            }
+        }
         StreamWriter.WriteInt32(stream, (int)(obj.Age));
-        StreamWriter.WriteString(stream, obj.Breed);
+        if (string.IsNullOrEmpty(obj.Breed))
+        {
+            stream.WriteInt32(0);
+        }
+        else
+        {
+            var breedStringByteCount = System.Text.Encoding.UTF8.GetByteCount(obj.Breed);
+            var breedStringTotalBytes = breedStringByteCount + sizeof(int);
+            if (breedStringTotalBytes <= 256)
+            {
+                Span<byte> breedStringBuffer = stackalloc byte[breedStringTotalBytes];
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(breedStringBuffer, breedStringByteCount);
+                var breedStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Breed, breedStringBuffer.Slice(sizeof(int)));
+                stream.Write(breedStringBuffer.Slice(0, sizeof(int) + breedStringActualBytes));
+            }
+            else
+            {
+                var breedStringBufferRented = System.Buffers.ArrayPool<byte>.Shared.Rent(breedStringTotalBytes);
+                try
+                {
+                    var breedStringBuffer = breedStringBufferRented.AsSpan(0, breedStringTotalBytes);
+                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(breedStringBuffer, breedStringByteCount);
+                    var breedStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Breed, breedStringBuffer.Slice(sizeof(int)));
+                    stream.Write(breedStringBuffer.Slice(0, sizeof(int) + breedStringActualBytes));
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(breedStringBufferRented);
+                }
+            }
+        }
     }
 }
 
@@ -231,8 +299,8 @@ public partial class Pet : ISerializable<Pet>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += StringEx.MeasureSize(obj.Name); // Size for string Name
-        size += sizeof(int); // Size for unmanaged type Age
+        size += StringEx.MeasureSize(obj.Name);
+        size += 4;
         return size;
     }
 
@@ -248,8 +316,10 @@ public partial class Pet : ISerializable<Pet>
 
     public static Pet Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var name = SpanReader.ReadString(ref buffer);
-        var age = SpanReader.ReadInt32(ref buffer);
+        string name;
+        int age;
+        name = SpanReader.ReadString(ref buffer);
+        age = SpanReader.ReadInt32(ref buffer);
         var obj = new Pet(name, age);
         return obj;
     }
@@ -261,8 +331,10 @@ public partial class Pet : ISerializable<Pet>
 
     public static Pet Deserialize(System.IO.Stream stream)
     {
-        var name = StreamReader.ReadString(stream);
-        var age = StreamReader.ReadInt32(stream);
+        string name;
+        int age;
+        name = StreamReader.ReadString(stream);
+        age = StreamReader.ReadInt32(stream);
         var obj = new Pet(name, age);
         return obj;
     }
@@ -282,7 +354,37 @@ public partial class Pet : ISerializable<Pet>
     public static void Serialize(Pet obj, System.IO.Stream stream)
     {
         if (obj is null) return;
-        StreamWriter.WriteString(stream, obj.Name);
+        if (string.IsNullOrEmpty(obj.Name))
+        {
+            stream.WriteInt32(0);
+        }
+        else
+        {
+            var nameStringByteCount = System.Text.Encoding.UTF8.GetByteCount(obj.Name);
+            var nameStringTotalBytes = nameStringByteCount + sizeof(int);
+            if (nameStringTotalBytes <= 256)
+            {
+                Span<byte> nameStringBuffer = stackalloc byte[nameStringTotalBytes];
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
+                var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
+                stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
+            }
+            else
+            {
+                var nameStringBufferRented = System.Buffers.ArrayPool<byte>.Shared.Rent(nameStringTotalBytes);
+                try
+                {
+                    var nameStringBuffer = nameStringBufferRented.AsSpan(0, nameStringTotalBytes);
+                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
+                    var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
+                    stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(nameStringBufferRented);
+                }
+            }
+        }
         StreamWriter.WriteInt32(stream, (int)(obj.Age));
     }
 }

@@ -44,8 +44,9 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
 
     public static ULongCountTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
+        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat> cats;
         var catsCount = SpanReader.ReadUInt64(ref buffer);
-        var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat>(checked((int)catsCount));
+        cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat>(checked((int)catsCount));
         for (int i = 0; i < checked((int)catsCount); i++)
         {
             cats.Add(global::FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat.Deserialize(ref buffer));
@@ -61,8 +62,9 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
 
     public static ULongCountTest Deserialize(System.IO.Stream stream)
     {
+        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat> cats;
         var catsCount = StreamReader.ReadUInt64(stream);
-        var cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat>(checked((int)catsCount));
+        cats = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat>(checked((int)catsCount));
         for (int i = 0; i < checked((int)catsCount); i++)
         {
             cats.Add(global::FourSer.Tests.GeneratorTestCases.CollectionULongCount.Cat.Deserialize(stream));
@@ -144,8 +146,8 @@ public partial class Cat : ISerializable<Cat>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type Id
-        size += StringEx.MeasureSize(obj.Name); // Size for string Name
+        size += 4;
+        size += StringEx.MeasureSize(obj.Name);
         return size;
     }
 
@@ -161,8 +163,10 @@ public partial class Cat : ISerializable<Cat>
 
     public static Cat Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = SpanReader.ReadInt32(ref buffer);
-        var name = SpanReader.ReadString(ref buffer);
+        int id;
+        string name;
+        id = SpanReader.ReadInt32(ref buffer);
+        name = SpanReader.ReadString(ref buffer);
         var obj = new Cat(id, name);
         return obj;
     }
@@ -174,8 +178,10 @@ public partial class Cat : ISerializable<Cat>
 
     public static Cat Deserialize(System.IO.Stream stream)
     {
-        var id = StreamReader.ReadInt32(stream);
-        var name = StreamReader.ReadString(stream);
+        int id;
+        string name;
+        id = StreamReader.ReadInt32(stream);
+        name = StreamReader.ReadString(stream);
         var obj = new Cat(id, name);
         return obj;
     }
@@ -196,6 +202,36 @@ public partial class Cat : ISerializable<Cat>
     {
         if (obj is null) return;
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
-        StreamWriter.WriteString(stream, obj.Name);
+        if (string.IsNullOrEmpty(obj.Name))
+        {
+            stream.WriteInt32(0);
+        }
+        else
+        {
+            var nameStringByteCount = System.Text.Encoding.UTF8.GetByteCount(obj.Name);
+            var nameStringTotalBytes = nameStringByteCount + sizeof(int);
+            if (nameStringTotalBytes <= 256)
+            {
+                Span<byte> nameStringBuffer = stackalloc byte[nameStringTotalBytes];
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
+                var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
+                stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
+            }
+            else
+            {
+                var nameStringBufferRented = System.Buffers.ArrayPool<byte>.Shared.Rent(nameStringTotalBytes);
+                try
+                {
+                    var nameStringBuffer = nameStringBufferRented.AsSpan(0, nameStringTotalBytes);
+                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
+                    var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
+                    stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(nameStringBufferRented);
+                }
+            }
+        }
     }
 }

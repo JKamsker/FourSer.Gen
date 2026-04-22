@@ -22,9 +22,9 @@ public partial class PacketWithPropertySerializer : ISerializable<PacketWithProp
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type Id
+        size += 4;
         size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_PropertyLevelSerializer_MyCustomStringSerializer.GetPacketSize(obj.Name);
-        size += StringEx.MeasureSize(obj.Description); // Size for string Description
+        size += StringEx.MeasureSize(obj.Description);
         return size;
     }
 
@@ -41,9 +41,12 @@ public partial class PacketWithPropertySerializer : ISerializable<PacketWithProp
 
     public static PacketWithPropertySerializer Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = SpanReader.ReadInt32(ref buffer);
-        var name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_PropertyLevelSerializer_MyCustomStringSerializer.Deserialize(ref buffer);
-        var description = SpanReader.ReadString(ref buffer);
+        int id;
+        string name;
+        string description;
+        id = SpanReader.ReadInt32(ref buffer);
+        name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_PropertyLevelSerializer_MyCustomStringSerializer.Deserialize(ref buffer);
+        description = SpanReader.ReadString(ref buffer);
         var obj = new PacketWithPropertySerializer(id, name, description);
         return obj;
     }
@@ -55,9 +58,12 @@ public partial class PacketWithPropertySerializer : ISerializable<PacketWithProp
 
     public static PacketWithPropertySerializer Deserialize(System.IO.Stream stream)
     {
-        var id = StreamReader.ReadInt32(stream);
-        var name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_PropertyLevelSerializer_MyCustomStringSerializer.Deserialize(stream);
-        var description = StreamReader.ReadString(stream);
+        int id;
+        string name;
+        string description;
+        id = StreamReader.ReadInt32(stream);
+        name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_PropertyLevelSerializer_MyCustomStringSerializer.Deserialize(stream);
+        description = StreamReader.ReadString(stream);
         var obj = new PacketWithPropertySerializer(id, name, description);
         return obj;
     }
@@ -81,7 +87,37 @@ public partial class PacketWithPropertySerializer : ISerializable<PacketWithProp
         if (obj is null) return;
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_PropertyLevelSerializer_MyCustomStringSerializer.Serialize(obj.Name, stream);
-        StreamWriter.WriteString(stream, obj.Description);
+        if (string.IsNullOrEmpty(obj.Description))
+        {
+            stream.WriteInt32(0);
+        }
+        else
+        {
+            var descriptionStringByteCount = System.Text.Encoding.UTF8.GetByteCount(obj.Description);
+            var descriptionStringTotalBytes = descriptionStringByteCount + sizeof(int);
+            if (descriptionStringTotalBytes <= 256)
+            {
+                Span<byte> descriptionStringBuffer = stackalloc byte[descriptionStringTotalBytes];
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(descriptionStringBuffer, descriptionStringByteCount);
+                var descriptionStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Description, descriptionStringBuffer.Slice(sizeof(int)));
+                stream.Write(descriptionStringBuffer.Slice(0, sizeof(int) + descriptionStringActualBytes));
+            }
+            else
+            {
+                var descriptionStringBufferRented = System.Buffers.ArrayPool<byte>.Shared.Rent(descriptionStringTotalBytes);
+                try
+                {
+                    var descriptionStringBuffer = descriptionStringBufferRented.AsSpan(0, descriptionStringTotalBytes);
+                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(descriptionStringBuffer, descriptionStringByteCount);
+                    var descriptionStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Description, descriptionStringBuffer.Slice(sizeof(int)));
+                    stream.Write(descriptionStringBuffer.Slice(0, sizeof(int) + descriptionStringActualBytes));
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(descriptionStringBufferRented);
+                }
+            }
+        }
     }
 }
 

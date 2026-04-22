@@ -22,7 +22,7 @@ public partial class IgnoredMembersPacket : ISerializable<IgnoredMembersPacket>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(byte); // Size for unmanaged type Included
+        size += 1;
         return size;
     }
 
@@ -37,7 +37,8 @@ public partial class IgnoredMembersPacket : ISerializable<IgnoredMembersPacket>
 
     public static IgnoredMembersPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var included = SpanReader.ReadByte(ref buffer);
+        byte included;
+        included = SpanReader.ReadByte(ref buffer);
         var obj = new IgnoredMembersPacket(included);
         return obj;
     }
@@ -49,7 +50,8 @@ public partial class IgnoredMembersPacket : ISerializable<IgnoredMembersPacket>
 
     public static IgnoredMembersPacket Deserialize(System.IO.Stream stream)
     {
-        var included = StreamReader.ReadByte(stream);
+        byte included;
+        included = StreamReader.ReadByte(stream);
         var obj = new IgnoredMembersPacket(included);
         return obj;
     }

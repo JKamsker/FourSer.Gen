@@ -51,8 +51,9 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
+        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Item> items = default;
         var itemsCount = SpanReader.ReadInt32(ref buffer);
-        var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Item>(itemsCount);
+        items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Item>(itemsCount);
         var itemsTypeId = SpanReader.ReadByte(ref buffer);
         switch (itemsTypeId)
         {
@@ -97,8 +98,9 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static Inventory Deserialize(System.IO.Stream stream)
     {
+        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Item> items = default;
         var itemsCount = StreamReader.ReadInt32(stream);
-        var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Item>(itemsCount);
+        items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Item>(itemsCount);
         var itemsTypeId = StreamReader.ReadByte(stream);
         switch (itemsTypeId)
         {

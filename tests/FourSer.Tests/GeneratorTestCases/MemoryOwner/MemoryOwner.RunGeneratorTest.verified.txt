@@ -38,8 +38,9 @@ public partial class Child : ISerializable<Child>, IDisposable
 
     public static Child Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
+        System.Buffers.IMemoryOwner<int> numbers;
         var numbersCount = SpanReader.ReadInt32(ref buffer);
-        var numbers = MemoryPool<int>.Shared.Rent(numbersCount).SliceToSize(numbersCount);
+        numbers = MemoryPool<int>.Shared.Rent(numbersCount).SliceToSize(numbersCount);
         var numbersSpan = numbers.Memory.Span;
         var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(numbersSpan);
         SpanReader.ReadBytes(ref buffer, numbersBytes);
@@ -54,8 +55,9 @@ public partial class Child : ISerializable<Child>, IDisposable
 
     public static Child Deserialize(System.IO.Stream stream)
     {
+        System.Buffers.IMemoryOwner<int> numbers;
         var numbersCount = StreamReader.ReadInt32(stream);
-        var numbers = MemoryPool<int>.Shared.Rent(numbersCount).SliceToSize(numbersCount);
+        numbers = MemoryPool<int>.Shared.Rent(numbersCount).SliceToSize(numbersCount);
         var numbersSpan = numbers.Memory.Span;
         var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(numbersSpan);
         stream.ReadExactly(numbersBytes);
@@ -131,7 +133,7 @@ public partial class Parent : ISerializable<Parent>, IDisposable
         var size = 0;
         size += sizeof(int); // Count size for Data
         size += (obj.Data?.Memory.Length ?? 0) * sizeof(byte);
-        size += global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.GetPacketSize(obj.DisposableProperty); // Size for nested type DisposableProperty
+        size += global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.GetPacketSize(obj.DisposableProperty);
         return size;
     }
 
@@ -147,11 +149,13 @@ public partial class Parent : ISerializable<Parent>, IDisposable
 
     public static Parent Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
+        System.Buffers.IMemoryOwner<byte> data;
+        FourSer.Tests.GeneratorTestCases.MemoryOwner.Child disposableProperty;
         var dataCount = SpanReader.ReadInt32(ref buffer);
-        var data = MemoryPool<byte>.Shared.Rent(dataCount).SliceToSize(dataCount);
+        data = MemoryPool<byte>.Shared.Rent(dataCount).SliceToSize(dataCount);
         var dataSpan = data.Memory.Span;
         SpanReader.ReadBytes(ref buffer, dataSpan);
-        var disposableProperty = global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.Deserialize(ref buffer);
+        disposableProperty = global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.Deserialize(ref buffer);
         var obj = new Parent(data, disposableProperty);
         return obj;
     }
@@ -163,11 +167,13 @@ public partial class Parent : ISerializable<Parent>, IDisposable
 
     public static Parent Deserialize(System.IO.Stream stream)
     {
+        System.Buffers.IMemoryOwner<byte> data;
+        FourSer.Tests.GeneratorTestCases.MemoryOwner.Child disposableProperty;
         var dataCount = StreamReader.ReadInt32(stream);
-        var data = MemoryPool<byte>.Shared.Rent(dataCount).SliceToSize(dataCount);
+        data = MemoryPool<byte>.Shared.Rent(dataCount).SliceToSize(dataCount);
         var dataSpan = data.Memory.Span;
         stream.ReadExactly(dataSpan);
-        var disposableProperty = global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.Deserialize(stream);
+        disposableProperty = global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.Deserialize(stream);
         var obj = new Parent(data, disposableProperty);
         return obj;
     }
@@ -187,9 +193,9 @@ public partial class Parent : ISerializable<Parent>, IDisposable
         }
         if (obj.DisposableProperty is null)
         {
-            throw new System.NullReferenceException($"Member \"obj.DisposableProperty\" cannot be null.");
+            throw new System.NullReferenceException("Member \"obj.DisposableProperty\" cannot be null.");
         }
-        FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.Serialize(obj.DisposableProperty, ref data);
+        global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.Serialize(obj.DisposableProperty, ref data);
     }
 
     public static void Serialize(Parent obj, System.Span<byte> data)
@@ -212,9 +218,9 @@ public partial class Parent : ISerializable<Parent>, IDisposable
         }
         if (obj.DisposableProperty is null)
         {
-            throw new System.NullReferenceException($"Member \"obj.DisposableProperty\" cannot be null.");
+            throw new System.NullReferenceException("Member \"obj.DisposableProperty\" cannot be null.");
         }
-        FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.Serialize(obj.DisposableProperty, stream);
+        global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.Serialize(obj.DisposableProperty, stream);
     }
 
     public void Dispose()

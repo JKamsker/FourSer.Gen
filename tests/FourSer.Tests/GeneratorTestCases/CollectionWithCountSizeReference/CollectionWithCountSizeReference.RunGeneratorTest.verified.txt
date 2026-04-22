@@ -22,8 +22,7 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type TypeId
-        size += sizeof(int); // Size for unmanaged type Count
+        size += 8;
         if (obj.Items is not null)
         {
             foreach (var item in obj.Items)
@@ -53,9 +52,14 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
 
     public static InventoryWithCountSizeRef Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var typeId = SpanReader.ReadInt32(ref buffer);
-        var count = SpanReader.ReadInt32(ref buffer);
-        var items = new System.Collections.Generic.List<FourSer.TestUser.CollectionWithCountSizeReference.Item>(count);
+        int typeId;
+        int count;
+        System.Collections.Generic.List<FourSer.TestUser.CollectionWithCountSizeReference.Item> items = default;
+        var typeIdBatchSpan = buffer.Slice(0, 8);
+        buffer = buffer.Slice(8);
+        typeId = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(typeIdBatchSpan);
+        count = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(typeIdBatchSpan.Slice(4));
+        items = new System.Collections.Generic.List<FourSer.TestUser.CollectionWithCountSizeReference.Item>(count);
         switch (typeId)
         {
             case 10:
@@ -99,9 +103,14 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
 
     public static InventoryWithCountSizeRef Deserialize(System.IO.Stream stream)
     {
-        var typeId = StreamReader.ReadInt32(stream);
-        var count = StreamReader.ReadInt32(stream);
-        var items = new System.Collections.Generic.List<FourSer.TestUser.CollectionWithCountSizeReference.Item>(count);
+        int typeId;
+        int count;
+        System.Collections.Generic.List<FourSer.TestUser.CollectionWithCountSizeReference.Item> items = default;
+        Span<byte> typeIdBatchBuffer = stackalloc byte[8];
+        stream.ReadExactly(typeIdBatchBuffer);
+        typeId = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(typeIdBatchBuffer);
+        count = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(typeIdBatchBuffer.Slice(4));
+        items = new System.Collections.Generic.List<FourSer.TestUser.CollectionWithCountSizeReference.Item>(count);
         switch (typeId)
         {
             case 10:
@@ -147,15 +156,16 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
         }
         else
         {
+            int itemsDiscriminator;
             var firstItem = obj.Items[0];
-            int discriminator = firstItem switch
+            itemsDiscriminator = firstItem switch
             {
-                global::FourSer.TestUser.CollectionWithCountSizeReference.Sword => (int)10,
-                global::FourSer.TestUser.CollectionWithCountSizeReference.Shield => (int)20,
-                global::FourSer.TestUser.CollectionWithCountSizeReference.Potion => (int)30,
+                global::FourSer.TestUser.CollectionWithCountSizeReference.Sword => 10,
+                global::FourSer.TestUser.CollectionWithCountSizeReference.Shield => 20,
+                global::FourSer.TestUser.CollectionWithCountSizeReference.Potion => 30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
-            SpanWriter.WriteInt32(ref data, (int)(discriminator));
+            SpanWriter.WriteInt32(ref data, (int)(itemsDiscriminator));
         }
         SpanWriter.WriteInt32(ref data, (int)((obj.Items?.Count ?? 0)));
         if (obj.Items is not null)
@@ -217,15 +227,16 @@ public partial class InventoryWithCountSizeRef : ISerializable<InventoryWithCoun
         }
         else
         {
+            int itemsDiscriminator;
             var firstItem = obj.Items[0];
-            int discriminator = firstItem switch
+            itemsDiscriminator = firstItem switch
             {
-                global::FourSer.TestUser.CollectionWithCountSizeReference.Sword => (int)10,
-                global::FourSer.TestUser.CollectionWithCountSizeReference.Shield => (int)20,
-                global::FourSer.TestUser.CollectionWithCountSizeReference.Potion => (int)30,
+                global::FourSer.TestUser.CollectionWithCountSizeReference.Sword => 10,
+                global::FourSer.TestUser.CollectionWithCountSizeReference.Shield => 20,
+                global::FourSer.TestUser.CollectionWithCountSizeReference.Potion => 30,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
-            StreamWriter.WriteInt32(stream, (int)(discriminator));
+            StreamWriter.WriteInt32(stream, (int)(itemsDiscriminator));
         }
         StreamWriter.WriteInt32(stream, (int)((obj.Items?.Count ?? 0)));
         if (obj.Items is not null)

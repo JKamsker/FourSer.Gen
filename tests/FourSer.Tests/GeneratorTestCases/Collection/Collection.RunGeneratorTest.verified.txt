@@ -38,13 +38,14 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
 
     public static CollectionPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
+        System.Collections.Generic.List<int> numbers;
         var numbersCount = SpanReader.ReadInt32(ref buffer);
         var numbersArray = new int[numbersCount];
         int numbersByteCount = checked(numbersCount * 4);
         var numbersSpan = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, int>(buffer.Slice(0, numbersByteCount));
         numbersSpan.CopyTo(numbersArray);
         buffer = buffer.Slice(numbersByteCount);
-        var numbers = new System.Collections.Generic.List<int>(numbersCount);
+        numbers = new System.Collections.Generic.List<int>(numbersCount);
         numbers.AddRange(numbersArray);
         var obj = new CollectionPacket(numbers);
         return obj;
@@ -57,11 +58,12 @@ public partial class CollectionPacket : ISerializable<CollectionPacket>
 
     public static CollectionPacket Deserialize(System.IO.Stream stream)
     {
+        System.Collections.Generic.List<int> numbers;
         var numbersCount = StreamReader.ReadInt32(stream);
         var numbersArray = new int[numbersCount];
         var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(numbersArray.AsSpan());
         stream.ReadExactly(numbersBytes);
-        var numbers = new System.Collections.Generic.List<int>(numbersCount);
+        numbers = new System.Collections.Generic.List<int>(numbersCount);
         numbers.AddRange(numbersArray);
         var obj = new CollectionPacket(numbers);
         return obj;

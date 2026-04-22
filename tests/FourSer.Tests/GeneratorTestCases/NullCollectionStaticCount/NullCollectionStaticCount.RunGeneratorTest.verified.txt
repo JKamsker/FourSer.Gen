@@ -22,7 +22,7 @@ public partial class Item : ISerializable<Item>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type Id
+        size += 4;
         return size;
     }
 
@@ -37,7 +37,8 @@ public partial class Item : ISerializable<Item>
 
     public static Item Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = SpanReader.ReadInt32(ref buffer);
+        int id;
+        id = SpanReader.ReadInt32(ref buffer);
         var obj = new Item(id);
         return obj;
     }
@@ -49,7 +50,8 @@ public partial class Item : ISerializable<Item>
 
     public static Item Deserialize(System.IO.Stream stream)
     {
-        var id = StreamReader.ReadInt32(stream);
+        int id;
+        id = StreamReader.ReadInt32(stream);
         var obj = new Item(id);
         return obj;
     }
@@ -119,8 +121,9 @@ public partial class MainObject : ISerializable<MainObject>
 
     public static MainObject Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
+        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item> items;
         var itemsCount = SpanReader.ReadInt32(ref buffer);
-        var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>(itemsCount);
+        items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>(itemsCount);
         for (int i = 0; i < itemsCount; i++)
         {
             items.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Deserialize(ref buffer));
@@ -136,8 +139,9 @@ public partial class MainObject : ISerializable<MainObject>
 
     public static MainObject Deserialize(System.IO.Stream stream)
     {
+        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item> items;
         var itemsCount = StreamReader.ReadInt32(stream);
-        var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>(itemsCount);
+        items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item>(itemsCount);
         for (int i = 0; i < itemsCount; i++)
         {
             items.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Deserialize(stream));

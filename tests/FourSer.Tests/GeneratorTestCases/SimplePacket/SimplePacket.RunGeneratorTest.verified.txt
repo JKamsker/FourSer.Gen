@@ -22,9 +22,8 @@ public partial class LoginPacket : ISerializable<LoginPacket>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(byte); // Size for unmanaged type Result
-        size += sizeof(uint); // Size for unmanaged type UserID
-        size += StringEx.MeasureSize(obj.Username); // Size for string Username
+        size += 5;
+        size += StringEx.MeasureSize(obj.Username);
         return size;
     }
 
@@ -41,9 +40,12 @@ public partial class LoginPacket : ISerializable<LoginPacket>
 
     public static LoginPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var result = SpanReader.ReadByte(ref buffer);
-        var userID = SpanReader.ReadUInt32(ref buffer);
-        var username = SpanReader.ReadString(ref buffer);
+        byte result;
+        uint userID;
+        string username;
+        result = SpanReader.ReadByte(ref buffer);
+        userID = SpanReader.ReadUInt32(ref buffer);
+        username = SpanReader.ReadString(ref buffer);
         var obj = new LoginPacket(result, userID, username);
         return obj;
     }
@@ -55,9 +57,12 @@ public partial class LoginPacket : ISerializable<LoginPacket>
 
     public static LoginPacket Deserialize(System.IO.Stream stream)
     {
-        var result = StreamReader.ReadByte(stream);
-        var userID = StreamReader.ReadUInt32(stream);
-        var username = StreamReader.ReadString(stream);
+        byte result;
+        uint userID;
+        string username;
+        result = StreamReader.ReadByte(stream);
+        userID = StreamReader.ReadUInt32(stream);
+        username = StreamReader.ReadString(stream);
         var obj = new LoginPacket(result, userID, username);
         return obj;
     }
@@ -80,6 +85,36 @@ public partial class LoginPacket : ISerializable<LoginPacket>
         if (obj is null) return;
         StreamWriter.WriteByte(stream, (byte)(obj.Result));
         StreamWriter.WriteUInt32(stream, (uint)(obj.UserID));
-        StreamWriter.WriteString(stream, obj.Username);
+        if (string.IsNullOrEmpty(obj.Username))
+        {
+            stream.WriteInt32(0);
+        }
+        else
+        {
+            var usernameStringByteCount = System.Text.Encoding.UTF8.GetByteCount(obj.Username);
+            var usernameStringTotalBytes = usernameStringByteCount + sizeof(int);
+            if (usernameStringTotalBytes <= 256)
+            {
+                Span<byte> usernameStringBuffer = stackalloc byte[usernameStringTotalBytes];
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(usernameStringBuffer, usernameStringByteCount);
+                var usernameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Username, usernameStringBuffer.Slice(sizeof(int)));
+                stream.Write(usernameStringBuffer.Slice(0, sizeof(int) + usernameStringActualBytes));
+            }
+            else
+            {
+                var usernameStringBufferRented = System.Buffers.ArrayPool<byte>.Shared.Rent(usernameStringTotalBytes);
+                try
+                {
+                    var usernameStringBuffer = usernameStringBufferRented.AsSpan(0, usernameStringTotalBytes);
+                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(usernameStringBuffer, usernameStringByteCount);
+                    var usernameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Username, usernameStringBuffer.Slice(sizeof(int)));
+                    stream.Write(usernameStringBuffer.Slice(0, sizeof(int) + usernameStringActualBytes));
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(usernameStringBufferRented);
+                }
+            }
+        }
     }
 }

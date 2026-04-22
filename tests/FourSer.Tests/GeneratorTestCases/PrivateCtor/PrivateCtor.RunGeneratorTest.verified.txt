@@ -22,7 +22,7 @@ public partial class PrivateCtorPacket : ISerializable<PrivateCtorPacket>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type Value
+        size += 4;
         return size;
     }
 
@@ -33,7 +33,8 @@ public partial class PrivateCtorPacket : ISerializable<PrivateCtorPacket>
 
     public static PrivateCtorPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var value = SpanReader.ReadInt32(ref buffer);
+        int value;
+        value = SpanReader.ReadInt32(ref buffer);
         var obj = new PrivateCtorPacket(value);
         return obj;
     }
@@ -45,7 +46,8 @@ public partial class PrivateCtorPacket : ISerializable<PrivateCtorPacket>
 
     public static PrivateCtorPacket Deserialize(System.IO.Stream stream)
     {
-        var value = StreamReader.ReadInt32(stream);
+        int value;
+        value = StreamReader.ReadInt32(stream);
         var obj = new PrivateCtorPacket(value);
         return obj;
     }

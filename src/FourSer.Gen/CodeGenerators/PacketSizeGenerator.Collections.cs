@@ -4,7 +4,7 @@ using FourSer.Gen.Models;
 
 namespace FourSer.Gen.CodeGenerators;
 
-public static partial class PacketSizeGenerator
+internal static partial class PacketSizeGenerator
 {
     private static bool ShouldDeferCollectionCountValidation(MemberToGenerate member)
     {

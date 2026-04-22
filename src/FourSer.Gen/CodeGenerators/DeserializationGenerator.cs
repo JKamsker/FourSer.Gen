@@ -1,4 +1,6 @@
 using FourSer.Gen.CodeGenerators.Core;
+using FourSer.Gen.CodeGenerators.Emission;
+using FourSer.Gen.CodeGenerators.Planning;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 using Microsoft.CodeAnalysis;
@@ -8,79 +10,21 @@ namespace FourSer.Gen.CodeGenerators;
 /// <summary>
 ///     Generates Deserialize method implementations
 /// </summary>
-public static class DeserializationGenerator
+internal static class DeserializationGenerator
 {
-    public static void GenerateDeserialize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
+    internal static EquatableArray<MethodPlan> GenerateDeserialize(
+        IndentedStringBuilder sb,
+        TypeToGenerate typeToGenerate,
+        FourSerGeneratorOptions options,
+        TargetCapabilities capabilities)
     {
-        GenerateDeserializeWithRef(sb, typeToGenerate);
+        var spanPlan = PlanPipeline.BuildDeserializePlan(typeToGenerate, TargetKind.Span, options, capabilities);
+        SpanDeserializeEmitter.Emit(sb, spanPlan);
         sb.WriteLine();
-        GenerateDeserializeWithSpan(sb, typeToGenerate);
-        sb.WriteLine();
-        GenerateDeserializeWithStream(sb, typeToGenerate);
-    }
+        var streamPlan = PlanPipeline.BuildDeserializePlan(typeToGenerate, TargetKind.Stream, options, capabilities);
+        StreamDeserializeEmitter.Emit(sb, streamPlan);
 
-    private static void GenerateDeserializeWithSpan(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
-    {
-        var newKeyword = typeToGenerate.HasSerializableBaseType ? "new " : "";
-        sb.WriteLineFormat("public static {0}{1} Deserialize(System.ReadOnlySpan<byte> buffer)", newKeyword, typeToGenerate.Name);
-        using var _ = sb.BeginBlock();
-        sb.WriteLine("return Deserialize(ref buffer);");
-    }
-
-    private static void GenerateDeserializeWithStream(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
-    {
-        var newKeyword = typeToGenerate.HasSerializableBaseType ? "new " : "";
-        sb.WriteLineFormat("public static {0}{1} Deserialize(System.IO.Stream stream)", newKeyword, typeToGenerate.Name);
-        using var _ = sb.BeginBlock();
-        var instructions = BatchingUtilities.AnalyzeMembers(typeToGenerate.Members, typeToGenerate, BatchingUtilities.DefaultMinBatchSize);
-        var batchIndex = 0;
-
-        foreach (var instruction in instructions)
-        {
-            switch (instruction)
-            {
-                case BatchGroup batchGroup:
-                    GenerateBatchGroupDeserialization(sb, batchGroup, ref batchIndex);
-                    break;
-                case SingleMember single:
-                    GenerateMemberDeserialization
-                    (
-                        sb,
-                        single.Member,
-                        typeToGenerate,
-                        true,
-                        "stream",
-                        "StreamReader"
-                    );
-                    break;
-            }
-        }
-
-        if (typeToGenerate.Constructor is { } ctor)
-        {
-            var ctorArgs = string.Join(", ", ctor.Parameters.Select(p => p.Name.ToCamelCase()));
-            sb.WriteLineFormat("var obj = new {0}({1});", typeToGenerate.Name, ctorArgs);
-
-            var membersInCtor = new HashSet<string>(ctor.Parameters.Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
-            var membersNotInCtor = typeToGenerate.Members.Where(m => !membersInCtor.Contains(m.Name));
-
-            foreach (var member in membersNotInCtor)
-            {
-                var camelCaseName = member.Name.ToCamelCase();
-                sb.WriteLineFormat("obj.{0} = {1};", member.Name, camelCaseName);
-            }
-        }
-        else
-        {
-            sb.WriteLineFormat("var obj = new {0}();", typeToGenerate.Name);
-            foreach (var member in typeToGenerate.Members)
-            {
-                var camelCaseName = member.Name.ToCamelCase();
-                sb.WriteLineFormat("obj.{0} = {1};", member.Name, camelCaseName);
-            }
-        }
-
-        sb.WriteLine("return obj;");
+        return new[] { spanPlan, streamPlan }.ToEquatableArray();
     }
 
     private static void GenerateBatchGroupDeserialization(IndentedStringBuilder sb, BatchGroup batchGroup, ref int batchIndex)
@@ -168,52 +112,6 @@ public static class DeserializationGenerator
         }
     }
 
-    private static void GenerateDeserializeWithRef(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
-    {
-        var newKeyword = typeToGenerate.HasSerializableBaseType ? "new " : "";
-        sb.WriteLineFormat("public static {0}{1} Deserialize(ref System.ReadOnlySpan<byte> buffer)", newKeyword, typeToGenerate.Name);
-        using var _ = sb.BeginBlock();
-        foreach (var member in typeToGenerate.Members)
-        {
-            GenerateMemberDeserialization
-            (
-                sb,
-                member,
-                typeToGenerate,
-                true,
-                "buffer",
-                "SpanReader"
-            );
-        }
-
-        if (typeToGenerate.Constructor is { } ctor)
-        {
-            var ctorArgs = string.Join(", ", ctor.Parameters.Select(p => p.Name.ToCamelCase()));
-            sb.WriteLineFormat("var obj = new {0}({1});", typeToGenerate.Name, ctorArgs);
-
-            var membersInCtor = new HashSet<string>(ctor.Parameters.Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
-            var membersNotInCtor = typeToGenerate.Members.Where(m => !membersInCtor.Contains(m.Name));
-
-            foreach (var member in membersNotInCtor)
-            {
-                var camelCaseName = member.Name.ToCamelCase();
-                sb.WriteLineFormat("obj.{0} = {1};", member.Name, camelCaseName);
-            }
-        }
-        else
-        {
-            sb.WriteLineFormat("var obj = new {0}();", typeToGenerate.Name);
-            foreach (var member in typeToGenerate.Members)
-            {
-                var camelCaseName = member.Name.ToCamelCase();
-                sb.WriteLineFormat("obj.{0} = {1};", member.Name, camelCaseName);
-            }
-        }
-
-        sb.WriteLine("return obj;");
-    }
-
-
     private static void GenerateMemberDeserialization
     (
         IndentedStringBuilder sb,
@@ -270,7 +168,7 @@ public static class DeserializationGenerator
         }
     }
 
-    private static void GenerateMemoryOwnerDeserialization
+    internal static void GenerateMemoryOwnerDeserialization
     (
         IndentedStringBuilder sb,
         MemberToGenerate member,
@@ -416,7 +314,7 @@ public static class DeserializationGenerator
         };
     }
 
-    private static void GenerateCollectionDeserialization
+    internal static void GenerateCollectionDeserialization
     (
         IndentedStringBuilder sb,
         MemberToGenerate member,

@@ -1,4 +1,6 @@
 using FourSer.Gen.CodeGenerators.Core;
+using FourSer.Gen.CodeGenerators.Emission;
+using FourSer.Gen.CodeGenerators.Planning;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 
@@ -7,27 +9,17 @@ namespace FourSer.Gen.CodeGenerators;
 /// <summary>
 ///     Generates GetPacketSize method implementations
 /// </summary>
-public static partial class PacketSizeGenerator
+internal static partial class PacketSizeGenerator
 {
-    public static void GenerateGetSize(IndentedStringBuilder sb, TypeToGenerate typeToGenerate)
+    internal static MethodPlan GenerateGetSize(
+        IndentedStringBuilder sb,
+        TypeToGenerate typeToGenerate,
+        FourSerGeneratorOptions options,
+        TargetCapabilities capabilities)
     {
-        sb.WriteLineFormat("public static int GetPacketSize({0} obj)", typeToGenerate.Name);
-        using var _ = sb.BeginBlock();
-        // null check
-        if (!typeToGenerate.IsValueType)
-        {
-            sb.WriteLine("if (obj is null) return 0;");
-        }
-        
-        
-        sb.WriteLine("var size = 0;");
-
-        foreach (var member in typeToGenerate.Members)
-        {
-            GenerateMemberSizeCalculation(sb, member, typeToGenerate);
-        }
-
-        sb.WriteLine("return size;");
+        var plan = PlanPipeline.BuildPacketSizePlan(typeToGenerate, options, capabilities);
+        SizePlanEmitter.Emit(sb, plan);
+        return plan;
     }
 
     private static void GenerateMemberSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member, TypeToGenerate type)
@@ -218,7 +210,7 @@ public static partial class PacketSizeGenerator
         }
     }
 
-    private static void GenerateCollectionSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member, TypeToGenerate type)
+    internal static void GenerateCollectionSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member, TypeToGenerate type)
     {
         if (member.CollectionInfo is not { } collectionInfo)
         {
@@ -261,7 +253,7 @@ public static partial class PacketSizeGenerator
         }
     }
 
-    private static void GenerateMemoryOwnerSizeCalculation(
+    internal static void GenerateMemoryOwnerSizeCalculation(
         IndentedStringBuilder sb,
         MemberToGenerate member)
     {

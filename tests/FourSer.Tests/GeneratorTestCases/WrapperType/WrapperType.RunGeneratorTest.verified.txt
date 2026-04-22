@@ -22,7 +22,7 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.GetPacketSize(obj.Name); // Size for nested type Name
+        size += global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.GetPacketSize(obj.Name);
         return size;
     }
 
@@ -37,7 +37,8 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
 
     public static WrapperUserClass Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var name = global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Deserialize(ref buffer);
+        FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString name;
+        name = global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Deserialize(ref buffer);
         var obj = new WrapperUserClass(name);
         return obj;
     }
@@ -49,7 +50,8 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
 
     public static WrapperUserClass Deserialize(System.IO.Stream stream)
     {
-        var name = global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Deserialize(stream);
+        FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString name;
+        name = global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Deserialize(stream);
         var obj = new WrapperUserClass(name);
         return obj;
     }
@@ -59,9 +61,9 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
         if (obj is null) return;
         if (obj.Name is null)
         {
-            throw new System.NullReferenceException($"Member \"obj.Name\" cannot be null.");
+            throw new System.NullReferenceException("Member \"obj.Name\" cannot be null.");
         }
-        FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Serialize(obj.Name, ref data);
+        global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Serialize(obj.Name, ref data);
     }
 
     public static void Serialize(WrapperUserClass obj, System.Span<byte> data)
@@ -74,8 +76,8 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
         if (obj is null) return;
         if (obj.Name is null)
         {
-            throw new System.NullReferenceException($"Member \"obj.Name\" cannot be null.");
+            throw new System.NullReferenceException("Member \"obj.Name\" cannot be null.");
         }
-        FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Serialize(obj.Name, stream);
+        global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Serialize(obj.Name, stream);
     }
 }

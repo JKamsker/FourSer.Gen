@@ -37,7 +37,8 @@ public partial class Packet : ISerializable<Packet>
 
     public static Packet Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_PropertyLevelOverClassAndAssembly_PropertyStringSerializer.Deserialize(ref buffer);
+        string name;
+        name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_PropertyLevelOverClassAndAssembly_PropertyStringSerializer.Deserialize(ref buffer);
         var obj = new Packet(name);
         return obj;
     }
@@ -49,7 +50,8 @@ public partial class Packet : ISerializable<Packet>
 
     public static Packet Deserialize(System.IO.Stream stream)
     {
-        var name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_PropertyLevelOverClassAndAssembly_PropertyStringSerializer.Deserialize(stream);
+        string name;
+        name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_PropertyLevelOverClassAndAssembly_PropertyStringSerializer.Deserialize(stream);
         var obj = new Packet(name);
         return obj;
     }

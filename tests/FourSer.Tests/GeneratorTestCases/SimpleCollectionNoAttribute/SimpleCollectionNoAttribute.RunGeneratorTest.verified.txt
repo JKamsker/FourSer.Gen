@@ -38,8 +38,9 @@ public partial class MyPacket : ISerializable<MyPacket>
 
     public static MyPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
+        System.Collections.Generic.List<byte> data;
         var dataCount = SpanReader.ReadInt32(ref buffer);
-        var data = SpanReader.ReadBytes(ref buffer, (int)dataCount).ToList();
+        data = SpanReader.ReadBytes(ref buffer, (int)dataCount).ToList();
         var obj = new MyPacket(data);
         return obj;
     }
@@ -51,8 +52,9 @@ public partial class MyPacket : ISerializable<MyPacket>
 
     public static MyPacket Deserialize(System.IO.Stream stream)
     {
+        System.Collections.Generic.List<byte> data;
         var dataCount = StreamReader.ReadInt32(stream);
-        var data = StreamReader.ReadBytes(stream, (int)dataCount).ToList();
+        data = StreamReader.ReadBytes(stream, (int)dataCount).ToList();
         var obj = new MyPacket(data);
         return obj;
     }

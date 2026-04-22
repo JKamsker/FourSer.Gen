@@ -22,7 +22,7 @@ public partial class PacketWithDefaultSerializer : ISerializable<PacketWithDefau
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type Id
+        size += 4;
         size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.GetPacketSize(obj.Name);
         size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.GetPacketSize(obj.Description);
         return size;
@@ -41,9 +41,12 @@ public partial class PacketWithDefaultSerializer : ISerializable<PacketWithDefau
 
     public static PacketWithDefaultSerializer Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = SpanReader.ReadInt32(ref buffer);
-        var name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Deserialize(ref buffer);
-        var description = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Deserialize(ref buffer);
+        int id;
+        string name;
+        string description;
+        id = SpanReader.ReadInt32(ref buffer);
+        name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Deserialize(ref buffer);
+        description = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Deserialize(ref buffer);
         var obj = new PacketWithDefaultSerializer(id, name, description);
         return obj;
     }
@@ -55,9 +58,12 @@ public partial class PacketWithDefaultSerializer : ISerializable<PacketWithDefau
 
     public static PacketWithDefaultSerializer Deserialize(System.IO.Stream stream)
     {
-        var id = StreamReader.ReadInt32(stream);
-        var name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Deserialize(stream);
-        var description = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Deserialize(stream);
+        int id;
+        string name;
+        string description;
+        id = StreamReader.ReadInt32(stream);
+        name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Deserialize(stream);
+        description = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Deserialize(stream);
         var obj = new PacketWithDefaultSerializer(id, name, description);
         return obj;
     }

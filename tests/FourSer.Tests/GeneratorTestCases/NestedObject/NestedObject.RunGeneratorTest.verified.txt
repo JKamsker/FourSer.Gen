@@ -22,8 +22,8 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type Id
-        size += global::FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.GetPacketSize(obj.Data); // Size for nested type Data
+        size += 4;
+        size += global::FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.GetPacketSize(obj.Data);
         return size;
     }
 
@@ -39,8 +39,10 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
 
     public static ContainerPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = SpanReader.ReadInt32(ref buffer);
-        var data = global::FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.Deserialize(ref buffer);
+        int id;
+        FourSer.Tests.GeneratorTestCases.NestedObject.NestedData data;
+        id = SpanReader.ReadInt32(ref buffer);
+        data = global::FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.Deserialize(ref buffer);
         var obj = new ContainerPacket(id, data);
         return obj;
     }
@@ -52,8 +54,10 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
 
     public static ContainerPacket Deserialize(System.IO.Stream stream)
     {
-        var id = StreamReader.ReadInt32(stream);
-        var data = global::FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.Deserialize(stream);
+        int id;
+        FourSer.Tests.GeneratorTestCases.NestedObject.NestedData data;
+        id = StreamReader.ReadInt32(stream);
+        data = global::FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.Deserialize(stream);
         var obj = new ContainerPacket(id, data);
         return obj;
     }
@@ -64,9 +68,9 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         if (obj.Data is null)
         {
-            throw new System.NullReferenceException($"Member \"obj.Data\" cannot be null.");
+            throw new System.NullReferenceException("Member \"obj.Data\" cannot be null.");
         }
-        FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.Serialize(obj.Data, ref data);
+        global::FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.Serialize(obj.Data, ref data);
     }
 
     public static void Serialize(ContainerPacket obj, System.Span<byte> data)
@@ -80,9 +84,9 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         if (obj.Data is null)
         {
-            throw new System.NullReferenceException($"Member \"obj.Data\" cannot be null.");
+            throw new System.NullReferenceException("Member \"obj.Data\" cannot be null.");
         }
-        FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.Serialize(obj.Data, stream);
+        global::FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.Serialize(obj.Data, stream);
     }
 }
 
@@ -111,8 +115,8 @@ public partial class NestedData : ISerializable<NestedData>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += StringEx.MeasureSize(obj.Name); // Size for string Name
-        size += sizeof(float); // Size for unmanaged type Value
+        size += StringEx.MeasureSize(obj.Name);
+        size += 4;
         return size;
     }
 
@@ -128,8 +132,10 @@ public partial class NestedData : ISerializable<NestedData>
 
     public static NestedData Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var name = SpanReader.ReadString(ref buffer);
-        var value = SpanReader.ReadSingle(ref buffer);
+        string name;
+        float value;
+        name = SpanReader.ReadString(ref buffer);
+        value = SpanReader.ReadSingle(ref buffer);
         var obj = new NestedData(name, value);
         return obj;
     }
@@ -141,8 +147,10 @@ public partial class NestedData : ISerializable<NestedData>
 
     public static NestedData Deserialize(System.IO.Stream stream)
     {
-        var name = StreamReader.ReadString(stream);
-        var value = StreamReader.ReadSingle(stream);
+        string name;
+        float value;
+        name = StreamReader.ReadString(stream);
+        value = StreamReader.ReadSingle(stream);
         var obj = new NestedData(name, value);
         return obj;
     }
@@ -162,7 +170,37 @@ public partial class NestedData : ISerializable<NestedData>
     public static void Serialize(NestedData obj, System.IO.Stream stream)
     {
         if (obj is null) return;
-        StreamWriter.WriteString(stream, obj.Name);
+        if (string.IsNullOrEmpty(obj.Name))
+        {
+            stream.WriteInt32(0);
+        }
+        else
+        {
+            var nameStringByteCount = System.Text.Encoding.UTF8.GetByteCount(obj.Name);
+            var nameStringTotalBytes = nameStringByteCount + sizeof(int);
+            if (nameStringTotalBytes <= 256)
+            {
+                Span<byte> nameStringBuffer = stackalloc byte[nameStringTotalBytes];
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
+                var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
+                stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
+            }
+            else
+            {
+                var nameStringBufferRented = System.Buffers.ArrayPool<byte>.Shared.Rent(nameStringTotalBytes);
+                try
+                {
+                    var nameStringBuffer = nameStringBufferRented.AsSpan(0, nameStringTotalBytes);
+                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
+                    var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
+                    stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(nameStringBufferRented);
+                }
+            }
+        }
         StreamWriter.WriteSingle(stream, (float)(obj.Value));
     }
 }

@@ -22,7 +22,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(byte); // Size for unmanaged type AnimalTypeId
+        size += 1;
         _ = checked((ushort)((obj.Animals?.Count ?? 0)));
         size += sizeof(ushort); // Count size for Animals
         if (obj.Animals is not null)
@@ -52,9 +52,11 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
 
     public static PolymorphicSingleTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var animalTypeId = SpanReader.ReadByte(ref buffer);
+        byte animalTypeId;
+        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Animal> animals = default;
+        animalTypeId = SpanReader.ReadByte(ref buffer);
         var animalsCount = SpanReader.ReadUInt16(ref buffer);
-        var animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Animal>(animalsCount);
+        animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Animal>(animalsCount);
         switch (animalTypeId)
         {
             case 1:
@@ -89,9 +91,11 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
 
     public static PolymorphicSingleTest Deserialize(System.IO.Stream stream)
     {
-        var animalTypeId = StreamReader.ReadByte(stream);
+        byte animalTypeId;
+        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Animal> animals = default;
+        animalTypeId = StreamReader.ReadByte(stream);
         var animalsCount = StreamReader.ReadUInt16(stream);
-        var animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Animal>(animalsCount);
+        animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Animal>(animalsCount);
         switch (animalTypeId)
         {
             case 1:
@@ -128,14 +132,15 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
         }
         else
         {
+            byte animalsDiscriminator;
             var firstItem = obj.Animals[0];
-            byte discriminator = firstItem switch
+            animalsDiscriminator = firstItem switch
             {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat => (byte)1,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog => (byte)2,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat => 1,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog => 2,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
-            SpanWriter.WriteByte(ref data, (byte)(discriminator));
+            SpanWriter.WriteByte(ref data, (byte)(animalsDiscriminator));
         }
         if (obj.Animals is null)
         {
@@ -192,14 +197,15 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
         }
         else
         {
+            byte animalsDiscriminator;
             var firstItem = obj.Animals[0];
-            byte discriminator = firstItem switch
+            animalsDiscriminator = firstItem switch
             {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat => (byte)1,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog => (byte)2,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat => 1,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog => 2,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
-            StreamWriter.WriteByte(stream, (byte)(discriminator));
+            StreamWriter.WriteByte(stream, (byte)(animalsDiscriminator));
         }
         if (obj.Animals is null)
         {
@@ -268,8 +274,8 @@ public partial class Cat : ISerializable<Cat>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type Id
-        size += StringEx.MeasureSize(obj.Name); // Size for string Name
+        size += 4;
+        size += StringEx.MeasureSize(obj.Name);
         return size;
     }
 
@@ -285,8 +291,10 @@ public partial class Cat : ISerializable<Cat>
 
     public static new Cat Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = SpanReader.ReadInt32(ref buffer);
-        var name = SpanReader.ReadString(ref buffer);
+        int id;
+        string name;
+        id = SpanReader.ReadInt32(ref buffer);
+        name = SpanReader.ReadString(ref buffer);
         var obj = new Cat(id, name);
         return obj;
     }
@@ -298,8 +306,10 @@ public partial class Cat : ISerializable<Cat>
 
     public static new Cat Deserialize(System.IO.Stream stream)
     {
-        var id = StreamReader.ReadInt32(stream);
-        var name = StreamReader.ReadString(stream);
+        int id;
+        string name;
+        id = StreamReader.ReadInt32(stream);
+        name = StreamReader.ReadString(stream);
         var obj = new Cat(id, name);
         return obj;
     }
@@ -320,7 +330,37 @@ public partial class Cat : ISerializable<Cat>
     {
         if (obj is null) return;
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
-        StreamWriter.WriteString(stream, obj.Name);
+        if (string.IsNullOrEmpty(obj.Name))
+        {
+            stream.WriteInt32(0);
+        }
+        else
+        {
+            var nameStringByteCount = System.Text.Encoding.UTF8.GetByteCount(obj.Name);
+            var nameStringTotalBytes = nameStringByteCount + sizeof(int);
+            if (nameStringTotalBytes <= 256)
+            {
+                Span<byte> nameStringBuffer = stackalloc byte[nameStringTotalBytes];
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
+                var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
+                stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
+            }
+            else
+            {
+                var nameStringBufferRented = System.Buffers.ArrayPool<byte>.Shared.Rent(nameStringTotalBytes);
+                try
+                {
+                    var nameStringBuffer = nameStringBufferRented.AsSpan(0, nameStringTotalBytes);
+                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
+                    var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
+                    stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(nameStringBufferRented);
+                }
+            }
+        }
     }
 }
 
@@ -349,8 +389,8 @@ public partial class Dog : ISerializable<Dog>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type Id
-        size += StringEx.MeasureSize(obj.Breed); // Size for string Breed
+        size += 4;
+        size += StringEx.MeasureSize(obj.Breed);
         return size;
     }
 
@@ -366,8 +406,10 @@ public partial class Dog : ISerializable<Dog>
 
     public static new Dog Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = SpanReader.ReadInt32(ref buffer);
-        var breed = SpanReader.ReadString(ref buffer);
+        int id;
+        string breed;
+        id = SpanReader.ReadInt32(ref buffer);
+        breed = SpanReader.ReadString(ref buffer);
         var obj = new Dog(id, breed);
         return obj;
     }
@@ -379,8 +421,10 @@ public partial class Dog : ISerializable<Dog>
 
     public static new Dog Deserialize(System.IO.Stream stream)
     {
-        var id = StreamReader.ReadInt32(stream);
-        var breed = StreamReader.ReadString(stream);
+        int id;
+        string breed;
+        id = StreamReader.ReadInt32(stream);
+        breed = StreamReader.ReadString(stream);
         var obj = new Dog(id, breed);
         return obj;
     }
@@ -401,7 +445,37 @@ public partial class Dog : ISerializable<Dog>
     {
         if (obj is null) return;
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
-        StreamWriter.WriteString(stream, obj.Breed);
+        if (string.IsNullOrEmpty(obj.Breed))
+        {
+            stream.WriteInt32(0);
+        }
+        else
+        {
+            var breedStringByteCount = System.Text.Encoding.UTF8.GetByteCount(obj.Breed);
+            var breedStringTotalBytes = breedStringByteCount + sizeof(int);
+            if (breedStringTotalBytes <= 256)
+            {
+                Span<byte> breedStringBuffer = stackalloc byte[breedStringTotalBytes];
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(breedStringBuffer, breedStringByteCount);
+                var breedStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Breed, breedStringBuffer.Slice(sizeof(int)));
+                stream.Write(breedStringBuffer.Slice(0, sizeof(int) + breedStringActualBytes));
+            }
+            else
+            {
+                var breedStringBufferRented = System.Buffers.ArrayPool<byte>.Shared.Rent(breedStringTotalBytes);
+                try
+                {
+                    var breedStringBuffer = breedStringBufferRented.AsSpan(0, breedStringTotalBytes);
+                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(breedStringBuffer, breedStringByteCount);
+                    var breedStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Breed, breedStringBuffer.Slice(sizeof(int)));
+                    stream.Write(breedStringBuffer.Slice(0, sizeof(int) + breedStringActualBytes));
+                }
+                finally
+                {
+                    System.Buffers.ArrayPool<byte>.Shared.Return(breedStringBufferRented);
+                }
+            }
+        }
     }
 }
 
@@ -430,7 +504,7 @@ public partial class Animal : ISerializable<Animal>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type Id
+        size += 4;
         return size;
     }
 
@@ -445,7 +519,8 @@ public partial class Animal : ISerializable<Animal>
 
     public static Animal Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var id = SpanReader.ReadInt32(ref buffer);
+        int id;
+        id = SpanReader.ReadInt32(ref buffer);
         var obj = new Animal(id);
         return obj;
     }
@@ -457,7 +532,8 @@ public partial class Animal : ISerializable<Animal>
 
     public static Animal Deserialize(System.IO.Stream stream)
     {
-        var id = StreamReader.ReadInt32(stream);
+        int id;
+        id = StreamReader.ReadInt32(stream);
         var obj = new Animal(id);
         return obj;
     }

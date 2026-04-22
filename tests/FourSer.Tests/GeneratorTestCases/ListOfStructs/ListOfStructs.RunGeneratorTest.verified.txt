@@ -21,7 +21,7 @@ public partial struct MyStruct : ISerializable<MyStruct>
     public static int GetPacketSize(MyStruct obj)
     {
         var size = 0;
-        size += sizeof(int); // Size for unmanaged type A
+        size += 4;
         return size;
     }
 
@@ -33,7 +33,8 @@ public partial struct MyStruct : ISerializable<MyStruct>
 
     public static MyStruct Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var a = SpanReader.ReadInt32(ref buffer);
+        int a;
+        a = SpanReader.ReadInt32(ref buffer);
         var obj = new MyStruct(a);
         return obj;
     }
@@ -45,7 +46,8 @@ public partial struct MyStruct : ISerializable<MyStruct>
 
     public static MyStruct Deserialize(System.IO.Stream stream)
     {
-        var a = StreamReader.ReadInt32(stream);
+        int a;
+        a = StreamReader.ReadInt32(stream);
         var obj = new MyStruct(a);
         return obj;
     }
@@ -113,8 +115,9 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
 
     public static PacketWithListOfStructs Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
+        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct> structs;
         var structsCount = SpanReader.ReadInt32(ref buffer);
-        var structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
+        structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
         for (int i = 0; i < structsCount; i++)
         {
             structs.Add(global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.Deserialize(ref buffer));
@@ -130,8 +133,9 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
 
     public static PacketWithListOfStructs Deserialize(System.IO.Stream stream)
     {
+        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct> structs;
         var structsCount = StreamReader.ReadInt32(stream);
-        var structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
+        structs = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(structsCount);
         for (int i = 0; i < structsCount; i++)
         {
             structs.Add(global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.Deserialize(stream));

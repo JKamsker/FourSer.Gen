@@ -22,7 +22,7 @@ public partial class Inventory : ISerializable<Inventory>
     {
         if (obj is null) return 0;
         var size = 0;
-        size += sizeof(byte); // Size for unmanaged type ItemType
+        size += 1;
         size += sizeof(int); // Count size for Items
         size += sizeof(byte); // Size for polymorphic type id
         if (obj.Items is not null)
@@ -66,9 +66,11 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
-        var itemType = SpanReader.ReadByte(ref buffer);
+        byte itemType;
+        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem> items = default;
+        itemType = SpanReader.ReadByte(ref buffer);
         var itemsCount = SpanReader.ReadInt32(ref buffer);
-        var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>(itemsCount);
+        items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>(itemsCount);
         var itemsTypeId = SpanReader.ReadByte(ref buffer);
         switch (itemsTypeId)
         {
@@ -130,9 +132,11 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static Inventory Deserialize(System.IO.Stream stream)
     {
-        var itemType = StreamReader.ReadByte(stream);
+        byte itemType;
+        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem> items = default;
+        itemType = StreamReader.ReadByte(stream);
         var itemsCount = StreamReader.ReadInt32(stream);
-        var items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>(itemsCount);
+        items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>(itemsCount);
         var itemsTypeId = StreamReader.ReadByte(stream);
         switch (itemsTypeId)
         {
@@ -196,19 +200,20 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
+            byte readOnlyItemsDiscriminator;
             using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
             if (!firstItemEnumerator.MoveNext())
             {
                 throw new System.InvalidOperationException("Collection must contain at least one item.");
             }
             var firstItem = firstItemEnumerator.Current;
-            byte discriminator = firstItem switch
+            readOnlyItemsDiscriminator = firstItem switch
             {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => (byte)10,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => (byte)20,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => 10,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => 20,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
-            SpanWriter.WriteByte(ref data, (byte)(discriminator));
+            SpanWriter.WriteByte(ref data, (byte)(readOnlyItemsDiscriminator));
         }
         if (obj.Items is null)
         {
@@ -315,19 +320,20 @@ public partial class Inventory : ISerializable<Inventory>
         }
         else
         {
+            byte readOnlyItemsDiscriminator;
             using var firstItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem>)obj.ReadOnlyItems).GetEnumerator();
             if (!firstItemEnumerator.MoveNext())
             {
                 throw new System.InvalidOperationException("Collection must contain at least one item.");
             }
             var firstItem = firstItemEnumerator.Current;
-            byte discriminator = firstItem switch
+            readOnlyItemsDiscriminator = firstItem switch
             {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => (byte)10,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => (byte)20,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Sword => 10,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.Shield => 20,
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
-            StreamWriter.WriteByte(stream, (byte)(discriminator));
+            StreamWriter.WriteByte(stream, (byte)(readOnlyItemsDiscriminator));
         }
         if (obj.Items is null)
         {
