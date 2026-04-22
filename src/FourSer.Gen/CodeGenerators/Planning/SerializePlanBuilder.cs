@@ -57,21 +57,11 @@ internal static class SerializePlanBuilder
     {
         foreach (var member in type.Members)
         {
-            if (member.HasGenerateSerializerAttribute && !member.IsValueType)
-            {
-                ops.Add(BuildMemberNullGuard(member));
-            }
-
             var sourceExpression = GetSourceExpression(member, sourceExpressions);
             var collectionPlan = GetCollectionPlan(member);
             if (collectionPlan is null)
             {
                 continue;
-            }
-
-            if (ShouldEmitFixedSizeShapeGuards(collectionPlan.Value, sourceExpression, member))
-            {
-                AddFixedSizeShapeGuards(ops, member, collectionPlan.Value, sourceExpression);
             }
 
             if (!ShouldEmitCollectionValidation(member, collectionPlan.Value, sourceExpression))
@@ -400,21 +390,6 @@ internal static class SerializePlanBuilder
             NullCaseMessageExpression: PlanExpressionFactory.QuoteString($"Property \"{member.Name}\" cannot be null."));
     }
 
-    private static GuardOp BuildMemberNullGuard(MemberToGenerate member)
-    {
-        return new GuardOp(
-            Key: new GuardKey("serialize-member-null", member.Name),
-            Condition: $"obj.{member.Name} is null",
-            Scope: GuardScope.Method,
-            Body: new PlanOp[]
-            {
-                new ThrowOp(
-                    ExceptionTypeName: "System.NullReferenceException",
-                    MessageExpression: PlanExpressionFactory.QuoteString($"Member \"obj.{member.Name}\" cannot be null.")),
-            }.ToEquatableArray(),
-            ElseBody: Array.Empty<PlanOp>().ToEquatableArray());
-    }
-
     private static CollectionPlan? GetCollectionPlan(MemberToGenerate member)
     {
         if (member.IsMemoryOwner)
@@ -444,21 +419,11 @@ internal static class SerializePlanBuilder
             return false;
         }
 
-        if (ShouldEmitFixedSizeShapeGuards(collectionPlan, sourceExpression, member))
-        {
-            return false;
-        }
-
         return !collectionPlan.IsPureEnumerable || sourceExpression != $"obj.{member.Name}";
     }
 
     private static bool RequiresCollectionValidation(MemberToGenerate member, CollectionPlan collectionPlan)
     {
-        if (collectionPlan.CollectionInfo.CountSize is > 0)
-        {
-            return true;
-        }
-
         return member.CollectionInfo?.PolymorphicMode == FourSer.Gen.PolymorphicMode.SingleTypeId
             && member.PolymorphicInfo is not null;
     }
@@ -480,49 +445,5 @@ internal static class SerializePlanBuilder
         return (member.IsList || member.IsCollection)
             && member.CollectionInfo?.PolymorphicMode == FourSer.Gen.PolymorphicMode.SingleTypeId
             && (member.CollectionTypeInfo?.SupportsIndexing != true && !member.IsList);
-    }
-
-    private static bool ShouldEmitFixedSizeShapeGuards(
-        CollectionPlan collectionPlan,
-        string sourceExpression,
-        MemberToGenerate member)
-    {
-        return collectionPlan.CollectionInfo.CountSize is > 0
-            && collectionPlan.IsPureEnumerable
-            && sourceExpression == $"obj.{member.Name}";
-    }
-
-    private static void AddFixedSizeShapeGuards(
-        List<PlanOp> ops,
-        MemberToGenerate member,
-        CollectionPlan collectionPlan,
-        string sourceExpression)
-    {
-        ops.Add(new GuardOp(
-            Key: new GuardKey("serialize-fixed-null", member.Name),
-            Condition: $"{sourceExpression} is null",
-            Scope: GuardScope.Method,
-            Body: new PlanOp[]
-            {
-                new ThrowOp(
-                    ExceptionTypeName: "System.ArgumentNullException",
-                    ParamNameExpression: "nameof(obj." + member.Name + ")",
-                    MessageExpression: PlanExpressionFactory.QuoteString("Fixed-size collections cannot be null.")),
-            }.ToEquatableArray(),
-            ElseBody: Array.Empty<PlanOp>().ToEquatableArray()));
-
-        var countExpression = PlanExpressionFactory.GetCountExpression(member, sourceExpression, nullable: false);
-        ops.Add(new GuardOp(
-            Key: new GuardKey("serialize-fixed-count", member.Name),
-            Condition: $"{countExpression} != {collectionPlan.CollectionInfo.CountSize}",
-            Scope: GuardScope.Method,
-            Body: new PlanOp[]
-            {
-                new ThrowOp(
-                    ExceptionTypeName: "System.InvalidOperationException",
-                    MessageExpression: PlanExpressionFactory.QuoteInterpolatedString(
-                        $"Collection '{member.Name}' must have a size of {collectionPlan.CollectionInfo.CountSize} but was {{{countExpression}}}.")),
-            }.ToEquatableArray(),
-            ElseBody: Array.Empty<PlanOp>().ToEquatableArray()));
     }
 }

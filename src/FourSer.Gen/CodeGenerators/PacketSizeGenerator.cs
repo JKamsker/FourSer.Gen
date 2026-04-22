@@ -154,7 +154,7 @@ internal static partial class PacketSizeGenerator
         }
 
         var countVariableName = $"{member.Name.ToCamelCase()}ValidatedCount";
-        sb.WriteLineFormat("{0} {1} = 0;", countValidationType, countVariableName);
+        sb.WriteLineFormat("{0} {1} = 0;", countValidationType!, countVariableName);
         return countVariableName;
     }
 
@@ -183,6 +183,43 @@ internal static partial class PacketSizeGenerator
         return countLocalName;
     }
 
+    private static bool CanValidateCollectionCountWithoutEnumeration(
+        MemberToGenerate member,
+        string collectionAccessExpression)
+    {
+        if (member.CollectionTypeInfo?.CountPropertyName is not null)
+        {
+            return true;
+        }
+
+        return collectionAccessExpression == $"obj.{member.Name}"
+            && member.CollectionTypeInfo?.RangeFactoryTypeName == "System.Collections.Immutable.ImmutableArray";
+    }
+
+    private static bool TryEmitCollectionCountOverflowValidation(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        string collectionAccessExpression,
+        string? countValidationType)
+    {
+        if (!RequiresCheckedCountValidation(countValidationType)
+            || countValidationType is null
+            || !CanValidateCollectionCountWithoutEnumeration(member, collectionAccessExpression))
+        {
+            return false;
+        }
+
+        var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, collectionAccessExpression);
+        var simpleCountTypeName = TypeHelper.GetSimpleTypeName(countValidationType);
+        sb.WriteLineFormat("if ({0} > {1}.MaxValue)", countExpression, simpleCountTypeName);
+        using (sb.BeginBlock())
+        {
+            sb.WriteLine("throw new System.OverflowException();");
+        }
+
+        return true;
+    }
+
     private static void GenerateStandardCollectionSizeCalculation(
         IndentedStringBuilder sb,
         MemberToGenerate member,
@@ -193,16 +230,26 @@ internal static partial class PacketSizeGenerator
         var enumerationGuard = collectionAccessExpression == $"obj.{member.Name}"
             ? GeneratorUtilities.GetCollectionIterationGuard(member, collectionAccessExpression)
             : null;
+        var fixedCount = member.CollectionInfo?.CountSize;
+        var canBeNull = fixedCount is not > 0
+            && member.CollectionTypeInfo?.CanBeNull == true;
 
         if (member.CustomSerializer is { } customSerializer)
         {
             var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
-            if (member.CollectionTypeInfo?.CanBeNull == true || enumerationGuard is not null)
+            if (canBeNull || enumerationGuard is not null)
             {
                 var condition = enumerationGuard ?? $"{collectionAccessExpression} is not null";
                 sb.WriteLineFormat("if ({0})", condition);
                 using var _ = sb.BeginBlock();
-                var validatedCountVariableName = DeclareValidatedCountVariable(sb, member, countValidationType);
+                var validatesCountWithoutEnumeration = TryEmitCollectionCountOverflowValidation(
+                    sb,
+                    member,
+                    collectionAccessExpression,
+                    countValidationType);
+                var validatedCountVariableName = validatesCountWithoutEnumeration
+                    ? null
+                    : DeclareValidatedCountVariable(sb, member, countValidationType);
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var __ = sb.BeginBlock();
                 EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);
@@ -210,7 +257,14 @@ internal static partial class PacketSizeGenerator
             }
             else
             {
-                var validatedCountVariableName = DeclareValidatedCountVariable(sb, member, countValidationType);
+                var validatesCountWithoutEnumeration = TryEmitCollectionCountOverflowValidation(
+                    sb,
+                    member,
+                    collectionAccessExpression,
+                    countValidationType);
+                var validatedCountVariableName = validatesCountWithoutEnumeration
+                    ? null
+                    : DeclareValidatedCountVariable(sb, member, countValidationType);
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var _ = sb.BeginBlock();
                 EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);
@@ -222,12 +276,19 @@ internal static partial class PacketSizeGenerator
         if (info.HasSerializer)
         {
             var needsItemNullGuard = !info.IsValueType;
-            if (member.CollectionTypeInfo?.CanBeNull == true || enumerationGuard is not null)
+            if (canBeNull || enumerationGuard is not null)
             {
                 var condition = enumerationGuard ?? $"{collectionAccessExpression} is not null";
                 sb.WriteLineFormat("if ({0})", condition);
                 using var _ = sb.BeginBlock();
-                var validatedCountVariableName = DeclareValidatedCountVariable(sb, member, countValidationType);
+                var validatesCountWithoutEnumeration = TryEmitCollectionCountOverflowValidation(
+                    sb,
+                    member,
+                    collectionAccessExpression,
+                    countValidationType);
+                var validatedCountVariableName = validatesCountWithoutEnumeration
+                    ? null
+                    : DeclareValidatedCountVariable(sb, member, countValidationType);
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var __ = sb.BeginBlock();
                 EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);
@@ -239,7 +300,14 @@ internal static partial class PacketSizeGenerator
             }
             else
             {
-                var validatedCountVariableName = DeclareValidatedCountVariable(sb, member, countValidationType);
+                var validatesCountWithoutEnumeration = TryEmitCollectionCountOverflowValidation(
+                    sb,
+                    member,
+                    collectionAccessExpression,
+                    countValidationType);
+                var validatedCountVariableName = validatesCountWithoutEnumeration
+                    ? null
+                    : DeclareValidatedCountVariable(sb, member, countValidationType);
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var _ = sb.BeginBlock();
                 EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);
@@ -254,7 +322,7 @@ internal static partial class PacketSizeGenerator
         {
             if (RequiresCheckedCountValidation(countValidationType))
             {
-                if (member.CollectionTypeInfo?.CanBeNull == true || enumerationGuard is not null)
+                if (canBeNull || enumerationGuard is not null)
                 {
                     var condition = enumerationGuard ?? $"{collectionAccessExpression} is not null";
                     sb.WriteLineFormat("if ({0})", condition);
@@ -279,17 +347,26 @@ internal static partial class PacketSizeGenerator
                 return;
             }
 
-            var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, collectionAccessExpression, true);
+            var countExpression = fixedCount is > 0
+                ? fixedCount.Value.ToString()
+                : GeneratorUtilities.GetCountExpressionForAccess(member, collectionAccessExpression, canBeNull);
             sb.WriteLineFormat("size += {0} * sizeof({1});", countExpression, info.TypeName);
         }
         else if (info.IsString)
         {
-            if (member.CollectionTypeInfo?.CanBeNull == true || enumerationGuard is not null)
+            if (canBeNull || enumerationGuard is not null)
             {
                 var condition = enumerationGuard ?? $"{collectionAccessExpression} is not null";
                 sb.WriteLineFormat("if ({0})", condition);
                 using var _ = sb.BeginBlock();
-                var validatedCountVariableName = DeclareValidatedCountVariable(sb, member, countValidationType);
+                var validatesCountWithoutEnumeration = TryEmitCollectionCountOverflowValidation(
+                    sb,
+                    member,
+                    collectionAccessExpression,
+                    countValidationType);
+                var validatedCountVariableName = validatesCountWithoutEnumeration
+                    ? null
+                    : DeclareValidatedCountVariable(sb, member, countValidationType);
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var __ = sb.BeginBlock();
                 EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);
@@ -297,7 +374,14 @@ internal static partial class PacketSizeGenerator
             }
             else
             {
-                var validatedCountVariableName = DeclareValidatedCountVariable(sb, member, countValidationType);
+                var validatesCountWithoutEnumeration = TryEmitCollectionCountOverflowValidation(
+                    sb,
+                    member,
+                    collectionAccessExpression,
+                    countValidationType);
+                var validatedCountVariableName = validatesCountWithoutEnumeration
+                    ? null
+                    : DeclareValidatedCountVariable(sb, member, countValidationType);
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var _ = sb.BeginBlock();
                 EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);

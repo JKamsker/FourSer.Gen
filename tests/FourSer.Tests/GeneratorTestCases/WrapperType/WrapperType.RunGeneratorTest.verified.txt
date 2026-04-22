@@ -73,10 +73,6 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
         {
             throw new System.NullReferenceException("Member \"obj.Name\" cannot be null.");
         }
-        if (obj.Name is null)
-        {
-            throw new System.NullReferenceException("Member \"obj.Name\" cannot be null.");
-        }
         global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Serialize(obj.Name, ref data);
     }
 
@@ -90,10 +86,6 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
         if (obj is null)
         {
             throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Name is null)
-        {
-            throw new System.NullReferenceException("Member \"obj.Name\" cannot be null.");
         }
         if (obj.Name is null)
         {

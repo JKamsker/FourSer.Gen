@@ -88,16 +88,6 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
         {
             throw new System.ArgumentNullException(nameof(obj));
         }
-        if (obj.Dogs is not null)
-        {
-            foreach (var item in obj.Dogs)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
-        }
         if (obj.Dogs is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -126,16 +116,6 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
         if (obj is null)
         {
             throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Dogs is not null)
-        {
-            foreach (var item in obj.Dogs)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
         }
         if (obj.Dogs is null)
         {

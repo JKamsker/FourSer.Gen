@@ -549,7 +549,7 @@ public class GeneratorTests
     }
 
     [Fact]
-    public void NarrowCountCollectionSizing_ShouldNotEmitNoOpCheckedAssignments()
+    public void NarrowCountCollectionSizing_ShouldUseOverflowGuardWithoutValidationCounters()
     {
         const string source = """
         using System.Collections.Generic;
@@ -560,27 +560,15 @@ public class GeneratorTests
         public partial class NarrowCountSizingPacket
         {
             [SerializeCollection(CountType = typeof(byte))]
-            public List<Cat> Cats { get; set; } = new();
-        }
-
-        [GenerateSerializer]
-        public partial class Cat
-        {
-            public int Id { get; set; }
+            public HashSet<string> SmallSet { get; set; } = new();
         }
         """;
 
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "NarrowCountSizingPacket");
 
         Assert.DoesNotContain("_ = checked(", generatedCode);
-        Assert.Contains(
-            """
-                    size += sizeof(byte); // Count size for Cats
-                    if (obj.Cats is not null)
-                    {
-                        byte catsValidatedCount = 0;
-            """,
-            generatedCode);
+        Assert.DoesNotContain("smallSetValidatedCount", generatedCode);
+        Assert.Contains("if (obj.SmallSet.Count > byte.MaxValue)", generatedCode);
     }
 
     [Fact]
@@ -609,6 +597,125 @@ public class GeneratorTests
 
         Assert.DoesNotContain("foreach (var item in obj.Cats)", generatedCode);
         Assert.Contains("if (obj.Cats[i] is null)", generatedCode);
+    }
+
+    [Fact]
+    public void FixedSizeCollectionSerialization_ShouldNotDuplicateShapeGuards()
+    {
+        const string source = """
+        using System.Collections.Generic;
+
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class FixedSizePacket
+        {
+            [SerializeCollection(CountSize = 10)]
+            public List<Entity> MyList { get; set; } = new();
+        }
+
+        [GenerateSerializer]
+        public partial class Entity
+        {
+            public int Id { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "FixedSizePacket");
+
+        Assert.Equal(3, CountOccurrences(generatedCode, "if (obj.MyList is null)"));
+        Assert.Equal(3, CountOccurrences(generatedCode, "if (obj.MyList.Count != 10)"));
+        Assert.DoesNotContain("if (obj.MyList is not null)", generatedCode);
+    }
+
+    [Fact]
+    public void NestedMemberSerialization_ShouldEmitSingleNullGuardPerMethod()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Nested;
+
+        [GenerateSerializer]
+        public partial class ContainerPacket
+        {
+            public int Id;
+            public NestedData Data;
+        }
+
+        [GenerateSerializer]
+        public partial class NestedData
+        {
+            public string Name;
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "ContainerPacket");
+
+        Assert.Equal(3, CountOccurrences(generatedCode, "if (obj.Data is null)"));
+    }
+
+    [Fact]
+    public void DirectSerializableMemberSerialization_ShouldEmitSingleNullGuardPerMethod()
+    {
+        const string source = """
+        using System.IO;
+        using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+        using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
+        using SpanWriter = FourSer.Gen.Helpers.SpanWriterHelpers;
+        using StreamWriter = FourSer.Gen.Helpers.StreamWriterHelpers;
+
+        namespace FourSer.Tests.Custom.Wrappers;
+
+        public class FourSerString : ISerializable<FourSerString>
+        {
+            public string Value { get; set; } = string.Empty;
+
+            public static int GetPacketSize(FourSerString obj) => StringEx.MeasureSize(obj.Value);
+
+            public static void Serialize(FourSerString obj, ref Span<byte> data) => SpanWriter.WriteString(ref data, obj.Value);
+
+            public static void Serialize(FourSerString obj, Span<byte> data) => Serialize(obj, ref data);
+
+            public static void Serialize(FourSerString obj, Stream stream) => StreamWriter.WriteString(stream, obj.Value);
+
+            public static FourSerString Deserialize(ref ReadOnlySpan<byte> data) => new() { Value = SpanReader.ReadString(ref data) };
+
+            public static FourSerString Deserialize(ReadOnlySpan<byte> data) => Deserialize(ref data);
+
+            public static FourSerString Deserialize(Stream stream) => new() { Value = StreamReader.ReadString(stream) };
+        }
+
+        [GenerateSerializer]
+        public partial class WrapperPacket
+        {
+            public FourSerString Name { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "WrapperPacket");
+
+        Assert.Equal(3, CountOccurrences(generatedCode, "if (obj.Name is null)"));
+    }
+
+    [Fact]
+    public void FixedSizeUnmanagedCollectionSizing_ShouldUseFixedCountWithoutNullableCountExpression()
+    {
+        const string source = """
+        using System.Collections.Concurrent;
+
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class FixedBagPacket
+        {
+            [SerializeCollection(CountSize = 8)]
+            public ConcurrentBag<long> LargeBag { get; set; } = new();
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "FixedBagPacket");
+
+        Assert.Contains("size += 8 * sizeof(long);", generatedCode);
+        Assert.DoesNotContain("LargeBag?.Count", generatedCode);
     }
 
     [Fact]
@@ -919,6 +1026,19 @@ public class GeneratorTests
         }
 
         return string.Join("\n\n", sources.Select(g => g.SourceText.ToString()));
+    }
+
+    private static int CountOccurrences(string source, string value)
+    {
+        var count = 0;
+        var index = 0;
+        while ((index = source.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            index += value.Length;
+        }
+
+        return count;
     }
 
     private static GeneratorDriverRunResult GetRunResult(

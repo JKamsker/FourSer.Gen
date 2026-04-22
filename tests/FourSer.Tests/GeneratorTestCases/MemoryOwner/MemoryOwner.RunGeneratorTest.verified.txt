@@ -236,10 +236,6 @@ public partial class Parent : ISerializable<Parent>, IDisposable
         {
             throw new System.ArgumentNullException(nameof(obj));
         }
-        if (obj.DisposableProperty is null)
-        {
-            throw new System.NullReferenceException("Member \"obj.DisposableProperty\" cannot be null.");
-        }
         if (obj.Data is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -267,10 +263,6 @@ public partial class Parent : ISerializable<Parent>, IDisposable
         if (obj is null)
         {
             throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.DisposableProperty is null)
-        {
-            throw new System.NullReferenceException("Member \"obj.DisposableProperty\" cannot be null.");
         }
         if (obj.Data is null)
         {

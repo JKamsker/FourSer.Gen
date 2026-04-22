@@ -33,16 +33,13 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         {
             throw new System.InvalidOperationException($"Collection 'MyList' must have a size of 10 but was {obj.MyList.Count}.");
         }
-        if (obj.MyList is not null)
+        foreach(var item in obj.MyList)
         {
-            foreach(var item in obj.MyList)
+            if (item is null)
             {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-                size += global::FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity.GetPacketSize(item);
+                throw new System.NullReferenceException("Collection item cannot be null.");
             }
+            size += global::FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity.GetPacketSize(item);
         }
         return size;
     }
@@ -101,24 +98,6 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         {
             throw new System.InvalidOperationException($"Collection 'MyList' must have a size of 10 but was {obj.MyList.Count}.");
         }
-        if (obj.MyList is not null)
-        {
-            foreach (var item in obj.MyList)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
-        }
-        if (obj.MyList is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj.MyList), "Fixed-size collections cannot be null.");
-        }
-        if (obj.MyList.Count != 10)
-        {
-            throw new System.InvalidOperationException($"Collection 'MyList' must have a size of 10 but was {obj.MyList.Count}.");
-        }
         for (int i = 0; i < obj.MyList.Count; i++)
         {
             if (obj.MyList[i] is null)
@@ -139,24 +118,6 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
         if (obj is null)
         {
             throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.MyList is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj.MyList), "Fixed-size collections cannot be null.");
-        }
-        if (obj.MyList.Count != 10)
-        {
-            throw new System.InvalidOperationException($"Collection 'MyList' must have a size of 10 but was {obj.MyList.Count}.");
-        }
-        if (obj.MyList is not null)
-        {
-            foreach (var item in obj.MyList)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
         }
         if (obj.MyList is null)
         {

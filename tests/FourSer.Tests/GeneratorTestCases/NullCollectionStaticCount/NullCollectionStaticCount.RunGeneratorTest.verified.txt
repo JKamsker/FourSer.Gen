@@ -174,16 +174,6 @@ public partial class MainObject : ISerializable<MainObject>
         {
             throw new System.ArgumentNullException(nameof(obj));
         }
-        if (obj.Items is not null)
-        {
-            foreach (var item in obj.Items)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
-        }
         if (obj.Items is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -212,16 +202,6 @@ public partial class MainObject : ISerializable<MainObject>
         if (obj is null)
         {
             throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Items is not null)
-        {
-            foreach (var item in obj.Items)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
         }
         if (obj.Items is null)
         {

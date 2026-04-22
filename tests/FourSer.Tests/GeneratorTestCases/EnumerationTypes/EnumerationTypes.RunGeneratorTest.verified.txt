@@ -63,10 +63,12 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         size += sizeof(byte); // Count size for SmallSet
         if (obj.SmallSet is not null)
         {
-            byte smallSetValidatedCount = 0;
+            if (obj.SmallSet.Count > byte.MaxValue)
+            {
+                throw new System.OverflowException();
+            }
             foreach(var item in obj.SmallSet)
             {
-                smallSetValidatedCount = checked((byte)(smallSetValidatedCount + 1));
                 size += StringEx.MeasureSize(item);
             }
         }
@@ -84,7 +86,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         {
             throw new System.InvalidOperationException($"Collection 'LargeBag' must have a size of 8 but was {obj.LargeBag.Count}.");
         }
-        size += (obj.LargeBag?.Count ?? 0) * sizeof(long);
+        size += 8 * sizeof(long);
         return size;
     }
 
@@ -398,14 +400,6 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         {
             throw new System.ArgumentNullException(nameof(obj));
         }
-        if (obj.LargeBag is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj.LargeBag), "Fixed-size collections cannot be null.");
-        }
-        if (obj.LargeBag.Count != 8)
-        {
-            throw new System.InvalidOperationException($"Collection 'LargeBag' must have a size of 8 but was {obj.LargeBag.Count}.");
-        }
         if (obj.Numbers is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -646,14 +640,6 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         if (obj is null)
         {
             throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.LargeBag is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj.LargeBag), "Fixed-size collections cannot be null.");
-        }
-        if (obj.LargeBag.Count != 8)
-        {
-            throw new System.InvalidOperationException($"Collection 'LargeBag' must have a size of 8 but was {obj.LargeBag.Count}.");
         }
         if (obj.Numbers is null)
         {

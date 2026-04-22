@@ -75,10 +75,6 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
         {
             throw new System.ArgumentNullException(nameof(obj));
         }
-        if (obj.Data is null)
-        {
-            throw new System.NullReferenceException("Member \"obj.Data\" cannot be null.");
-        }
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         if (obj.Data is null)
         {
@@ -97,10 +93,6 @@ public partial class ContainerPacket : ISerializable<ContainerPacket>
         if (obj is null)
         {
             throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Data is null)
-        {
-            throw new System.NullReferenceException("Member \"obj.Data\" cannot be null.");
         }
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         if (obj.Data is null)
