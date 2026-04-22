@@ -534,6 +534,103 @@ public class GeneratorTests
     }
 
     [Fact]
+    public void DefaultOptimizationLevel_ShouldFuseStreamStringWrites()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Options;
+
+        [GenerateSerializer]
+        public partial class StringPacket
+        {
+            public string Name { get; set; } = string.Empty;
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "StringPacket");
+
+        Assert.Contains("System.Text.Encoding.UTF8.GetByteCount(obj.Name)", generatedCode);
+        Assert.DoesNotContain("StreamWriter.WriteString(stream, obj.Name);", generatedCode);
+    }
+
+    [Fact]
+    public void OptimizationLevelOff_ShouldDisableStringFusion()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Options;
+
+        [GenerateSerializer]
+        public partial class StringPacket
+        {
+            public string Name { get; set; } = string.Empty;
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(
+            AddDefaultUsings(source),
+            "StringPacket",
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["build_property.FourSerOptimizationLevel"] = "Off",
+            });
+
+        Assert.Contains("StreamWriter.WriteString(stream, obj.Name);", generatedCode);
+        Assert.DoesNotContain("System.Text.Encoding.UTF8.GetByteCount(obj.Name)", generatedCode);
+    }
+
+    [Fact]
+    public void OptimizationLevelOff_ShouldDisableScalarBatching()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Options;
+
+        [GenerateSerializer]
+        public partial class BatchPacket
+        {
+            public int First { get; set; }
+            public int Second { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(
+            AddDefaultUsings(source),
+            "BatchPacket",
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["build_property.FourSerOptimizationLevel"] = "Off",
+            });
+
+        Assert.Contains("SpanWriter.WriteInt32(ref data, (int)(obj.First));", generatedCode);
+        Assert.Contains("SpanWriter.WriteInt32(ref data, (int)(obj.Second));", generatedCode);
+        Assert.DoesNotContain("BinaryPrimitives.WriteInt32LittleEndian", generatedCode);
+    }
+
+    [Fact]
+    public void ConservativeOptimization_ShouldBatchAdjacentScalars()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Options;
+
+        [GenerateSerializer]
+        public partial class BatchPacket
+        {
+            public int First { get; set; }
+            public int Second { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(
+            AddDefaultUsings(source),
+            "BatchPacket",
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["build_property.FourSerOptimizationLevel"] = "Conservative",
+            });
+
+        Assert.Contains("BinaryPrimitives.WriteInt32LittleEndian", generatedCode);
+        Assert.DoesNotContain("SpanWriter.WriteInt32(ref data, (int)(obj.First));", generatedCode);
+    }
+
+    [Fact]
     public void PolymorphicEnumerableSerialization_ShouldDisposeEnumerators()
     {
         const string source = """
@@ -726,10 +823,13 @@ public class GeneratorTests
         );
     }
 
-    private static string GenerateSerializerSource(string source, string? hintNameContains = null)
+    private static string GenerateSerializerSource(
+        string source,
+        string? hintNameContains = null,
+        IReadOnlyDictionary<string, string>? globalOptions = null)
     {
         var compilation = CreateCompilation(source);
-        var result = GetRunResult(compilation, out _);
+        var result = GetRunResult(compilation, out _, globalOptions);
 
         var sources = result.Results
             .SelectMany(r => r.GeneratedSources)
@@ -743,10 +843,16 @@ public class GeneratorTests
         return string.Join("\n\n", sources.Select(g => g.SourceText.ToString()));
     }
 
-    private static GeneratorDriverRunResult GetRunResult(CSharpCompilation compilation, out CSharpCompilation finalCompilation)
+    private static GeneratorDriverRunResult GetRunResult(
+        CSharpCompilation compilation,
+        out CSharpCompilation finalCompilation,
+        IReadOnlyDictionary<string, string>? globalOptions = null)
     {
-        var generator = new SerializerGenerator();
-        var driver = CSharpGeneratorDriver.Create(generator);
+        var generator = new SerializerGenerator().AsSourceGenerator();
+        var driver = CSharpGeneratorDriver.Create(
+            generators: new ISourceGenerator[] { generator },
+            parseOptions: compilation.SyntaxTrees.FirstOrDefault()?.Options as CSharpParseOptions,
+            optionsProvider: globalOptions is null ? null : new TestAnalyzerConfigOptionsProvider(globalOptions));
 
         driver = (CSharpGeneratorDriver)driver.RunGenerators(compilation);
         var runResult = driver.GetRunResult();

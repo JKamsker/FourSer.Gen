@@ -193,6 +193,7 @@ public static class TypeHelper
             return false;
         }
 
-        return NormalizeBuiltInTypeName(elementTypeName) == "byte";
+        var normalizedElementTypeName = NormalizeBuiltInTypeName(elementTypeName!);
+        return normalizedElementTypeName == "byte";
     }
 }
