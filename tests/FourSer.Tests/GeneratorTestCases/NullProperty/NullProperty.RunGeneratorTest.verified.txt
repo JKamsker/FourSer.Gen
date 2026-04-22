@@ -20,7 +20,10 @@ public partial class NestedObject : ISerializable<NestedObject>
 {
     public static int GetPacketSize(NestedObject obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += 4;
         return size;
@@ -58,7 +61,10 @@ public partial class NestedObject : ISerializable<NestedObject>
 
     public static void Serialize(NestedObject obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
     }
 
@@ -69,7 +75,10 @@ public partial class NestedObject : ISerializable<NestedObject>
 
     public static void Serialize(NestedObject obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
     }
 }
@@ -97,8 +106,15 @@ public partial class MainObject : ISerializable<MainObject>
 {
     public static int GetPacketSize(MainObject obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
+        if (obj.Nested is null)
+        {
+            throw new System.NullReferenceException("Member \"obj.Nested\" cannot be null.");
+        }
         size += global::FourSer.Tests.GeneratorTestCases.NullProperty.NestedObject.GetPacketSize(obj.Nested);
         return size;
     }
@@ -135,7 +151,14 @@ public partial class MainObject : ISerializable<MainObject>
 
     public static void Serialize(MainObject obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.Nested is null)
+        {
+            throw new System.NullReferenceException("Member \"obj.Nested\" cannot be null.");
+        }
         if (obj.Nested is null)
         {
             throw new System.NullReferenceException("Member \"obj.Nested\" cannot be null.");
@@ -150,7 +173,14 @@ public partial class MainObject : ISerializable<MainObject>
 
     public static void Serialize(MainObject obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.Nested is null)
+        {
+            throw new System.NullReferenceException("Member \"obj.Nested\" cannot be null.");
+        }
         if (obj.Nested is null)
         {
             throw new System.NullReferenceException("Member \"obj.Nested\" cannot be null.");

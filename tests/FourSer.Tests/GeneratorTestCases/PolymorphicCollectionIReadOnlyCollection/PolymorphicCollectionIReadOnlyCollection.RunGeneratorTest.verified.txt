@@ -20,21 +20,34 @@ public partial class Inventory : ISerializable<Inventory>
 {
     public static int GetPacketSize(Inventory obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += sizeof(int); // Count size for Items
         size += sizeof(byte); // Size for polymorphic type id
         if (obj.Items is not null)
         {
+            var hasDiscriminator = false;
+            byte discriminator = default;
             foreach (var item in obj.Items)
             {
-                size += item switch
+                if (item is null)
                 {
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword.GetPacketSize(sword),
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield shield => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield.GetPacketSize(shield),
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion potion => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion.GetPacketSize(potion),
-                    _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
-                };
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+                var itemDiscriminator = item switch { global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword _ => (byte)(10), global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield _ => (byte)(20), global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion _ => (byte)(30), _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}") };
+                if (!hasDiscriminator)
+                {
+                    discriminator = itemDiscriminator;
+                    hasDiscriminator = true;
+                }
+                else if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemDiscriminator, discriminator))
+                {
+                    throw new System.IO.InvalidDataException($"Collection 'Items' contains mixed item types. Expected discriminator {discriminator} but found {itemDiscriminator}.");
+                }
+                size += item switch { global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword.GetPacketSize(sword), global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield shield => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield.GetPacketSize(shield), global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion potion => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion.GetPacketSize(potion), _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}") };
             }
         }
         return size;
@@ -140,10 +153,52 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static void Serialize(Inventory obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        var itemsValidatedItems = obj.Items is null ? null : global::System.Linq.Enumerable.ToList(obj.Items);
+        if ((itemsValidatedItems?.Count ?? 0) > 0)
+        {
+            using var firstValidatedItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.IItem>)itemsValidatedItems).GetEnumerator();
+            if (!firstValidatedItemEnumerator.MoveNext())
+            {
+                throw new System.InvalidOperationException("Collection must contain at least one item.");
+            }
+            var firstValidatedItem = firstValidatedItemEnumerator.Current;
+            if (firstValidatedItem is null)
+            {
+                throw new System.NullReferenceException("Item in collection cannot be null.");
+            }
+            var validatedDiscriminator = firstValidatedItem switch
+            {
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword _ => (byte)(10),
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield _ => (byte)(20),
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion _ => (byte)(30),
+                _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstValidatedItem.GetType().Name}")
+            };
+            foreach (var item in itemsValidatedItems)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+                var itemDiscriminator = item switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword _ => (byte)(10),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield _ => (byte)(20),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion _ => (byte)(30),
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {item.GetType().Name}")
+                };
+                if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemDiscriminator, validatedDiscriminator))
+                {
+                    throw new System.IO.InvalidDataException($"Collection 'Items' contains mixed item types. Expected discriminator {validatedDiscriminator} but found {itemDiscriminator}.");
+                }
+            }
+        }
         var itemsCountSpan = data;
         data = data.Slice(sizeof(int));
-        if (obj.Items is null)
+        if (itemsValidatedItems is null)
         {
             SpanWriter.WriteByte(ref data, (byte)(10));
             SpanWriter.WriteInt32(ref itemsCountSpan, (int)(0));
@@ -151,7 +206,7 @@ public partial class Inventory : ISerializable<Inventory>
         else
         {
             int itemsCount = 0;
-            using var itemsEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.IItem>)obj.Items).GetEnumerator();
+            using var itemsEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.IItem>)itemsValidatedItems).GetEnumerator();
             if (!itemsEnumerator.MoveNext())
             {
                 SpanWriter.WriteByte(ref data, (byte)(10));
@@ -161,15 +216,15 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 var discriminator = itemsEnumerator.Current switch
                 {
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword => (byte)10,
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield => (byte)20,
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion => (byte)30,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword _ => (byte)(10),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield _ => (byte)(20),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion _ => (byte)(30),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type: {itemsEnumerator.Current.GetType().Name}")
                 };
                 SpanWriter.WriteByte(ref data, (byte)(discriminator));
                 switch (discriminator)
                 {
-                    case 10:
+                    case (byte)(10):
                     {
                         do
                         {
@@ -179,7 +234,7 @@ public partial class Inventory : ISerializable<Inventory>
                         while (itemsEnumerator.MoveNext());
                         break;
                     }
-                    case 20:
+                    case (byte)(20):
                     {
                         do
                         {
@@ -189,7 +244,7 @@ public partial class Inventory : ISerializable<Inventory>
                         while (itemsEnumerator.MoveNext());
                         break;
                     }
-                    case 30:
+                    case (byte)(30):
                     {
                         do
                         {
@@ -212,21 +267,63 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static void Serialize(Inventory obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        var itemsValidatedItems = obj.Items is null ? null : global::System.Linq.Enumerable.ToList(obj.Items);
+        if ((itemsValidatedItems?.Count ?? 0) > 0)
+        {
+            using var firstValidatedItemEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.IItem>)itemsValidatedItems).GetEnumerator();
+            if (!firstValidatedItemEnumerator.MoveNext())
+            {
+                throw new System.InvalidOperationException("Collection must contain at least one item.");
+            }
+            var firstValidatedItem = firstValidatedItemEnumerator.Current;
+            if (firstValidatedItem is null)
+            {
+                throw new System.NullReferenceException("Item in collection cannot be null.");
+            }
+            var validatedDiscriminator = firstValidatedItem switch
+            {
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword _ => (byte)(10),
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield _ => (byte)(20),
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion _ => (byte)(30),
+                _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstValidatedItem.GetType().Name}")
+            };
+            foreach (var item in itemsValidatedItems)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+                var itemDiscriminator = item switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword _ => (byte)(10),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield _ => (byte)(20),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion _ => (byte)(30),
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {item.GetType().Name}")
+                };
+                if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemDiscriminator, validatedDiscriminator))
+                {
+                    throw new System.IO.InvalidDataException($"Collection 'Items' contains mixed item types. Expected discriminator {validatedDiscriminator} but found {itemDiscriminator}.");
+                }
+            }
+        }
         if (!stream.CanSeek)
         {
             throw new NotSupportedException("Stream must be seekable to serialize this collection.");
         }
         var itemsCountPosition = stream.Position;
         StreamWriter.WriteInt32(stream, (int)(0)); // Placeholder for count
-        if (obj.Items is null)
+        if (itemsValidatedItems is null)
         {
             StreamWriter.WriteByte(stream, (byte)(10));
         }
         else
         {
             int itemsCount = 0;
-            using var itemsEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.IItem>)obj.Items).GetEnumerator();
+            using var itemsEnumerator = ((global::System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.IItem>)itemsValidatedItems).GetEnumerator();
             if (!itemsEnumerator.MoveNext())
             {
                 StreamWriter.WriteByte(stream, (byte)(10));
@@ -235,15 +332,15 @@ public partial class Inventory : ISerializable<Inventory>
             {
                 var discriminator = itemsEnumerator.Current switch
                 {
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword => (byte)10,
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield => (byte)20,
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion => (byte)30,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Sword _ => (byte)(10),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Shield _ => (byte)(20),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.Potion _ => (byte)(30),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type: {itemsEnumerator.Current.GetType().Name}")
                 };
                 StreamWriter.WriteByte(stream, (byte)(discriminator));
                 switch (discriminator)
                 {
-                    case 10:
+                    case (byte)(10):
                     {
                         do
                         {
@@ -253,7 +350,7 @@ public partial class Inventory : ISerializable<Inventory>
                         while (itemsEnumerator.MoveNext());
                         break;
                     }
-                    case 20:
+                    case (byte)(20):
                     {
                         do
                         {
@@ -263,7 +360,7 @@ public partial class Inventory : ISerializable<Inventory>
                         while (itemsEnumerator.MoveNext());
                         break;
                     }
-                    case 30:
+                    case (byte)(30):
                     {
                         do
                         {
@@ -306,7 +403,10 @@ public partial class Sword : ISerializable<Sword>
 {
     public static int GetPacketSize(Sword obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         return size;
     }
@@ -334,7 +434,10 @@ public partial class Sword : ISerializable<Sword>
 
     public static void Serialize(Sword obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 
     public static void Serialize(Sword obj, System.Span<byte> data)
@@ -344,7 +447,10 @@ public partial class Sword : ISerializable<Sword>
 
     public static void Serialize(Sword obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 }
 
@@ -371,7 +477,10 @@ public partial class Shield : ISerializable<Shield>
 {
     public static int GetPacketSize(Shield obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         return size;
     }
@@ -399,7 +508,10 @@ public partial class Shield : ISerializable<Shield>
 
     public static void Serialize(Shield obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 
     public static void Serialize(Shield obj, System.Span<byte> data)
@@ -409,7 +521,10 @@ public partial class Shield : ISerializable<Shield>
 
     public static void Serialize(Shield obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 }
 
@@ -436,7 +551,10 @@ public partial class Potion : ISerializable<Potion>
 {
     public static int GetPacketSize(Potion obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         return size;
     }
@@ -464,7 +582,10 @@ public partial class Potion : ISerializable<Potion>
 
     public static void Serialize(Potion obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 
     public static void Serialize(Potion obj, System.Span<byte> data)
@@ -474,6 +595,9 @@ public partial class Potion : ISerializable<Potion>
 
     public static void Serialize(Potion obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 }

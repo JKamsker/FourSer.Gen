@@ -109,7 +109,18 @@ internal static class PlanCollectionEmitter
             context.Builder,
             member,
             writerContext,
-            context.Plan.Facts.Type);
+            context.Plan.Facts.Type,
+            op.SourceExpression);
+    }
+
+    public static void EmitCollectionValidate(PlanEmitterContext context, CollectionValidateOp op)
+    {
+        var member = context.GetMember(op.Key ?? op.CollectionPlan.MemberName);
+        CollectionValidationEmitter.Generate(
+            context.Builder,
+            member,
+            op.CollectionPlan,
+            op.SourceExpression);
     }
 
     public static void EmitCollectionSize(PlanEmitterContext context, CollectionSizeOp op)

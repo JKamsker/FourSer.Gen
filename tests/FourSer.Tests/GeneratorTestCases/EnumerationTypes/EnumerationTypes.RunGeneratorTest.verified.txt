@@ -20,7 +20,10 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
 {
     public static int GetPacketSize(EnumerationTypesPacket obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += sizeof(int); // Count size for Numbers
         size += (obj.Numbers?.Count ?? 0) * sizeof(int);
@@ -31,7 +34,7 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         }
         size += sizeof(int); // Count size for Data
         var dataSizedItems = obj.Data is null ? null : global::System.Linq.Enumerable.ToArray(obj.Data);
-        size += (dataSizedItems?.Length ?? 0) * sizeof(byte);
+        size += (dataSizedItems?.Count() ?? 0) * sizeof(byte);
         size += sizeof(int); // Count size for Data1
         size += (obj.Data1?.Count ?? 0) * sizeof(byte);
         size += sizeof(int); // Count size for Values
@@ -63,6 +66,14 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         _ = checked((ushort)((obj.MediumQueue?.Count ?? 0)));
         size += sizeof(ushort); // Count size for MediumQueue
         size += (obj.MediumQueue?.Count ?? 0) * sizeof(int);
+        if (obj.LargeBag is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj.LargeBag), "Fixed-size collections cannot be null.");
+        }
+        if (obj.LargeBag.Count != 8)
+        {
+            throw new System.InvalidOperationException($"Collection 'LargeBag' must have a size of 8 but was {obj.LargeBag.Count}.");
+        }
         size += (obj.LargeBag?.Count ?? 0) * sizeof(long);
         return size;
     }
@@ -373,7 +384,18 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
 
     public static void Serialize(EnumerationTypesPacket obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.LargeBag is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj.LargeBag), "Fixed-size collections cannot be null.");
+        }
+        if (obj.LargeBag.Count != 8)
+        {
+            throw new System.InvalidOperationException($"Collection 'LargeBag' must have a size of 8 but was {obj.LargeBag.Count}.");
+        }
         if (obj.Numbers is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -611,7 +633,18 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
 
     public static void Serialize(EnumerationTypesPacket obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.LargeBag is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj.LargeBag), "Fixed-size collections cannot be null.");
+        }
+        if (obj.LargeBag.Count != 8)
+        {
+            throw new System.InvalidOperationException($"Collection 'LargeBag' must have a size of 8 but was {obj.LargeBag.Count}.");
+        }
         if (obj.Numbers is null)
         {
             StreamWriter.WriteInt32(stream, (int)(0));

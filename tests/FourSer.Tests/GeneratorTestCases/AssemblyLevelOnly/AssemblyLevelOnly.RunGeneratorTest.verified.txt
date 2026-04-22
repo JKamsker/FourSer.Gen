@@ -20,7 +20,10 @@ public partial class Packet : ISerializable<Packet>
 {
     public static int GetPacketSize(Packet obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_AssemblyLevelOnly_AssemblyStringSerializer.GetPacketSize(obj.Name);
         return size;
@@ -58,7 +61,10 @@ public partial class Packet : ISerializable<Packet>
 
     public static void Serialize(Packet obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var bytesWritten_Name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_AssemblyLevelOnly_AssemblyStringSerializer.Serialize(obj.Name, data);
         data = data.Slice(bytesWritten_Name);
     }
@@ -70,7 +76,10 @@ public partial class Packet : ISerializable<Packet>
 
     public static void Serialize(Packet obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_AssemblyLevelOnly_AssemblyStringSerializer.Serialize(obj.Name, stream);
     }
 }

@@ -20,7 +20,10 @@ public partial class PrivateCtorPacket : ISerializable<PrivateCtorPacket>
 {
     public static int GetPacketSize(PrivateCtorPacket obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += 4;
         return size;
@@ -54,7 +57,10 @@ public partial class PrivateCtorPacket : ISerializable<PrivateCtorPacket>
 
     public static void Serialize(PrivateCtorPacket obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         SpanWriter.WriteInt32(ref data, (int)(obj.Value));
     }
 
@@ -65,7 +71,10 @@ public partial class PrivateCtorPacket : ISerializable<PrivateCtorPacket>
 
     public static void Serialize(PrivateCtorPacket obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         StreamWriter.WriteInt32(stream, (int)(obj.Value));
     }
 }

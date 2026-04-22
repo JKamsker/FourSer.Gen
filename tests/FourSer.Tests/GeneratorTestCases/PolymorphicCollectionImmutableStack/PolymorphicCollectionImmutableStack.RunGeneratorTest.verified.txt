@@ -20,21 +20,22 @@ public partial class Inventory : ISerializable<Inventory>
 {
     public static int GetPacketSize(Inventory obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += sizeof(int); // Count size for Items
         if (obj.Items is not null)
         {
             foreach (var item in obj.Items)
             {
-                size += sizeof(byte); // Size for polymorphic type id
-                size += item switch
+                if (item is null)
                 {
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Sword.GetPacketSize(sword),
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Shield shield => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Shield.GetPacketSize(shield),
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Potion potion => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Potion.GetPacketSize(potion),
-                    _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
-                };
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+                size += sizeof(byte); // Size for polymorphic type id
+                size += item switch { global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Sword sword => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Sword.GetPacketSize(sword), global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Shield shield => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Shield.GetPacketSize(shield), global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Potion potion => global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.Potion.GetPacketSize(potion), _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}") };
             }
         }
         return size;
@@ -126,7 +127,20 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static void Serialize(Inventory obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.Items is not null)
+        {
+            foreach (var item in obj.Items)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+            }
+        }
         if (obj.Items is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -172,7 +186,20 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static void Serialize(Inventory obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.Items is not null)
+        {
+            foreach (var item in obj.Items)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+            }
+        }
         if (obj.Items is null)
         {
             StreamWriter.WriteInt32(stream, (int)(0));
@@ -235,7 +262,10 @@ public partial class Sword : ISerializable<Sword>
 {
     public static int GetPacketSize(Sword obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         return size;
     }
@@ -263,7 +293,10 @@ public partial class Sword : ISerializable<Sword>
 
     public static void Serialize(Sword obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 
     public static void Serialize(Sword obj, System.Span<byte> data)
@@ -273,7 +306,10 @@ public partial class Sword : ISerializable<Sword>
 
     public static void Serialize(Sword obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 }
 
@@ -300,7 +336,10 @@ public partial class Shield : ISerializable<Shield>
 {
     public static int GetPacketSize(Shield obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         return size;
     }
@@ -328,7 +367,10 @@ public partial class Shield : ISerializable<Shield>
 
     public static void Serialize(Shield obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 
     public static void Serialize(Shield obj, System.Span<byte> data)
@@ -338,7 +380,10 @@ public partial class Shield : ISerializable<Shield>
 
     public static void Serialize(Shield obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 }
 
@@ -365,7 +410,10 @@ public partial class Potion : ISerializable<Potion>
 {
     public static int GetPacketSize(Potion obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         return size;
     }
@@ -393,7 +441,10 @@ public partial class Potion : ISerializable<Potion>
 
     public static void Serialize(Potion obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 
     public static void Serialize(Potion obj, System.Span<byte> data)
@@ -403,6 +454,9 @@ public partial class Potion : ISerializable<Potion>
 
     public static void Serialize(Potion obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 }

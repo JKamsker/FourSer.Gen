@@ -20,12 +20,27 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
 {
     public static int GetPacketSize(EnumerableOfReferenceTypes obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
+        if (obj.MyList is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj.MyList), "Fixed-size collections cannot be null.");
+        }
+        if (obj.MyList.Count != 10)
+        {
+            throw new System.InvalidOperationException($"Collection 'MyList' must have a size of 10 but was {obj.MyList.Count}.");
+        }
         if (obj.MyList is not null)
         {
             foreach(var item in obj.MyList)
             {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
                 size += global::FourSer.Tests.GeneratorTestCases.CollectionWithConstSize.Entity.GetPacketSize(item);
             }
         }
@@ -74,7 +89,28 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
 
     public static void Serialize(EnumerableOfReferenceTypes obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.MyList is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj.MyList), "Fixed-size collections cannot be null.");
+        }
+        if (obj.MyList.Count != 10)
+        {
+            throw new System.InvalidOperationException($"Collection 'MyList' must have a size of 10 but was {obj.MyList.Count}.");
+        }
+        if (obj.MyList is not null)
+        {
+            foreach (var item in obj.MyList)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
+            }
+        }
         if (obj.MyList is null)
         {
             throw new System.ArgumentNullException(nameof(obj.MyList), "Fixed-size collections cannot be null.");
@@ -100,7 +136,28 @@ public partial class EnumerableOfReferenceTypes : ISerializable<EnumerableOfRefe
 
     public static void Serialize(EnumerableOfReferenceTypes obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.MyList is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj.MyList), "Fixed-size collections cannot be null.");
+        }
+        if (obj.MyList.Count != 10)
+        {
+            throw new System.InvalidOperationException($"Collection 'MyList' must have a size of 10 but was {obj.MyList.Count}.");
+        }
+        if (obj.MyList is not null)
+        {
+            foreach (var item in obj.MyList)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
+            }
+        }
         if (obj.MyList is null)
         {
             throw new System.ArgumentNullException(nameof(obj.MyList), "Fixed-size collections cannot be null.");
@@ -143,7 +200,10 @@ public partial class Entity : ISerializable<Entity>
 {
     public static int GetPacketSize(Entity obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += 4;
         size += StringEx.MeasureSize(obj.Name);
@@ -187,7 +247,10 @@ public partial class Entity : ISerializable<Entity>
 
     public static void Serialize(Entity obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         SpanWriter.WriteString(ref data, obj.Name);
     }
@@ -199,7 +262,10 @@ public partial class Entity : ISerializable<Entity>
 
     public static void Serialize(Entity obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         if (string.IsNullOrEmpty(obj.Name))
         {

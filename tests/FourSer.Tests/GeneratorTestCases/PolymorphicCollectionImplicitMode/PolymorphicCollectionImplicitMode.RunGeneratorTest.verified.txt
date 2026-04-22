@@ -20,21 +20,34 @@ public partial class Inventory : ISerializable<Inventory>
 {
     public static int GetPacketSize(Inventory obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += 8;
         size += sizeof(int); // Count size for Items
         if (obj.Items is not null)
         {
+            var hasDiscriminator = false;
+            long discriminator = default;
             foreach (var item in obj.Items)
             {
-                size += item switch
+                if (item is null)
                 {
-                    global::FourSer.TestUser.Sword sword => global::FourSer.TestUser.Sword.GetPacketSize(sword),
-                    global::FourSer.TestUser.Shield shield => global::FourSer.TestUser.Shield.GetPacketSize(shield),
-                    global::FourSer.TestUser.Potion potion => global::FourSer.TestUser.Potion.GetPacketSize(potion),
-                    _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}")
-                };
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+                var itemDiscriminator = item switch { global::FourSer.TestUser.Sword _ => (long)(10), global::FourSer.TestUser.Shield _ => (long)(20), global::FourSer.TestUser.Potion _ => (long)(30), _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}") };
+                if (!hasDiscriminator)
+                {
+                    discriminator = itemDiscriminator;
+                    hasDiscriminator = true;
+                }
+                else if (!global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(itemDiscriminator, discriminator))
+                {
+                    throw new System.IO.InvalidDataException($"Collection 'Items' contains mixed item types. Expected discriminator {discriminator} but found {itemDiscriminator}.");
+                }
+                size += item switch { global::FourSer.TestUser.Sword sword => global::FourSer.TestUser.Sword.GetPacketSize(sword), global::FourSer.TestUser.Shield shield => global::FourSer.TestUser.Shield.GetPacketSize(shield), global::FourSer.TestUser.Potion potion => global::FourSer.TestUser.Potion.GetPacketSize(potion), _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Items: {item.GetType().Name}") };
             }
         }
         return size;
@@ -147,7 +160,43 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static void Serialize(Inventory obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if ((obj.Items?.Count ?? 0) > 0)
+        {
+            var firstValidatedItem = obj.Items[0];
+            if (firstValidatedItem is null)
+            {
+                throw new System.NullReferenceException("Item in collection cannot be null.");
+            }
+            var validatedDiscriminator = firstValidatedItem switch
+            {
+                global::FourSer.TestUser.Sword _ => (long)(10),
+                global::FourSer.TestUser.Shield _ => (long)(20),
+                global::FourSer.TestUser.Potion _ => (long)(30),
+                _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstValidatedItem.GetType().Name}")
+            };
+            foreach (var item in obj.Items)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+                var itemDiscriminator = item switch
+                {
+                    global::FourSer.TestUser.Sword _ => (long)(10),
+                    global::FourSer.TestUser.Shield _ => (long)(20),
+                    global::FourSer.TestUser.Potion _ => (long)(30),
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {item.GetType().Name}")
+                };
+                if (!global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(itemDiscriminator, validatedDiscriminator))
+                {
+                    throw new System.IO.InvalidDataException($"Collection 'Items' contains mixed item types. Expected discriminator {validatedDiscriminator} but found {itemDiscriminator}.");
+                }
+            }
+        }
         if ((obj.Items?.Count ?? 0) == 0)
         {
             SpanWriter.WriteInt64(ref data, (long)(10));
@@ -158,9 +207,9 @@ public partial class Inventory : ISerializable<Inventory>
             var firstItem = obj.Items[0];
             itemsDiscriminator = firstItem switch
             {
-                global::FourSer.TestUser.Sword => 10,
-                global::FourSer.TestUser.Shield => 20,
-                global::FourSer.TestUser.Potion => 30,
+                global::FourSer.TestUser.Sword _ => (long)(10),
+                global::FourSer.TestUser.Shield _ => (long)(20),
+                global::FourSer.TestUser.Potion _ => (long)(30),
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
             SpanWriter.WriteInt64(ref data, (long)(itemsDiscriminator));
@@ -177,14 +226,14 @@ public partial class Inventory : ISerializable<Inventory>
                 var firstItem = obj.Items[0];
                 var discriminator = firstItem switch
                 {
-                    global::FourSer.TestUser.Sword => 10,
-                    global::FourSer.TestUser.Shield => 20,
-                    global::FourSer.TestUser.Potion => 30,
+                    global::FourSer.TestUser.Sword _ => (long)(10),
+                    global::FourSer.TestUser.Shield _ => (long)(20),
+                    global::FourSer.TestUser.Potion _ => (long)(30),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
                 };
                 switch (discriminator)
                 {
-                    case 10:
+                    case (long)(10):
                     {
                         foreach(var item in obj.Items)
                         {
@@ -192,7 +241,7 @@ public partial class Inventory : ISerializable<Inventory>
                         }
                         break;
                     }
-                    case 20:
+                    case (long)(20):
                     {
                         foreach(var item in obj.Items)
                         {
@@ -200,7 +249,7 @@ public partial class Inventory : ISerializable<Inventory>
                         }
                         break;
                     }
-                    case 30:
+                    case (long)(30):
                     {
                         foreach(var item in obj.Items)
                         {
@@ -222,7 +271,43 @@ public partial class Inventory : ISerializable<Inventory>
 
     public static void Serialize(Inventory obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if ((obj.Items?.Count ?? 0) > 0)
+        {
+            var firstValidatedItem = obj.Items[0];
+            if (firstValidatedItem is null)
+            {
+                throw new System.NullReferenceException("Item in collection cannot be null.");
+            }
+            var validatedDiscriminator = firstValidatedItem switch
+            {
+                global::FourSer.TestUser.Sword _ => (long)(10),
+                global::FourSer.TestUser.Shield _ => (long)(20),
+                global::FourSer.TestUser.Potion _ => (long)(30),
+                _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstValidatedItem.GetType().Name}")
+            };
+            foreach (var item in obj.Items)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+                var itemDiscriminator = item switch
+                {
+                    global::FourSer.TestUser.Sword _ => (long)(10),
+                    global::FourSer.TestUser.Shield _ => (long)(20),
+                    global::FourSer.TestUser.Potion _ => (long)(30),
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {item.GetType().Name}")
+                };
+                if (!global::System.Collections.Generic.EqualityComparer<long>.Default.Equals(itemDiscriminator, validatedDiscriminator))
+                {
+                    throw new System.IO.InvalidDataException($"Collection 'Items' contains mixed item types. Expected discriminator {validatedDiscriminator} but found {itemDiscriminator}.");
+                }
+            }
+        }
         if ((obj.Items?.Count ?? 0) == 0)
         {
             StreamWriter.WriteInt64(stream, (long)(10));
@@ -233,9 +318,9 @@ public partial class Inventory : ISerializable<Inventory>
             var firstItem = obj.Items[0];
             itemsDiscriminator = firstItem switch
             {
-                global::FourSer.TestUser.Sword => 10,
-                global::FourSer.TestUser.Shield => 20,
-                global::FourSer.TestUser.Potion => 30,
+                global::FourSer.TestUser.Sword _ => (long)(10),
+                global::FourSer.TestUser.Shield _ => (long)(20),
+                global::FourSer.TestUser.Potion _ => (long)(30),
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
             StreamWriter.WriteInt64(stream, (long)(itemsDiscriminator));
@@ -252,14 +337,14 @@ public partial class Inventory : ISerializable<Inventory>
                 var firstItem = obj.Items[0];
                 var discriminator = firstItem switch
                 {
-                    global::FourSer.TestUser.Sword => 10,
-                    global::FourSer.TestUser.Shield => 20,
-                    global::FourSer.TestUser.Potion => 30,
+                    global::FourSer.TestUser.Sword _ => (long)(10),
+                    global::FourSer.TestUser.Shield _ => (long)(20),
+                    global::FourSer.TestUser.Potion _ => (long)(30),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
                 };
                 switch (discriminator)
                 {
-                    case 10:
+                    case (long)(10):
                     {
                         foreach(var item in obj.Items)
                         {
@@ -267,7 +352,7 @@ public partial class Inventory : ISerializable<Inventory>
                         }
                         break;
                     }
-                    case 20:
+                    case (long)(20):
                     {
                         foreach(var item in obj.Items)
                         {
@@ -275,7 +360,7 @@ public partial class Inventory : ISerializable<Inventory>
                         }
                         break;
                     }
-                    case 30:
+                    case (long)(30):
                     {
                         foreach(var item in obj.Items)
                         {
@@ -314,7 +399,10 @@ public partial class Item : ISerializable<Item>
 {
     public static int GetPacketSize(Item obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         return size;
     }
@@ -342,7 +430,10 @@ public partial class Item : ISerializable<Item>
 
     public static void Serialize(Item obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 
     public static void Serialize(Item obj, System.Span<byte> data)
@@ -352,7 +443,10 @@ public partial class Item : ISerializable<Item>
 
     public static void Serialize(Item obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 }
 
@@ -379,7 +473,10 @@ public partial class Sword : ISerializable<Sword>
 {
     public static int GetPacketSize(Sword obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         return size;
     }
@@ -407,7 +504,10 @@ public partial class Sword : ISerializable<Sword>
 
     public static void Serialize(Sword obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 
     public static void Serialize(Sword obj, System.Span<byte> data)
@@ -417,7 +517,10 @@ public partial class Sword : ISerializable<Sword>
 
     public static void Serialize(Sword obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 }
 
@@ -444,7 +547,10 @@ public partial class Shield : ISerializable<Shield>
 {
     public static int GetPacketSize(Shield obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         return size;
     }
@@ -472,7 +578,10 @@ public partial class Shield : ISerializable<Shield>
 
     public static void Serialize(Shield obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 
     public static void Serialize(Shield obj, System.Span<byte> data)
@@ -482,7 +591,10 @@ public partial class Shield : ISerializable<Shield>
 
     public static void Serialize(Shield obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 }
 
@@ -509,7 +621,10 @@ public partial class Potion : ISerializable<Potion>
 {
     public static int GetPacketSize(Potion obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         return size;
     }
@@ -537,7 +652,10 @@ public partial class Potion : ISerializable<Potion>
 
     public static void Serialize(Potion obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 
     public static void Serialize(Potion obj, System.Span<byte> data)
@@ -547,6 +665,9 @@ public partial class Potion : ISerializable<Potion>
 
     public static void Serialize(Potion obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
     }
 }

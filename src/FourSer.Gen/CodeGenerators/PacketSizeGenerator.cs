@@ -145,10 +145,12 @@ internal static partial class PacketSizeGenerator
     private static void GenerateStandardCollectionSizeCalculation(
         IndentedStringBuilder sb,
         MemberToGenerate member,
-        ElementInfo info)
+        ElementInfo info,
+        string collectionAccessExpression)
     {
-        var collectionAccessExpression = $"obj.{member.Name}";
-        var enumerationGuard = GeneratorUtilities.GetCollectionIterationGuard(member, collectionAccessExpression);
+        var enumerationGuard = collectionAccessExpression == $"obj.{member.Name}"
+            ? GeneratorUtilities.GetCollectionIterationGuard(member, collectionAccessExpression)
+            : null;
 
         if (member.CustomSerializer is { } customSerializer)
         {
@@ -173,6 +175,7 @@ internal static partial class PacketSizeGenerator
 
         if (info.HasSerializer)
         {
+            var needsItemNullGuard = !info.IsValueType;
             if (member.CollectionTypeInfo?.CanBeNull == true || enumerationGuard is not null)
             {
                 var condition = enumerationGuard ?? $"{collectionAccessExpression} is not null";
@@ -180,18 +183,26 @@ internal static partial class PacketSizeGenerator
                 using var _ = sb.BeginBlock();
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var __ = sb.BeginBlock();
+                if (needsItemNullGuard)
+                {
+                    EmitCollectionItemNullGuard(sb);
+                }
                 sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
             }
             else
             {
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var _ = sb.BeginBlock();
+                if (needsItemNullGuard)
+                {
+                    EmitCollectionItemNullGuard(sb);
+                }
                 sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
             }
         }
         else if (info.IsUnmanaged)
         {
-            var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}", true);
+            var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, collectionAccessExpression, true);
             sb.WriteLineFormat("size += {0} * sizeof({1});", countExpression, info.TypeName);
         }
         else if (info.IsString)
@@ -215,6 +226,11 @@ internal static partial class PacketSizeGenerator
         if (member.CollectionInfo is not { } collectionInfo)
         {
             return;
+        }
+
+        if (collectionInfo.CountSize is > 0)
+        {
+            EmitFixedCollectionValidation(sb, member, collectionInfo.CountSize.Value);
         }
 
         var deferredCountValidationType = GetDeferredCountValidationType(member, type);
@@ -249,7 +265,7 @@ internal static partial class PacketSizeGenerator
 
         if (GetElementInfo(member) is { } info)
         {
-            GenerateStandardCollectionSizeCalculation(sb, member, info);   
+            GenerateStandardCollectionSizeCalculation(sb, member, info, $"obj.{member.Name}");
         }
     }
 
@@ -260,6 +276,26 @@ internal static partial class PacketSizeGenerator
         if (member.CollectionInfo is not { } collectionInfo)
         {
             return;
+        }
+
+        if (collectionInfo.CountSize is > 0)
+        {
+            sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
+            using (sb.BeginBlock())
+            {
+                sb.WriteLineFormat(
+                    "throw new System.ArgumentNullException(nameof(obj.{0}), \"Fixed-size collections cannot be null.\");",
+                    member.Name);
+            }
+
+            sb.WriteLineFormat("if (obj.{0}.Memory.Length != {1})", member.Name, collectionInfo.CountSize);
+            using (sb.BeginBlock())
+            {
+                sb.WriteLineFormat(
+                    "throw new System.InvalidOperationException($\"Collection '{0}' must have a size of {1} but was {{obj.{0}.Memory.Length}}.\");",
+                    member.Name,
+                    collectionInfo.CountSize);
+            }
         }
 
         if (
@@ -319,6 +355,37 @@ internal static partial class PacketSizeGenerator
         }
     }
 
+    private static void EmitFixedCollectionValidation(IndentedStringBuilder sb, MemberToGenerate member, int expectedCount)
+    {
+        sb.WriteLineFormat("if (obj.{0} is null)", member.Name);
+        using (sb.BeginBlock())
+        {
+            sb.WriteLineFormat(
+                "throw new System.ArgumentNullException(nameof(obj.{0}), \"Fixed-size collections cannot be null.\");",
+                member.Name);
+        }
+
+        var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}");
+        sb.WriteLineFormat("if ({0} != {1})", countExpression, expectedCount);
+        using (sb.BeginBlock())
+        {
+            sb.WriteLineFormat(
+                "throw new System.InvalidOperationException($\"Collection '{0}' must have a size of {1} but was {{{2}}}.\");",
+                member.Name,
+                expectedCount,
+                countExpression);
+        }
+    }
+
+    private static void EmitCollectionItemNullGuard(IndentedStringBuilder sb)
+    {
+        sb.WriteLine("if (item is null)");
+        using (sb.BeginBlock())
+        {
+            sb.WriteLine("throw new System.NullReferenceException(\"Collection item cannot be null.\");");
+        }
+    }
+
     private static void AddPolymorphicSerialization
     (
         IndentedStringBuilder sb,
@@ -353,62 +420,107 @@ internal static partial class PacketSizeGenerator
                 : $"{collectionAccessExpression} is not null";
             sb.WriteLineFormat("if ({0})", condition);
             using var _ = sb.BeginBlock();
-
-            sb.WriteLineFormat("foreach (var item in {0})", collectionAccessExpression);
-            using var __ = sb.BeginBlock();
-
-            if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
-            {
-                sb.WriteLineFormat
-                ("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
-            }
-
-            sb.WriteLine("size += item switch");
-            sb.WriteLine("{");
-            sb.Indent();
-            foreach (var option in info.Options)
-            {
-                var typeName = TypeHelper.GetGlobalTypeName(option.Type);
-                var varName = TypeHelper.GetSimpleTypeName(option.Type).ToCamelCase();
-                sb.WriteLineFormat("{0} {1} => {2}.GetPacketSize({1}),", typeName, varName, typeName);
-            }
-
-            sb.WriteLineFormat
-            (
-                "_ => throw new System.IO.InvalidDataException($\"Unknown item type in collection {0}: {{item.GetType().Name}}\")",
-                member.Name
-            );
-            sb.Unindent();
-            sb.WriteLine("};");
+            EmitPolymorphicCollectionSizeBody(sb, member, collectionInfo, info, collectionAccessExpression);
             return;
         }
 
+        EmitPolymorphicCollectionSizeBody(sb, member, collectionInfo, info, collectionAccessExpression);
+    }
+
+    private static void EmitPolymorphicCollectionSizeBody(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        CollectionInfo collectionInfo,
+        PolymorphicInfo info,
+        string collectionAccessExpression)
+    {
+        var discriminatorType = info.EnumUnderlyingType ?? info.TypeIdType;
+
+        if (collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId)
+        {
+            sb.WriteLine("var hasDiscriminator = false;");
+            sb.WriteLineFormat("{0} discriminator = default;", discriminatorType);
+        }
+
         sb.WriteLineFormat("foreach (var item in {0})", collectionAccessExpression);
-        using var ___ = sb.BeginBlock();
+        using var _ = sb.BeginBlock();
+        EmitPolymorphicItemNullGuard(sb);
 
         if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)
         {
-            sb.WriteLineFormat
-                ("size += {0}; // Size for polymorphic type id", PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
+            sb.WriteLineFormat(
+                "size += {0}; // Size for polymorphic type id",
+                PolymorphicUtilities.GenerateTypeIdSizeExpression(info));
         }
-
-        sb.WriteLine("size += item switch");
-        sb.WriteLine("{");
-        sb.Indent();
-        foreach (var option in info.Options)
+        else
         {
-            var typeName = TypeHelper.GetGlobalTypeName(option.Type);
-            var varName = TypeHelper.GetSimpleTypeName(option.Type).ToCamelCase();
-            sb.WriteLineFormat("{0} {1} => {2}.GetPacketSize({1}),", typeName, varName, typeName);
+            var discriminatorExpression = BuildPolymorphicDiscriminatorExpression(member, info, discriminatorType);
+            sb.WriteLineFormat("var itemDiscriminator = item switch {0}", discriminatorExpression);
+            sb.WriteLine("if (!hasDiscriminator)");
+            using (sb.BeginBlock())
+            {
+                sb.WriteLine("discriminator = itemDiscriminator;");
+                sb.WriteLine("hasDiscriminator = true;");
+            }
+
+            sb.WriteLine("else if (!global::System.Collections.Generic.EqualityComparer<" + discriminatorType + ">.Default.Equals(itemDiscriminator, discriminator))");
+            using (sb.BeginBlock())
+            {
+                sb.WriteLineFormat(
+                    "throw new System.IO.InvalidDataException($\"Collection '{0}' contains mixed item types. Expected discriminator {{discriminator}} but found {{itemDiscriminator}}.\");",
+                    member.Name);
+            }
         }
 
-        sb.WriteLineFormat
-        (
-            "_ => throw new System.IO.InvalidDataException($\"Unknown item type in collection {0}: {{item.GetType().Name}}\")",
-            member.Name
-        );
-        sb.Unindent();
-        sb.WriteLine("};");
+        sb.WriteLineFormat("size += item switch {0}", BuildPolymorphicSizeSwitchExpression(member, info));
+    }
+
+    private static string BuildPolymorphicDiscriminatorExpression(
+        MemberToGenerate member,
+        PolymorphicInfo info,
+        string discriminatorType)
+    {
+        var arms = info.Options.Array
+            .Select(option =>
+                $"{PolymorphicUtilities.FormatOptionTypePattern(option)} => {GetPolymorphicDiscriminatorValue(option, info, discriminatorType)}")
+            .Concat(
+            [
+                $"_ => throw new System.IO.InvalidDataException($\"Unknown item type in collection {member.Name}: {{item.GetType().Name}}\")",
+            ]);
+        return "{ " + string.Join(", ", arms) + " };";
+    }
+
+    private static string BuildPolymorphicSizeSwitchExpression(MemberToGenerate member, PolymorphicInfo info)
+    {
+        var arms = info.Options.Array
+            .Select(option =>
+            {
+                var typeName = TypeHelper.GetGlobalTypeName(option.Type);
+                var varName = TypeHelper.GetSimpleTypeName(option.Type).ToCamelCase();
+                return $"{typeName} {varName} => {typeName}.GetPacketSize({varName})";
+            })
+            .Concat(
+            [
+                $"_ => throw new System.IO.InvalidDataException($\"Unknown item type in collection {member.Name}: {{item.GetType().Name}}\")",
+            ]);
+        return "{ " + string.Join(", ", arms) + " };";
+    }
+
+    private static string GetPolymorphicDiscriminatorValue(
+        PolymorphicOption option,
+        PolymorphicInfo info,
+        string discriminatorType)
+    {
+        return PolymorphicUtilities.FormatTypedTypeIdValue(option.Key, info, discriminatorType);
+    }
+
+    private static void EmitPolymorphicItemNullGuard(IndentedStringBuilder sb)
+    {
+        sb.WriteLine("if (item is null)");
+        using (sb.BeginBlock())
+        {
+            sb.WriteLine("throw new System.NullReferenceException(\"Item in collection cannot be null.\");");
+        }
     }
 
     private static void GeneratePolymorphicSizeCalculation

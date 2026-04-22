@@ -9,6 +9,7 @@ internal static class SizePlanBuilder
     public static EquatableArray<PlanOp> Build(TypeToGenerate type)
     {
         var ops = new List<PlanOp>();
+        AddValidationPrePass(ops, type);
 
         foreach (var member in type.Members)
         {
@@ -16,6 +17,29 @@ internal static class SizePlanBuilder
         }
 
         return ops.ToEquatableArray();
+    }
+
+    private static void AddValidationPrePass(List<PlanOp> ops, TypeToGenerate type)
+    {
+        foreach (var member in type.Members)
+        {
+            if (!member.HasGenerateSerializerAttribute || member.IsValueType)
+            {
+                continue;
+            }
+
+            ops.Add(new GuardOp(
+                Key: new GuardKey("size-member-null", member.Name),
+                Condition: $"obj.{member.Name} is null",
+                Scope: GuardScope.Method,
+                Body: new PlanOp[]
+                {
+                    new ThrowOp(
+                        ExceptionTypeName: "System.NullReferenceException",
+                        MessageExpression: PlanExpressionFactory.QuoteString($"Member \"obj.{member.Name}\" cannot be null.")),
+                }.ToEquatableArray(),
+                ElseBody: Array.Empty<PlanOp>().ToEquatableArray()));
+        }
     }
 
     private static void AddMemberOps(List<PlanOp> ops, MemberToGenerate member, TypeToGenerate type)

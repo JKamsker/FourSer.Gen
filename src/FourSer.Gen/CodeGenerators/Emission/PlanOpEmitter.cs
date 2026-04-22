@@ -90,6 +90,9 @@ internal static class PlanOpEmitter
             case CollectionWriteOp collectionWrite:
                 PlanCollectionEmitter.EmitCollectionWrite(context, collectionWrite);
                 return;
+            case CollectionValidateOp collectionValidate:
+                PlanCollectionEmitter.EmitCollectionValidate(context, collectionValidate);
+                return;
             case CollectionSizeOp collectionSize:
                 PlanCollectionEmitter.EmitCollectionSize(context, collectionSize);
                 return;

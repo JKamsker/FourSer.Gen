@@ -91,7 +91,10 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
 {
     public static int GetPacketSize(PacketWithListOfStructs obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += sizeof(int); // Count size for Structs
         if (obj.Structs is not null)
@@ -148,7 +151,10 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
 
     public static void Serialize(PacketWithListOfStructs obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         if (obj.Structs is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -170,7 +176,10 @@ public partial class PacketWithListOfStructs : ISerializable<PacketWithListOfStr
 
     public static void Serialize(PacketWithListOfStructs obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         if (obj.Structs is null)
         {
             StreamWriter.WriteInt32(stream, (int)(0));

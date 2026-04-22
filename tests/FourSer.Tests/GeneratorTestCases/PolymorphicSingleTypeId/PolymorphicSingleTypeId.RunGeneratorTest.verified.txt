@@ -20,21 +20,35 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
 {
     public static int GetPacketSize(PolymorphicSingleTest obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += 1;
         _ = checked((ushort)((obj.Animals?.Count ?? 0)));
         size += sizeof(ushort); // Count size for Animals
         if (obj.Animals is not null)
         {
+            var hasDiscriminator = false;
+            byte discriminator = default;
             foreach (var item in obj.Animals)
             {
-                size += item switch
+                if (item is null)
                 {
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat cat => global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat.GetPacketSize(cat),
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog dog => global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog.GetPacketSize(dog),
-                    _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Animals: {item.GetType().Name}")
-                };
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+                var itemDiscriminator = item switch { global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat _ => (byte)(1), global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog _ => (byte)(2), _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Animals: {item.GetType().Name}") };
+                if (!hasDiscriminator)
+                {
+                    discriminator = itemDiscriminator;
+                    hasDiscriminator = true;
+                }
+                else if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemDiscriminator, discriminator))
+                {
+                    throw new System.IO.InvalidDataException($"Collection 'Animals' contains mixed item types. Expected discriminator {discriminator} but found {itemDiscriminator}.");
+                }
+                size += item switch { global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat cat => global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat.GetPacketSize(cat), global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog dog => global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog.GetPacketSize(dog), _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Animals: {item.GetType().Name}") };
             }
         }
         return size;
@@ -125,7 +139,41 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
 
     public static void Serialize(PolymorphicSingleTest obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if ((obj.Animals?.Count ?? 0) > 0)
+        {
+            var firstValidatedItem = obj.Animals[0];
+            if (firstValidatedItem is null)
+            {
+                throw new System.NullReferenceException("Item in collection cannot be null.");
+            }
+            var validatedDiscriminator = firstValidatedItem switch
+            {
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat _ => (byte)(1),
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog _ => (byte)(2),
+                _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstValidatedItem.GetType().Name}")
+            };
+            foreach (var item in obj.Animals)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+                var itemDiscriminator = item switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat _ => (byte)(1),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog _ => (byte)(2),
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {item.GetType().Name}")
+                };
+                if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemDiscriminator, validatedDiscriminator))
+                {
+                    throw new System.IO.InvalidDataException($"Collection 'Animals' contains mixed item types. Expected discriminator {validatedDiscriminator} but found {itemDiscriminator}.");
+                }
+            }
+        }
         if ((obj.Animals?.Count ?? 0) == 0)
         {
             SpanWriter.WriteByte(ref data, (byte)(1));
@@ -136,8 +184,8 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             var firstItem = obj.Animals[0];
             animalsDiscriminator = firstItem switch
             {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat => 1,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog => 2,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat _ => (byte)(1),
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog _ => (byte)(2),
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
             SpanWriter.WriteByte(ref data, (byte)(animalsDiscriminator));
@@ -154,13 +202,13 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
                 var firstItem = obj.Animals[0];
                 var discriminator = firstItem switch
                 {
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat => 1,
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog => 2,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat _ => (byte)(1),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog _ => (byte)(2),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
                 };
                 switch (discriminator)
                 {
-                    case 1:
+                    case (byte)(1):
                     {
                         foreach(var item in obj.Animals)
                         {
@@ -168,7 +216,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
                         }
                         break;
                     }
-                    case 2:
+                    case (byte)(2):
                     {
                         foreach(var item in obj.Animals)
                         {
@@ -190,7 +238,41 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
 
     public static void Serialize(PolymorphicSingleTest obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if ((obj.Animals?.Count ?? 0) > 0)
+        {
+            var firstValidatedItem = obj.Animals[0];
+            if (firstValidatedItem is null)
+            {
+                throw new System.NullReferenceException("Item in collection cannot be null.");
+            }
+            var validatedDiscriminator = firstValidatedItem switch
+            {
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat _ => (byte)(1),
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog _ => (byte)(2),
+                _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstValidatedItem.GetType().Name}")
+            };
+            foreach (var item in obj.Animals)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+                var itemDiscriminator = item switch
+                {
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat _ => (byte)(1),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog _ => (byte)(2),
+                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {item.GetType().Name}")
+                };
+                if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemDiscriminator, validatedDiscriminator))
+                {
+                    throw new System.IO.InvalidDataException($"Collection 'Animals' contains mixed item types. Expected discriminator {validatedDiscriminator} but found {itemDiscriminator}.");
+                }
+            }
+        }
         if ((obj.Animals?.Count ?? 0) == 0)
         {
             StreamWriter.WriteByte(stream, (byte)(1));
@@ -201,8 +283,8 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
             var firstItem = obj.Animals[0];
             animalsDiscriminator = firstItem switch
             {
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat => 1,
-                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog => 2,
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat _ => (byte)(1),
+                global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog _ => (byte)(2),
                 _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
             };
             StreamWriter.WriteByte(stream, (byte)(animalsDiscriminator));
@@ -219,13 +301,13 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
                 var firstItem = obj.Animals[0];
                 var discriminator = firstItem switch
                 {
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat => 1,
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog => 2,
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Cat _ => (byte)(1),
+                    global::FourSer.Tests.GeneratorTestCases.PolymorphicSingleTypeId.Dog _ => (byte)(2),
                     _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstItem.GetType().Name}")
                 };
                 switch (discriminator)
                 {
-                    case 1:
+                    case (byte)(1):
                     {
                         foreach(var item in obj.Animals)
                         {
@@ -233,7 +315,7 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
                         }
                         break;
                     }
-                    case 2:
+                    case (byte)(2):
                     {
                         foreach(var item in obj.Animals)
                         {
@@ -272,7 +354,10 @@ public partial class Cat : ISerializable<Cat>
 {
     public static int GetPacketSize(Cat obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += 4;
         size += StringEx.MeasureSize(obj.Name);
@@ -316,7 +401,10 @@ public partial class Cat : ISerializable<Cat>
 
     public static void Serialize(Cat obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         SpanWriter.WriteString(ref data, obj.Name);
     }
@@ -328,7 +416,10 @@ public partial class Cat : ISerializable<Cat>
 
     public static void Serialize(Cat obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         if (string.IsNullOrEmpty(obj.Name))
         {
@@ -387,7 +478,10 @@ public partial class Dog : ISerializable<Dog>
 {
     public static int GetPacketSize(Dog obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += 4;
         size += StringEx.MeasureSize(obj.Breed);
@@ -431,7 +525,10 @@ public partial class Dog : ISerializable<Dog>
 
     public static void Serialize(Dog obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         SpanWriter.WriteString(ref data, obj.Breed);
     }
@@ -443,7 +540,10 @@ public partial class Dog : ISerializable<Dog>
 
     public static void Serialize(Dog obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         if (string.IsNullOrEmpty(obj.Breed))
         {
@@ -502,7 +602,10 @@ public partial class Animal : ISerializable<Animal>
 {
     public static int GetPacketSize(Animal obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += 4;
         return size;
@@ -540,7 +643,10 @@ public partial class Animal : ISerializable<Animal>
 
     public static void Serialize(Animal obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
     }
 
@@ -551,7 +657,10 @@ public partial class Animal : ISerializable<Animal>
 
     public static void Serialize(Animal obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
     }
 }

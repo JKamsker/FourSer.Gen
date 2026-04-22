@@ -20,13 +20,20 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
 {
     public static int GetPacketSize(ConcreteInheritanceTest obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += sizeof(int); // Count size for Dogs
         if (obj.Dogs is not null)
         {
             foreach(var item in obj.Dogs)
             {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
                 size += global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.GetPacketSize(item);
             }
         }
@@ -77,7 +84,20 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
 
     public static void Serialize(ConcreteInheritanceTest obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.Dogs is not null)
+        {
+            foreach (var item in obj.Dogs)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
+            }
+        }
         if (obj.Dogs is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -103,7 +123,20 @@ public partial class ConcreteInheritanceTest : ISerializable<ConcreteInheritance
 
     public static void Serialize(ConcreteInheritanceTest obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.Dogs is not null)
+        {
+            foreach (var item in obj.Dogs)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
+            }
+        }
         if (obj.Dogs is null)
         {
             StreamWriter.WriteInt32(stream, (int)(0));
@@ -146,7 +179,10 @@ public partial class Dog : ISerializable<Dog>
 {
     public static int GetPacketSize(Dog obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += StringEx.MeasureSize(obj.Name);
         size += 4;
@@ -196,7 +232,10 @@ public partial class Dog : ISerializable<Dog>
 
     public static void Serialize(Dog obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         SpanWriter.WriteString(ref data, obj.Name);
         SpanWriter.WriteInt32(ref data, (int)(obj.Age));
         SpanWriter.WriteString(ref data, obj.Breed);
@@ -209,7 +248,10 @@ public partial class Dog : ISerializable<Dog>
 
     public static void Serialize(Dog obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         if (string.IsNullOrEmpty(obj.Name))
         {
             stream.WriteInt32(0);
@@ -299,7 +341,10 @@ public partial class Pet : ISerializable<Pet>
 {
     public static int GetPacketSize(Pet obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += StringEx.MeasureSize(obj.Name);
         size += 4;
@@ -343,7 +388,10 @@ public partial class Pet : ISerializable<Pet>
 
     public static void Serialize(Pet obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         SpanWriter.WriteString(ref data, obj.Name);
         SpanWriter.WriteInt32(ref data, (int)(obj.Age));
     }
@@ -355,7 +403,10 @@ public partial class Pet : ISerializable<Pet>
 
     public static void Serialize(Pet obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         if (string.IsNullOrEmpty(obj.Name))
         {
             stream.WriteInt32(0);

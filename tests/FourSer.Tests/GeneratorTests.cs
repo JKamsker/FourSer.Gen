@@ -34,6 +34,16 @@ public class GeneratorTests
         }
     }
 
+    [Fact]
+    public void GeneratorFixtureDiscovery_ShouldIncludeRecordTypes()
+    {
+        var discoveredFixtures = GetTestCases()
+            .Select(testCase => Assert.IsType<string>(testCase[0]))
+            .ToArray();
+
+        Assert.Contains("RecordTypes", discoveredFixtures);
+    }
+
     [Theory]
     [MemberData(nameof(GetTestCases))]
     public Task RunGeneratorTest(string testCaseName)
@@ -256,20 +266,13 @@ public class GeneratorTests
         """;
 
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "DefaultedDiscriminatorPacket");
-        const string emptyCollectionCheck = "if ((obj.Animals?.Count ?? 0) == 0)";
-        var spanBranchStart = generatedCode.IndexOf(emptyCollectionCheck, StringComparison.Ordinal);
-        var streamBranchStart = generatedCode.IndexOf(emptyCollectionCheck, spanBranchStart + emptyCollectionCheck.Length, StringComparison.Ordinal);
 
-        Assert.True(spanBranchStart >= 0, "Expected to find the span empty-collection branch.");
-        Assert.True(streamBranchStart >= 0, "Expected to find the stream empty-collection branch.");
-
-        var spanBranch = generatedCode.Substring(spanBranchStart, streamBranchStart - spanBranchStart);
-        var streamBranch = generatedCode.Substring(streamBranchStart);
-
-        Assert.Contains("SpanWriter.WriteByte(ref data, (byte)(2));", spanBranch);
-        Assert.DoesNotContain("obj.AnimalType", spanBranch);
-        Assert.Contains("StreamWriter.WriteByte(stream, (byte)(2));", streamBranch);
-        Assert.DoesNotContain("obj.AnimalType", streamBranch);
+        Assert.Contains("var animalsValidatedItems = obj.Animals is null ? null : global::System.Linq.Enumerable.ToList(obj.Animals);", generatedCode);
+        Assert.Contains("if ((animalsValidatedItems?.Count ?? 0) == 0)", generatedCode);
+        Assert.Contains("SpanWriter.WriteByte(ref data, (byte)(2));", generatedCode);
+        Assert.DoesNotContain("SpanWriter.WriteByte(ref data, (byte)(obj.AnimalType));", generatedCode);
+        Assert.Contains("StreamWriter.WriteByte(stream, (byte)(2));", generatedCode);
+        Assert.DoesNotContain("StreamWriter.WriteByte(stream, (byte)(obj.AnimalType));", generatedCode);
     }
 
     [Fact]
@@ -449,6 +452,18 @@ public class GeneratorTests
         Assert.DoesNotContain("var data = new System.Collections.Generic.List<byte>(dataCount);", generatedCode);
         Assert.DoesNotContain("data.Add(SpanReader.ReadByte(ref buffer));", generatedCode);
         Assert.DoesNotContain("data.Add(StreamReader.ReadByte(stream));", generatedCode);
+    }
+
+    [Fact]
+    public void MemoryOwnerDeserialization_ShouldDisposeRentedOwnerOnFailure()
+    {
+        var generatedCode = GenerateSerializerSource(ReadSource("MemoryOwner"), "Parent");
+
+        Assert.Contains("var dataOwner = MemoryPool<byte>.Shared.Rent", generatedCode);
+        Assert.Contains("catch", generatedCode);
+        Assert.Contains("dataOwner.Dispose();", generatedCode);
+        Assert.Contains("throw;", generatedCode);
+        Assert.Contains("data = dataOwner;", generatedCode);
     }
 
     [Fact]

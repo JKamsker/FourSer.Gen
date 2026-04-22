@@ -103,6 +103,29 @@ public class CollectionGenerationRegressionTests
     }
 
     [Fact]
+    public void CountSizeReferenceEnumerables_ShouldOverwriteStaleSourceCount()
+    {
+        var packet = new CountSizeReferenceEnumerablePacket
+        {
+            Count = 99,
+            Values = Enumerable.Range(1, 3).ToArray()
+        };
+
+        var buffer = new byte[CountSizeReferenceEnumerablePacket.GetPacketSize(packet)];
+        CountSizeReferenceEnumerablePacket.Serialize(packet, buffer);
+
+        Assert.Equal((byte)3, buffer[0]);
+
+        var roundTripped = CountSizeReferenceEnumerablePacket.Deserialize(buffer);
+        Assert.Equal((byte)3, roundTripped.Count);
+        Assert.Equal([1, 2, 3], roundTripped.Values.ToArray());
+
+        using var stream = new MemoryStream();
+        CountSizeReferenceEnumerablePacket.Serialize(packet, stream);
+        Assert.Equal((byte)3, stream.ToArray()[0]);
+    }
+
+    [Fact]
     public void PolymorphicImmutableCollections_ShouldThrowForUnsupportedTypes()
     {
         var packet = new ImmutablePolymorphicPacket

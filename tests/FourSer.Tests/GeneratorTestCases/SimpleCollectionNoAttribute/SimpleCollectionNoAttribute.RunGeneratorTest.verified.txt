@@ -20,7 +20,10 @@ public partial class MyPacket : ISerializable<MyPacket>
 {
     public static int GetPacketSize(MyPacket obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += sizeof(int); // Count size for Data
         size += (obj.Data?.Count ?? 0) * sizeof(byte);
@@ -67,7 +70,10 @@ public partial class MyPacket : ISerializable<MyPacket>
 
     public static void Serialize(MyPacket obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         if (obj.Data is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -86,7 +92,10 @@ public partial class MyPacket : ISerializable<MyPacket>
 
     public static void Serialize(MyPacket obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         if (obj.Data is null)
         {
             StreamWriter.WriteInt32(stream, (int)(0));

@@ -43,36 +43,6 @@ internal static partial class PacketSizeGenerator
             return;
         }
 
-        if (member.CustomSerializer is { } customSerializer)
-        {
-            var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
-            sb.WriteLineFormat("if ({0} is not null)", itemsVar);
-            using var _ = sb.BeginBlock();
-            sb.WriteLineFormat("foreach (var item in {0}) {{ size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.{1}.GetPacketSize(item); }}", itemsVar, serializerField);
-            return;
-        }
-
-        if (info.HasSerializer)
-        {
-            sb.WriteLineFormat("if ({0} is not null)", itemsVar);
-            using var _ = sb.BeginBlock();
-            sb.WriteLineFormat("foreach (var item in {0})", itemsVar);
-            using var __ = sb.BeginBlock();
-            sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
-            return;
-        }
-
-        if (info.IsUnmanaged)
-        {
-            sb.WriteLineFormat("size += ({0}?.Length ?? 0) * sizeof({1});", itemsVar, info.TypeName);
-            return;
-        }
-
-        if (info.IsString)
-        {
-            sb.WriteLineFormat("if ({0} is not null)", itemsVar);
-            using var _ = sb.BeginBlock();
-            sb.WriteLineFormat("foreach (var item in {0}) {{ size += StringEx.MeasureSize(item); }}", itemsVar);
-        }
+        GenerateStandardCollectionSizeCalculation(sb, member, info, itemsVar);
     }
 }

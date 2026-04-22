@@ -20,7 +20,10 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
 {
     public static int GetPacketSize(PolymorphicIndividualTest obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         _ = checked((byte)((obj.Animals?.Count ?? 0)));
         size += sizeof(byte); // Count size for Animals
@@ -28,13 +31,12 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         {
             foreach (var item in obj.Animals)
             {
-                size += sizeof(byte); // Size for polymorphic type id
-                size += item switch
+                if (item is null)
                 {
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat cat => global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat.GetPacketSize(cat),
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog dog => global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog.GetPacketSize(dog),
-                    _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Animals: {item.GetType().Name}")
-                };
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+                size += sizeof(byte); // Size for polymorphic type id
+                size += item switch { global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat cat => global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat.GetPacketSize(cat), global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog dog => global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog.GetPacketSize(dog), _ => throw new System.IO.InvalidDataException($"Unknown item type in collection Animals: {item.GetType().Name}") };
             }
         }
         return size;
@@ -116,7 +118,20 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
 
     public static void Serialize(PolymorphicIndividualTest obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.Animals is not null)
+        {
+            foreach (var item in obj.Animals)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+            }
+        }
         if (obj.Animals is null)
         {
             SpanWriter.WriteByte(ref data, (byte)(0));
@@ -156,7 +171,20 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
 
     public static void Serialize(PolymorphicIndividualTest obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.Animals is not null)
+        {
+            foreach (var item in obj.Animals)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Item in collection cannot be null.");
+                }
+            }
+        }
         if (obj.Animals is null)
         {
             StreamWriter.WriteByte(stream, (byte)(0));
@@ -213,7 +241,10 @@ public partial class Cat : ISerializable<Cat>
 {
     public static int GetPacketSize(Cat obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += 4;
         size += StringEx.MeasureSize(obj.Name);
@@ -257,7 +288,10 @@ public partial class Cat : ISerializable<Cat>
 
     public static void Serialize(Cat obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         SpanWriter.WriteString(ref data, obj.Name);
     }
@@ -269,7 +303,10 @@ public partial class Cat : ISerializable<Cat>
 
     public static void Serialize(Cat obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         if (string.IsNullOrEmpty(obj.Name))
         {
@@ -328,7 +365,10 @@ public partial class Dog : ISerializable<Dog>
 {
     public static int GetPacketSize(Dog obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += 4;
         size += StringEx.MeasureSize(obj.Breed);
@@ -372,7 +412,10 @@ public partial class Dog : ISerializable<Dog>
 
     public static void Serialize(Dog obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         SpanWriter.WriteString(ref data, obj.Breed);
     }
@@ -384,7 +427,10 @@ public partial class Dog : ISerializable<Dog>
 
     public static void Serialize(Dog obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         if (string.IsNullOrEmpty(obj.Breed))
         {
@@ -443,7 +489,10 @@ public partial class Animal : ISerializable<Animal>
 {
     public static int GetPacketSize(Animal obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += 4;
         return size;
@@ -481,7 +530,10 @@ public partial class Animal : ISerializable<Animal>
 
     public static void Serialize(Animal obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
     }
 
@@ -492,7 +544,10 @@ public partial class Animal : ISerializable<Animal>
 
     public static void Serialize(Animal obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
     }
 }

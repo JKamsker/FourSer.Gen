@@ -20,13 +20,20 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
 {
     public static int GetPacketSize(SimpleConcreteCollectionTest obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += sizeof(int); // Count size for Cats
         if (obj.Cats is not null)
         {
             foreach(var item in obj.Cats)
             {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
                 size += global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.GetPacketSize(item);
             }
         }
@@ -77,7 +84,20 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
 
     public static void Serialize(SimpleConcreteCollectionTest obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.Cats is not null)
+        {
+            foreach (var item in obj.Cats)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
+            }
+        }
         if (obj.Cats is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -103,7 +123,20 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
 
     public static void Serialize(SimpleConcreteCollectionTest obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.Cats is not null)
+        {
+            foreach (var item in obj.Cats)
+            {
+                if (item is null)
+                {
+                    throw new System.NullReferenceException("Collection item cannot be null.");
+                }
+            }
+        }
         if (obj.Cats is null)
         {
             StreamWriter.WriteInt32(stream, (int)(0));
@@ -146,7 +179,10 @@ public partial class Cat : ISerializable<Cat>
 {
     public static int GetPacketSize(Cat obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += 4;
         size += StringEx.MeasureSize(obj.Name);
@@ -190,7 +226,10 @@ public partial class Cat : ISerializable<Cat>
 
     public static void Serialize(Cat obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         SpanWriter.WriteString(ref data, obj.Name);
     }
@@ -202,7 +241,10 @@ public partial class Cat : ISerializable<Cat>
 
     public static void Serialize(Cat obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         if (string.IsNullOrEmpty(obj.Name))
         {

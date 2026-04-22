@@ -22,7 +22,7 @@ internal static class PlannedCollectionWriteEmitter
             op.TargetExpression,
             op.HelperName,
             op.TargetKind == TargetKind.Span);
-        EmitCollectionWrite(context.Builder, member, op.CollectionPlan, writerContext);
+        EmitCollectionWrite(context.Builder, member, op.CollectionPlan, writerContext, op.SourceExpression);
         return true;
     }
 
@@ -45,9 +45,10 @@ internal static class PlannedCollectionWriteEmitter
         IndentedStringBuilder builder,
         MemberToGenerate member,
         CollectionPlan plan,
-        SerializationWriterEmitter.WriterCtx writerContext)
+        SerializationWriterEmitter.WriterCtx writerContext,
+        string sourceExpression)
     {
-        var accessExpression = $"obj.{member.Name}";
+        var accessExpression = sourceExpression;
         var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, accessExpression);
         if (plan.CollectionInfo.CountSize >= 0)
         {

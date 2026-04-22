@@ -89,6 +89,16 @@ public static class PolymorphicUtilities
         return key.ToString();
     }
 
+    public static string FormatOptionTypePattern(PolymorphicOption option)
+    {
+        return $"{TypeHelper.GetGlobalTypeName(option.Type)} _";
+    }
+
+    public static string FormatTypedTypeIdValue(object key, PolymorphicInfo info, string targetTypeName)
+    {
+        return $"({targetTypeName})({FormatTypeIdKey(key, info)})";
+    }
+
     public static string GenerateTypeIdSizeExpression(PolymorphicInfo info)
     {
         var underlyingType = info.EnumUnderlyingType ?? info.TypeIdType;

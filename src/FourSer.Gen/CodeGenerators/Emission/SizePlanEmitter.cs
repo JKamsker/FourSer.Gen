@@ -13,7 +13,11 @@ internal static class SizePlanEmitter
         {
             if (!type.IsValueType)
             {
-                sb.WriteLine("if (obj is null) return 0;");
+                sb.WriteLine("if (obj is null)");
+                using (sb.BeginBlock())
+                {
+                    sb.WriteLine("throw new System.ArgumentNullException(nameof(obj));");
+                }
             }
 
             sb.WriteLine("var size = 0;");

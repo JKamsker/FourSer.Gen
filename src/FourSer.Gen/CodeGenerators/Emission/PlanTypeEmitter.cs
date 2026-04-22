@@ -182,10 +182,11 @@ internal static class PlanTypeEmitter
         context.Builder.WriteLine($"{targetLocalName} = firstItem switch");
         context.Builder.WriteLine("{");
         context.Builder.Indent();
+        var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
         foreach (var option in info.Options)
         {
-            var key = PolymorphicUtilities.FormatTypeIdKey(option.Key, info);
-            context.Builder.WriteLine($"{TypeHelper.GetGlobalTypeName(option.Type)} => {key},");
+            var key = PolymorphicUtilities.FormatTypedTypeIdValue(option.Key, info, typeIdType);
+            context.Builder.WriteLine($"{PolymorphicUtilities.FormatOptionTypePattern(option)} => {key},");
         }
 
         context.Builder.WriteLine("_ => throw new System.IO.InvalidDataException($\"Unknown item type: {firstItem.GetType().Name}\")");

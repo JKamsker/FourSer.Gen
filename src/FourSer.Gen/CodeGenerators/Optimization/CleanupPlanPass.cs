@@ -78,6 +78,7 @@ internal sealed class CleanupPlanPass : IPlanPass
                         BatchWriteOp batchWrite => batchWrite with { Comment = null },
                         CollectionReadOp collectionRead => collectionRead with { Comment = null },
                         CollectionWriteOp collectionWrite => collectionWrite with { Comment = null },
+                        CollectionValidateOp collectionValidate => collectionValidate with { Comment = null },
                         PolymorphicSwitchOp polymorphicSwitch => polymorphicSwitch with { Comment = null },
                         _ => op,
                     }

@@ -20,7 +20,10 @@ public partial class PacketWithDefaultSerializer : ISerializable<PacketWithDefau
 {
     public static int GetPacketSize(PacketWithDefaultSerializer obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += 4;
         size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.GetPacketSize(obj.Name);
@@ -70,7 +73,10 @@ public partial class PacketWithDefaultSerializer : ISerializable<PacketWithDefau
 
     public static void Serialize(PacketWithDefaultSerializer obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         SpanWriter.WriteInt32(ref data, (int)(obj.Id));
         var bytesWritten_Name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Serialize(obj.Name, data);
         data = data.Slice(bytesWritten_Name);
@@ -85,7 +91,10 @@ public partial class PacketWithDefaultSerializer : ISerializable<PacketWithDefau
 
     public static void Serialize(PacketWithDefaultSerializer obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         StreamWriter.WriteInt32(stream, (int)(obj.Id));
         FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Serialize(obj.Name, stream);
         FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Serialize(obj.Description, stream);

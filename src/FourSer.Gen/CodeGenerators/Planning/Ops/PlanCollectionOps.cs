@@ -67,6 +67,12 @@ internal sealed record CollectionWriteOp(
     TargetKind TargetKind,
     string? Comment = null) : PlanOp(Comment);
 
+internal sealed record CollectionValidateOp(
+    string? Key,
+    CollectionPlan CollectionPlan,
+    string SourceExpression,
+    string? Comment = null) : PlanOp(Comment);
+
 internal sealed record CollectionSizeOp(
     string? Key,
     CollectionPlan CollectionPlan,

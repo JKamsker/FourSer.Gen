@@ -20,7 +20,10 @@ public partial class LoginPacket : ISerializable<LoginPacket>
 {
     public static int GetPacketSize(LoginPacket obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
         size += 5;
         size += StringEx.MeasureSize(obj.Username);
@@ -69,7 +72,10 @@ public partial class LoginPacket : ISerializable<LoginPacket>
 
     public static void Serialize(LoginPacket obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         SpanWriter.WriteByte(ref data, (byte)(obj.Result));
         SpanWriter.WriteUInt32(ref data, (uint)(obj.UserID));
         SpanWriter.WriteString(ref data, obj.Username);
@@ -82,7 +88,10 @@ public partial class LoginPacket : ISerializable<LoginPacket>
 
     public static void Serialize(LoginPacket obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         StreamWriter.WriteByte(stream, (byte)(obj.Result));
         StreamWriter.WriteUInt32(stream, (uint)(obj.UserID));
         if (string.IsNullOrEmpty(obj.Username))

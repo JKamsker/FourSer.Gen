@@ -20,8 +20,15 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
 {
     public static int GetPacketSize(WrapperUserClass obj)
     {
-        if (obj is null) return 0;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
         var size = 0;
+        if (obj.Name is null)
+        {
+            throw new System.NullReferenceException("Member \"obj.Name\" cannot be null.");
+        }
         size += global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.GetPacketSize(obj.Name);
         return size;
     }
@@ -58,7 +65,14 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
 
     public static void Serialize(WrapperUserClass obj, ref System.Span<byte> data)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.Name is null)
+        {
+            throw new System.NullReferenceException("Member \"obj.Name\" cannot be null.");
+        }
         if (obj.Name is null)
         {
             throw new System.NullReferenceException("Member \"obj.Name\" cannot be null.");
@@ -73,7 +87,14 @@ public partial class WrapperUserClass : ISerializable<WrapperUserClass>
 
     public static void Serialize(WrapperUserClass obj, System.IO.Stream stream)
     {
-        if (obj is null) return;
+        if (obj is null)
+        {
+            throw new System.ArgumentNullException(nameof(obj));
+        }
+        if (obj.Name is null)
+        {
+            throw new System.NullReferenceException("Member \"obj.Name\" cannot be null.");
+        }
         if (obj.Name is null)
         {
             throw new System.NullReferenceException("Member \"obj.Name\" cannot be null.");

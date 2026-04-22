@@ -13,7 +13,11 @@ internal static class SpanSerializeEmitter
         {
             if (!type.IsValueType)
             {
-                sb.WriteLine("if (obj is null) return;");
+                sb.WriteLine("if (obj is null)");
+                using (sb.BeginBlock())
+                {
+                    sb.WriteLine("throw new System.ArgumentNullException(nameof(obj));");
+                }
             }
 
             PlanOpEmitter.EmitOps(new PlanEmitterContext(sb, plan), plan.Ops);

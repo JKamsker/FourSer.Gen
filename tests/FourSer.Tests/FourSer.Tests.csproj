@@ -42,7 +42,7 @@
 
     <ItemGroup>
       <Compile Remove="GeneratorTestCases\**\*.cs" />
-      <EmbeddedResource Include="GeneratorTestCases\**\*.cs" />
+      <EmbeddedResource Include="GeneratorTestCases\**\input.cs" />
     </ItemGroup>
 
     <ItemGroup>
