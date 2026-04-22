@@ -30,7 +30,10 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         size += sizeof(int); // Count size for Names
         if (obj.Names is not null)
         {
-            foreach(var item in obj.Names) { size += StringEx.MeasureSize(item); }
+            foreach(var item in obj.Names)
+            {
+                size += StringEx.MeasureSize(item);
+            }
         }
         size += sizeof(int); // Count size for Data
         var dataSizedItems = obj.Data is null ? null : global::System.Linq.Enumerable.ToArray(obj.Data);
@@ -57,15 +60,22 @@ public partial class EnumerationTypesPacket : ISerializable<EnumerationTypesPack
         size += (obj.Characters?.Count ?? 0) * sizeof(ushort);
         size += sizeof(int); // Count size for SortedValues
         size += (obj.SortedValues?.Count ?? 0) * sizeof(long);
-        _ = checked((byte)((obj.SmallSet?.Count ?? 0)));
         size += sizeof(byte); // Count size for SmallSet
         if (obj.SmallSet is not null)
         {
-            foreach(var item in obj.SmallSet) { size += StringEx.MeasureSize(item); }
+            byte smallSetValidatedCount = 0;
+            foreach(var item in obj.SmallSet)
+            {
+                smallSetValidatedCount = checked((byte)(smallSetValidatedCount + 1));
+                size += StringEx.MeasureSize(item);
+            }
         }
-        _ = checked((ushort)((obj.MediumQueue?.Count ?? 0)));
         size += sizeof(ushort); // Count size for MediumQueue
-        size += (obj.MediumQueue?.Count ?? 0) * sizeof(int);
+        if (obj.MediumQueue is not null)
+        {
+            var mediumQueueCount = checked((ushort)(obj.MediumQueue.Count));
+            size += mediumQueueCount * sizeof(int);
+        }
         if (obj.LargeBag is null)
         {
             throw new System.ArgumentNullException(nameof(obj.LargeBag), "Fixed-size collections cannot be null.");

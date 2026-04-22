@@ -44,21 +44,6 @@ internal static class SizePlanBuilder
 
     private static void AddMemberOps(List<PlanOp> ops, MemberToGenerate member, TypeToGenerate type)
     {
-        if (member.IsCountSizeReferenceFor is { } countReferenceIndex)
-        {
-            var referencedMember = type.Members[countReferenceIndex];
-            if (!referencedMember.CollectionTypeInfo?.IsPureEnumerable ?? true)
-            {
-                var countExpression = PlanExpressionFactory.GetCountExpression(referencedMember, $"obj.{referencedMember.Name}", nullable: true);
-                if (GeneratorUtilities.ShouldUseCheckedCountConversion(member.TypeName))
-                {
-                    ops.Add(new AssignOp(
-                        TargetExpression: "_",
-                        ValueExpression: $"checked(({member.TypeName})({countExpression}))"));
-                }
-            }
-        }
-
         var resolvedSerializer = GeneratorUtilities.ResolveSerializer(member, type);
         if (resolvedSerializer is { } serializer)
         {

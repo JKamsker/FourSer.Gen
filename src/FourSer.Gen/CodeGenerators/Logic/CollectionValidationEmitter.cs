@@ -180,14 +180,7 @@ internal static class CollectionValidationEmitter
 
     private static bool RequiresReferenceItemValidation(MemberToGenerate member, CollectionPlan plan)
     {
-        if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
-        {
-            return true;
-        }
-
-        return plan.ElementHasGenerateSerializerAttribute
-            && !plan.ElementIsValueType
-            && !plan.ElementIsStringType;
+        return false;
     }
 
     private static string GetCountExpression(MemberToGenerate member, string sourceExpression, bool nullable)

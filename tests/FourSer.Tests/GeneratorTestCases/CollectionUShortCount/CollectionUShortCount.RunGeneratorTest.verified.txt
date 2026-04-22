@@ -25,12 +25,13 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        _ = checked((ushort)((obj.Cats?.Count ?? 0)));
         size += sizeof(ushort); // Count size for Cats
         if (obj.Cats is not null)
         {
+            ushort catsValidatedCount = 0;
             foreach(var item in obj.Cats)
             {
+                catsValidatedCount = checked((ushort)(catsValidatedCount + 1));
                 if (item is null)
                 {
                     throw new System.NullReferenceException("Collection item cannot be null.");
@@ -89,16 +90,6 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         {
             throw new System.ArgumentNullException(nameof(obj));
         }
-        if (obj.Cats is not null)
-        {
-            foreach (var item in obj.Cats)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
-        }
         if (obj.Cats is null)
         {
             SpanWriter.WriteUInt16(ref data, (ushort)(0));
@@ -127,16 +118,6 @@ public partial class UShortCountTest : ISerializable<UShortCountTest>
         if (obj is null)
         {
             throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Cats is not null)
-        {
-            foreach (var item in obj.Cats)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
         }
         if (obj.Cats is null)
         {

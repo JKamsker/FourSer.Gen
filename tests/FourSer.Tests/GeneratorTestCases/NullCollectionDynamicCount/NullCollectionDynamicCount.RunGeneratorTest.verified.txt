@@ -111,12 +111,13 @@ public partial class MainObject : ISerializable<MainObject>
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        _ = checked((byte)((obj.Items?.Count ?? 0)));
         size += sizeof(byte); // Count size for Items
         if (obj.Items is not null)
         {
+            byte itemsValidatedCount = 0;
             foreach(var item in obj.Items)
             {
+                itemsValidatedCount = checked((byte)(itemsValidatedCount + 1));
                 if (item is null)
                 {
                     throw new System.NullReferenceException("Collection item cannot be null.");
@@ -175,16 +176,6 @@ public partial class MainObject : ISerializable<MainObject>
         {
             throw new System.ArgumentNullException(nameof(obj));
         }
-        if (obj.Items is not null)
-        {
-            foreach (var item in obj.Items)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
-        }
         if (obj.Items is null)
         {
             SpanWriter.WriteByte(ref data, (byte)(0));
@@ -213,16 +204,6 @@ public partial class MainObject : ISerializable<MainObject>
         if (obj is null)
         {
             throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Items is not null)
-        {
-            foreach (var item in obj.Items)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
         }
         if (obj.Items is null)
         {

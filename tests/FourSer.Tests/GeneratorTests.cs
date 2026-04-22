@@ -549,6 +549,69 @@ public class GeneratorTests
     }
 
     [Fact]
+    public void NarrowCountCollectionSizing_ShouldNotEmitNoOpCheckedAssignments()
+    {
+        const string source = """
+        using System.Collections.Generic;
+
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class NarrowCountSizingPacket
+        {
+            [SerializeCollection(CountType = typeof(byte))]
+            public List<Cat> Cats { get; set; } = new();
+        }
+
+        [GenerateSerializer]
+        public partial class Cat
+        {
+            public int Id { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "NarrowCountSizingPacket");
+
+        Assert.DoesNotContain("_ = checked(", generatedCode);
+        Assert.Contains(
+            """
+                    size += sizeof(byte); // Count size for Cats
+                    if (obj.Cats is not null)
+                    {
+                        byte catsValidatedCount = 0;
+            """,
+            generatedCode);
+    }
+
+    [Fact]
+    public void ReferenceTypeListSerialization_ShouldNotPrevalidateWithSeparateEnumeration()
+    {
+        const string source = """
+        using System.Collections.Generic;
+
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class ListPacket
+        {
+            [SerializeCollection(CountType = typeof(byte))]
+            public List<Cat> Cats { get; set; } = new();
+        }
+
+        [GenerateSerializer]
+        public partial class Cat
+        {
+            public int Id { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "ListPacket");
+
+        Assert.DoesNotContain("foreach (var item in obj.Cats)", generatedCode);
+        Assert.Contains("if (obj.Cats[i] is null)", generatedCode);
+    }
+
+    [Fact]
     public void DefaultOptimizationLevel_ShouldFuseStreamStringWrites()
     {
         const string source = """

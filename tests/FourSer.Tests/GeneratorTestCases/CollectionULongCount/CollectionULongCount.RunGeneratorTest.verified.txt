@@ -88,16 +88,6 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
         {
             throw new System.ArgumentNullException(nameof(obj));
         }
-        if (obj.Cats is not null)
-        {
-            foreach (var item in obj.Cats)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
-        }
         if (obj.Cats is null)
         {
             SpanWriter.WriteUInt64(ref data, (ulong)(0));
@@ -126,16 +116,6 @@ public partial class ULongCountTest : ISerializable<ULongCountTest>
         if (obj is null)
         {
             throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Cats is not null)
-        {
-            foreach (var item in obj.Cats)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
         }
         if (obj.Cats is null)
         {

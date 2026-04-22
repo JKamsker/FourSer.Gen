@@ -88,16 +88,6 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
         {
             throw new System.ArgumentNullException(nameof(obj));
         }
-        if (obj.Cats is not null)
-        {
-            foreach (var item in obj.Cats)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
-        }
         if (obj.Cats is null)
         {
             SpanWriter.WriteInt32(ref data, (int)(0));
@@ -126,16 +116,6 @@ public partial class SimpleConcreteCollectionTest : ISerializable<SimpleConcrete
         if (obj is null)
         {
             throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Cats is not null)
-        {
-            foreach (var item in obj.Cats)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
         }
         if (obj.Cats is null)
         {

@@ -25,12 +25,13 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        _ = checked((byte)((obj.Cats?.Count ?? 0)));
         size += sizeof(byte); // Count size for Cats
         if (obj.Cats is not null)
         {
+            byte catsValidatedCount = 0;
             foreach(var item in obj.Cats)
             {
+                catsValidatedCount = checked((byte)(catsValidatedCount + 1));
                 if (item is null)
                 {
                     throw new System.NullReferenceException("Collection item cannot be null.");
@@ -89,16 +90,6 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
         {
             throw new System.ArgumentNullException(nameof(obj));
         }
-        if (obj.Cats is not null)
-        {
-            foreach (var item in obj.Cats)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
-        }
         if (obj.Cats is null)
         {
             SpanWriter.WriteByte(ref data, (byte)(0));
@@ -127,16 +118,6 @@ public partial class IndividualTypeIdsTest : ISerializable<IndividualTypeIdsTest
         if (obj is null)
         {
             throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Cats is not null)
-        {
-            foreach (var item in obj.Cats)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-            }
         }
         if (obj.Cats is null)
         {

@@ -24,18 +24,6 @@ internal static partial class PacketSizeGenerator
 
     private static void GenerateMemberSizeCalculation(IndentedStringBuilder sb, MemberToGenerate member, TypeToGenerate type)
     {
-        if (member.IsCountSizeReferenceFor is { } countRefIndex)
-        {
-            var referencedMember = type.Members[countRefIndex];
-            if (!ShouldDeferCollectionCountValidation(referencedMember))
-            {
-                var countExpression = referencedMember.IsMemoryOwner
-                    ? $"(obj.{referencedMember.Name}?.Memory.Length ?? 0)"
-                    : GeneratorUtilities.GetCountExpressionForAccess(referencedMember, $"obj.{referencedMember.Name}", true);
-                EmitCheckedCountValidation(sb, member.TypeName, countExpression);
-            }
-        }
-
         var resolvedSerializer = GeneratorUtilities.ResolveSerializer(member, type);
         if (resolvedSerializer is { } serializer)
         {
@@ -45,7 +33,7 @@ internal static partial class PacketSizeGenerator
 
         if (member.IsMemoryOwner)
         {
-            GenerateMemoryOwnerSizeCalculation(sb, member);
+            GenerateMemoryOwnerSizeCalculation(sb, member, type);
         }
         else if (member.IsList || member.IsCollection)
         {
@@ -132,21 +120,75 @@ internal static partial class PacketSizeGenerator
         return null;
     }
 
-    private static void EmitCheckedCountValidation(IndentedStringBuilder sb, string countType, string countExpression)
+    private static bool RequiresCheckedCountValidation(string? countValidationType)
     {
-        if (!GeneratorUtilities.ShouldUseCheckedCountConversion(countType))
+        return countValidationType is not null
+            && GeneratorUtilities.ShouldUseCheckedCountConversion(countValidationType);
+    }
+
+    private static string? GetCollectionCountValidationType(MemberToGenerate member, TypeToGenerate type)
+    {
+        if (member.CollectionInfo is not { } collectionInfo || collectionInfo.Unlimited)
+        {
+            return null;
+        }
+
+        if (collectionInfo.CountSizeReferenceIndex is { } countReferenceIndex)
+        {
+            return type.Members[countReferenceIndex].TypeName;
+        }
+
+        return collectionInfo.CountSize is null or < 0
+            ? collectionInfo.CountType ?? TypeHelper.GetDefaultCountType()
+            : null;
+    }
+
+    private static string? DeclareValidatedCountVariable(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        string? countValidationType)
+    {
+        if (!RequiresCheckedCountValidation(countValidationType))
+        {
+            return null;
+        }
+
+        var countVariableName = $"{member.Name.ToCamelCase()}ValidatedCount";
+        sb.WriteLineFormat("{0} {1} = 0;", countValidationType, countVariableName);
+        return countVariableName;
+    }
+
+    private static void EmitValidatedCountIncrement(
+        IndentedStringBuilder sb,
+        string? countVariableName,
+        string? countValidationType)
+    {
+        if (countVariableName is null || countValidationType is null)
         {
             return;
         }
 
-        sb.WriteLineFormat("_ = checked(({0})({1}));", countType, countExpression);
+        sb.WriteLineFormat("{0} = checked(({1})({0} + 1));", countVariableName, countValidationType);
+    }
+
+    private static string DeclareCheckedCountLocal(
+        IndentedStringBuilder sb,
+        MemberToGenerate member,
+        string countType,
+        string countExpression,
+        string suffix = "Count")
+    {
+        var countLocalName = $"{member.Name.ToCamelCase()}{suffix}";
+        sb.WriteLineFormat("var {0} = checked(({1})({2}));", countLocalName, countType, countExpression);
+        return countLocalName;
     }
 
     private static void GenerateStandardCollectionSizeCalculation(
         IndentedStringBuilder sb,
         MemberToGenerate member,
         ElementInfo info,
-        string collectionAccessExpression)
+        string collectionAccessExpression,
+        string? countValidationType = null)
     {
         var enumerationGuard = collectionAccessExpression == $"obj.{member.Name}"
             ? GeneratorUtilities.GetCollectionIterationGuard(member, collectionAccessExpression)
@@ -160,14 +202,18 @@ internal static partial class PacketSizeGenerator
                 var condition = enumerationGuard ?? $"{collectionAccessExpression} is not null";
                 sb.WriteLineFormat("if ({0})", condition);
                 using var _ = sb.BeginBlock();
+                var validatedCountVariableName = DeclareValidatedCountVariable(sb, member, countValidationType);
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var __ = sb.BeginBlock();
+                EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);
                 sb.WriteLineFormat("size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.GetPacketSize(item);", serializerField);
             }
             else
             {
+                var validatedCountVariableName = DeclareValidatedCountVariable(sb, member, countValidationType);
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var _ = sb.BeginBlock();
+                EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);
                 sb.WriteLineFormat("size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.GetPacketSize(item);", serializerField);
             }
             return;
@@ -181,8 +227,10 @@ internal static partial class PacketSizeGenerator
                 var condition = enumerationGuard ?? $"{collectionAccessExpression} is not null";
                 sb.WriteLineFormat("if ({0})", condition);
                 using var _ = sb.BeginBlock();
+                var validatedCountVariableName = DeclareValidatedCountVariable(sb, member, countValidationType);
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var __ = sb.BeginBlock();
+                EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);
                 if (needsItemNullGuard)
                 {
                     EmitCollectionItemNullGuard(sb);
@@ -191,8 +239,10 @@ internal static partial class PacketSizeGenerator
             }
             else
             {
+                var validatedCountVariableName = DeclareValidatedCountVariable(sb, member, countValidationType);
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var _ = sb.BeginBlock();
+                EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);
                 if (needsItemNullGuard)
                 {
                     EmitCollectionItemNullGuard(sb);
@@ -202,6 +252,33 @@ internal static partial class PacketSizeGenerator
         }
         else if (info.IsUnmanaged)
         {
+            if (RequiresCheckedCountValidation(countValidationType))
+            {
+                if (member.CollectionTypeInfo?.CanBeNull == true || enumerationGuard is not null)
+                {
+                    var condition = enumerationGuard ?? $"{collectionAccessExpression} is not null";
+                    sb.WriteLineFormat("if ({0})", condition);
+                    using var _ = sb.BeginBlock();
+                    var validatedCountLocalName = DeclareCheckedCountLocal(
+                        sb,
+                        member,
+                        countValidationType!,
+                        GeneratorUtilities.GetCountExpressionForAccess(member, collectionAccessExpression));
+                    sb.WriteLineFormat("size += {0} * sizeof({1});", validatedCountLocalName, info.TypeName);
+                }
+                else
+                {
+                    var validatedCountLocalName = DeclareCheckedCountLocal(
+                        sb,
+                        member,
+                        countValidationType!,
+                        GeneratorUtilities.GetCountExpressionForAccess(member, collectionAccessExpression));
+                    sb.WriteLineFormat("size += {0} * sizeof({1});", validatedCountLocalName, info.TypeName);
+                }
+
+                return;
+            }
+
             var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, collectionAccessExpression, true);
             sb.WriteLineFormat("size += {0} * sizeof({1});", countExpression, info.TypeName);
         }
@@ -212,11 +289,19 @@ internal static partial class PacketSizeGenerator
                 var condition = enumerationGuard ?? $"{collectionAccessExpression} is not null";
                 sb.WriteLineFormat("if ({0})", condition);
                 using var _ = sb.BeginBlock();
-                sb.WriteLineFormat("foreach(var item in {0}) {{ size += StringEx.MeasureSize(item); }}", collectionAccessExpression);
+                var validatedCountVariableName = DeclareValidatedCountVariable(sb, member, countValidationType);
+                sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
+                using var __ = sb.BeginBlock();
+                EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);
+                sb.WriteLine("size += StringEx.MeasureSize(item);");
             }
             else
             {
-                sb.WriteLineFormat("foreach(var item in {0}) {{ size += StringEx.MeasureSize(item); }}", collectionAccessExpression);
+                var validatedCountVariableName = DeclareValidatedCountVariable(sb, member, countValidationType);
+                sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
+                using var _ = sb.BeginBlock();
+                EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);
+                sb.WriteLine("size += StringEx.MeasureSize(item);");
             }
         }
     }
@@ -234,6 +319,7 @@ internal static partial class PacketSizeGenerator
         }
 
         var deferredCountValidationType = GetDeferredCountValidationType(member, type);
+        var countValidationType = GetCollectionCountValidationType(member, type);
 
         if (
             !collectionInfo.Unlimited
@@ -242,11 +328,6 @@ internal static partial class PacketSizeGenerator
         )
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
-            if (deferredCountValidationType is null)
-            {
-                var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, $"obj.{member.Name}", true);
-                EmitCheckedCountValidation(sb, countType, countExpression);
-            }
             var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
             sb.WriteLineFormat("size += {0}; // Count size for {1}", countSizeExpression, member.Name);
         }
@@ -259,24 +340,27 @@ internal static partial class PacketSizeGenerator
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
-            AddPolymorphicSerialization(sb, member, collectionInfo);
+            AddPolymorphicSerialization(sb, member, collectionInfo, countValidationType: countValidationType);
             return;
         }
 
         if (GetElementInfo(member) is { } info)
         {
-            GenerateStandardCollectionSizeCalculation(sb, member, info, $"obj.{member.Name}");
+            GenerateStandardCollectionSizeCalculation(sb, member, info, $"obj.{member.Name}", countValidationType);
         }
     }
 
     internal static void GenerateMemoryOwnerSizeCalculation(
         IndentedStringBuilder sb,
-        MemberToGenerate member)
+        MemberToGenerate member,
+        TypeToGenerate type)
     {
         if (member.CollectionInfo is not { } collectionInfo)
         {
             return;
         }
+
+        var countValidationType = GetCollectionCountValidationType(member, type);
 
         if (collectionInfo.CountSize is > 0)
         {
@@ -305,8 +389,6 @@ internal static partial class PacketSizeGenerator
         )
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
-            var countExpression = $"(obj.{member.Name}?.Memory.Length ?? 0)";
-            EmitCheckedCountValidation(sb, countType, countExpression);
             var countSizeExpression = TypeHelper.GetSizeOfExpression(countType);
             sb.WriteLineFormat("size += {0}; // Count size for {1}", countSizeExpression, member.Name);
         }
@@ -317,7 +399,13 @@ internal static partial class PacketSizeGenerator
             sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
             using var _ = sb.BeginBlock();
             sb.WriteLineFormat("var span_{0} = obj.{0}.Memory.Span;", member.Name);
-            sb.WriteLineFormat("for (int i = 0; i < span_{0}.Length; i++)", member.Name);
+            var loopCountExpression = $"span_{member.Name}.Length";
+            if (RequiresCheckedCountValidation(countValidationType))
+            {
+                loopCountExpression = DeclareCheckedCountLocal(sb, member, countValidationType!, loopCountExpression);
+            }
+
+            sb.WriteLineFormat("for (int i = 0; i < {0}; i++)", loopCountExpression);
             using var __ = sb.BeginBlock();
             sb.WriteLineFormat(
                 "size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.{0}.GetPacketSize(span_{1}[i]);",
@@ -337,21 +425,47 @@ internal static partial class PacketSizeGenerator
             sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
             using var _ = sb.BeginBlock();
             sb.WriteLineFormat("var span_{0} = obj.{0}.Memory.Span;", member.Name);
-            sb.WriteLineFormat("for (int i = 0; i < span_{0}.Length; i++)", member.Name);
+            var loopCountExpression = $"span_{member.Name}.Length";
+            if (RequiresCheckedCountValidation(countValidationType))
+            {
+                loopCountExpression = DeclareCheckedCountLocal(sb, member, countValidationType!, loopCountExpression);
+            }
+
+            sb.WriteLineFormat("for (int i = 0; i < {0}; i++)", loopCountExpression);
             using var __ = sb.BeginBlock();
             sb.WriteLineFormat("size += {0}.GetPacketSize(span_{1}[i]);", TypeHelper.GetGlobalTypeName(info.TypeName), member.Name);
         }
         else if (info.IsUnmanaged)
         {
-            var countExpression = $"(obj.{member.Name}?.Memory.Length ?? 0)";
-            sb.WriteLineFormat("size += {0} * sizeof({1});", countExpression, info.TypeName);
+            if (RequiresCheckedCountValidation(countValidationType))
+            {
+                var countLocalName = DeclareCheckedCountLocal(
+                    sb,
+                    member,
+                    countValidationType!,
+                    $"(obj.{member.Name}?.Memory.Length ?? 0)");
+                sb.WriteLineFormat("size += {0} * sizeof({1});", countLocalName, info.TypeName);
+            }
+            else
+            {
+                var countExpression = $"(obj.{member.Name}?.Memory.Length ?? 0)";
+                sb.WriteLineFormat("size += {0} * sizeof({1});", countExpression, info.TypeName);
+            }
         }
         else if (info.IsString)
         {
             sb.WriteLineFormat("if (obj.{0} is not null)", member.Name);
             using var _ = sb.BeginBlock();
             sb.WriteLineFormat("var span_{0} = obj.{0}.Memory.Span;", member.Name);
-            sb.WriteLineFormat("for (int i = 0; i < span_{0}.Length; i++) {{ size += StringEx.MeasureSize(span_{0}[i]); }}", member.Name);
+            var loopCountExpression = $"span_{member.Name}.Length";
+            if (RequiresCheckedCountValidation(countValidationType))
+            {
+                loopCountExpression = DeclareCheckedCountLocal(sb, member, countValidationType!, loopCountExpression);
+            }
+
+            sb.WriteLineFormat("for (int i = 0; i < {0}; i++)", loopCountExpression);
+            using var __ = sb.BeginBlock();
+            sb.WriteLineFormat("size += StringEx.MeasureSize(span_{0}[i]);", member.Name);
         }
     }
 
@@ -391,7 +505,8 @@ internal static partial class PacketSizeGenerator
         IndentedStringBuilder sb,
         MemberToGenerate member,
         CollectionInfo collectionInfo,
-        string? collectionAccessExpression = null
+        string? collectionAccessExpression = null,
+        string? countValidationType = null
     )
     {
         if (member.PolymorphicInfo is not { } info)
@@ -420,11 +535,11 @@ internal static partial class PacketSizeGenerator
                 : $"{collectionAccessExpression} is not null";
             sb.WriteLineFormat("if ({0})", condition);
             using var _ = sb.BeginBlock();
-            EmitPolymorphicCollectionSizeBody(sb, member, collectionInfo, info, collectionAccessExpression);
+            EmitPolymorphicCollectionSizeBody(sb, member, collectionInfo, info, collectionAccessExpression, countValidationType);
             return;
         }
 
-        EmitPolymorphicCollectionSizeBody(sb, member, collectionInfo, info, collectionAccessExpression);
+        EmitPolymorphicCollectionSizeBody(sb, member, collectionInfo, info, collectionAccessExpression, countValidationType);
     }
 
     private static void EmitPolymorphicCollectionSizeBody(
@@ -432,9 +547,11 @@ internal static partial class PacketSizeGenerator
         MemberToGenerate member,
         CollectionInfo collectionInfo,
         PolymorphicInfo info,
-        string collectionAccessExpression)
+        string collectionAccessExpression,
+        string? countValidationType)
     {
         var discriminatorType = info.EnumUnderlyingType ?? info.TypeIdType;
+        var validatedCountVariableName = DeclareValidatedCountVariable(sb, member, countValidationType);
 
         if (collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId)
         {
@@ -444,6 +561,7 @@ internal static partial class PacketSizeGenerator
 
         sb.WriteLineFormat("foreach (var item in {0})", collectionAccessExpression);
         using var _ = sb.BeginBlock();
+        EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);
         EmitPolymorphicItemNullGuard(sb);
 
         if (collectionInfo.PolymorphicMode == PolymorphicMode.IndividualTypeIds)

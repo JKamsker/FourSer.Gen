@@ -26,14 +26,15 @@ public partial class PolymorphicSingleTest : ISerializable<PolymorphicSingleTest
         }
         var size = 0;
         size += 1;
-        _ = checked((ushort)((obj.Animals?.Count ?? 0)));
         size += sizeof(ushort); // Count size for Animals
         if (obj.Animals is not null)
         {
+            ushort animalsValidatedCount = 0;
             var hasDiscriminator = false;
             byte discriminator = default;
             foreach (var item in obj.Animals)
             {
+                animalsValidatedCount = checked((ushort)(animalsValidatedCount + 1));
                 if (item is null)
                 {
                     throw new System.NullReferenceException("Item in collection cannot be null.");

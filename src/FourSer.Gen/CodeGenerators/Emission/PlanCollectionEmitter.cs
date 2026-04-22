@@ -128,7 +128,7 @@ internal static class PlanCollectionEmitter
         var member = context.GetMember(op.Key ?? op.CollectionPlan.MemberName);
         if (op.CollectionPlan.IsMemoryOwner)
         {
-            PacketSizeGenerator.GenerateMemoryOwnerSizeCalculation(context.Builder, member);
+            PacketSizeGenerator.GenerateMemoryOwnerSizeCalculation(context.Builder, member, context.Plan.Facts.Type);
             return;
         }
 

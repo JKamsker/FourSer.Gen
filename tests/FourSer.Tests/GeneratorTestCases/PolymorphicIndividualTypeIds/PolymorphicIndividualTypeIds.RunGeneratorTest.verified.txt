@@ -25,12 +25,13 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        _ = checked((byte)((obj.Animals?.Count ?? 0)));
         size += sizeof(byte); // Count size for Animals
         if (obj.Animals is not null)
         {
+            byte animalsValidatedCount = 0;
             foreach (var item in obj.Animals)
             {
+                animalsValidatedCount = checked((byte)(animalsValidatedCount + 1));
                 if (item is null)
                 {
                     throw new System.NullReferenceException("Item in collection cannot be null.");
@@ -122,16 +123,6 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         {
             throw new System.ArgumentNullException(nameof(obj));
         }
-        if (obj.Animals is not null)
-        {
-            foreach (var item in obj.Animals)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Item in collection cannot be null.");
-                }
-            }
-        }
         if (obj.Animals is null)
         {
             SpanWriter.WriteByte(ref data, (byte)(0));
@@ -174,16 +165,6 @@ public partial class PolymorphicIndividualTest : ISerializable<PolymorphicIndivi
         if (obj is null)
         {
             throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Animals is not null)
-        {
-            foreach (var item in obj.Animals)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Item in collection cannot be null.");
-                }
-            }
         }
         if (obj.Animals is null)
         {

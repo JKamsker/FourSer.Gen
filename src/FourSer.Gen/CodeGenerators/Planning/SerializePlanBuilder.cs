@@ -459,14 +459,8 @@ internal static class SerializePlanBuilder
             return true;
         }
 
-        if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
-        {
-            return true;
-        }
-
-        return collectionPlan.ElementHasGenerateSerializerAttribute
-            && !collectionPlan.ElementIsValueType
-            && !collectionPlan.ElementIsStringType;
+        return member.CollectionInfo?.PolymorphicMode == FourSer.Gen.PolymorphicMode.SingleTypeId
+            && member.PolymorphicInfo is not null;
     }
 
     private static bool ShouldMaterializeCollectionSource(MemberToGenerate member)

@@ -30,11 +30,10 @@ internal static partial class PacketSizeGenerator
     {
         var itemsVar = $"{member.Name.ToCamelCase()}SizedItems";
         sb.WriteLineFormat("var {0} = obj.{1} is null ? null : global::System.Linq.Enumerable.ToArray(obj.{1});", itemsVar, member.Name);
-        EmitCheckedCountValidation(sb, validationType, $"{itemsVar}?.Length ?? 0");
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
-            AddPolymorphicSerialization(sb, member, member.CollectionInfo!.Value, itemsVar);
+            AddPolymorphicSerialization(sb, member, member.CollectionInfo!.Value, itemsVar, validationType);
             return;
         }
 
@@ -43,6 +42,6 @@ internal static partial class PacketSizeGenerator
             return;
         }
 
-        GenerateStandardCollectionSizeCalculation(sb, member, info, itemsVar);
+        GenerateStandardCollectionSizeCalculation(sb, member, info, itemsVar, validationType);
     }
 }
