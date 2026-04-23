@@ -141,23 +141,15 @@ public partial class Entity : global::FourSer.Contracts.ISerializable<Entity>
         return size;
     }
 
-    private Entity(int id, string name)
-    {
-        this.Id = id;
-        this.Name = name;
-    }
-
-    public Entity()
-    {
-    }
-
     public static Entity Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         int id;
         string name;
         id = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         name = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
-        var obj = new Entity(id, name);
+        var obj = new Entity();
+        obj.Id = id;
+        obj.Name = name;
         return obj;
     }
 
@@ -172,7 +164,9 @@ public partial class Entity : global::FourSer.Contracts.ISerializable<Entity>
         string name;
         id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         name = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new Entity(id, name);
+        var obj = new Entity();
+        obj.Id = id;
+        obj.Name = name;
         return obj;
     }
 

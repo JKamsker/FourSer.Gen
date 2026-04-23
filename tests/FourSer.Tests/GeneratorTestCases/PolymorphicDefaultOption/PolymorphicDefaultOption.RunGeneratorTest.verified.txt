@@ -66,17 +66,6 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
         return size;
     }
 
-    private Inventory(byte itemType, System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem> items, System.Collections.Generic.IReadOnlyCollection<FourSer.Tests.GeneratorTestCases.PolymorphicDefaultOption.IItem> readOnlyItems)
-    {
-        this.ItemType = itemType;
-        this.Items = items;
-        this.ReadOnlyItems = readOnlyItems;
-    }
-
-    public Inventory()
-    {
-    }
-
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         byte itemType;
@@ -133,7 +122,10 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for ReadOnlyItems: {itemType}");
         }
-        var obj = new Inventory(itemType, items, readOnlyItems);
+        var obj = new Inventory();
+        obj.ItemType = itemType;
+        obj.Items = items;
+        obj.ReadOnlyItems = readOnlyItems;
         return obj;
     }
 
@@ -198,7 +190,10 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for ReadOnlyItems: {itemType}");
         }
-        var obj = new Inventory(itemType, items, readOnlyItems);
+        var obj = new Inventory();
+        obj.ItemType = itemType;
+        obj.Items = items;
+        obj.ReadOnlyItems = readOnlyItems;
         return obj;
     }
 

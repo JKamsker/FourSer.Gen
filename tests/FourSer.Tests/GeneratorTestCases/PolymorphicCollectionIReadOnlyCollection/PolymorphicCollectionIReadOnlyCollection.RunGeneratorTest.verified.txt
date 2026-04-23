@@ -41,15 +41,6 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
         return size;
     }
 
-    private Inventory(System.Collections.Generic.IReadOnlyCollection<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.IItem> items)
-    {
-        this.Items = items;
-    }
-
-    public Inventory()
-    {
-    }
-
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         var itemsCount = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
@@ -87,7 +78,8 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for Items: {itemsTypeId}");
         }
-        var obj = new Inventory(items);
+        var obj = new Inventory();
+        obj.Items = items;
         return obj;
     }
 
@@ -133,7 +125,8 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for Items: {itemsTypeId}");
         }
-        var obj = new Inventory(items);
+        var obj = new Inventory();
+        obj.Items = items;
         return obj;
     }
 

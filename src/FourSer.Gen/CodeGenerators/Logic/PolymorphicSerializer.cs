@@ -163,6 +163,7 @@ internal static class PolymorphicSerializer
             null,
             false,
             false,
+            false,
             null,
             null,
             member.CustomSerializer

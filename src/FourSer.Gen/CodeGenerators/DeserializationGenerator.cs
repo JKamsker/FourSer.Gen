@@ -451,6 +451,7 @@ internal static class DeserializationGenerator
                         null,
                         false,
                         false,
+                        false,
                         null,
                         null,
                         member.CustomSerializer
