@@ -467,7 +467,7 @@ public class GeneratorTests
     }
 
     [Fact]
-    public void ParameterlessConstructor_ShouldPreserveSourceInitializers()
+    public void MutableClassWithSourceInitializers_ShouldPreferConstructorBasedDeserialization()
     {
         const string source = """
         using System.Collections.Generic;
@@ -503,8 +503,9 @@ public class GeneratorTests
             Assert.DoesNotContain("this.Values =", constructorBody);
         }
 
-        Assert.DoesNotContain("private ImmutableArrayPacket(", generatedCode);
-        Assert.Contains("var obj = new ImmutableArrayPacket();", generatedCode);
+        Assert.Contains("private ImmutableArrayPacket(", generatedCode);
+        Assert.Equal(2, CountOccurrences(generatedCode, "var obj = new ImmutableArrayPacket(items, numbers, values);"));
+        Assert.DoesNotContain("var obj = new ImmutableArrayPacket();", generatedCode);
     }
 
     [Fact]
