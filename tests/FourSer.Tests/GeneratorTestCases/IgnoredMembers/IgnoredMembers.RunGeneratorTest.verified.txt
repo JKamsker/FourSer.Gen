@@ -17,12 +17,20 @@ public partial class IgnoredMembersPacket : global::FourSer.Contracts.ISerializa
         return size;
     }
 
+    private IgnoredMembersPacket(byte included)
+    {
+        this.Included = included;
+    }
+
+    public IgnoredMembersPacket()
+    {
+    }
+
     public static IgnoredMembersPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         byte included;
         included = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref buffer);
-        var obj = new IgnoredMembersPacket();
-        obj.Included = included;
+        var obj = new IgnoredMembersPacket(included);
         return obj;
     }
 
@@ -35,8 +43,7 @@ public partial class IgnoredMembersPacket : global::FourSer.Contracts.ISerializa
     {
         byte included;
         included = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
-        var obj = new IgnoredMembersPacket();
-        obj.Included = included;
+        var obj = new IgnoredMembersPacket(included);
         return obj;
     }
 

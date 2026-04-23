@@ -40,6 +40,17 @@ public partial class InventoryWithCountSizeRef : global::FourSer.Contracts.ISeri
         return size;
     }
 
+    private InventoryWithCountSizeRef(int typeId, int count, System.Collections.Generic.List<FourSer.TestUser.CollectionWithCountSizeReference.Item> items)
+    {
+        this.TypeId = typeId;
+        this.Count = count;
+        this.Items = items;
+    }
+
+    public InventoryWithCountSizeRef()
+    {
+    }
+
     public static InventoryWithCountSizeRef Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         int typeId;
@@ -82,10 +93,7 @@ public partial class InventoryWithCountSizeRef : global::FourSer.Contracts.ISeri
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for Items: {typeId}");
         }
-        var obj = new InventoryWithCountSizeRef();
-        obj.TypeId = typeId;
-        obj.Count = count;
-        obj.Items = items;
+        var obj = new InventoryWithCountSizeRef(typeId, count, items);
         return obj;
     }
 
@@ -136,10 +144,7 @@ public partial class InventoryWithCountSizeRef : global::FourSer.Contracts.ISeri
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for Items: {typeId}");
         }
-        var obj = new InventoryWithCountSizeRef();
-        obj.TypeId = typeId;
-        obj.Count = count;
-        obj.Items = items;
+        var obj = new InventoryWithCountSizeRef(typeId, count, items);
         return obj;
     }
 
@@ -348,6 +353,10 @@ public partial class Item : global::FourSer.Contracts.ISerializable<Item>
         return size;
     }
 
+    public Item()
+    {
+    }
+
     public static Item Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         var obj = new Item();
@@ -404,6 +413,10 @@ public partial class Sword : global::FourSer.Contracts.ISerializable<Sword>
         }
         var size = 0;
         return size;
+    }
+
+    public Sword()
+    {
     }
 
     public static new Sword Deserialize(ref System.ReadOnlySpan<byte> buffer)
@@ -464,6 +477,10 @@ public partial class Shield : global::FourSer.Contracts.ISerializable<Shield>
         return size;
     }
 
+    public Shield()
+    {
+    }
+
     public static new Shield Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         var obj = new Shield();
@@ -520,6 +537,10 @@ public partial class Potion : global::FourSer.Contracts.ISerializable<Potion>
         }
         var size = 0;
         return size;
+    }
+
+    public Potion()
+    {
     }
 
     public static new Potion Deserialize(ref System.ReadOnlySpan<byte> buffer)

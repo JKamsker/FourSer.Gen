@@ -13,12 +13,17 @@ public partial struct MyStruct : global::FourSer.Contracts.ISerializable<MyStruc
         return size;
     }
 
+    private MyStruct(int a)
+    {
+        this.A = a;
+    }
+
+
     public static MyStruct Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         int a;
         a = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
-        var obj = new MyStruct();
-        obj.A = a;
+        var obj = new MyStruct(a);
         return obj;
     }
 
@@ -31,8 +36,7 @@ public partial struct MyStruct : global::FourSer.Contracts.ISerializable<MyStruc
     {
         int a;
         a = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var obj = new MyStruct();
-        obj.A = a;
+        var obj = new MyStruct(a);
         return obj;
     }
 
@@ -79,6 +83,15 @@ public partial class PacketWithListOfStructs : global::FourSer.Contracts.ISerial
         return size;
     }
 
+    private PacketWithListOfStructs(System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct> structs)
+    {
+        this.Structs = structs;
+    }
+
+    public PacketWithListOfStructs()
+    {
+    }
+
     public static PacketWithListOfStructs Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct> structs;
@@ -98,8 +111,7 @@ public partial class PacketWithListOfStructs : global::FourSer.Contracts.ISerial
             }
         }
         structs = structsValue;
-        var obj = new PacketWithListOfStructs();
-        obj.Structs = structs;
+        var obj = new PacketWithListOfStructs(structs);
         return obj;
     }
 
@@ -127,8 +139,7 @@ public partial class PacketWithListOfStructs : global::FourSer.Contracts.ISerial
             }
         }
         structs = structsValue;
-        var obj = new PacketWithListOfStructs();
-        obj.Structs = structs;
+        var obj = new PacketWithListOfStructs(structs);
         return obj;
     }
 

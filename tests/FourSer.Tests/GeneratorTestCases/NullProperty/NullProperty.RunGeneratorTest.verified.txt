@@ -17,12 +17,20 @@ public partial class NestedObject : global::FourSer.Contracts.ISerializable<Nest
         return size;
     }
 
+    private NestedObject(int id)
+    {
+        this.Id = id;
+    }
+
+    public NestedObject()
+    {
+    }
+
     public static NestedObject Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         int id;
         id = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
-        var obj = new NestedObject();
-        obj.Id = id;
+        var obj = new NestedObject(id);
         return obj;
     }
 
@@ -35,8 +43,7 @@ public partial class NestedObject : global::FourSer.Contracts.ISerializable<Nest
     {
         int id;
         id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var obj = new NestedObject();
-        obj.Id = id;
+        var obj = new NestedObject(id);
         return obj;
     }
 
@@ -88,12 +95,20 @@ public partial class MainObject : global::FourSer.Contracts.ISerializable<MainOb
         return size;
     }
 
+    private MainObject(FourSer.Tests.GeneratorTestCases.NullProperty.NestedObject nested)
+    {
+        this.Nested = nested;
+    }
+
+    public MainObject()
+    {
+    }
+
     public static MainObject Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         FourSer.Tests.GeneratorTestCases.NullProperty.NestedObject nested;
         nested = global::FourSer.Tests.GeneratorTestCases.NullProperty.NestedObject.Deserialize(ref buffer);
-        var obj = new MainObject();
-        obj.Nested = nested;
+        var obj = new MainObject(nested);
         return obj;
     }
 
@@ -106,8 +121,7 @@ public partial class MainObject : global::FourSer.Contracts.ISerializable<MainOb
     {
         FourSer.Tests.GeneratorTestCases.NullProperty.NestedObject nested;
         nested = global::FourSer.Tests.GeneratorTestCases.NullProperty.NestedObject.Deserialize(stream);
-        var obj = new MainObject();
-        obj.Nested = nested;
+        var obj = new MainObject(nested);
         return obj;
     }
 

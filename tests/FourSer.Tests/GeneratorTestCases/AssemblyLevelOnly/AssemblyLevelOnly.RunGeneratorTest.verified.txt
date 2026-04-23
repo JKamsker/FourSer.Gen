@@ -17,12 +17,20 @@ public partial class Packet : global::FourSer.Contracts.ISerializable<Packet>
         return size;
     }
 
+    private Packet(string name)
+    {
+        this.Name = name;
+    }
+
+    public Packet()
+    {
+    }
+
     public static Packet Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         string name;
         name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_AssemblyLevelOnly_AssemblyStringSerializer.Deserialize(ref buffer);
-        var obj = new Packet();
-        obj.Name = name;
+        var obj = new Packet(name);
         return obj;
     }
 
@@ -35,8 +43,7 @@ public partial class Packet : global::FourSer.Contracts.ISerializable<Packet>
     {
         string name;
         name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_AssemblyLevelOnly_AssemblyStringSerializer.Deserialize(stream);
-        var obj = new Packet();
-        obj.Name = name;
+        var obj = new Packet(name);
         return obj;
     }
 

@@ -21,12 +21,20 @@ public partial class WrapperUserClass : global::FourSer.Contracts.ISerializable<
         return size;
     }
 
+    private WrapperUserClass(FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString name)
+    {
+        this.Name = name;
+    }
+
+    public WrapperUserClass()
+    {
+    }
+
     public static WrapperUserClass Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString name;
         name = global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Deserialize(ref buffer);
-        var obj = new WrapperUserClass();
-        obj.Name = name;
+        var obj = new WrapperUserClass(name);
         return obj;
     }
 
@@ -39,8 +47,7 @@ public partial class WrapperUserClass : global::FourSer.Contracts.ISerializable<
     {
         FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString name;
         name = global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Deserialize(stream);
-        var obj = new WrapperUserClass();
-        obj.Name = name;
+        var obj = new WrapperUserClass(name);
         return obj;
     }
 

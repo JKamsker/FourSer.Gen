@@ -19,6 +19,17 @@ public partial class PacketWithDefaultSerializer : global::FourSer.Contracts.ISe
         return size;
     }
 
+    private PacketWithDefaultSerializer(int id, string name, string description)
+    {
+        this.Id = id;
+        this.Name = name;
+        this.Description = description;
+    }
+
+    public PacketWithDefaultSerializer()
+    {
+    }
+
     public static PacketWithDefaultSerializer Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         int id;
@@ -27,10 +38,7 @@ public partial class PacketWithDefaultSerializer : global::FourSer.Contracts.ISe
         id = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Deserialize(ref buffer);
         description = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Deserialize(ref buffer);
-        var obj = new PacketWithDefaultSerializer();
-        obj.Id = id;
-        obj.Name = name;
-        obj.Description = description;
+        var obj = new PacketWithDefaultSerializer(id, name, description);
         return obj;
     }
 
@@ -47,10 +55,7 @@ public partial class PacketWithDefaultSerializer : global::FourSer.Contracts.ISe
         id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Deserialize(stream);
         description = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_ClassLevelDefaultSerializer_MyCustomStringSerializer.Deserialize(stream);
-        var obj = new PacketWithDefaultSerializer();
-        obj.Id = id;
-        obj.Name = name;
-        obj.Description = description;
+        var obj = new PacketWithDefaultSerializer(id, name, description);
         return obj;
     }
 

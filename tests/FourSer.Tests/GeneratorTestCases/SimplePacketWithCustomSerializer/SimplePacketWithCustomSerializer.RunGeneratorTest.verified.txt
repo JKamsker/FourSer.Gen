@@ -18,15 +18,23 @@ public partial class SimplePacket : global::FourSer.Contracts.ISerializable<Simp
         return size;
     }
 
+    private SimplePacket(int id, string name)
+    {
+        this.Id = id;
+        this.Name = name;
+    }
+
+    public SimplePacket()
+    {
+    }
+
     public static SimplePacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         int id;
         string name;
         id = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_SimplePacketWithCustomSerializer_MyCustomStringSerializer.Deserialize(ref buffer);
-        var obj = new SimplePacket();
-        obj.Id = id;
-        obj.Name = name;
+        var obj = new SimplePacket(id, name);
         return obj;
     }
 
@@ -41,9 +49,7 @@ public partial class SimplePacket : global::FourSer.Contracts.ISerializable<Simp
         string name;
         id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_SimplePacketWithCustomSerializer_MyCustomStringSerializer.Deserialize(stream);
-        var obj = new SimplePacket();
-        obj.Id = id;
-        obj.Name = name;
+        var obj = new SimplePacket(id, name);
         return obj;
     }
 

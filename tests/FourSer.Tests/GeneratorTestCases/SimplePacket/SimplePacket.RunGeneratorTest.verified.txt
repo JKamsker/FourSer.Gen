@@ -18,6 +18,17 @@ public partial class LoginPacket : global::FourSer.Contracts.ISerializable<Login
         return size;
     }
 
+    private LoginPacket(byte result, uint userID, string username)
+    {
+        this.Result = result;
+        this.UserID = userID;
+        this.Username = username;
+    }
+
+    public LoginPacket()
+    {
+    }
+
     public static LoginPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         byte result;
@@ -26,10 +37,7 @@ public partial class LoginPacket : global::FourSer.Contracts.ISerializable<Login
         result = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref buffer);
         userID = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt32(ref buffer);
         username = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
-        var obj = new LoginPacket();
-        obj.Result = result;
-        obj.UserID = userID;
-        obj.Username = username;
+        var obj = new LoginPacket(result, userID, username);
         return obj;
     }
 
@@ -46,10 +54,7 @@ public partial class LoginPacket : global::FourSer.Contracts.ISerializable<Login
         result = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
         userID = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadUInt32(stream);
         username = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new LoginPacket();
-        obj.Result = result;
-        obj.UserID = userID;
-        obj.Username = username;
+        var obj = new LoginPacket(result, userID, username);
         return obj;
     }
 

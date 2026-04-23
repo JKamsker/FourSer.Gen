@@ -19,6 +19,17 @@ public partial class PacketWithPropertySerializer : global::FourSer.Contracts.IS
         return size;
     }
 
+    private PacketWithPropertySerializer(int id, string name, string description)
+    {
+        this.Id = id;
+        this.Name = name;
+        this.Description = description;
+    }
+
+    public PacketWithPropertySerializer()
+    {
+    }
+
     public static PacketWithPropertySerializer Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         int id;
@@ -27,10 +38,7 @@ public partial class PacketWithPropertySerializer : global::FourSer.Contracts.IS
         id = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_PropertyLevelSerializer_MyCustomStringSerializer.Deserialize(ref buffer);
         description = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
-        var obj = new PacketWithPropertySerializer();
-        obj.Id = id;
-        obj.Name = name;
-        obj.Description = description;
+        var obj = new PacketWithPropertySerializer(id, name, description);
         return obj;
     }
 
@@ -47,10 +55,7 @@ public partial class PacketWithPropertySerializer : global::FourSer.Contracts.IS
         id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_PropertyLevelSerializer_MyCustomStringSerializer.Deserialize(stream);
         description = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new PacketWithPropertySerializer();
-        obj.Id = id;
-        obj.Name = name;
-        obj.Description = description;
+        var obj = new PacketWithPropertySerializer(id, name, description);
         return obj;
     }
 

@@ -29,6 +29,16 @@ public partial class EnumerableOfReferenceTypes : global::FourSer.Contracts.ISer
         return size;
     }
 
+    private EnumerableOfReferenceTypes(int count, System.Collections.Generic.IEnumerable<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity> myList)
+    {
+        this.Count = count;
+        this.MyList = myList;
+    }
+
+    public EnumerableOfReferenceTypes()
+    {
+    }
+
     public static EnumerableOfReferenceTypes Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         int count;
@@ -38,9 +48,7 @@ public partial class EnumerableOfReferenceTypes : global::FourSer.Contracts.ISer
         {
             myList.Add(global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.Deserialize(ref buffer));
         }
-        var obj = new EnumerableOfReferenceTypes();
-        obj.Count = count;
-        obj.MyList = myList;
+        var obj = new EnumerableOfReferenceTypes(count, myList);
         return obj;
     }
 
@@ -58,9 +66,7 @@ public partial class EnumerableOfReferenceTypes : global::FourSer.Contracts.ISer
         {
             myList.Add(global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.Deserialize(stream));
         }
-        var obj = new EnumerableOfReferenceTypes();
-        obj.Count = count;
-        obj.MyList = myList;
+        var obj = new EnumerableOfReferenceTypes(count, myList);
         return obj;
     }
 
@@ -135,15 +141,23 @@ public partial class Entity : global::FourSer.Contracts.ISerializable<Entity>
         return size;
     }
 
+    private Entity(int id, string name)
+    {
+        this.Id = id;
+        this.Name = name;
+    }
+
+    public Entity()
+    {
+    }
+
     public static Entity Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         int id;
         string name;
         id = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         name = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
-        var obj = new Entity();
-        obj.Id = id;
-        obj.Name = name;
+        var obj = new Entity(id, name);
         return obj;
     }
 
@@ -158,9 +172,7 @@ public partial class Entity : global::FourSer.Contracts.ISerializable<Entity>
         string name;
         id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         name = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new Entity();
-        obj.Id = id;
-        obj.Name = name;
+        var obj = new Entity(id, name);
         return obj;
     }
 

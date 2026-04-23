@@ -17,12 +17,20 @@ public partial class Item : global::FourSer.Contracts.ISerializable<Item>
         return size;
     }
 
+    private Item(int id)
+    {
+        this.Id = id;
+    }
+
+    public Item()
+    {
+    }
+
     public static Item Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         int id;
         id = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
-        var obj = new Item();
-        obj.Id = id;
+        var obj = new Item(id);
         return obj;
     }
 
@@ -35,8 +43,7 @@ public partial class Item : global::FourSer.Contracts.ISerializable<Item>
     {
         int id;
         id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var obj = new Item();
-        obj.Id = id;
+        var obj = new Item(id);
         return obj;
     }
 
@@ -95,6 +102,15 @@ public partial class MainObject : global::FourSer.Contracts.ISerializable<MainOb
         return size;
     }
 
+    private MainObject(System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item> items)
+    {
+        this.Items = items;
+    }
+
+    public MainObject()
+    {
+    }
+
     public static MainObject Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item> items;
@@ -105,8 +121,7 @@ public partial class MainObject : global::FourSer.Contracts.ISerializable<MainOb
             itemsValue.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Deserialize(ref buffer));
         }
         items = itemsValue;
-        var obj = new MainObject();
-        obj.Items = items;
+        var obj = new MainObject(items);
         return obj;
     }
 
@@ -125,8 +140,7 @@ public partial class MainObject : global::FourSer.Contracts.ISerializable<MainOb
             itemsValue.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionStaticCount.Item.Deserialize(stream));
         }
         items = itemsValue;
-        var obj = new MainObject();
-        obj.Items = items;
+        var obj = new MainObject(items);
         return obj;
     }
 

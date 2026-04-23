@@ -28,6 +28,15 @@ public partial class SimpleConcreteCollectionTest : global::FourSer.Contracts.IS
         return size;
     }
 
+    private SimpleConcreteCollectionTest(System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat> cats)
+    {
+        this.Cats = cats;
+    }
+
+    public SimpleConcreteCollectionTest()
+    {
+    }
+
     public static SimpleConcreteCollectionTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat> cats;
@@ -38,8 +47,7 @@ public partial class SimpleConcreteCollectionTest : global::FourSer.Contracts.IS
             catsValue.Add(global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.Deserialize(ref buffer));
         }
         cats = catsValue;
-        var obj = new SimpleConcreteCollectionTest();
-        obj.Cats = cats;
+        var obj = new SimpleConcreteCollectionTest(cats);
         return obj;
     }
 
@@ -58,8 +66,7 @@ public partial class SimpleConcreteCollectionTest : global::FourSer.Contracts.IS
             catsValue.Add(global::FourSer.Tests.GeneratorTestCases.SimpleConcreteCollection.Cat.Deserialize(stream));
         }
         cats = catsValue;
-        var obj = new SimpleConcreteCollectionTest();
-        obj.Cats = cats;
+        var obj = new SimpleConcreteCollectionTest(cats);
         return obj;
     }
 
@@ -138,15 +145,23 @@ public partial class Cat : global::FourSer.Contracts.ISerializable<Cat>
         return size;
     }
 
+    private Cat(int id, string name)
+    {
+        this.Id = id;
+        this.Name = name;
+    }
+
+    public Cat()
+    {
+    }
+
     public static Cat Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         int id;
         string name;
         id = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         name = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
-        var obj = new Cat();
-        obj.Id = id;
-        obj.Name = name;
+        var obj = new Cat(id, name);
         return obj;
     }
 
@@ -161,9 +176,7 @@ public partial class Cat : global::FourSer.Contracts.ISerializable<Cat>
         string name;
         id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         name = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new Cat();
-        obj.Id = id;
-        obj.Name = name;
+        var obj = new Cat(id, name);
         return obj;
     }
 

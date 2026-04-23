@@ -28,6 +28,15 @@ public partial class ConcreteInheritanceTest : global::FourSer.Contracts.ISerial
         return size;
     }
 
+    private ConcreteInheritanceTest(System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog> dogs)
+    {
+        this.Dogs = dogs;
+    }
+
+    public ConcreteInheritanceTest()
+    {
+    }
+
     public static ConcreteInheritanceTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog> dogs;
@@ -38,8 +47,7 @@ public partial class ConcreteInheritanceTest : global::FourSer.Contracts.ISerial
             dogsValue.Add(global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.Deserialize(ref buffer));
         }
         dogs = dogsValue;
-        var obj = new ConcreteInheritanceTest();
-        obj.Dogs = dogs;
+        var obj = new ConcreteInheritanceTest(dogs);
         return obj;
     }
 
@@ -58,8 +66,7 @@ public partial class ConcreteInheritanceTest : global::FourSer.Contracts.ISerial
             dogsValue.Add(global::FourSer.Tests.GeneratorTestCases.ConcreteInheritanceCollection.Dog.Deserialize(stream));
         }
         dogs = dogsValue;
-        var obj = new ConcreteInheritanceTest();
-        obj.Dogs = dogs;
+        var obj = new ConcreteInheritanceTest(dogs);
         return obj;
     }
 
@@ -139,6 +146,17 @@ public partial class Dog : global::FourSer.Contracts.ISerializable<Dog>
         return size;
     }
 
+    private Dog(string name, int age, string breed)
+    {
+        this.Name = name;
+        this.Age = age;
+        this.Breed = breed;
+    }
+
+    public Dog()
+    {
+    }
+
     public static new Dog Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         string name;
@@ -147,10 +165,7 @@ public partial class Dog : global::FourSer.Contracts.ISerializable<Dog>
         name = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
         age = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         breed = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
-        var obj = new Dog();
-        obj.Name = name;
-        obj.Age = age;
-        obj.Breed = breed;
+        var obj = new Dog(name, age, breed);
         return obj;
     }
 
@@ -167,10 +182,7 @@ public partial class Dog : global::FourSer.Contracts.ISerializable<Dog>
         name = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
         age = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         breed = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new Dog();
-        obj.Name = name;
-        obj.Age = age;
-        obj.Breed = breed;
+        var obj = new Dog(name, age, breed);
         return obj;
     }
 
@@ -283,15 +295,23 @@ public partial class Pet : global::FourSer.Contracts.ISerializable<Pet>
         return size;
     }
 
+    private Pet(string name, int age)
+    {
+        this.Name = name;
+        this.Age = age;
+    }
+
+    public Pet()
+    {
+    }
+
     public static Pet Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         string name;
         int age;
         name = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
         age = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
-        var obj = new Pet();
-        obj.Name = name;
-        obj.Age = age;
+        var obj = new Pet(name, age);
         return obj;
     }
 
@@ -306,9 +326,7 @@ public partial class Pet : global::FourSer.Contracts.ISerializable<Pet>
         int age;
         name = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
         age = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var obj = new Pet();
-        obj.Name = name;
-        obj.Age = age;
+        var obj = new Pet(name, age);
         return obj;
     }
 

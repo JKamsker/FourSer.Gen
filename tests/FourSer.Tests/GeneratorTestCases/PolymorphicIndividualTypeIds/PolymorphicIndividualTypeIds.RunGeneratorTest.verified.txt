@@ -33,6 +33,15 @@ public partial class PolymorphicIndividualTest : global::FourSer.Contracts.ISeri
         return size;
     }
 
+    private PolymorphicIndividualTest(System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal> animals)
+    {
+        this.Animals = animals;
+    }
+
+    public PolymorphicIndividualTest()
+    {
+    }
+
     public static PolymorphicIndividualTest Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal> animals = default;
@@ -59,8 +68,7 @@ public partial class PolymorphicIndividualTest : global::FourSer.Contracts.ISeri
             }
             animals.Add(item);
         }
-        var obj = new PolymorphicIndividualTest();
-        obj.Animals = animals;
+        var obj = new PolymorphicIndividualTest(animals);
         return obj;
     }
 
@@ -95,8 +103,7 @@ public partial class PolymorphicIndividualTest : global::FourSer.Contracts.ISeri
             }
             animals.Add(item);
         }
-        var obj = new PolymorphicIndividualTest();
-        obj.Animals = animals;
+        var obj = new PolymorphicIndividualTest(animals);
         return obj;
     }
 
@@ -203,15 +210,23 @@ public partial class Cat : global::FourSer.Contracts.ISerializable<Cat>
         return size;
     }
 
+    private Cat(int id, string name)
+    {
+        this.Id = id;
+        this.Name = name;
+    }
+
+    public Cat()
+    {
+    }
+
     public static new Cat Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         int id;
         string name;
         id = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         name = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
-        var obj = new Cat();
-        obj.Id = id;
-        obj.Name = name;
+        var obj = new Cat(id, name);
         return obj;
     }
 
@@ -226,9 +241,7 @@ public partial class Cat : global::FourSer.Contracts.ISerializable<Cat>
         string name;
         id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         name = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new Cat();
-        obj.Id = id;
-        obj.Name = name;
+        var obj = new Cat(id, name);
         return obj;
     }
 
@@ -309,15 +322,23 @@ public partial class Dog : global::FourSer.Contracts.ISerializable<Dog>
         return size;
     }
 
+    private Dog(int id, string breed)
+    {
+        this.Id = id;
+        this.Breed = breed;
+    }
+
+    public Dog()
+    {
+    }
+
     public static new Dog Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         int id;
         string breed;
         id = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         breed = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
-        var obj = new Dog();
-        obj.Id = id;
-        obj.Breed = breed;
+        var obj = new Dog(id, breed);
         return obj;
     }
 
@@ -332,9 +353,7 @@ public partial class Dog : global::FourSer.Contracts.ISerializable<Dog>
         string breed;
         id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         breed = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new Dog();
-        obj.Id = id;
-        obj.Breed = breed;
+        var obj = new Dog(id, breed);
         return obj;
     }
 
@@ -414,12 +433,20 @@ public partial class Animal : global::FourSer.Contracts.ISerializable<Animal>
         return size;
     }
 
+    private Animal(int id)
+    {
+        this.Id = id;
+    }
+
+    public Animal()
+    {
+    }
+
     public static Animal Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         int id;
         id = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
-        var obj = new Animal();
-        obj.Id = id;
+        var obj = new Animal(id);
         return obj;
     }
 
@@ -432,8 +459,7 @@ public partial class Animal : global::FourSer.Contracts.ISerializable<Animal>
     {
         int id;
         id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var obj = new Animal();
-        obj.Id = id;
+        var obj = new Animal(id);
         return obj;
     }
 

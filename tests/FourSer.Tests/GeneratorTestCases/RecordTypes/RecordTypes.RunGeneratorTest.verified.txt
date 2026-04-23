@@ -122,9 +122,7 @@ public partial record struct RecordStruct : global::FourSer.Contracts.ISerializa
         string d;
         c = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
         d = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadString(ref buffer);
-        var obj = new RecordStruct();
-        obj.C = c;
-        obj.D = d;
+        var obj = new RecordStruct(c, d);
         return obj;
     }
 
@@ -139,9 +137,7 @@ public partial record struct RecordStruct : global::FourSer.Contracts.ISerializa
         string d;
         c = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
         d = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new RecordStruct();
-        obj.C = c;
-        obj.D = d;
+        var obj = new RecordStruct(c, d);
         return obj;
     }
 

@@ -41,6 +41,15 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
         return size;
     }
 
+    private Inventory(System.Collections.Generic.IReadOnlyCollection<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionIReadOnlyCollection.IItem> items)
+    {
+        this.Items = items;
+    }
+
+    public Inventory()
+    {
+    }
+
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         var itemsCount = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
@@ -78,8 +87,7 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for Items: {itemsTypeId}");
         }
-        var obj = new Inventory();
-        obj.Items = items;
+        var obj = new Inventory(items);
         return obj;
     }
 
@@ -125,8 +133,7 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
             default:
                 throw new System.IO.InvalidDataException($"Unknown type id for Items: {itemsTypeId}");
         }
-        var obj = new Inventory();
-        obj.Items = items;
+        var obj = new Inventory(items);
         return obj;
     }
 
@@ -339,6 +346,10 @@ public partial class Sword : global::FourSer.Contracts.ISerializable<Sword>
         return size;
     }
 
+    public Sword()
+    {
+    }
+
     public static Sword Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         var obj = new Sword();
@@ -397,6 +408,10 @@ public partial class Shield : global::FourSer.Contracts.ISerializable<Shield>
         return size;
     }
 
+    public Shield()
+    {
+    }
+
     public static Shield Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         var obj = new Shield();
@@ -453,6 +468,10 @@ public partial class Potion : global::FourSer.Contracts.ISerializable<Potion>
         }
         var size = 0;
         return size;
+    }
+
+    public Potion()
+    {
     }
 
     public static Potion Deserialize(ref System.ReadOnlySpan<byte> buffer)

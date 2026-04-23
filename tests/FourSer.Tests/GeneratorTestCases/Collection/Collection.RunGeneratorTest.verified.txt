@@ -18,6 +18,15 @@ public partial class CollectionPacket : global::FourSer.Contracts.ISerializable<
         return size;
     }
 
+    private CollectionPacket(System.Collections.Generic.List<int> numbers)
+    {
+        this.Numbers = numbers;
+    }
+
+    public CollectionPacket()
+    {
+    }
+
     public static CollectionPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         System.Collections.Generic.List<int> numbers;
@@ -37,8 +46,7 @@ public partial class CollectionPacket : global::FourSer.Contracts.ISerializable<
             }
         }
         numbers = numbersValue;
-        var obj = new CollectionPacket();
-        obj.Numbers = numbers;
+        var obj = new CollectionPacket(numbers);
         return obj;
     }
 
@@ -66,8 +74,7 @@ public partial class CollectionPacket : global::FourSer.Contracts.ISerializable<
             }
         }
         numbers = numbersValue;
-        var obj = new CollectionPacket();
-        obj.Numbers = numbers;
+        var obj = new CollectionPacket(numbers);
         return obj;
     }
 
