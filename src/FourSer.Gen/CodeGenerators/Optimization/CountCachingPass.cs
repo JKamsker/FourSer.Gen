@@ -38,6 +38,12 @@ internal sealed class CountCachingPass : IPlanPass
                     CollectionPlan = ApplyCaching(collectionValidate.CollectionPlan),
                 };
                 yield break;
+            case CollectionSizeOp collectionSize:
+                yield return collectionSize with
+                {
+                    CollectionPlan = ApplyCaching(collectionSize.CollectionPlan),
+                };
+                yield break;
             default:
                 yield return op;
                 yield break;

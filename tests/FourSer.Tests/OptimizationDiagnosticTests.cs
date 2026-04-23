@@ -29,7 +29,7 @@ public class OptimizationDiagnosticTests
     }
 
     [Fact]
-    public void AggressiveNativeLayout_ShouldExplainFallbackSelection()
+    public void AggressiveNativeLayout_ShouldExplainSkippedNativeAndPortablePaths()
     {
         const string source = """
         namespace FourSer.Tests.Custom.Diagnostics;
@@ -48,10 +48,10 @@ public class OptimizationDiagnosticTests
 
         Assert.Contains(
             result.RunResult.Diagnostics,
-            static diagnostic => diagnostic.Id == "FSGOPT002" && diagnostic.Severity == DiagnosticSeverity.Info);
+            static diagnostic => diagnostic.Id == "FSGOPT003" && diagnostic.Severity == DiagnosticSeverity.Info);
         Assert.Contains(
             result.RunResult.Diagnostics,
-            static diagnostic => diagnostic.Id == "FSGOPT003" && diagnostic.Severity == DiagnosticSeverity.Info);
+            static diagnostic => diagnostic.Id == "FSGOPT001" && diagnostic.Severity == DiagnosticSeverity.Info);
     }
 
     [Fact]

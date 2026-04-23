@@ -129,9 +129,10 @@ internal static class PlanFactFactory
         }
 
         return plan.CustomSerializer is null
-            && plan.ElementIsUnmanagedType
+            && (plan.ElementIsUnmanagedType || plan.ElementBulkLayoutSafe)
             && !plan.ElementIsStringType
-            && !plan.ElementHasGenerateSerializerAttribute
+            && (!plan.ElementHasGenerateSerializerAttribute || plan.ElementBulkLayoutSafe)
+            && plan.ElementFixedSizeBytes is not null
             && plan.ElementTypeName is not "bool" and not "decimal";
     }
 

@@ -104,7 +104,7 @@ internal static class SizePlanBuilder
 
         if (member.IsStringType)
         {
-            ops.Add(new SizeAddOp(member.Name, $"StringEx.MeasureSize(obj.{member.Name})"));
+            ops.Add(new SizeAddOp(member.Name, $"global::FourSer.Gen.Helpers.StringEx.MeasureSize(obj.{member.Name})"));
             return;
         }
 

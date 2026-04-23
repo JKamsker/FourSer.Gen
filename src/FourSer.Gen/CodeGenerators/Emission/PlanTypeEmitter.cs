@@ -1,4 +1,5 @@
 using FourSer.Gen.CodeGenerators.Core;
+using FourSer.Gen.CodeGenerators.Logic;
 using FourSer.Gen.CodeGenerators.Planning;
 using FourSer.Gen.Helpers;
 
@@ -178,20 +179,13 @@ internal static class PlanTypeEmitter
         string targetLocalName,
         FourSer.Gen.Models.PolymorphicInfo info)
     {
-        PolymorphicUtilities.EmitFirstCollectionItemAccess(context.Builder, member, instanceExpression, "firstItem");
-        context.Builder.WriteLine($"{targetLocalName} = firstItem switch");
-        context.Builder.WriteLine("{");
-        context.Builder.Indent();
-        var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
-        foreach (var option in info.Options)
-        {
-            var key = PolymorphicUtilities.FormatTypedTypeIdValue(option.Key, info, typeIdType);
-            context.Builder.WriteLine($"{PolymorphicUtilities.FormatOptionTypePattern(option)} => {key},");
-        }
-
-        context.Builder.WriteLine("_ => throw new System.IO.InvalidDataException($\"Unknown item type: {firstItem.GetType().Name}\")");
-        context.Builder.Unindent();
-        context.Builder.WriteLine("};");
+        SingleTypeIdCollectionEmitter.EmitValidatedDiscriminatorResolution(
+            context.Builder,
+            member,
+            info,
+            instanceExpression,
+            targetLocalName,
+            declareVariable: false);
     }
 
     private static FourSer.Gen.Models.PolymorphicInfo GetPolymorphicInfo(TypeIdResolveOp op)

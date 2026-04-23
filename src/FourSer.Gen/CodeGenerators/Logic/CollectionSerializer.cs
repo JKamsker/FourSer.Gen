@@ -1,5 +1,6 @@
 using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.CodeGenerators.Helpers;
+using FourSer.Gen.CodeGenerators.Planning;
 using FourSer.Gen.Models;
 using FourSer.Gen.Helpers;
 
@@ -17,16 +18,17 @@ internal static class CollectionSerializer
         MemberToGenerate member,
         SerializationWriterEmitter.WriterCtx ctx,
         TypeToGenerate type,
-        string sourceExpression)
+        string sourceExpression,
+        CollectionPlan? collectionPlan = null)
     {
         var mode = GetCollectionMode(member);
         if (mode == CollMode.Fixed)
         {
-            EmitFixedCollection(sb, member, ctx, type, sourceExpression);
+            EmitFixedCollection(sb, member, ctx, type, sourceExpression, collectionPlan);
         }
         else
         {
-            EmitCountedCollection(sb, member, ctx, type, sourceExpression);
+            EmitCountedCollection(sb, member, ctx, type, sourceExpression, collectionPlan);
         }
     }
 
@@ -52,7 +54,8 @@ internal static class CollectionSerializer
         SerializationWriterEmitter.WriterCtx ctx,
         CollectionInfo collectionInfo,
         TypeToGenerate type,
-        string sourceExpression
+        string sourceExpression,
+        CollectionPlan? collectionPlan
     )
     {
         var isHandledByPolymorphic = collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId &&
@@ -60,7 +63,7 @@ internal static class CollectionSerializer
 
         if (collectionInfo.CountSize >= 0)
         {
-            var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, sourceExpression);
+            var countExpression = GetCountExpression(member, sourceExpression, collectionPlan);
             sb.WriteLineFormat("if ({0} != {1})", countExpression, collectionInfo.CountSize);
             using (sb.BeginBlock())
             {
@@ -76,7 +79,7 @@ internal static class CollectionSerializer
         else if (collectionInfo is { Unlimited: false, CountSizeReferenceIndex: null } && !isHandledByPolymorphic)
         {
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
-            var countExpression = GeneratorUtilities.GetCountExpressionForAccess(member, sourceExpression);
+            var countExpression = GetCountExpression(member, sourceExpression, collectionPlan);
             SerializationWriterEmitter.EmitCountWrite(sb, ctx, countType, countExpression);
         }
 
@@ -88,7 +91,8 @@ internal static class CollectionSerializer
                 member,
                 ctx,
                 collectionInfo,
-                sourceExpression
+                sourceExpression,
+                collectionPlan
             );
             return;
         }
@@ -245,7 +249,7 @@ internal static class CollectionSerializer
             && collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId
             && string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
 
-        if (isPolymorphicSingleTypeId && !isNotIndexable)
+        if (isPolymorphicSingleTypeId)
         {
             var info = member.PolymorphicInfo!.Value;
             var countType = collectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
@@ -465,7 +469,9 @@ internal static class CollectionSerializer
         CollectionInfo collectionInfo,
         string sourceExpression)
     {
-        if (member.CollectionTypeInfo?.IsPureEnumerable != true || GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+        if (member.CollectionTypeInfo?.IsPureEnumerable != true
+            || GeneratorUtilities.ShouldUsePolymorphicSerialization(member)
+            || collectionInfo.CountSizeReferenceIndex is not null)
         {
             return false;
         }
@@ -594,7 +600,8 @@ internal static class CollectionSerializer
         MemberToGenerate member,
         SerializationWriterEmitter.WriterCtx ctx,
         TypeToGenerate type,
-        string sourceExpression)
+        string sourceExpression,
+        CollectionPlan? collectionPlan)
     {
         var collectionInfo = member.CollectionInfo ?? throw new InvalidOperationException("Collection attribute is required for fixed collections.");
         if (member.CollectionTypeInfo?.CanBeNull != false)
@@ -613,7 +620,8 @@ internal static class CollectionSerializer
             ctx,
             collectionInfo,
             type,
-            sourceExpression
+            sourceExpression,
+            collectionPlan
         );
     }
 
@@ -622,7 +630,8 @@ internal static class CollectionSerializer
         MemberToGenerate member,
         SerializationWriterEmitter.WriterCtx ctx,
         CollectionInfo collectionInfo,
-        string sourceExpression)
+        string sourceExpression,
+        CollectionPlan? collectionPlan)
     {
         if (collectionInfo.CountSizeReferenceIndex is not null)
         {
@@ -639,7 +648,8 @@ internal static class CollectionSerializer
                             member,
                             ctx,
                             collectionInfo,
-                            sourceExpression
+                            sourceExpression,
+                            collectionPlan
                         );
                     }
                     else
@@ -656,7 +666,8 @@ internal static class CollectionSerializer
                     member,
                     ctx,
                     collectionInfo,
-                    sourceExpression
+                    sourceExpression,
+                    collectionPlan
                 );
             }
             else
@@ -669,40 +680,14 @@ internal static class CollectionSerializer
         return false;
     }
 
-    private static bool TryEmitSingleTypeIdPolymorphic(
-        IndentedStringBuilder sb,
-        MemberToGenerate member,
-        SerializationWriterEmitter.WriterCtx ctx,
-        CollectionInfo collectionInfo,
-        string sourceExpression)
-    {
-        var isNotIndexable = member.CollectionTypeInfo?.SupportsIndexing != true && !member.IsList;
-        var useSingleTypeIdPolymorphicSerialization = isNotIndexable
-            && GeneratorUtilities.ShouldUsePolymorphicSerialization(member)
-            && collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId
-            && string.IsNullOrEmpty(collectionInfo.TypeIdProperty);
-
-        if (useSingleTypeIdPolymorphicSerialization)
-        {
-            if (member.PolymorphicInfo is not { } info)
-            {
-                return true; // it was handled, but did nothing.
-            }
-
-            PolymorphicSerializer.GeneratePolymorphicEnumerableCollection(sb, member, info, ctx, collectionInfo, sourceExpression);
-
-            return true;
-        }
-        return false;
-    }
-
     private static void EmitNullOrNonNullCollection(
         IndentedStringBuilder sb,
         MemberToGenerate member,
         SerializationWriterEmitter.WriterCtx ctx,
         CollectionInfo collectionInfo,
         TypeToGenerate type,
-        string sourceExpression)
+        string sourceExpression,
+        CollectionPlan? collectionPlan)
     {
         if (member.CollectionTypeInfo?.CanBeNull == false)
         {
@@ -713,7 +698,8 @@ internal static class CollectionSerializer
                 ctx,
                 collectionInfo,
                 type,
-                sourceExpression
+                sourceExpression,
+                collectionPlan
             );
             return;
         }
@@ -742,7 +728,8 @@ internal static class CollectionSerializer
                 ctx,
                 collectionInfo,
                 type,
-                sourceExpression
+                sourceExpression,
+                collectionPlan
             );
         }
     }
@@ -752,7 +739,8 @@ internal static class CollectionSerializer
         MemberToGenerate member,
         SerializationWriterEmitter.WriterCtx ctx,
         TypeToGenerate type,
-        string sourceExpression)
+        string sourceExpression,
+        CollectionPlan? collectionPlan)
     {
         if (member.CollectionInfo is not { } collectionInfo)
         {
@@ -767,12 +755,14 @@ internal static class CollectionSerializer
             return;
         }
 
-        if (TryEmitCountSizeReferenceCase(sb, member, ctx, collectionInfo, sourceExpression))
+        if (TryEmitCountSizeReferenceCase(sb, member, ctx, collectionInfo, sourceExpression, collectionPlan))
         {
             return;
         }
 
-        if (member.CollectionTypeInfo?.IsPureEnumerable == true && !GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+        if (member.CollectionTypeInfo?.IsPureEnumerable == true
+            && !GeneratorUtilities.ShouldUsePolymorphicSerialization(member)
+            && IsOriginalMemberAccess(member, sourceExpression))
         {
             if (!isByteCollection)
             {
@@ -788,16 +778,12 @@ internal static class CollectionSerializer
             }
         }
 
-        if (TryEmitSingleTypeIdPolymorphic(sb, member, ctx, collectionInfo, sourceExpression))
-        {
-            return;
-        }
-
         if (!member.IsList
             && member.CollectionTypeInfo?.IsArray != true
             && member.CollectionTypeInfo?.IsPureEnumerable == true
             && !isByteCollection
-            && !GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+            && !GeneratorUtilities.ShouldUsePolymorphicSerialization(member)
+            && IsOriginalMemberAccess(member, sourceExpression))
         {
             GenerateEnumerableCollection
             (
@@ -810,6 +796,24 @@ internal static class CollectionSerializer
             return;
         }
 
-        EmitNullOrNonNullCollection(sb, member, ctx, collectionInfo, type, sourceExpression);
+        EmitNullOrNonNullCollection(sb, member, ctx, collectionInfo, type, sourceExpression, collectionPlan);
+    }
+
+    private static bool IsOriginalMemberAccess(MemberToGenerate member, string sourceExpression)
+    {
+        return string.Equals(sourceExpression, $"obj.{member.Name}", StringComparison.Ordinal);
+    }
+
+    private static string GetCountExpression(
+        MemberToGenerate member,
+        string sourceExpression,
+        CollectionPlan? collectionPlan)
+    {
+        if (collectionPlan is { CollectionInfo.CountSizeReferenceIndex: not null, CachedCountLocalName: not null } cachedPlan)
+        {
+            return cachedPlan.CachedCountLocalName;
+        }
+
+        return GeneratorUtilities.GetCountExpressionForAccess(member, sourceExpression);
     }
 }

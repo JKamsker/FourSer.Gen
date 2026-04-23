@@ -85,7 +85,7 @@ internal static class PlanScalarEmitter
         context.Builder.WriteLine($"if (string.IsNullOrEmpty({op.ValueExpression}))");
         using (context.Builder.BeginBlock())
         {
-            context.Builder.WriteLine("stream.WriteInt32(0);");
+            context.Builder.WriteLine("global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, 0);");
         }
 
         context.Builder.WriteLine("else");

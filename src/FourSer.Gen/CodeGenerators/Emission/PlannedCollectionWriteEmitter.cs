@@ -128,7 +128,7 @@ internal static class PlannedCollectionWriteEmitter
         string accessExpression,
         string countExpression)
     {
-        if (TryEmitDirectWrite(builder, plan, writerContext, accessExpression))
+        if (TryEmitDirectWrite(builder, member, plan, writerContext, accessExpression))
         {
             return;
         }
@@ -145,6 +145,7 @@ internal static class PlannedCollectionWriteEmitter
 
     private static bool TryEmitDirectWrite(
         IndentedStringBuilder builder,
+        MemberToGenerate member,
         CollectionPlan plan,
         SerializationWriterEmitter.WriterCtx writerContext,
         string accessExpression)
@@ -166,12 +167,13 @@ internal static class PlannedCollectionWriteEmitter
             return true;
         }
 
-        EmitContiguousGuardedWrite(builder, plan, writerContext, spanExpression);
+        EmitContiguousGuardedWrite(builder, member, plan, writerContext, spanExpression);
         return true;
     }
 
     private static void EmitContiguousGuardedWrite(
         IndentedStringBuilder builder,
+        MemberToGenerate member,
         CollectionPlan plan,
         SerializationWriterEmitter.WriterCtx writerContext,
         string spanExpression)
@@ -189,7 +191,7 @@ internal static class PlannedCollectionWriteEmitter
             builder.WriteLine($"for (int i = 0; i < {spanExpression}.Length; i++)");
             using (builder.BeginBlock())
             {
-                EmitPrimitiveWrite(builder, writerContext, plan.ElementTypeName, $"{spanExpression}[i]");
+                EmitElementWrite(builder, member, plan, writerContext, $"{spanExpression}[i]");
             }
         }
     }
@@ -257,6 +259,11 @@ internal static class PlannedCollectionWriteEmitter
 
     private static string GetFastPathGuard(CollectionPlan plan)
     {
+        if (plan.ElementHasGenerateSerializerAttribute && plan.ElementBulkLayoutSafe && plan.ElementFixedSizeBytes is { } fixedSizeBytes)
+        {
+            return $"global::System.BitConverter.IsLittleEndian && !global::System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<{plan.ElementTypeName}>() && global::System.Runtime.CompilerServices.Unsafe.SizeOf<{plan.ElementTypeName}>() == {fixedSizeBytes}";
+        }
+
         if (plan.BulkLayoutMode == BulkLayoutMode.NativeLayout)
         {
             return $"global::System.BitConverter.IsLittleEndian && !global::System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<{plan.ElementTypeName}>()";

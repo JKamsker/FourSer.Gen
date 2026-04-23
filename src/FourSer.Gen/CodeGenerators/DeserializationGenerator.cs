@@ -223,7 +223,7 @@ internal static class DeserializationGenerator
         var ownerVar = $"{memberName}Owner";
 
         sb.WriteLineFormat(
-            "var {0} = MemoryPool<{1}>.Shared.Rent({2}).SliceToSize({2});",
+            "var {0} = global::FourSer.Gen.Helpers.MemoryPoolExtensions.SliceToSize(global::System.Buffers.MemoryPool<{1}>.Shared.Rent({2}), {2});",
             ownerVar,
             elementTypeName,
             capacityVar

@@ -222,7 +222,7 @@ internal static class PlannedCollectionReadEmitter
     {
         if (sourceExpression == "buffer")
         {
-            builder.WriteLine($"SpanReader.ReadBytes(ref buffer, {targetExpression});");
+            builder.WriteLine($"global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBytes(ref buffer, {targetExpression});");
             return;
         }
 
@@ -231,6 +231,11 @@ internal static class PlannedCollectionReadEmitter
 
     private static string GetFastPathGuard(CollectionPlan plan)
     {
+        if (plan.ElementHasGenerateSerializerAttribute && plan.ElementBulkLayoutSafe && plan.ElementFixedSizeBytes is { } fixedSizeBytes)
+        {
+            return $"global::System.BitConverter.IsLittleEndian && !global::System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<{plan.ElementTypeName}>() && global::System.Runtime.CompilerServices.Unsafe.SizeOf<{plan.ElementTypeName}>() == {fixedSizeBytes}";
+        }
+
         if (plan.BulkLayoutMode == BulkLayoutMode.NativeLayout)
         {
             return $"global::System.BitConverter.IsLittleEndian && !global::System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<{plan.ElementTypeName}>()";

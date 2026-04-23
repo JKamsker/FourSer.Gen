@@ -31,7 +31,13 @@ This project provides a compile-time source generator that creates efficient bin
 
 ## Limitations
 
-The source generator has some intentional limitations. By design, it does not support `null` reference values or collections containing `null` items. This is because the generator is primarily intended for serializing and deserializing pre-existing binary formats, which typically do not have a concept of "null" objects.
+The source generator keeps a strict wire contract:
+
+- Nested generated reference members and collection items are required on the wire.
+- `string` and dynamic-count collections keep canonical null behavior: `null` serializes as empty or zero-count and deserializes back as empty.
+- Pure `IEnumerable<T>` members are replayable-only across separate `GetPacketSize(obj)` and `Serialize(obj, ...)` calls. Each generated method enumerates at most once internally, but one-shot enumerables are not cached or mutated across calls.
+
+For the full contract rationale, see [docs/design-choices.md](docs/design-choices.md).
 
 ## Quick Start
 
@@ -191,6 +197,9 @@ public partial class MyPacket
 }
 ```
 
+During serialization, the generator writes the actual count derived from `Name`.
+During deserialization, the count read from the wire is assigned back to `NameLength`.
+
 #### 4. Unlimited Collections
 
 For collections that should be serialized until the end of the data stream, use the `Unlimited` property. This is useful for top-level objects or when the length is implicitly known.
@@ -284,7 +293,7 @@ If all elements in the collection are of the same derived type, you can use `Pol
 [GenerateSerializer]
 public partial class Scene
 {
-    public byte EntityType { get; set; } // Determines the type for all entities
+    public byte EntityType { get; set; } // Restored from the wire on deserialize
 
     [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdProperty = nameof(EntityType))]
     [PolymorphicOption((byte)1, typeof(Player))]
@@ -292,6 +301,9 @@ public partial class Scene
     public List<Entity> Entities { get; set; }
 }
 ```
+
+During serialization, the discriminator is derived from the actual contents of `Entities`, not from the current `EntityType` value.
+During deserialization, the discriminator read from the wire is assigned back to `EntityType`.
 
 #### 2. Heterogeneous Polymorphic Collections (`IndividualTypeIds`)
 
@@ -358,7 +370,8 @@ public partial class AutoPolymorphicEntity
 
 ### Approach 2: Explicit Type Discriminator
 
-In this approach, the type discriminator is linked to a property in your model. The generator will use this property to determine which type to serialize or deserialize.
+In this approach, the type discriminator is linked to a property in your model.
+The generated serializer writes the discriminator that matches the actual runtime value and restores the linked property from the wire during deserialization.
 
 ```csharp
 [GenerateSerializer]
@@ -374,17 +387,15 @@ public partial class PolymorphicEntity
 }
 ```
 
-A key feature of this approach is that the generator automatically synchronizes the `TypeId` property during serialization. If you assign an `EntityType1` to the `Entity` property, the `TypeId` will be automatically set to `1` before serialization, preventing inconsistencies.
-
 ```csharp
 var entity = new PolymorphicEntity
 {
     Id = 100,
-    TypeId = 999, // This value will be ignored and corrected
+    TypeId = 999, // Stale value; the wire discriminator is derived from Entity
     Entity = new EntityType1 { Name = "Test" }
 };
 
-// During serialization, the generator will set entity.TypeId to 1.
+// Serialization writes discriminator 1 for EntityType1.
 var bytesWritten = PolymorphicEntity.Serialize(entity, buffer);
 ```
 
@@ -435,6 +446,9 @@ public interface ISerializer<T>
     T Deserialize(Stream stream);
 }
 ```
+
+All members are required.
+Generated stream serializers call `Serialize(T, Stream)` and `Deserialize(Stream)` directly; the generator does not bridge stream paths through the span-based members.
 
 Here is an example of a custom serializer for handling MFC-style Unicode strings, which have a specific length prefix format:
 
@@ -516,7 +530,7 @@ The generator supports a wide range of collection types, where `T` can be any su
 - `List<T>`
 - `T[]` (Arrays)
 - `ICollection<T>`
-- `IEnumerable<T>`
+- `IEnumerable<T>` (replayable across separate `GetPacketSize` and `Serialize` calls only)
 - `IList<T>`
 - `IReadOnlyCollection<T>`
 - `IReadOnlyList<T>`

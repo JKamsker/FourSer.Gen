@@ -31,6 +31,8 @@ internal static class CollectionPlanBuilder
             ElementIsUnmanagedType: collectionTypeInfo.IsElementUnmanagedType,
             ElementIsStringType: collectionTypeInfo.IsElementStringType,
             ElementHasGenerateSerializerAttribute: collectionTypeInfo.HasElementGenerateSerializerAttribute,
+            ElementFixedSizeBytes: collectionTypeInfo.ElementFixedSizeBytes,
+            ElementBulkLayoutSafe: collectionTypeInfo.ElementBulkLayoutSafe,
             ElementRequiresDisposal: collectionTypeInfo.ElementRequiresDisposal,
             CollectionInfo: collectionInfo,
             CustomSerializer: member.CustomSerializer,

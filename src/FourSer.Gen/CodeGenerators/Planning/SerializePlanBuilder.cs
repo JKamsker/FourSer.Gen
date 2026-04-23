@@ -11,8 +11,6 @@ internal static class SerializePlanBuilder
     {
         var ops = new List<PlanOp>();
         var sourceExpressions = AddCollectionPreparationPrePass(ops, type);
-        AddValidationPrePass(ops, type, sourceExpressions);
-        AddTypeIdMutationPrePass(ops, type);
 
         foreach (var member in type.Members)
         {
@@ -50,71 +48,6 @@ internal static class SerializePlanBuilder
         return sourceExpressions;
     }
 
-    private static void AddValidationPrePass(
-        List<PlanOp> ops,
-        TypeToGenerate type,
-        IReadOnlyDictionary<string, string> sourceExpressions)
-    {
-        foreach (var member in type.Members)
-        {
-            var sourceExpression = GetSourceExpression(member, sourceExpressions);
-            var collectionPlan = GetCollectionPlan(member);
-            if (collectionPlan is null)
-            {
-                continue;
-            }
-
-            if (!ShouldEmitCollectionValidation(member, collectionPlan.Value, sourceExpression))
-            {
-                continue;
-            }
-
-            ops.Add(new CollectionValidateOp(
-                Key: member.Name,
-                CollectionPlan: collectionPlan.Value,
-                SourceExpression: sourceExpression));
-        }
-    }
-
-    private static void AddTypeIdMutationPrePass(List<PlanOp> ops, TypeToGenerate type)
-    {
-        foreach (var member in type.Members)
-        {
-            if (member.PolymorphicInfo is not { TypeIdPropertyIndex: not null } info)
-            {
-                continue;
-            }
-
-            if ((member.IsList || member.IsCollection) &&
-                member.CollectionInfo?.PolymorphicMode == FourSer.Gen.PolymorphicMode.SingleTypeId)
-            {
-                continue;
-            }
-
-            var polymorphicPlan = PolymorphicPlanBuilder.TryCreate(member);
-            if (polymorphicPlan is null)
-            {
-                continue;
-            }
-
-            var typeIdLocalName = PlanExpressionFactory.GetTypeIdLocalName(member);
-            var targetMember = type.Members[info.TypeIdPropertyIndex!.Value];
-            ops.Add(new TypeIdResolveOp(
-                Key: member.Name,
-                TargetLocalName: typeIdLocalName,
-                TypeIdTypeName: info.TypeIdType,
-                InstanceExpression: $"obj.{member.Name}",
-                FallbackExpression: $"obj.{targetMember.Name}",
-                PolymorphicPlan: polymorphicPlan.Value,
-                IsCollection: member.IsList || member.IsCollection,
-                EmitDefaultWhenEmpty: false));
-            ops.Add(new TypeIdMutationOp(
-                Key: targetMember.Name,
-                TargetExpression: $"obj.{targetMember.Name}",
-                ValueExpression: typeIdLocalName));
-        }
-    }
-
     private static void AddMemberOps(
         List<PlanOp> ops,
         MemberToGenerate member,
@@ -122,7 +55,9 @@ internal static class SerializePlanBuilder
         TargetKind targetKind,
         IReadOnlyDictionary<string, string> sourceExpressions)
     {
-        var helperName = targetKind == TargetKind.Span ? "SpanWriter" : "StreamWriter";
+        var helperName = targetKind == TargetKind.Span
+            ? "global::FourSer.Gen.Helpers.SpanWriterHelpers"
+            : "global::FourSer.Gen.Helpers.StreamWriterHelpers";
         var targetExpression = targetKind == TargetKind.Span ? "data" : "stream";
         var sourceExpression = GetSourceExpression(member, sourceExpressions);
 
@@ -160,7 +95,7 @@ internal static class SerializePlanBuilder
             {
                 ops.Add(new CollectionWriteOp(
                     Key: member.Name,
-                    CollectionPlan: memoryOwnerPlan.Value,
+                    CollectionPlan: ApplyCollectionWriteCaching(memoryOwnerPlan.Value, member),
                     SourceExpression: sourceExpression,
                     TargetExpression: targetExpression,
                     HelperName: helperName,
@@ -176,7 +111,7 @@ internal static class SerializePlanBuilder
             {
                 ops.Add(new CollectionWriteOp(
                     Key: member.Name,
-                    CollectionPlan: collectionPlan.Value,
+                    CollectionPlan: ApplyCollectionWriteCaching(collectionPlan.Value, member),
                     SourceExpression: sourceExpression,
                     TargetExpression: targetExpression,
                     HelperName: helperName,
@@ -248,11 +183,17 @@ internal static class SerializePlanBuilder
         }
 
         var collectionSourceExpression = GetSourceExpression(collectionMember, sourceExpressions);
+        var countLocalName = PlanExpressionFactory.GetCountLocalName(collectionMember);
         var countExpression = PlanExpressionFactory.GetCountExpression(collectionMember, collectionSourceExpression, nullable: true);
+        ops.Add(new DeclareLocalOp(
+            TypeName: "var",
+            Name: countLocalName,
+            InitializerExpression: countExpression,
+            UseVar: true));
         ops.Add(new CountWriteOp(
             Key: member.Name,
             TypeName: member.TypeName,
-            ValueExpression: countExpression,
+            ValueExpression: countLocalName,
             TargetExpression: targetExpression,
             HelperName: helperName,
             UseCheckedConversion: GeneratorUtilities.ShouldUseCheckedCountConversion(member.TypeName)));
@@ -273,11 +214,6 @@ internal static class SerializePlanBuilder
         }
 
         var referencedMember = type.Members[typeIdIndex];
-        if (!referencedMember.IsList && !referencedMember.IsCollection)
-        {
-            return false;
-        }
-
         if (referencedMember.PolymorphicInfo is not { } info)
         {
             throw new InvalidOperationException("Type-id property references require polymorphic information.");
@@ -289,17 +225,43 @@ internal static class SerializePlanBuilder
             return false;
         }
 
+        var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
+        if (!referencedMember.IsList && !referencedMember.IsCollection)
+        {
+            var typeIdLocalName = PlanExpressionFactory.GetTypeIdLocalName(referencedMember);
+            ops.Add(new TypeIdResolveOp(
+                Key: referencedMember.Name,
+                TargetLocalName: typeIdLocalName,
+                TypeIdTypeName: typeIdType,
+                InstanceExpression: $"obj.{referencedMember.Name}",
+                FallbackExpression: $"obj.{member.Name}",
+                PolymorphicPlan: polymorphicPlan.Value,
+                IsCollection: false,
+                EmitDefaultWhenEmpty: false));
+            ops.Add(new ScalarWriteOp(
+                Key: member.Name,
+                TypeName: typeIdType,
+                ValueExpression: typeIdLocalName,
+                TargetExpression: targetExpression,
+                HelperName: helperName,
+                UseCheckedConversion: false));
+            return true;
+        }
+
         if (!PolymorphicUtilities.TryGetDefaultOption(info, out var defaultOption))
         {
             throw new InvalidOperationException("Polymorphic members require at least one [PolymorphicOption].");
         }
 
         var localName = PlanExpressionFactory.GetDiscriminatorLocalName(referencedMember);
-        var typeIdType = info.EnumUnderlyingType ?? info.TypeIdType;
         var referencedSourceExpression = GetSourceExpression(referencedMember, sourceExpressions);
         var countExpression = PlanExpressionFactory.GetCountExpression(referencedMember, referencedSourceExpression, nullable: true);
         var defaultKey = PolymorphicUtilities.FormatTypeIdKey(defaultOption.Key, info);
 
+        ops.Add(new DeclareLocalOp(
+            TypeName: typeIdType,
+            Name: localName,
+            InitializerExpression: "default"));
         ops.Add(new GuardOp(
             Key: new GuardKey("collection-type-id-property", referencedMember.Name, member.Name),
             Condition: $"{countExpression} == 0",
@@ -412,38 +374,41 @@ internal static class SerializePlanBuilder
             : $"obj.{member.Name}";
     }
 
-    private static bool ShouldEmitCollectionValidation(MemberToGenerate member, CollectionPlan collectionPlan, string sourceExpression)
-    {
-        if (!RequiresCollectionValidation(member, collectionPlan))
-        {
-            return false;
-        }
-
-        return !collectionPlan.IsPureEnumerable || sourceExpression != $"obj.{member.Name}";
-    }
-
-    private static bool RequiresCollectionValidation(MemberToGenerate member, CollectionPlan collectionPlan)
-    {
-        return member.CollectionInfo?.PolymorphicMode == FourSer.Gen.PolymorphicMode.SingleTypeId
-            && member.PolymorphicInfo is not null;
-    }
-
     private static bool ShouldMaterializeCollectionSource(MemberToGenerate member)
     {
-        if (member.IsMemoryOwner)
+        if (member.IsMemoryOwner
+            || (!member.IsList && !member.IsCollection)
+            || member.CollectionTypeInfo is not { } collectionTypeInfo
+            || member.CollectionInfo is not { } collectionInfo)
         {
             return false;
         }
 
-        if ((member.IsList || member.IsCollection)
-            && member.CollectionInfo?.CountSizeReferenceIndex is not null
-            && member.CollectionTypeInfo?.IsPureEnumerable == true)
+        if (collectionTypeInfo.IsPureEnumerable
+            && collectionInfo is { Unlimited: false, CountSize: null or < 0 }
+            && (!TypeHelper.IsByteCollection(collectionTypeInfo.ElementTypeName)
+                || collectionInfo.CountSizeReferenceIndex is not null))
         {
             return true;
         }
 
-        return (member.IsList || member.IsCollection)
-            && member.CollectionInfo?.PolymorphicMode == FourSer.Gen.PolymorphicMode.SingleTypeId
-            && (member.CollectionTypeInfo?.SupportsIndexing != true && !member.IsList);
+        return collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId
+            && !collectionTypeInfo.SupportsIndexing
+            && !member.IsList;
+    }
+
+    private static CollectionPlan ApplyCollectionWriteCaching(CollectionPlan plan, MemberToGenerate member)
+    {
+        if (member.CollectionInfo?.PolymorphicMode == PolymorphicMode.SingleTypeId
+            && member.PolymorphicInfo?.TypeIdPropertyIndex is not null
+            && string.IsNullOrEmpty(plan.CachedDiscriminatorLocalName))
+        {
+            return plan with
+            {
+                CachedDiscriminatorLocalName = PlanExpressionFactory.GetDiscriminatorLocalName(member),
+            };
+        }
+
+        return plan;
     }
 }

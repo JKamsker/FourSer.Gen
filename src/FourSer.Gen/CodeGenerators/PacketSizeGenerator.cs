@@ -59,7 +59,7 @@ internal static partial class PacketSizeGenerator
         }
         else if (member.IsStringType)
         {
-            sb.WriteLineFormat("size += StringEx.MeasureSize(obj.{0}); // Size for string {0}", member.Name);
+            sb.WriteLineFormat("size += global::FourSer.Gen.Helpers.StringEx.MeasureSize(obj.{0}); // Size for string {0}", member.Name);
         }
         else if (member.IsUnmanagedType)
         {
@@ -187,6 +187,13 @@ internal static partial class PacketSizeGenerator
         MemberToGenerate member,
         string collectionAccessExpression)
     {
+        if (!collectionAccessExpression.StartsWith("obj.", StringComparison.Ordinal)
+            && (collectionAccessExpression.EndsWith("PreparedItems", StringComparison.Ordinal)
+                || collectionAccessExpression.EndsWith("SizedItems", StringComparison.Ordinal)))
+        {
+            return true;
+        }
+
         if (member.CollectionTypeInfo?.CountPropertyName is not null)
         {
             return true;
@@ -370,7 +377,7 @@ internal static partial class PacketSizeGenerator
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var __ = sb.BeginBlock();
                 EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);
-                sb.WriteLine("size += StringEx.MeasureSize(item);");
+                sb.WriteLine("size += global::FourSer.Gen.Helpers.StringEx.MeasureSize(item);");
             }
             else
             {
@@ -385,7 +392,7 @@ internal static partial class PacketSizeGenerator
                 sb.WriteLineFormat("foreach(var item in {0})", collectionAccessExpression);
                 using var _ = sb.BeginBlock();
                 EmitValidatedCountIncrement(sb, validatedCountVariableName, countValidationType);
-                sb.WriteLine("size += StringEx.MeasureSize(item);");
+                sb.WriteLine("size += global::FourSer.Gen.Helpers.StringEx.MeasureSize(item);");
             }
         }
     }
@@ -549,7 +556,7 @@ internal static partial class PacketSizeGenerator
 
             sb.WriteLineFormat("for (int i = 0; i < {0}; i++)", loopCountExpression);
             using var __ = sb.BeginBlock();
-            sb.WriteLineFormat("size += StringEx.MeasureSize(span_{0}[i]);", member.Name);
+            sb.WriteLineFormat("size += global::FourSer.Gen.Helpers.StringEx.MeasureSize(span_{0}[i]);", member.Name);
         }
     }
 
@@ -635,7 +642,14 @@ internal static partial class PacketSizeGenerator
         string? countValidationType)
     {
         var discriminatorType = info.EnumUnderlyingType ?? info.TypeIdType;
-        var validatedCountVariableName = DeclareValidatedCountVariable(sb, member, countValidationType);
+        var validatesCountWithoutEnumeration = TryEmitCollectionCountOverflowValidation(
+            sb,
+            member,
+            collectionAccessExpression,
+            countValidationType);
+        var validatedCountVariableName = validatesCountWithoutEnumeration
+            ? null
+            : DeclareValidatedCountVariable(sb, member, countValidationType);
 
         if (collectionInfo.PolymorphicMode == PolymorphicMode.SingleTypeId)
         {

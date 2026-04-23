@@ -190,7 +190,9 @@ public readonly record struct CollectionTypeInfo
     bool IsGenericCollection,
     string? CollectionAddMethod,
     bool IsGenericList,
-    bool IsReadOnlyInterface
+    bool IsReadOnlyInterface,
+    int? ElementFixedSizeBytes,
+    bool ElementBulkLayoutSafe
 );
 
 /// <summary>

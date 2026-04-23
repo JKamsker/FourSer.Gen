@@ -22,6 +22,8 @@ internal readonly record struct CollectionPlan(
     bool ElementIsUnmanagedType,
     bool ElementIsStringType,
     bool ElementHasGenerateSerializerAttribute,
+    int? ElementFixedSizeBytes,
+    bool ElementBulkLayoutSafe,
     bool ElementRequiresDisposal,
     CollectionInfo CollectionInfo,
     CustomSerializerInfo? CustomSerializer,

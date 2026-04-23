@@ -73,6 +73,20 @@ public static class GeneratorUtilities
             return $"({accessExpression}.IsDefaultOrEmpty ? 0 : {accessExpression}.Length)";
         }
 
+        if (IsPreparedListAccess(accessExpression))
+        {
+            return nullable
+                ? $"({accessExpression}?.Count ?? 0)"
+                : $"{accessExpression}.Count";
+        }
+
+        if (IsMaterializedArrayAccess(accessExpression))
+        {
+            return nullable
+                ? $"({accessExpression}?.Length ?? 0)"
+                : $"{accessExpression}.Length";
+        }
+
         var canUseNullPropagation = nullable && (member.CollectionTypeInfo?.CanBeNull ?? true);
         var countPropertyName = member.CollectionTypeInfo?.CountPropertyName;
 
@@ -101,6 +115,18 @@ public static class GeneratorUtilities
     private static bool IsImmutableArrayCollection(MemberToGenerate member)
     {
         return member.CollectionTypeInfo?.RangeFactoryTypeName == "System.Collections.Immutable.ImmutableArray";
+    }
+
+    private static bool IsPreparedListAccess(string accessExpression)
+    {
+        return !accessExpression.StartsWith("obj.", StringComparison.Ordinal)
+            && accessExpression.EndsWith("PreparedItems", StringComparison.Ordinal);
+    }
+
+    private static bool IsMaterializedArrayAccess(string accessExpression)
+    {
+        return !accessExpression.StartsWith("obj.", StringComparison.Ordinal)
+            && accessExpression.EndsWith("SizedItems", StringComparison.Ordinal);
     }
 
     public static bool ShouldUseCheckedCountConversion(string typeName)

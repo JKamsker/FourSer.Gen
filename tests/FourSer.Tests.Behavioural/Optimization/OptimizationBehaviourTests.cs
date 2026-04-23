@@ -50,11 +50,13 @@ public class OptimizationBehaviourTests
     {
         var source = GeneratedSourceFiles.Read("FourSer_Tests_Behavioural_Optimization_HoistedPolymorphicPacket.g.cs");
 
-        Assert.Contains("var discriminator = animalsEnumerator.Current switch", source);
-        Assert.Contains("SpanWriter.WriteByte(ref data, (byte)(discriminator));", source);
+        Assert.Contains("var animalsPreparedItems = obj.Animals is null ? null : global::System.Linq.Enumerable.ToList(obj.Animals);", source);
+        Assert.Contains("var discriminator = firstValidatedItem switch", source);
+        Assert.Contains("global::FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)(discriminator));", source);
         Assert.Contains("switch (discriminator)", source);
-        Assert.Equal(1, CountOccurrences(source, "SpanWriter.WriteByte(ref data, (byte)(discriminator));"));
-        Assert.Equal(1, CountOccurrences(source, "StreamWriter.WriteByte(stream, (byte)(discriminator));"));
+        Assert.DoesNotContain("animalsEnumerator", source);
+        Assert.Equal(1, CountOccurrences(source, "global::FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)(discriminator));"));
+        Assert.Equal(1, CountOccurrences(source, "global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)(discriminator));"));
     }
 
     [Fact]

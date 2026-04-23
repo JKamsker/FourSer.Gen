@@ -132,9 +132,11 @@ internal sealed class CollectionFastPathPass : IPlanPass
     private static bool CanUsePortablePrimitive(CollectionPlan plan)
     {
         return plan.CustomSerializer is null
-            && plan.ElementIsUnmanagedType
+            && (plan.ElementIsUnmanagedType || plan.ElementBulkLayoutSafe)
             && !plan.ElementIsStringType
-            && !plan.ElementHasGenerateSerializerAttribute;
+            && (!plan.ElementHasGenerateSerializerAttribute || plan.ElementBulkLayoutSafe)
+            && plan.ElementFixedSizeBytes is not null
+            && plan.ElementTypeName is not "bool" and not "decimal";
     }
 
     private static bool CanUseNativeLayout(CollectionPlan plan)

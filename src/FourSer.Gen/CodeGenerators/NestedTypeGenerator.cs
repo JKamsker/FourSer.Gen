@@ -29,8 +29,12 @@ internal static class NestedTypeGenerator
             {
                 typeKeyword = $"record {typeKeyword}";
             }
-            var disposableInterface = DisposalGenerator.ShouldGenerateDispose(nestedType) ? ", IDisposable" : string.Empty;
-            sb.WriteLineFormat("public partial {0} {1} : ISerializable<{1}>{2}", typeKeyword, nestedType.Name, disposableInterface);
+            var disposableInterface = DisposalGenerator.ShouldGenerateDispose(nestedType) ? ", global::System.IDisposable" : string.Empty;
+            sb.WriteLineFormat(
+                "public partial {0} {1} : global::FourSer.Contracts.ISerializable<{1}>{2}",
+                typeKeyword,
+                nestedType.Name,
+                disposableInterface);
             using var _ = sb.BeginBlock();
             // Delegate to the primary generators
             if (nestedType.Constructor is { ShouldGenerate: true } ctor)        

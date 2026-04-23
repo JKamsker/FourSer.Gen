@@ -32,7 +32,7 @@ public class OptimizationStreamFailureTests
     }
 
     [Fact]
-    public void NonSeekableEnumerableStream_ShouldThrow()
+    public void NonSeekableEnumerableStream_ShouldSerializeSuccessfully()
     {
         const string rootTypeName = "FourSer.Tests.Custom.Failures.EnumerablePacket";
         const string source = """
@@ -62,8 +62,7 @@ public class OptimizationStreamFailureTests
         var packetType = OptimizationFailureTestHelpers.GetPacketType(assembly, rootTypeName);
         var packet = packetType.GetMethod("CreateSample")!.Invoke(null, null)!;
 
-        Assert.Throws<NotSupportedException>(
-            () => OptimizationFailureTestHelpers.InvokeSerializeStream(packetType, packet, new NonSeekableWriteStream()));
+        OptimizationFailureTestHelpers.InvokeSerializeStream(packetType, packet, new NonSeekableWriteStream());
     }
 
     [Fact]

@@ -14,8 +14,10 @@ public class SerializeCollectionAttribute : Attribute
     public int CountSize { get; set; } = -1;
     
     /// <summary>
-    /// Reference to a property that contains the size of the collection.
-    /// The referenced collection must be of type int, byte, ushort, long or an Enum.
+    /// Reference to a property or field that mirrors the collection count on the wire.
+    /// During serialization, the generator writes the actual count derived from the collection.
+    /// During deserialization, the count read from the wire is assigned back to the referenced member.
+    /// The referenced member must be of type int, byte, ushort, long, or an enum-backed integral type.
     /// </summary>
     public string? CountSizeReference { get; set; }
 
@@ -34,7 +36,9 @@ public class SerializeCollectionAttribute : Attribute
     public Type? TypeIdType { get; set; }
 
     /// <summary>
-    /// For `SingleTypeId` mode only. The name of the property on the containing class that holds the TypeId for all elements in the collection.
+    /// For `SingleTypeId` mode only. The name of the property or field that mirrors the collection discriminator on the wire.
+    /// During serialization, the discriminator is derived from the actual collection contents rather than this member's current value.
+    /// During deserialization, the discriminator read from the wire is assigned back to the referenced member.
     /// </summary>
     public string? TypeIdProperty { get; set; }
 
@@ -44,4 +48,3 @@ public class SerializeCollectionAttribute : Attribute
     /// </summary>
     public bool Unlimited { get; set; }
 }
-

@@ -42,8 +42,7 @@ public static class CollectionUtilities
             return true;
         }
 
-        return collectionTypeInfo.IsReadOnlyInterface
-            || string.Equals(collectionTypeInfo.ConcreteTypeName, "System.Collections.Generic.Stack", StringComparison.Ordinal);
+        return string.Equals(collectionTypeInfo.ConcreteTypeName, "System.Collections.Generic.Stack", StringComparison.Ordinal);
     }
 
     /// <summary>

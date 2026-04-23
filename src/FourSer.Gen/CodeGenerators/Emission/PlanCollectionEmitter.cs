@@ -3,6 +3,7 @@ using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.CodeGenerators.Helpers;
 using FourSer.Gen.CodeGenerators.Logic;
 using FourSer.Gen.Helpers;
+using FourSer.Gen.Models;
 
 namespace FourSer.Gen.CodeGenerators.Emission;
 
@@ -110,7 +111,8 @@ internal static class PlanCollectionEmitter
             member,
             writerContext,
             context.Plan.Facts.Type,
-            op.SourceExpression);
+            op.SourceExpression,
+            op.CollectionPlan);
     }
 
     public static void EmitCollectionValidate(PlanEmitterContext context, CollectionValidateOp op)
@@ -132,7 +134,92 @@ internal static class PlanCollectionEmitter
             return;
         }
 
+        if (TryEmitFixedElementCollectionSize(context, op, member))
+        {
+            return;
+        }
+
         PacketSizeGenerator.GenerateCollectionSizeCalculation(context.Builder, member, context.Plan.Facts.Type);
+    }
+
+    private static bool TryEmitFixedElementCollectionSize(
+        PlanEmitterContext context,
+        CollectionSizeOp op,
+        MemberToGenerate member)
+    {
+        var plan = op.CollectionPlan;
+        if (plan.BulkLayoutMode == BulkLayoutMode.None
+            || plan.ElementFixedSizeBytes is not { } elementSizeBytes
+            || plan.CustomSerializer is not null
+            || GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
+        {
+            return false;
+        }
+
+        var countExpression = plan.CollectionInfo.CountSize?.ToString();
+        if (plan.CollectionInfo.CountSize is > 0)
+        {
+            context.Builder.WriteLine($"if ({op.AccessExpression} is null)");
+            using (context.Builder.BeginBlock())
+            {
+                context.Builder.WriteLine($"throw new System.ArgumentNullException(nameof({op.AccessExpression}), \"Fixed-size collections cannot be null.\");");
+            }
+
+            var actualCountExpression = GeneratorUtilities.GetCountExpressionForAccess(member, op.AccessExpression);
+            context.Builder.WriteLine($"if ({actualCountExpression} != {plan.CollectionInfo.CountSize})");
+            using (context.Builder.BeginBlock())
+            {
+                context.Builder.WriteLine($"throw new System.InvalidOperationException($\"Collection '{member.Name}' must have a size of {plan.CollectionInfo.CountSize} but was {{{actualCountExpression}}}.\");");
+            }
+        }
+        else
+        {
+            if (!plan.CollectionInfo.Unlimited
+                && (plan.CollectionInfo.CountSize is null or < 0)
+                && plan.CollectionInfo.CountSizeReferenceIndex is null)
+            {
+                var countType = plan.CollectionInfo.CountType ?? TypeHelper.GetDefaultCountType();
+                context.Builder.WriteLine($"size += sizeof({countType});");
+            }
+
+            var rawCountExpression = PlanExpressionFactory.GetCountExpression(member, op.AccessExpression, nullable: plan.CanBeNull);
+            var countTypeName = GetCollectionCountValidationType(plan, context.Plan.Facts.Type);
+            if (countTypeName is not null && GeneratorUtilities.ShouldUseCheckedCountConversion(countTypeName))
+            {
+                var countLocalName = plan.CachedCountLocalName ?? $"{member.Name.ToCamelCase()}Count";
+                context.Builder.WriteLine($"var {countLocalName} = checked(({countTypeName})({rawCountExpression}));");
+                countExpression = countLocalName;
+            }
+            else if (plan.CachedCountLocalName is not null)
+            {
+                context.Builder.WriteLine($"var {plan.CachedCountLocalName} = {rawCountExpression};");
+                countExpression = plan.CachedCountLocalName;
+            }
+            else
+            {
+                countExpression = rawCountExpression;
+            }
+        }
+
+        context.Builder.WriteLine($"size += {countExpression} * {elementSizeBytes};");
+        return true;
+    }
+
+    private static string? GetCollectionCountValidationType(CollectionPlan plan, TypeToGenerate type)
+    {
+        if (plan.CollectionInfo.Unlimited)
+        {
+            return null;
+        }
+
+        if (plan.CollectionInfo.CountSizeReferenceIndex is { } countReferenceIndex)
+        {
+            return type.Members[countReferenceIndex].TypeName;
+        }
+
+        return plan.CollectionInfo.CountSize is null or < 0
+            ? plan.CollectionInfo.CountType ?? TypeHelper.GetDefaultCountType()
+            : null;
     }
 
     private static void EmitSpanBatchRead(PlanEmitterContext context, BatchReadOp op)

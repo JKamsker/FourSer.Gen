@@ -1,3 +1,4 @@
+using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 
 namespace FourSer.Gen.CodeGenerators.Planning;
@@ -31,6 +32,10 @@ internal static class MemoryOwnerPlanBuilder
             ElementIsUnmanagedType: memoryOwnerTypeInfo.IsElementUnmanagedType,
             ElementIsStringType: memoryOwnerTypeInfo.IsElementStringType,
             ElementHasGenerateSerializerAttribute: memoryOwnerTypeInfo.HasElementGenerateSerializerAttribute,
+            ElementFixedSizeBytes: memoryOwnerTypeInfo.IsElementUnmanagedType
+                ? TypeHelper.GetSizeOf(memoryOwnerTypeInfo.ElementTypeName)
+                : null,
+            ElementBulkLayoutSafe: memoryOwnerTypeInfo.IsElementUnmanagedType,
             ElementRequiresDisposal: false,
             CollectionInfo: collectionInfo,
             CustomSerializer: member.CustomSerializer,

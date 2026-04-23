@@ -60,7 +60,9 @@ internal static class DeserializePlanBuilder
         TargetKind targetKind)
     {
         var sourceExpression = targetKind == TargetKind.Span ? "buffer" : "stream";
-        var helperName = targetKind == TargetKind.Span ? "SpanReader" : "StreamReader";
+        var helperName = targetKind == TargetKind.Span
+            ? "global::FourSer.Gen.Helpers.RoSpanReaderHelpers"
+            : "global::FourSer.Gen.Helpers.StreamReaderHelpers";
         var useRef = targetKind == TargetKind.Span;
         var targetLocalName = PlanExpressionFactory.GetMemberLocalName(member);
         var collectionTargetExpression = ShouldInferCollectionLocal(member)
@@ -223,6 +225,11 @@ internal static class DeserializePlanBuilder
         }
 
         if (member.CollectionTypeInfo?.IsPureEnumerable == true)
+        {
+            return true;
+        }
+
+        if (member.CollectionTypeInfo?.IsReadOnlyInterface == true)
         {
             return true;
         }

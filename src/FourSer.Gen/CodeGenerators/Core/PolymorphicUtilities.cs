@@ -120,7 +120,7 @@ public static class PolymorphicUtilities
         if (isDeserialization)
         {
             var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(info.EnumUnderlyingType ?? info.TypeIdType);
-            sb.WriteLine($"var typeId = SpanReader.Read{typeIdTypeName}(ref data);");
+            sb.WriteLine($"var typeId = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.Read{typeIdTypeName}(ref data);");
             return "typeId";
         }
 
