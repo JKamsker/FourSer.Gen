@@ -83,6 +83,15 @@ public partial class PacketWithListOfStructs : global::FourSer.Contracts.ISerial
         return size;
     }
 
+    private PacketWithListOfStructs(System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct> structs)
+    {
+        this.Structs = structs;
+    }
+
+    public PacketWithListOfStructs()
+    {
+    }
+
     public static PacketWithListOfStructs Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct> structs;
@@ -102,8 +111,7 @@ public partial class PacketWithListOfStructs : global::FourSer.Contracts.ISerial
             }
         }
         structs = structsValue;
-        var obj = new PacketWithListOfStructs();
-        obj.Structs = structs;
+        var obj = new PacketWithListOfStructs(structs);
         return obj;
     }
 
@@ -131,8 +139,7 @@ public partial class PacketWithListOfStructs : global::FourSer.Contracts.ISerial
             }
         }
         structs = structsValue;
-        var obj = new PacketWithListOfStructs();
-        obj.Structs = structs;
+        var obj = new PacketWithListOfStructs(structs);
         return obj;
     }
 

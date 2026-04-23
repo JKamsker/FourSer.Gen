@@ -81,7 +81,6 @@ public sealed record MemberToGenerate
     MemoryOwnerTypeInfo? MemoryOwnerTypeInfo,
     bool IsReadOnly,
     bool IsInitOnly,
-    bool HasSourceInitializer,
     int? IsCountSizeReferenceFor,
     int? IsTypeIdPropertyFor,
     CustomSerializerInfo? CustomSerializer,

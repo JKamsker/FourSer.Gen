@@ -78,6 +78,31 @@ public partial class EnumerationTypesPacket : global::FourSer.Contracts.ISeriali
         return size;
     }
 
+    private EnumerationTypesPacket(System.Collections.Generic.List<int> numbers, System.Collections.Generic.ICollection<string> names, System.Collections.Generic.IEnumerable<byte> data, System.Collections.Generic.List<byte> data1, System.Collections.Concurrent.ConcurrentBag<float> values, System.Collections.Generic.HashSet<long> uniqueIds, System.Collections.Generic.Queue<ushort> processingQueue, System.Collections.Generic.Stack<uint> processingStack, int[] arrayData, System.Collections.Generic.IList<double> measurements, System.Collections.ObjectModel.Collection<bool> flags, System.Collections.ObjectModel.ObservableCollection<short> observableData, System.Collections.Generic.LinkedList<ushort> characters, System.Collections.Generic.SortedSet<long> sortedValues, System.Collections.Generic.HashSet<string> smallSet, System.Collections.Generic.Queue<int> mediumQueue, System.Collections.Concurrent.ConcurrentBag<long> largeBag)
+    {
+        this.Numbers = numbers;
+        this.Names = names;
+        this.Data = data;
+        this.Data1 = data1;
+        this.Values = values;
+        this.UniqueIds = uniqueIds;
+        this.ProcessingQueue = processingQueue;
+        this.ProcessingStack = processingStack;
+        this.ArrayData = arrayData;
+        this.Measurements = measurements;
+        this.Flags = flags;
+        this.ObservableData = observableData;
+        this.Characters = characters;
+        this.SortedValues = sortedValues;
+        this.SmallSet = smallSet;
+        this.MediumQueue = mediumQueue;
+        this.LargeBag = largeBag;
+    }
+
+    public EnumerationTypesPacket()
+    {
+    }
+
     public static EnumerationTypesPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         System.Collections.Generic.List<int> numbers;
@@ -211,24 +236,7 @@ public partial class EnumerationTypesPacket : global::FourSer.Contracts.ISeriali
         {
             largeBag.Add(global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt64(ref buffer));
         }
-        var obj = new EnumerationTypesPacket();
-        obj.Numbers = numbers;
-        obj.Names = names;
-        obj.Data = data;
-        obj.Data1 = data1;
-        obj.Values = values;
-        obj.UniqueIds = uniqueIds;
-        obj.ProcessingQueue = processingQueue;
-        obj.ProcessingStack = processingStack;
-        obj.ArrayData = arrayData;
-        obj.Measurements = measurements;
-        obj.Flags = flags;
-        obj.ObservableData = observableData;
-        obj.Characters = characters;
-        obj.SortedValues = sortedValues;
-        obj.SmallSet = smallSet;
-        obj.MediumQueue = mediumQueue;
-        obj.LargeBag = largeBag;
+        var obj = new EnumerationTypesPacket(numbers, names, data, data1, values, uniqueIds, processingQueue, processingStack, arrayData, measurements, flags, observableData, characters, sortedValues, smallSet, mediumQueue, largeBag);
         return obj;
     }
 
@@ -370,24 +378,7 @@ public partial class EnumerationTypesPacket : global::FourSer.Contracts.ISeriali
         {
             largeBag.Add(global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt64(stream));
         }
-        var obj = new EnumerationTypesPacket();
-        obj.Numbers = numbers;
-        obj.Names = names;
-        obj.Data = data;
-        obj.Data1 = data1;
-        obj.Values = values;
-        obj.UniqueIds = uniqueIds;
-        obj.ProcessingQueue = processingQueue;
-        obj.ProcessingStack = processingStack;
-        obj.ArrayData = arrayData;
-        obj.Measurements = measurements;
-        obj.Flags = flags;
-        obj.ObservableData = observableData;
-        obj.Characters = characters;
-        obj.SortedValues = sortedValues;
-        obj.SmallSet = smallSet;
-        obj.MediumQueue = mediumQueue;
-        obj.LargeBag = largeBag;
+        var obj = new EnumerationTypesPacket(numbers, names, data, data1, values, uniqueIds, processingQueue, processingStack, arrayData, measurements, flags, observableData, characters, sortedValues, smallSet, mediumQueue, largeBag);
         return obj;
     }
 

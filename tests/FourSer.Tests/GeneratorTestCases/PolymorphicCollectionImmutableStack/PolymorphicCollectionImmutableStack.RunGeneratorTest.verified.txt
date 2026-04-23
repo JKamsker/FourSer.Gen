@@ -29,6 +29,15 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
         return size;
     }
 
+    private Inventory(System.Collections.Immutable.ImmutableStack<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.IItem> items)
+    {
+        this.Items = items;
+    }
+
+    public Inventory()
+    {
+    }
+
     public static Inventory Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         var itemsCount = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadInt32(ref buffer);
@@ -60,8 +69,7 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
             itemsStaging.Add(item);
         }
         var items = System.Collections.Immutable.ImmutableStack.CreateRange<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.IItem>(global::System.Linq.Enumerable.Reverse(itemsStaging));
-        var obj = new Inventory();
-        obj.Items = items;
+        var obj = new Inventory(items);
         return obj;
     }
 
@@ -101,8 +109,7 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
             itemsStaging.Add(item);
         }
         var items = System.Collections.Immutable.ImmutableStack.CreateRange<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImmutableStack.IItem>(global::System.Linq.Enumerable.Reverse(itemsStaging));
-        var obj = new Inventory();
-        obj.Items = items;
+        var obj = new Inventory(items);
         return obj;
     }
 

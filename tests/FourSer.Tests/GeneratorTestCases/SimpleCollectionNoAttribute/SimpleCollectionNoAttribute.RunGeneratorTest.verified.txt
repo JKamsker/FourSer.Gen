@@ -18,6 +18,15 @@ public partial class MyPacket : global::FourSer.Contracts.ISerializable<MyPacket
         return size;
     }
 
+    private MyPacket(System.Collections.Generic.List<byte> data)
+    {
+        this.Data = data;
+    }
+
+    public MyPacket()
+    {
+    }
+
     public static MyPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         System.Collections.Generic.List<byte> data;
@@ -26,8 +35,7 @@ public partial class MyPacket : global::FourSer.Contracts.ISerializable<MyPacket
         System.Runtime.InteropServices.CollectionsMarshal.SetCount(dataValue, checked((int)dataCount));
         global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBytes(ref buffer, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(dataValue));
         data = dataValue;
-        var obj = new MyPacket();
-        obj.Data = data;
+        var obj = new MyPacket(data);
         return obj;
     }
 
@@ -44,8 +52,7 @@ public partial class MyPacket : global::FourSer.Contracts.ISerializable<MyPacket
         System.Runtime.InteropServices.CollectionsMarshal.SetCount(dataValue, checked((int)dataCount));
         stream.ReadExactly(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(dataValue));
         data = dataValue;
-        var obj = new MyPacket();
-        obj.Data = data;
+        var obj = new MyPacket(data);
         return obj;
     }
 

@@ -4,7 +4,6 @@ using FourSer.Gen.CodeGenerators.Core;
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace FourSer.Gen;
 
@@ -642,7 +641,6 @@ internal static class TypeInfoProvider
         }
 
         var hasUserDefinedParameterlessCtor = HasParameterlessConstructor(constructors);
-        var hasPublicParameterlessCtor = HasPublicParameterlessConstructor(typeSymbol);
         var shouldGenerate = HasReadOnlyMembers(members);
 
         if (!shouldGenerate)
@@ -663,11 +661,6 @@ internal static class TypeInfoProvider
                     return new ConstructorInfo(new(parameters.ToImmutable()), false, hasUserDefinedParameterlessCtor);
                 }
             }
-
-            if (ShouldPreferParameterlessConstruction(typeSymbol, members, hasPublicParameterlessCtor))
-            {
-                return new ConstructorInfo(new(ImmutableArray<ParameterInfo>.Empty), false, hasPublicParameterlessCtor);
-            }
         }
 
         var generatedParametersBuilder = ImmutableArray.CreateBuilder<ParameterInfo>();
@@ -684,20 +677,6 @@ internal static class TypeInfoProvider
         foreach (var c in constructors)
         {
             if (c.Parameters.Length == 0)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool HasPublicParameterlessConstructor(INamedTypeSymbol typeSymbol)
-    {
-        foreach (var constructor in typeSymbol.Constructors)
-        {
-            if (constructor.Parameters.Length == 0
-                && constructor.DeclaredAccessibility == Accessibility.Public)
             {
                 return true;
             }
@@ -724,27 +703,6 @@ internal static class TypeInfoProvider
         foreach (var m in members)
         {
             if (m.IsReadOnly || m.IsInitOnly)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool ShouldPreferParameterlessConstruction(
-        INamedTypeSymbol typeSymbol,
-        EquatableArray<MemberToGenerate> members,
-        bool hasPublicParameterlessCtor)
-    {
-        if (typeSymbol.IsValueType || !hasPublicParameterlessCtor)
-        {
-            return false;
-        }
-
-        foreach (var member in members)
-        {
-            if (member.HasSourceInitializer)
             {
                 return true;
             }
@@ -1114,8 +1072,6 @@ internal static class TypeInfoProvider
             isReadOnly = field.IsReadOnly;
         }
 
-        var hasSourceInitializer = HasSourceInitializer(m);
-
         var memberHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(memberTypeSymbol as INamedTypeSymbol);
 
         var location = m.Locations.First();
@@ -1156,7 +1112,6 @@ internal static class TypeInfoProvider
             MemoryOwnerTypeInfo: memoryOwnerTypeInfo,
             IsReadOnly: isReadOnly,
             IsInitOnly: isInitOnly,
-            HasSourceInitializer: hasSourceInitializer,
             IsCountSizeReferenceFor: null,
             IsTypeIdPropertyFor: null,
             CustomSerializer: GetCustomSerializer(m),
@@ -1165,21 +1120,6 @@ internal static class TypeInfoProvider
         );
 
         return (memberToGenerate, location);
-    }
-
-    private static bool HasSourceInitializer(ISymbol member)
-    {
-        foreach (var syntaxReference in member.DeclaringSyntaxReferences)
-        {
-            var syntax = syntaxReference.GetSyntax();
-            if (syntax is PropertyDeclarationSyntax { Initializer: not null }
-                or VariableDeclaratorSyntax { Initializer: not null })
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private static CustomSerializerInfo? GetCustomSerializer(ISymbol member)

@@ -147,6 +147,16 @@ public partial class Parent : global::FourSer.Contracts.ISerializable<Parent>, g
         return size;
     }
 
+    private Parent(System.Buffers.IMemoryOwner<byte> data, FourSer.Tests.GeneratorTestCases.MemoryOwner.Child disposableProperty)
+    {
+        this.Data = data;
+        this.DisposableProperty = disposableProperty;
+    }
+
+    public Parent()
+    {
+    }
+
     public static Parent Deserialize(ref System.ReadOnlySpan<byte> buffer)
     {
         System.Buffers.IMemoryOwner<byte> data;
@@ -165,9 +175,7 @@ public partial class Parent : global::FourSer.Contracts.ISerializable<Parent>, g
         }
         data = dataOwner;
         disposableProperty = global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.Deserialize(ref buffer);
-        var obj = new Parent();
-        obj.Data = data;
-        obj.DisposableProperty = disposableProperty;
+        var obj = new Parent(data, disposableProperty);
         return obj;
     }
 
@@ -194,9 +202,7 @@ public partial class Parent : global::FourSer.Contracts.ISerializable<Parent>, g
         }
         data = dataOwner;
         disposableProperty = global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.Deserialize(stream);
-        var obj = new Parent();
-        obj.Data = data;
-        obj.DisposableProperty = disposableProperty;
+        var obj = new Parent(data, disposableProperty);
         return obj;
     }
 
