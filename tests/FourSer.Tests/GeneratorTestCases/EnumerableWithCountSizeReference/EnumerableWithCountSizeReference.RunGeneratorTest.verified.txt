@@ -57,19 +57,6 @@ public partial class EnumerableOfReferenceTypes : global::FourSer.Contracts.ISer
         return Deserialize(ref buffer);
     }
 
-    public static EnumerableOfReferenceTypes Deserialize(System.IO.Stream stream)
-    {
-        int count;
-        count = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var myList = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity>(count);
-        for (int i = 0; i < count; i++)
-        {
-            myList.Add(global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.Deserialize(stream));
-        }
-        var obj = new EnumerableOfReferenceTypes(count, myList);
-        return obj;
-    }
-
     public static void Serialize(EnumerableOfReferenceTypes obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -95,28 +82,6 @@ public partial class EnumerableOfReferenceTypes : global::FourSer.Contracts.ISer
     public static void Serialize(EnumerableOfReferenceTypes obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(EnumerableOfReferenceTypes obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        var myListPreparedItems = obj.MyList is null ? null : global::System.Linq.Enumerable.ToList(obj.MyList);
-        var myListCount = (myListPreparedItems?.Count ?? 0);
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(myListCount));
-        if (myListPreparedItems is not null)
-        {
-            foreach (var item in myListPreparedItems)
-            {
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Collection item cannot be null.");
-                }
-                global::FourSer.Tests.GeneratorTestCases.EnumerableWithCountSizeReference.Entity.Serialize(item, stream);
-            }
-        }
     }
 }
 
@@ -166,16 +131,6 @@ public partial class Entity : global::FourSer.Contracts.ISerializable<Entity>
         return Deserialize(ref buffer);
     }
 
-    public static Entity Deserialize(System.IO.Stream stream)
-    {
-        int id;
-        string name;
-        id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        name = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new Entity(id, name);
-        return obj;
-    }
-
     public static void Serialize(Entity obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -189,45 +144,5 @@ public partial class Entity : global::FourSer.Contracts.ISerializable<Entity>
     public static void Serialize(Entity obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Entity obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.Id));
-        if (string.IsNullOrEmpty(obj.Name))
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, 0);
-        }
-        else
-        {
-            var nameStringByteCount = System.Text.Encoding.UTF8.GetByteCount(obj.Name);
-            var nameStringTotalBytes = nameStringByteCount + sizeof(int);
-            if (nameStringTotalBytes <= 256)
-            {
-                Span<byte> nameStringBuffer = stackalloc byte[nameStringTotalBytes];
-                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
-                var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
-                stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
-            }
-            else
-            {
-                var nameStringBufferRented = System.Buffers.ArrayPool<byte>.Shared.Rent(nameStringTotalBytes);
-                try
-                {
-                    var nameStringBuffer = nameStringBufferRented.AsSpan(0, nameStringTotalBytes);
-                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
-                    var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
-                    stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
-                }
-                finally
-                {
-                    System.Buffers.ArrayPool<byte>.Shared.Return(nameStringBufferRented);
-                }
-            }
-        }
     }
 }

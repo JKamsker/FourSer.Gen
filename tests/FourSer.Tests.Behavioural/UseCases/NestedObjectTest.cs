@@ -3,13 +3,13 @@ using Xunit;
 
 namespace FourSer.Tests.Behavioural.UseCases;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class NestedPacket
 {
     public int Id { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class ContainerPacket
 {
     public NestedPacket Nested { get; set; } = new();

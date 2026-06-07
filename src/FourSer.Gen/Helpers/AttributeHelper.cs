@@ -45,6 +45,28 @@ public static class AttributeHelper
             .Any(a => a.AttributeClass is not null && a.AttributeClass.IsGenerateSerializerAttribute());
     }
 
+    public static FourSer.Gen.Models.SerializerGenerationMethods GetAdditionalMethods(AttributeData? generateSerializerAttribute)
+    {
+        if (generateSerializerAttribute is null)
+        {
+            return FourSer.Gen.Models.SerializerGenerationMethods.None;
+        }
+
+        if (generateSerializerAttribute.ConstructorArguments.Length > 0
+            && generateSerializerAttribute.ConstructorArguments[0].Value is int constructorValue)
+        {
+            return (FourSer.Gen.Models.SerializerGenerationMethods)constructorValue;
+        }
+
+        var namedValue = generateSerializerAttribute.NamedArguments
+            .FirstOrDefault(arg => arg.Key == "AdditionalMethods")
+            .Value.Value;
+
+        return namedValue is int value
+            ? (FourSer.Gen.Models.SerializerGenerationMethods)value
+            : FourSer.Gen.Models.SerializerGenerationMethods.None;
+    }
+
     public static string? GetCountSizeReference(AttributeData? collectionAttribute)
     {
         return collectionAttribute?.NamedArguments

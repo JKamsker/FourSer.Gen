@@ -3,7 +3,7 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("Tcashshop.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TCashShopResource
     {
         [Serializer(typeof(PlainAsciiStringSerializer))]

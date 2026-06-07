@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TCountryInfo.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TCountryInfoCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TCountryInfoEntry> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TCountryInfoEntry
     {
         [Serializer(typeof(MfcAnsiStringSerializer))]

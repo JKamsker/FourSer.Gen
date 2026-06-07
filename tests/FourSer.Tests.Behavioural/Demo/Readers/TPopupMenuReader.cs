@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TPopupMenu.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TPopupMenuCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TPopupMenuLink> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TPopupMenuLink
     {
         public uint PopupId { get; set; }

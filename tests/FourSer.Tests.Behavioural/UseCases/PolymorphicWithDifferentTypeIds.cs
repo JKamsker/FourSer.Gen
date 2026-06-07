@@ -6,7 +6,7 @@ namespace FourSer.Tests.Behavioural.UseCases;
 // Example with byte TypeId
 
 // Example with ushort TypeId
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class PolymorphicWithUShortTypeId
 {
     public int Id { get; set; }
@@ -16,18 +16,18 @@ public partial class PolymorphicWithUShortTypeId
     [PolymorphicOption((ushort)2000, typeof(UShortEntityType2))]
     public BaseUShortEntity? Entity { get; set; }
     
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class BaseUShortEntity
     {
     }
     
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class UShortEntityType1 : BaseUShortEntity
     {
         public string Name { get; set; } = string.Empty;
     }
     
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class UShortEntityType2 : BaseUShortEntity
     {
         public string Description { get; set; } = string.Empty;
@@ -35,7 +35,7 @@ public partial class PolymorphicWithUShortTypeId
 }
 
 // Example with long TypeId
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class PolymorphicWithLongTypeId
 {
     public int Id { get; set; }
@@ -45,18 +45,18 @@ public partial class PolymorphicWithLongTypeId
     [PolymorphicOption(2000000L, typeof(LongEntityType2))]
     public BaseLongEntity? Entity { get; set; }
     
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class BaseLongEntity
     {
     }
     
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class LongEntityType1 : BaseLongEntity
     {
         public string Name { get; set; } = string.Empty;
     }
     
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class LongEntityType2 : BaseLongEntity
     {
         public string Description { get; set; } = string.Empty;
@@ -70,7 +70,7 @@ public enum EntityTypeEnum : byte
     Type2 = 20
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class PolymorphicWithEnumTypeId
 {
     public int Id { get; set; }
@@ -80,18 +80,18 @@ public partial class PolymorphicWithEnumTypeId
     [PolymorphicOption(EntityTypeEnum.Type2, typeof(EnumEntityType2))]
     public BaseEnumEntity? Entity { get; set; }
     
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class BaseEnumEntity
     {
     }
     
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class EnumEntityType1 : BaseEnumEntity
     {
         public string Name { get; set; } = string.Empty;
     }
     
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class EnumEntityType2 : BaseEnumEntity
     {
         public string Description { get; set; } = string.Empty;

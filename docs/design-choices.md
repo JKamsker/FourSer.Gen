@@ -39,8 +39,18 @@ This document is the source of truth for the wire-contract decisions that FourSe
 ## Custom serializers
 
 - `ISerializer<T>.Serialize(T, Stream)` and `ISerializer<T>.Deserialize(Stream)` are first-class contract members.
-- Generated stream paths call those stream methods directly.
+- Generated stream paths are emitted only when `SerializerGenerationMethods.Stream` is enabled.
+- When emitted, generated stream paths call those stream methods directly.
 - The generator must not bridge stream calls through the span-based methods on a custom serializer.
+
+## Transport overload opt-ins
+
+- `[GenerateSerializer]` emits only the span-based `ISerializable<T>` methods by default.
+- `SerializerGenerationMethods.Stream` enables `Stream` serialization and deserialization methods.
+- `SerializerGenerationMethods.BufferWriter` enables `IBufferWriter<byte>` serialization.
+- `SerializerGenerationMethods.SequenceReader` enables `SequenceReader<byte>` deserialization.
+- `SerializerGenerationMethods.PipeWriter` enables `PipeWriter` serialization.
+- `SerializerGenerationMethods.PipeReader` enables `PipeReader` deserialization and uses the generated `SequenceReader<byte>` path internally.
 
 ## Referenced member ordering
 

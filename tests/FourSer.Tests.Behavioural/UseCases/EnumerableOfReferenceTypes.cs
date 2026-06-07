@@ -1,8 +1,8 @@
-﻿using FourSer.Contracts;
+using FourSer.Contracts;
 
 namespace FourSer.Tests.Behavioural.UseCases;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class EnumerableOfReferenceTypes
 {
     // public int Count { get; set; }
@@ -11,7 +11,7 @@ public partial class EnumerableOfReferenceTypes
     public List<Entity> MyList { get; set; } 
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class Entity
 {
     public int Id { get; set; }
@@ -19,7 +19,7 @@ public partial class Entity
 }
 
 
-// [GenerateSerializer]
+// [GenerateSerializer(SerializerGenerationMethods.Stream)]
 // public partial class PolymorphicEntity
 // {
 //     public int Id { get; set; }
@@ -32,18 +32,18 @@ public partial class Entity
 //     [PolymorphicOption(2, typeof(EntityType2))]
 //     public IEnumerable<BaseEntity> Entity { get; set; }
 //     
-//     [GenerateSerializer]
+//     [GenerateSerializer(SerializerGenerationMethods.Stream)]
 //     public partial class BaseEntity
 //     {
 //     }
 //     
-//     [GenerateSerializer]
+//     [GenerateSerializer(SerializerGenerationMethods.Stream)]
 //     public partial class EntityType1 : BaseEntity
 //     {
 //         public string Name { get; set; } = string.Empty;
 //     }
 //     
-//     [GenerateSerializer]
+//     [GenerateSerializer(SerializerGenerationMethods.Stream)]
 //     public partial class EntityType2 : BaseEntity
 //     {
 //         public string Description { get; set; } = string.Empty;

@@ -3,14 +3,14 @@ using System.IO;
 
 namespace FourSer.Tests.Behavioural.Nested;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class ParentPacket
 {
     public int Id { get; set; }
     public ChildPacket? Child { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class ChildPacket
 {
     public string? Name { get; set; }

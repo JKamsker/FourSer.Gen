@@ -4,21 +4,21 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("THand.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class THandAppearanceCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<THandAppearance> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class THandAppearance
     {
         public byte HandId { get; set; }
         public THandClothAppearance Appearance { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class THandClothAppearance
     {
         public uint Clk { get; set; }

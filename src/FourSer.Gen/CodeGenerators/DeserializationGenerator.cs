@@ -18,13 +18,44 @@ internal static class DeserializationGenerator
         FourSerGeneratorOptions options,
         TargetCapabilities capabilities)
     {
+        var plans = new List<MethodPlan>();
+
         var spanPlan = PlanPipeline.BuildDeserializePlan(typeToGenerate, TargetKind.Span, options, capabilities);
         SpanDeserializeEmitter.Emit(sb, spanPlan);
-        sb.WriteLine();
-        var streamPlan = PlanPipeline.BuildDeserializePlan(typeToGenerate, TargetKind.Stream, options, capabilities);
-        StreamDeserializeEmitter.Emit(sb, streamPlan);
+        plans.Add(spanPlan);
 
-        return new[] { spanPlan, streamPlan }.ToEquatableArray();
+        if (typeToGenerate.AdditionalMethods.HasFlag(SerializerGenerationMethods.Stream))
+        {
+            sb.WriteLine();
+            sb.WriteLine();
+            var streamPlan = PlanPipeline.BuildDeserializePlan(typeToGenerate, TargetKind.Stream, options, capabilities);
+            StreamDeserializeEmitter.Emit(sb, streamPlan);
+            plans.Add(streamPlan);
+        }
+
+        var needsSequenceReader = typeToGenerate.AdditionalMethods.HasFlag(SerializerGenerationMethods.SequenceReader)
+            || typeToGenerate.AdditionalMethods.HasFlag(SerializerGenerationMethods.PipeReader);
+        MethodPlan? sequenceReaderPlan = null;
+        if (needsSequenceReader)
+        {
+            sb.WriteLine();
+            sb.WriteLine();
+            sequenceReaderPlan = PlanPipeline.BuildDeserializePlan(typeToGenerate, TargetKind.SequenceReader, options, capabilities);
+            var accessibility = typeToGenerate.AdditionalMethods.HasFlag(SerializerGenerationMethods.SequenceReader)
+                ? "public"
+                : "private";
+            SequenceReaderDeserializeEmitter.Emit(sb, sequenceReaderPlan, accessibility);
+            plans.Add(sequenceReaderPlan);
+        }
+
+        if (typeToGenerate.AdditionalMethods.HasFlag(SerializerGenerationMethods.PipeReader))
+        {
+            sb.WriteLine();
+            sb.WriteLine();
+            PipeReaderDeserializeEmitter.Emit(sb, sequenceReaderPlan!);
+        }
+
+        return plans.ToEquatableArray();
     }
 
     private static void GenerateBatchGroupDeserialization(IndentedStringBuilder sb, BatchGroup batchGroup, ref int batchIndex)
@@ -123,12 +154,12 @@ internal static class DeserializationGenerator
     )
     {
         var target = isCtorParam ? $"var {member.Name.ToCamelCase()}" : $"obj.{member.Name}";
-        var refOrEmpty = source == "buffer" ? "ref " : "";
+        var refOrEmpty = NeedsRefSource(source) ? "ref " : "";
 
         var resolvedSerializer = GeneratorUtilities.ResolveSerializer(member, type);
         if (resolvedSerializer is { } serializer)
         {
-            sb.WriteLineFormat("{0} = FourSer.Generated.Internal.__FourSer_Generated_Serializers.{1}.Deserialize({2}{3});", target, serializer.FieldName, refOrEmpty, source);
+            sb.WriteLineFormat("{0} = {1};", target, GetCustomSerializerDeserializeExpression(serializer.FieldName, member.TypeName, source, refOrEmpty));
             return;
         }
 
@@ -154,7 +185,7 @@ internal static class DeserializationGenerator
         }
         else if (member.HasGenerateSerializerAttribute)
         {
-            sb.WriteLineFormat("{0} = {1}.Deserialize({2}{3});", target, TypeHelper.GetGlobalTypeName(member.TypeName), refOrEmpty, source);
+            sb.WriteLineFormat("{0} = {1};", target, GetSerializableDeserializeExpression(member.TypeName, source, refOrEmpty));
         }
         else if (member.IsStringType)
         {
@@ -195,7 +226,7 @@ internal static class DeserializationGenerator
         }
 
         var memberName = (member.Name ?? string.Empty).ToCamelCase();
-        var refOrEmpty = source == "buffer" ? "ref " : "";
+        var refOrEmpty = NeedsRefSource(source) ? "ref " : "";
 
         string countVar;
         string countType;
@@ -244,9 +275,9 @@ internal static class DeserializationGenerator
 
             if (isByte)
             {
-                if (source == "buffer")
+                if (NeedsRefSource(source))
                 {
-                    sb.WriteLineFormat("{0}.ReadBytes(ref buffer, {1});", helper, spanVar);
+                    sb.WriteLineFormat("{0}.ReadBytes(ref {1}, {2});", helper, source, spanVar);
                 }
                 else
                 {
@@ -257,9 +288,9 @@ internal static class DeserializationGenerator
             {
                 var bytesVar = $"{memberName}Bytes";
                 sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.AsBytes({1});", bytesVar, spanVar);
-                if (source == "buffer")
+                if (NeedsRefSource(source))
                 {
-                    sb.WriteLineFormat("{0}.ReadBytes(ref buffer, {1});", helper, bytesVar);
+                    sb.WriteLineFormat("{0}.ReadBytes(ref {1}, {2});", helper, source, bytesVar);
                 }
                 else
                 {
@@ -276,17 +307,14 @@ internal static class DeserializationGenerator
                     if (member.CustomSerializer is { } customSerializer)
                     {
                         var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
-                        var serializerAccess = $"FourSer.Generated.Internal.__FourSer_Generated_Serializers.{serializerField}";
-                        sb.WriteLineFormat("{0} = {1}.Deserialize({2}{3});", elementTarget, serializerAccess, refOrEmpty, source);
+                        sb.WriteLineFormat("{0} = {1};", elementTarget, GetCustomSerializerDeserializeExpression(serializerField, elementTypeName, source, refOrEmpty));
                     }
                     else if (elementInfo.HasElementGenerateSerializerAttribute)
                     {
                         sb.WriteLineFormat(
-                            "{0} = {1}.Deserialize({2}{3});",
+                            "{0} = {1};",
                             elementTarget,
-                            TypeHelper.GetGlobalTypeName(elementTypeName),
-                            refOrEmpty,
-                            source
+                            GetSerializableDeserializeExpression(elementTypeName, source, refOrEmpty)
                         );
                     }
                     else if (elementInfo.IsElementUnmanagedType)
@@ -338,7 +366,7 @@ internal static class DeserializationGenerator
             return;
         }
 
-        var refOrEmpty = source == "buffer" ? "ref " : "";
+        var refOrEmpty = NeedsRefSource(source) ? "ref " : "";
 
         if (collectionInfo.Unlimited)
         {
@@ -528,8 +556,9 @@ internal static class DeserializationGenerator
                             sb.WriteLineFormat("for (int i = 0; i < {0}; i++)", loopLimitVar);
                             using (sb.BeginBlock())
                             {
-                                sb.WriteLineFormat
-                                    ("var item = {0}.Deserialize({1}{2});", TypeHelper.GetGlobalTypeName(option.Type), refOrEmpty, source);
+                                sb.WriteLineFormat(
+                                    "var item = {0};",
+                                    GetSerializableDeserializeExpression(option.Type, source, refOrEmpty));
                                 EmitCollectionItemWrite
                                 (
                                     sb,
@@ -666,6 +695,12 @@ internal static class DeserializationGenerator
                 sb.WriteLineFormat("{0}.CopyTo({1});", valueVar + "Span", targetExpr);
                 sb.WriteLineFormat("{0} = {0}.Slice({1});", source, byteCountVar);
             }
+            else if (source == "reader")
+            {
+                var bytesVar = $"{valueVar}Bytes";
+                sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.AsBytes({1}.AsSpan());", bytesVar, targetExpr);
+                sb.WriteLineFormat("{0}.ReadBytes(ref {1}, {2});", helper, source, bytesVar);
+            }
             else
             {
                 sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.AsBytes({1}.AsSpan());", valueVar + "Bytes", targetExpr);
@@ -687,6 +722,12 @@ internal static class DeserializationGenerator
                 sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, {1}>({2}.Slice(0, {3}));", valueVar + "Span", elementTypeNameNonNull, source, byteCountVar);
                 sb.WriteLineFormat("{0}.CopyTo({1});", valueVar + "Span", tempArrayVar);
                 sb.WriteLineFormat("{0} = {0}.Slice({1});", source, byteCountVar);
+            }
+            else if (source == "reader")
+            {
+                var bytesVar = $"{valueVar}Bytes";
+                sb.WriteLineFormat("var {0} = System.Runtime.InteropServices.MemoryMarshal.AsBytes({1}.AsSpan());", bytesVar, tempArrayVar);
+                sb.WriteLineFormat("{0}.ReadBytes(ref {1}, {2});", helper, source, bytesVar);
             }
             else
             {
@@ -713,7 +754,7 @@ internal static class DeserializationGenerator
     )
     {
         var tempCollectionVar = $"temp{member.Name}";
-        var refOrEmpty = source == "buffer" ? "ref " : "";
+        var refOrEmpty = NeedsRefSource(source) ? "ref " : "";
 
         ListTypeArgumentInfo listTypeInfo;
         string elementType;
@@ -747,7 +788,12 @@ internal static class DeserializationGenerator
 
 
         sb.WriteLineFormat("var {0} = new System.Collections.Generic.List<{1}>();", tempCollectionVar, elementType);
-        sb.WriteLine(source == "buffer" ? "while (buffer.Length > 0)" : "while (stream.Position < stream.Length)");
+        sb.WriteLine(source switch
+        {
+            "buffer" => "while (buffer.Length > 0)",
+            "reader" => "while (reader.Remaining > 0)",
+            _ => "while (stream.Position < stream.Length)",
+        });
         using (sb.BeginBlock())
         {
             GenerateListElementDeserialization
@@ -770,7 +816,7 @@ internal static class DeserializationGenerator
         var info = member.PolymorphicInfo!.Value;
         var memberName = member.Name.ToCamelCase();
         sb.WriteLineFormat("{0} {1} = default;", member.TypeName, memberName);
-        var refOrEmpty = source == "buffer" ? "ref " : "";
+        var refOrEmpty = NeedsRefSource(source) ? "ref " : "";
 
         string switchVar;
         if (info.TypeIdPropertyIndex is not null)
@@ -803,7 +849,7 @@ internal static class DeserializationGenerator
             sb.WriteLineFormat("case {0}:", key);
 
             using var __ = sb.BeginBlock();
-            sb.WriteLineFormat("{0} = {1}.Deserialize({2}{3});", memberName, TypeHelper.GetGlobalTypeName(option.Type), refOrEmpty, source);
+            sb.WriteLineFormat("{0} = {1};", memberName, GetSerializableDeserializeExpression(option.Type, source, refOrEmpty));
             sb.WriteLine("break;");
         }
 
@@ -821,7 +867,7 @@ internal static class DeserializationGenerator
     )
     {
         var info = member.PolymorphicInfo!.Value;
-        var refOrEmpty = source == "buffer" ? "ref " : "";
+        var refOrEmpty = NeedsRefSource(source) ? "ref " : "";
 
         var switchVar = $"{member.Name.ToCamelCase()}TypeId";
         var typeToRead = info.EnumUnderlyingType ?? info.TypeIdType;
@@ -845,7 +891,7 @@ internal static class DeserializationGenerator
 
             sb.WriteLineFormat("case {0}:", key);
             using var __ = sb.BeginBlock();
-            sb.WriteLineFormat("{0} = {1}.Deserialize({2}{3});", assignmentTarget, TypeHelper.GetGlobalTypeName(option.Type), refOrEmpty, source);
+            sb.WriteLineFormat("{0} = {1};", assignmentTarget, GetSerializableDeserializeExpression(option.Type, source, refOrEmpty));
             sb.WriteLine("break;");
         }
 
@@ -864,12 +910,11 @@ internal static class DeserializationGenerator
         string helper
     )
     {
-        var refOrEmpty = source == "buffer" ? "ref " : "";
+        var refOrEmpty = NeedsRefSource(source) ? "ref " : "";
         if (member.CustomSerializer is { } customSerializer)
         {
             var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
-            var serializerAccess = $"FourSer.Generated.Internal.__FourSer_Generated_Serializers.{serializerField}";
-            sb.WriteLineFormat("{0}[{1}] = {2}.Deserialize({3}{4});", arrayName, indexVar, serializerAccess, refOrEmpty, source);
+            sb.WriteLineFormat("{0}[{1}] = {2};", arrayName, indexVar, GetCustomSerializerDeserializeExpression(serializerField, elementInfo.ElementTypeName, source, refOrEmpty));
             return;
         }
 
@@ -886,7 +931,7 @@ internal static class DeserializationGenerator
         {
             sb.WriteLineFormat
             (
-                "{0}[{1}] = {2}.Deserialize({3}{4});", arrayName, indexVar, TypeHelper.GetGlobalTypeName(elementInfo.ElementTypeName), refOrEmpty, source
+                "{0}[{1}] = {2};", arrayName, indexVar, GetSerializableDeserializeExpression(elementInfo.ElementTypeName, source, refOrEmpty)
             );
         }
     }
@@ -901,12 +946,11 @@ internal static class DeserializationGenerator
         string helper
     )
     {
-        var refOrEmpty = source == "buffer" ? "ref " : "";
+        var refOrEmpty = NeedsRefSource(source) ? "ref " : "";
         if (member.CustomSerializer is { } customSerializer)
         {
             var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
-            var serializerAccess = $"FourSer.Generated.Internal.__FourSer_Generated_Serializers.{serializerField}";
-            sb.WriteLineFormat("{0}.Add({1}.Deserialize({2}{3}));", collectionTarget, serializerAccess, refOrEmpty, source);
+            sb.WriteLineFormat("{0}.Add({1});", collectionTarget, GetCustomSerializerDeserializeExpression(serializerField, elementInfo.TypeName, source, refOrEmpty));
             return;
         }
 
@@ -914,7 +958,7 @@ internal static class DeserializationGenerator
         {
             sb.WriteLineFormat
             (
-                "{0}.Add({1}.Deserialize({2}{3}));", collectionTarget, TypeHelper.GetGlobalTypeName(elementInfo.TypeName), refOrEmpty, source
+                "{0}.Add({1});", collectionTarget, GetSerializableDeserializeExpression(elementInfo.TypeName, source, refOrEmpty)
             );
         }
         else if (elementInfo.IsUnmanagedType)
@@ -940,13 +984,12 @@ internal static class DeserializationGenerator
     )
     {
         var addMethod = addMethodOverride ?? elementInfo.CollectionAddMethod ?? "Add";
-        var refOrEmpty = source == "buffer" ? "ref " : "";
+        var refOrEmpty = NeedsRefSource(source) ? "ref " : "";
 
         if (member.CustomSerializer is { } customSerializer)
         {
             var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
-            var serializerAccess = $"FourSer.Generated.Internal.__FourSer_Generated_Serializers.{serializerField}";
-            sb.WriteLineFormat("{0}.{1}({2}.Deserialize({3}{4}));", collectionTarget, addMethod, serializerAccess, refOrEmpty, source);
+            sb.WriteLineFormat("{0}.{1}({2});", collectionTarget, addMethod, GetCustomSerializerDeserializeExpression(serializerField, elementInfo.ElementTypeName, source, refOrEmpty));
             return;
         }
 
@@ -963,7 +1006,7 @@ internal static class DeserializationGenerator
         {
             sb.WriteLineFormat
             (
-                "{0}.{1}({2}.Deserialize({3}{4}));", collectionTarget, addMethod, TypeHelper.GetGlobalTypeName(elementInfo.ElementTypeName), refOrEmpty, source
+                "{0}.{1}({2});", collectionTarget, addMethod, GetSerializableDeserializeExpression(elementInfo.ElementTypeName, source, refOrEmpty)
             );
         }
     }
@@ -989,5 +1032,30 @@ internal static class DeserializationGenerator
 
         var resolvedAddMethod = addMethod ?? member.CollectionTypeInfo?.CollectionAddMethod ?? "Add";
         sb.WriteLineFormat("{0}.{1}({2});", collectionTargetVariableName, resolvedAddMethod, itemExpression);
+    }
+
+    private static bool NeedsRefSource(string source)
+    {
+        return source is "buffer" or "reader";
+    }
+
+    private static string GetSerializableDeserializeExpression(string typeName, string source, string refOrEmpty)
+    {
+        var globalTypeName = TypeHelper.GetGlobalTypeName(typeName);
+        return source == "reader"
+            ? $"global::FourSer.Gen.Helpers.SequenceReaderHelpers.DeserializeSerializable<{globalTypeName}>(ref reader)"
+            : $"{globalTypeName}.Deserialize({refOrEmpty}{source})";
+    }
+
+    private static string GetCustomSerializerDeserializeExpression(
+        string serializerFieldName,
+        string typeName,
+        string source,
+        string refOrEmpty)
+    {
+        var serializerAccess = $"FourSer.Generated.Internal.__FourSer_Generated_Serializers.{serializerFieldName}";
+        return source == "reader"
+            ? $"global::FourSer.Gen.Helpers.SequenceReaderHelpers.DeserializeWithSerializer<{TypeHelper.GetGlobalTypeName(typeName)}>(ref reader, {serializerAccess})"
+            : $"{serializerAccess}.Deserialize({refOrEmpty}{source})";
     }
 }

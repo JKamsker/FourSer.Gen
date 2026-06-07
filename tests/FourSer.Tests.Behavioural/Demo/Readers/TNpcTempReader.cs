@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TNPCTemp.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TNpcTemplateCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TNpcTemplateEntry> Templates { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TNpcTemplateEntry
     {
         public ushort TemplateId { get; set; }

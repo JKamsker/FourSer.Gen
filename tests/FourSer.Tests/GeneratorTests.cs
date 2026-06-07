@@ -116,6 +116,62 @@ public class GeneratorTests
     }
 
     [Fact]
+    public void GenerateSerializerDefault_ShouldNotEmitStreamMethods()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Transport;
+
+        [GenerateSerializer]
+        public partial class SpanOnlyPacket
+        {
+            public int Id { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "SpanOnlyPacket");
+
+        Assert.Contains("public static void Serialize(SpanOnlyPacket obj, ref System.Span<byte> data)", generatedCode);
+        Assert.Contains("public static SpanOnlyPacket Deserialize(ref System.ReadOnlySpan<byte> buffer)", generatedCode);
+        Assert.DoesNotContain("System.IO.Stream", generatedCode);
+    }
+
+    [Fact]
+    public void AdditionalMethods_ShouldEmitOptInTransportOverloads()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Transport;
+
+        [GenerateSerializer(
+            SerializerGenerationMethods.Stream
+            | SerializerGenerationMethods.BufferWriter
+            | SerializerGenerationMethods.SequenceReader
+            | SerializerGenerationMethods.PipeWriter
+            | SerializerGenerationMethods.PipeReader)]
+        public partial class TransportPacket
+        {
+            public int Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+        }
+        """;
+
+        var compilation = CreateCompilation(AddDefaultUsings(source));
+        var runResult = GetRunResult(compilation, out var finalCompilation);
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "TransportPacket");
+
+        Assert.DoesNotContain(runResult.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Contains("public static TransportPacket Deserialize(System.IO.Stream stream)", generatedCode);
+        Assert.Contains("public static void Serialize(TransportPacket obj, System.IO.Stream stream)", generatedCode);
+        Assert.Contains("public static void Serialize(TransportPacket obj, global::System.Buffers.IBufferWriter<byte> writer)", generatedCode);
+        Assert.Contains("public static TransportPacket Deserialize(ref global::System.Buffers.SequenceReader<byte> reader)", generatedCode);
+        Assert.Contains("public static void Serialize(TransportPacket obj, global::System.IO.Pipelines.PipeWriter writer)", generatedCode);
+        Assert.Contains("public static TransportPacket Deserialize(global::System.IO.Pipelines.PipeReader pipeReader)", generatedCode);
+
+        using var ms = new MemoryStream();
+        var emitResult = finalCompilation.Emit(ms);
+        Assert.True(emitResult.Success, $"Compilation failed with errors: {string.Join(", ", emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.GetMessage()))}");
+    }
+
+    [Fact]
     public void UnlimitedCollection_ShouldNotEmitCountPrefix()
     {
         const string source = """
@@ -242,7 +298,7 @@ public class GeneratorTests
         const string source = """
         namespace FourSer.Tests.Custom.Polymorphism;
 
-        [GenerateSerializer]
+        [GenerateSerializer(SerializerGenerationMethods.Stream)]
         public partial class DefaultedDiscriminatorPacket
         {
             public byte AnimalType { get; set; }
@@ -258,10 +314,10 @@ public class GeneratorTests
 
         public interface IAnimal { }
 
-        [GenerateSerializer]
+        [GenerateSerializer(SerializerGenerationMethods.Stream)]
         public partial class Dog : IAnimal { }
 
-        [GenerateSerializer]
+        [GenerateSerializer(SerializerGenerationMethods.Stream)]
         public partial class Cat : IAnimal { }
         """;
 
@@ -432,7 +488,7 @@ public class GeneratorTests
         const string source = """
         namespace FourSer.Tests.Custom.Collections;
 
-        [GenerateSerializer]
+        [GenerateSerializer(SerializerGenerationMethods.Stream)]
         public partial class ByteEnumerablePacket
         {
             [SerializeCollection]
@@ -504,7 +560,7 @@ public class GeneratorTests
         }
 
         Assert.Contains("private ImmutableArrayPacket(", generatedCode);
-        Assert.Equal(2, CountOccurrences(generatedCode, "var obj = new ImmutableArrayPacket(items, numbers, values);"));
+        Assert.Equal(1, CountOccurrences(generatedCode, "var obj = new ImmutableArrayPacket(items, numbers, values);"));
         Assert.DoesNotContain("var obj = new ImmutableArrayPacket();", generatedCode);
     }
 
@@ -526,7 +582,7 @@ public class GeneratorTests
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "LoginPacket");
 
         Assert.Contains("private LoginPacket(byte result, uint userID, string username)", generatedCode);
-        Assert.Equal(2, CountOccurrences(generatedCode, "var obj = new LoginPacket(result, userID, username);"));
+        Assert.Equal(1, CountOccurrences(generatedCode, "var obj = new LoginPacket(result, userID, username);"));
         Assert.DoesNotContain("var obj = new LoginPacket();", generatedCode);
     }
 
@@ -546,7 +602,7 @@ public class GeneratorTests
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "MyStruct");
 
         Assert.Contains("private MyStruct(int a)", generatedCode);
-        Assert.Equal(2, CountOccurrences(generatedCode, "var obj = new MyStruct(a);"));
+        Assert.Equal(1, CountOccurrences(generatedCode, "var obj = new MyStruct(a);"));
         Assert.DoesNotContain("var obj = new MyStruct();", generatedCode);
     }
 
@@ -568,7 +624,7 @@ public class GeneratorTests
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "PacketWithPrivateCtor");
 
         Assert.Contains("private PacketWithPrivateCtor(int value)", generatedCode);
-        Assert.Equal(2, CountOccurrences(generatedCode, "var obj = new PacketWithPrivateCtor(value);"));
+        Assert.Equal(1, CountOccurrences(generatedCode, "var obj = new PacketWithPrivateCtor(value);"));
         Assert.DoesNotContain("public PacketWithPrivateCtor()", generatedCode);
     }
 
@@ -584,7 +640,7 @@ public class GeneratorTests
 
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "Packet");
 
-        Assert.Equal(2, CountOccurrences(generatedCode, "var obj = new Packet(a, b);"));
+        Assert.Equal(1, CountOccurrences(generatedCode, "var obj = new Packet(a, b);"));
         Assert.DoesNotContain("var obj = new Packet();", generatedCode);
     }
 
@@ -711,8 +767,8 @@ public class GeneratorTests
 
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "FixedSizePacket");
 
-        Assert.Equal(3, CountOccurrences(generatedCode, "if (obj.MyList is null)"));
-        Assert.Equal(3, CountOccurrences(generatedCode, "if (obj.MyList.Count != 10)"));
+        Assert.Equal(2, CountOccurrences(generatedCode, "if (obj.MyList is null)"));
+        Assert.Equal(2, CountOccurrences(generatedCode, "if (obj.MyList.Count != 10)"));
         Assert.DoesNotContain("if (obj.MyList is not null)", generatedCode);
     }
 
@@ -738,7 +794,7 @@ public class GeneratorTests
 
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "ContainerPacket");
 
-        Assert.Equal(3, CountOccurrences(generatedCode, "if (obj.Data is null)"));
+        Assert.Equal(2, CountOccurrences(generatedCode, "if (obj.Data is null)"));
     }
 
     [Fact]
@@ -781,7 +837,7 @@ public class GeneratorTests
 
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "WrapperPacket");
 
-        Assert.Equal(3, CountOccurrences(generatedCode, "if (obj.Name is null)"));
+        Assert.Equal(2, CountOccurrences(generatedCode, "if (obj.Name is null)"));
     }
 
     [Fact]
@@ -831,7 +887,7 @@ public class GeneratorTests
         const string source = """
         namespace FourSer.Tests.Custom.Options;
 
-        [GenerateSerializer]
+        [GenerateSerializer(SerializerGenerationMethods.Stream)]
         public partial class StringPacket
         {
             public string Name { get; set; } = string.Empty;
@@ -850,7 +906,7 @@ public class GeneratorTests
         const string source = """
         namespace FourSer.Tests.Custom.Options;
 
-        [GenerateSerializer]
+        [GenerateSerializer(SerializerGenerationMethods.Stream)]
         public partial class StringPacket
         {
             public string Name { get; set; } = string.Empty;

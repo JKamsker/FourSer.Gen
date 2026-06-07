@@ -13,14 +13,35 @@ internal static class SerializationGenerator
         FourSerGeneratorOptions options,
         TargetCapabilities capabilities)
     {
+        var plans = new List<MethodPlan>();
+
         var spanPlan = PlanPipeline.BuildSerializePlan(typeToGenerate, TargetKind.Span, options, capabilities);
         SpanSerializeEmitter.Emit(sb, spanPlan);
+        plans.Add(spanPlan);
 
-        sb.WriteLine();
+        if (typeToGenerate.AdditionalMethods.HasFlag(SerializerGenerationMethods.Stream))
+        {
+            sb.WriteLine();
+            sb.WriteLine();
+            var streamPlan = PlanPipeline.BuildSerializePlan(typeToGenerate, TargetKind.Stream, options, capabilities);
+            StreamSerializeEmitter.Emit(sb, streamPlan);
+            plans.Add(streamPlan);
+        }
 
-        var streamPlan = PlanPipeline.BuildSerializePlan(typeToGenerate, TargetKind.Stream, options, capabilities);
-        StreamSerializeEmitter.Emit(sb, streamPlan);
+        if (typeToGenerate.AdditionalMethods.HasFlag(SerializerGenerationMethods.BufferWriter))
+        {
+            sb.WriteLine();
+            sb.WriteLine();
+            BufferWriterSerializeEmitter.Emit(sb, spanPlan);
+        }
 
-        return new[] { spanPlan, streamPlan }.ToEquatableArray();
+        if (typeToGenerate.AdditionalMethods.HasFlag(SerializerGenerationMethods.PipeWriter))
+        {
+            sb.WriteLine();
+            sb.WriteLine();
+            PipeWriterSerializeEmitter.Emit(sb, spanPlan);
+        }
+
+        return plans.ToEquatableArray();
     }
 }

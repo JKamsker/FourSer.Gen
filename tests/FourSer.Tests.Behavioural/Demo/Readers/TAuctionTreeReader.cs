@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TAuctionTree.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TAuctionTreeCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TAuctionTreeEntry> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TAuctionTreeEntry
     {
         [Serializer(typeof(MfcAnsiStringSerializer))]

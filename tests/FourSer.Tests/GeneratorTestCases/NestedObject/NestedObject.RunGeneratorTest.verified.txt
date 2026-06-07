@@ -47,16 +47,6 @@ public partial class ContainerPacket : global::FourSer.Contracts.ISerializable<C
         return Deserialize(ref buffer);
     }
 
-    public static ContainerPacket Deserialize(System.IO.Stream stream)
-    {
-        int id;
-        FourSer.Tests.GeneratorTestCases.NestedObject.NestedData data;
-        id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        data = global::FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.Deserialize(stream);
-        var obj = new ContainerPacket(id, data);
-        return obj;
-    }
-
     public static void Serialize(ContainerPacket obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -74,20 +64,6 @@ public partial class ContainerPacket : global::FourSer.Contracts.ISerializable<C
     public static void Serialize(ContainerPacket obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(ContainerPacket obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.Id));
-        if (obj.Data is null)
-        {
-            throw new System.NullReferenceException("Member \"obj.Data\" cannot be null.");
-        }
-        global::FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.Serialize(obj.Data, stream);
     }
 }
 
@@ -137,16 +113,6 @@ public partial class NestedData : global::FourSer.Contracts.ISerializable<Nested
         return Deserialize(ref buffer);
     }
 
-    public static NestedData Deserialize(System.IO.Stream stream)
-    {
-        string name;
-        float value;
-        name = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        value = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadSingle(stream);
-        var obj = new NestedData(name, value);
-        return obj;
-    }
-
     public static void Serialize(NestedData obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -160,45 +126,5 @@ public partial class NestedData : global::FourSer.Contracts.ISerializable<Nested
     public static void Serialize(NestedData obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(NestedData obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (string.IsNullOrEmpty(obj.Name))
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, 0);
-        }
-        else
-        {
-            var nameStringByteCount = System.Text.Encoding.UTF8.GetByteCount(obj.Name);
-            var nameStringTotalBytes = nameStringByteCount + sizeof(int);
-            if (nameStringTotalBytes <= 256)
-            {
-                Span<byte> nameStringBuffer = stackalloc byte[nameStringTotalBytes];
-                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
-                var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
-                stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
-            }
-            else
-            {
-                var nameStringBufferRented = System.Buffers.ArrayPool<byte>.Shared.Rent(nameStringTotalBytes);
-                try
-                {
-                    var nameStringBuffer = nameStringBufferRented.AsSpan(0, nameStringTotalBytes);
-                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
-                    var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
-                    stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
-                }
-                finally
-                {
-                    System.Buffers.ArrayPool<byte>.Shared.Return(nameStringBufferRented);
-                }
-            }
-        }
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteSingle(stream, (float)(obj.Value));
     }
 }

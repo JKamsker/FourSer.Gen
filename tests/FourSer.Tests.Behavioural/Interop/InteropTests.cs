@@ -4,7 +4,7 @@ using System;
 
 namespace FourSer.Tests.Behavioural.Interop;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class SimplePacket
 {
     public int PlayerId { get; set; }

@@ -35,14 +35,6 @@ public partial class PrivateCtorPacket : global::FourSer.Contracts.ISerializable
         return Deserialize(ref buffer);
     }
 
-    public static PrivateCtorPacket Deserialize(System.IO.Stream stream)
-    {
-        int value;
-        value = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var obj = new PrivateCtorPacket(value);
-        return obj;
-    }
-
     public static void Serialize(PrivateCtorPacket obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -55,14 +47,5 @@ public partial class PrivateCtorPacket : global::FourSer.Contracts.ISerializable
     public static void Serialize(PrivateCtorPacket obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(PrivateCtorPacket obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.Value));
     }
 }

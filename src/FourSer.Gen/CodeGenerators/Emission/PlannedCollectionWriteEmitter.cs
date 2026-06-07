@@ -21,7 +21,7 @@ internal static class PlannedCollectionWriteEmitter
         var writerContext = new SerializationWriterEmitter.WriterCtx(
             op.TargetExpression,
             op.HelperName,
-            op.TargetKind == TargetKind.Span);
+            op.TargetKind.UsesRefWriteTarget());
         EmitCollectionWrite(context.Builder, member, op.CollectionPlan, writerContext, op.SourceExpression);
         return true;
     }

@@ -7,8 +7,23 @@ internal static class Consts
         @"
 using System;
 namespace FourSer.Contracts;
+ [Flags]
+ public enum SerializerGenerationMethods
+ {
+     None = 0,
+     Stream = 1,
+     BufferWriter = 2,
+     SequenceReader = 4,
+     PipeWriter = 8,
+     PipeReader = 16,
+ }
  [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
- public class GenerateSerializerAttribute : Attribute { }
+ public class GenerateSerializerAttribute : Attribute
+ {
+     public GenerateSerializerAttribute() { }
+     public GenerateSerializerAttribute(SerializerGenerationMethods additionalMethods) { AdditionalMethods = additionalMethods; }
+     public SerializerGenerationMethods AdditionalMethods { get; set; }
+ }
 ",
         @"
  using System;
@@ -26,10 +41,8 @@ public interface ISerializable<T> where T : ISerializable<T>
     static abstract int GetPacketSize(T obj);
     static abstract void Serialize(T obj, ref Span<byte> data);
     static abstract void Serialize(T obj, Span<byte> data);
-    static abstract void Serialize(T obj, Stream stream);
     static abstract T Deserialize(ref ReadOnlySpan<byte> data);
     static abstract T Deserialize(ReadOnlySpan<byte> data);
-    static abstract T Deserialize(Stream stream);
 }
 ",
         @"

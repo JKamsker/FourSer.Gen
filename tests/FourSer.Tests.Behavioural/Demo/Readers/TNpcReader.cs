@@ -95,14 +95,14 @@ namespace FourSer.Tests.Behavioural.Demo
     [TcdResource("TNPC038e0000.tcd")]
     [TcdResource("TNPC038f0000.tcd")]
     [TcdResource("TNPC07da0000.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TNpcCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TNpcEntry> Npcs { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TNpcEntry
     {
         public uint Id { get; set; }

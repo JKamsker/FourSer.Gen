@@ -1,10 +1,10 @@
-﻿// using System.Diagnostics.CodeAnalysis;
+// using System.Diagnostics.CodeAnalysis;
 // using FourSer.Contracts;
 using Xunit;
 //
 namespace FourSer.Tests.Behavioural.UseCases.PolymorphicInferedType;
 //
-// [GenerateSerializer]
+// [GenerateSerializer(SerializerGenerationMethods.Stream)]
 // public partial class PolymorphicInferedType
 // {
 //     /*
@@ -25,19 +25,19 @@ namespace FourSer.Tests.Behavioural.UseCases.PolymorphicInferedType;
 //     DogType = 2
 // }
 //
-// [GenerateSerializer]
+// [GenerateSerializer(SerializerGenerationMethods.Stream)]
 // public partial class Cat : Animal
 // {
 //     public string Name { get; set; } = string.Empty;
 // }
 //
-// [GenerateSerializer]
+// [GenerateSerializer(SerializerGenerationMethods.Stream)]
 // public partial class Dog : Animal
 // {
 //     public string Breed { get; set; } = string.Empty;
 // }
 //
-// [GenerateSerializer]
+// [GenerateSerializer(SerializerGenerationMethods.Stream)]
 // public partial class Animal
 // {
 //     public int Id { get; set; }

@@ -39,14 +39,6 @@ public partial class Item : global::FourSer.Contracts.ISerializable<Item>
         return Deserialize(ref buffer);
     }
 
-    public static Item Deserialize(System.IO.Stream stream)
-    {
-        int id;
-        id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var obj = new Item(id);
-        return obj;
-    }
-
     public static void Serialize(Item obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -59,15 +51,6 @@ public partial class Item : global::FourSer.Contracts.ISerializable<Item>
     public static void Serialize(Item obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Item obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.Id));
     }
 }
 
@@ -134,20 +117,6 @@ public partial class MainObject : global::FourSer.Contracts.ISerializable<MainOb
         return Deserialize(ref buffer);
     }
 
-    public static MainObject Deserialize(System.IO.Stream stream)
-    {
-        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item> items;
-        var itemsCount = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
-        var itemsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item>(checked((int)itemsCount));
-        for (int i = 0; i < checked((int)itemsCount); i++)
-        {
-            itemsValue.Add(global::FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item.Deserialize(stream));
-        }
-        items = itemsValue;
-        var obj = new MainObject(items);
-        return obj;
-    }
-
     public static void Serialize(MainObject obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -175,29 +144,5 @@ public partial class MainObject : global::FourSer.Contracts.ISerializable<MainOb
     public static void Serialize(MainObject obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(MainObject obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Items is null)
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)(0));
-        }
-        else
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, checked((byte)(obj.Items.Count)));
-            for (int i = 0; i < obj.Items.Count; i++)
-            {
-                if (obj.Items[i] is null)
-                {
-                    throw new System.NullReferenceException($"Member \"obj.Items[i]\" cannot be null.");
-                }
-                global::FourSer.Tests.GeneratorTestCases.NullCollectionDynamicCount.Item.Serialize(obj.Items[i], stream);
-            }
-        }
     }
 }

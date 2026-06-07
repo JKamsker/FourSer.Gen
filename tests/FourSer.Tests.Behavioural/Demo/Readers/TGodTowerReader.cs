@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TGodTower.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TGodTowerCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TGodTowerRecord> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TGodTowerRecord
     {
         [Serializer(typeof(MfcAnsiStringSerializer))]

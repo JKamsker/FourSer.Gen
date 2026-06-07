@@ -9,7 +9,7 @@ namespace FourSer.Tests.Behavioural.Demo
     /// It contains a list of TItem entries, prefixed by a count of type ushort.
     /// </summary>
     [TcdResource("TItem.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TItemChart
     {
         /// <summary>
@@ -23,7 +23,7 @@ namespace FourSer.Tests.Behavioural.Demo
     /// <summary>
     /// Represents a single item template entry, corresponding to the C++ tagTITEM struct.
     /// </summary>
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TItem
     {
         public ushort ItemID { get; set; }

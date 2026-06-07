@@ -1,9 +1,9 @@
-﻿using FourSer.Contracts;
+using FourSer.Contracts;
 using Xunit;
 
 namespace FourSer.Tests.Behavioural.UseCases;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class InventoryWithCountSizeRef
 {
     // public int Count { get; set; }

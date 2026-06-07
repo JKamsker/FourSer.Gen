@@ -8,21 +8,21 @@ public interface IAnimal
 {
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class DogAnimal : IAnimal
 {
     public string Name { get; set; } = string.Empty;
     public int BarkPitch { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class CatAnimal : IAnimal
 {
     public string Name { get; set; } = string.Empty;
     public int Lives { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class InterfacePetOwner
 {
     [SerializePolymorphic(TypeIdType = typeof(byte))]
@@ -31,7 +31,7 @@ public partial class InterfacePetOwner
     public IAnimal Pet { get; set; } = null!;
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class InterfaceCollectionPacket
 {
     [SerializeCollection(PolymorphicMode = PolymorphicMode.IndividualTypeIds, TypeIdType = typeof(byte), CountType = typeof(byte))]
@@ -60,7 +60,7 @@ public partial class InterfaceCollectionPacket
     public IReadOnlyList<IAnimal> ReadOnlyListAnimals { get; set; } = Array.Empty<IAnimal>();
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class ImmutableCollectionPacket
 {
     [SerializeCollection(PolymorphicMode = PolymorphicMode.IndividualTypeIds, TypeIdType = typeof(byte), CountType = typeof(byte))]
@@ -84,7 +84,7 @@ public partial class ImmutableCollectionPacket
     public ImmutableStack<IAnimal> StackAnimals { get; set; } = ImmutableStack<IAnimal>.Empty;
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class DefaultedSingleTypeIdPacket
 {
     [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte), CountType = typeof(byte))]
@@ -93,7 +93,7 @@ public partial class DefaultedSingleTypeIdPacket
     public IReadOnlyCollection<IAnimal>? Animals { get; set; } = Array.Empty<IAnimal>();
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class NonDefaultSingleTypeIdPacket
 {
     [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte), CountType = typeof(byte))]
@@ -102,7 +102,7 @@ public partial class NonDefaultSingleTypeIdPacket
     public List<IAnimal> Animals { get; set; } = new();
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class DefaultedTypeIdPropertyPacket
 {
     public byte AnimalType { get; set; }
@@ -117,7 +117,7 @@ public partial class DefaultedTypeIdPropertyPacket
     public IReadOnlyCollection<IAnimal>? Animals { get; set; } = Array.Empty<IAnimal>();
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class SingleTypeIdListFailurePacket
 {
     [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte), CountType = typeof(byte))]
@@ -126,7 +126,7 @@ public partial class SingleTypeIdListFailurePacket
     public List<IAnimal> Animals { get; set; } = new();
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class SingleTypeIdReadOnlyCollectionFailurePacket
 {
     [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte), CountType = typeof(byte))]
@@ -135,7 +135,7 @@ public partial class SingleTypeIdReadOnlyCollectionFailurePacket
     public IReadOnlyCollection<IAnimal> Animals { get; set; } = Array.Empty<IAnimal>();
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class SingleTypeIdReadOnlyListFailurePacket
 {
     [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte), CountType = typeof(byte))]
@@ -144,7 +144,7 @@ public partial class SingleTypeIdReadOnlyListFailurePacket
     public IReadOnlyList<IAnimal> Animals { get; set; } = Array.Empty<IAnimal>();
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class SingleTypeIdEnumerableFailurePacket
 {
     [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte), CountType = typeof(byte))]

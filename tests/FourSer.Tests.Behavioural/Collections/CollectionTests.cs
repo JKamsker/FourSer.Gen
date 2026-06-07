@@ -4,21 +4,21 @@ using System.Linq;
 
 namespace FourSer.Tests.Behavioural.Collections;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class ArrayPacket
 {
     [SerializeCollection]
     public int[]? Scores { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class ListPacket
 {
     [SerializeCollection]
     public List<string>? Names { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class HashSetPacket
 {
     [SerializeCollection]

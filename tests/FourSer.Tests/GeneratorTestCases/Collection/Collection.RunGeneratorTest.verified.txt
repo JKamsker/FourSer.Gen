@@ -55,29 +55,6 @@ public partial class CollectionPacket : global::FourSer.Contracts.ISerializable<
         return Deserialize(ref buffer);
     }
 
-    public static CollectionPacket Deserialize(System.IO.Stream stream)
-    {
-        System.Collections.Generic.List<int> numbers;
-        var numbersCount = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var numbersValue = new System.Collections.Generic.List<int>(checked((int)numbersCount));
-        System.Runtime.InteropServices.CollectionsMarshal.SetCount(numbersValue, checked((int)numbersCount));
-        if (global::System.BitConverter.IsLittleEndian)
-        {
-            var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(numbersValue));
-            stream.ReadExactly(collectionBytes);
-        }
-        else
-        {
-            for (int i = 0; i < checked((int)numbersCount); i++)
-            {
-                System.Runtime.InteropServices.CollectionsMarshal.AsSpan(numbersValue)[i] = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-            }
-        }
-        numbers = numbersValue;
-        var obj = new CollectionPacket(numbers);
-        return obj;
-    }
-
     public static void Serialize(CollectionPacket obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -109,33 +86,5 @@ public partial class CollectionPacket : global::FourSer.Contracts.ISerializable<
     public static void Serialize(CollectionPacket obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(CollectionPacket obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Numbers is null)
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(0));
-        }
-        else
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.Numbers.Count));
-            if (global::System.BitConverter.IsLittleEndian)
-            {
-                var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers));
-                global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteBytes(stream, collectionBytes);
-            }
-            else
-            {
-                for (int i = 0; i < System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers).Length; i++)
-                {
-                    global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Numbers)[i]));
-                }
-            }
-        }
     }
 }

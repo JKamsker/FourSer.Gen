@@ -76,6 +76,11 @@ internal static class OptimizationTestCompiler
 
     public static string AddDefaultUsings(string source)
     {
+        source = source.Replace(
+            "[GenerateSerializer]",
+            "[GenerateSerializer(SerializerGenerationMethods.Stream)]",
+            StringComparison.Ordinal);
+
         var requiredUsings = new[]
         {
             "using System;",

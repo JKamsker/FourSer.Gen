@@ -1,34 +1,34 @@
-﻿using System.Buffers;
+using System.Buffers;
 using FourSer.Contracts;
 
 namespace FourSer.Tests.Behavioural.UseCases.IMemoryOwnerTests;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class TestMemoryOwner
 {
     [SerializeCollection(CountType = typeof(byte))]
     public IMemoryOwner<byte> Test { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class MemoryOwnerTestWrapper
 {
     public TestMemoryOwner TestMemoryOwner { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class MemoryOwnerEnumerableTestWrapper
 {
     public IEnumerable<TestMemoryOwner> TestMemoryOwner { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class MemoryOwnerListTestWrapper
 {
     public List<TestMemoryOwner> TestMemoryOwner { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class MemoryOwnerArrayTestWrapper
 {
 
@@ -39,7 +39,7 @@ public partial class MemoryOwnerArrayTestWrapper
     public TestMemoryOwner[] TestMemoryOwner { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial struct NonDisposeableStruct
 {
     public int X { get; set; }
@@ -47,14 +47,14 @@ public partial struct NonDisposeableStruct
 }
 
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class NoMemoryOwnerTestWrapper
 {
     public int SomeInt { get; set; }
 }
 
 // MemoryOwner but with own IDisposable implementation
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class CustomDisposeMemoryOwner : IDisposable
 {
     public IMemoryOwner<byte> Data { get; set; }
@@ -64,7 +64,7 @@ public partial class CustomDisposeMemoryOwner : IDisposable
     }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class SerializeCollectionWorksOnIMemoryOwner
 {
     public long Size { get; set; }

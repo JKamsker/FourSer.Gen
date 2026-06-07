@@ -4,7 +4,7 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TMantleCoord.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TMantleCoordCatalog
     {
         public uint Version { get; set; }
@@ -13,7 +13,7 @@ namespace FourSer.Tests.Behavioural.Demo
         public List<TMantleCoordEntry> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TMantleCoordEntry
     {
         public byte RaceId { get; set; }
@@ -32,7 +32,7 @@ namespace FourSer.Tests.Behavioural.Demo
         public List<MantleUvCoordinate> Uv3 { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class MantleUvCoordinate
     {
         public float LeftTopX { get; set; }

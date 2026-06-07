@@ -40,6 +40,12 @@ internal static class PlanCollectionEmitter
             return;
         }
 
+        if (context.Plan.TargetKind == TargetKind.SequenceReader)
+        {
+            EmitSequenceReaderBatchRead(context, op);
+            return;
+        }
+
         EmitStreamBatchRead(context, op);
     }
 
@@ -94,7 +100,7 @@ internal static class PlanCollectionEmitter
         var writerContext = new SerializationWriterEmitter.WriterCtx(
             op.TargetExpression,
             op.HelperName,
-            op.TargetKind == TargetKind.Span);
+            op.TargetKind.UsesRefWriteTarget());
 
         if (op.CollectionPlan.IsMemoryOwner)
         {
@@ -249,6 +255,35 @@ internal static class PlanCollectionEmitter
         {
             context.Builder.WriteLine($"var {bufferVar} = {rentedVar}.AsSpan(0, {op.TotalSize});");
             context.Builder.WriteLine($"stream.ReadExactly({bufferVar});");
+            EmitBatchReadAssignments(context, op, bufferVar);
+        }
+
+        context.Builder.WriteLine("finally");
+        using (context.Builder.BeginBlock())
+        {
+            context.Builder.WriteLine($"System.Buffers.ArrayPool<byte>.Shared.Return({rentedVar});");
+        }
+    }
+
+    private static void EmitSequenceReaderBatchRead(PlanEmitterContext context, BatchReadOp op)
+    {
+        var bufferVar = $"{op.BufferName}Buffer";
+        var threshold = context.Plan.Facts.Options.StackallocThreshold;
+        if (op.TotalSize <= threshold)
+        {
+            context.Builder.WriteLine($"Span<byte> {bufferVar} = stackalloc byte[{op.TotalSize}];");
+            context.Builder.WriteLine($"global::FourSer.Gen.Helpers.SequenceReaderHelpers.ReadBytes(ref reader, {bufferVar});");
+            EmitBatchReadAssignments(context, op, bufferVar);
+            return;
+        }
+
+        var rentedVar = $"{bufferVar}Rented";
+        context.Builder.WriteLine($"var {rentedVar} = System.Buffers.ArrayPool<byte>.Shared.Rent({op.TotalSize});");
+        context.Builder.WriteLine("try");
+        using (context.Builder.BeginBlock())
+        {
+            context.Builder.WriteLine($"var {bufferVar} = {rentedVar}.AsSpan(0, {op.TotalSize});");
+            context.Builder.WriteLine($"global::FourSer.Gen.Helpers.SequenceReaderHelpers.ReadBytes(ref reader, {bufferVar});");
             EmitBatchReadAssignments(context, op, bufferVar);
         }
 

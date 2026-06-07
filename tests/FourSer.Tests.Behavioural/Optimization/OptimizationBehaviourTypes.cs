@@ -2,7 +2,7 @@ using FourSer.Contracts;
 
 namespace FourSer.Tests.Behavioural.Optimization;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class ListFastPathPacket
 {
     [SerializeCollection]
@@ -13,19 +13,19 @@ public interface IHoistedAnimal
 {
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class HoistedDog : IHoistedAnimal
 {
     public int Speed { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class HoistedCat : IHoistedAnimal
 {
     public int Lives { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class HoistedPolymorphicPacket
 {
     [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte), CountType = typeof(byte))]

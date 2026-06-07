@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TDynamicH.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TDynamicHelpCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TDynamicHelpEntry> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TDynamicHelpEntry
     {
         [Serializer(typeof(MfcAnsiStringSerializer))]

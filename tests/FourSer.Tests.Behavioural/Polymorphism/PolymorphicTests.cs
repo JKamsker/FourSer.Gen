@@ -8,19 +8,19 @@ public abstract partial class Animal
     public string? Name { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class Dog : Animal
 {
     public int BarkPitch { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class Cat : Animal
 {
     public bool HasClaws { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class PetOwner
 {
     [SerializePolymorphic(TypeIdType = typeof(byte))]
@@ -30,7 +30,7 @@ public partial class PetOwner
 }
 
 /*
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class Zoo
 {
     [SerializeCollection(PolymorphicMode = PolymorphicMode.IndividualTypeIds, TypeIdType = typeof(byte))]

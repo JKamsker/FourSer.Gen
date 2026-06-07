@@ -17,6 +17,7 @@ public sealed record TypeToGenerate
     string Namespace,
     bool IsValueType,
     bool IsRecord,
+    SerializerGenerationMethods AdditionalMethods,
     EquatableArray<MemberToGenerate> Members,
     EquatableArray<TypeToGenerate> NestedTypes,
     bool HasSerializableBaseType,

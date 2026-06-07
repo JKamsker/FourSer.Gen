@@ -43,14 +43,6 @@ public partial class WrapperUserClass : global::FourSer.Contracts.ISerializable<
         return Deserialize(ref buffer);
     }
 
-    public static WrapperUserClass Deserialize(System.IO.Stream stream)
-    {
-        FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString name;
-        name = global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Deserialize(stream);
-        var obj = new WrapperUserClass(name);
-        return obj;
-    }
-
     public static void Serialize(WrapperUserClass obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -67,18 +59,5 @@ public partial class WrapperUserClass : global::FourSer.Contracts.ISerializable<
     public static void Serialize(WrapperUserClass obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(WrapperUserClass obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Name is null)
-        {
-            throw new System.NullReferenceException("Member \"obj.Name\" cannot be null.");
-        }
-        global::FourSer.Tests.GeneratorTestCases.WrapperType.FourSerString.Serialize(obj.Name, stream);
     }
 }

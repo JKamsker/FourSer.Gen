@@ -3,7 +3,7 @@ using Xunit;
 
 namespace FourSer.Tests.Behavioural.UseCases;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class TestWithCountSizeReference
 {
    public ushort MyListCount { get; set; }

@@ -103,52 +103,6 @@ public partial class InventoryWithCountSizeRef : global::FourSer.Contracts.ISeri
         return Deserialize(ref buffer);
     }
 
-    public static InventoryWithCountSizeRef Deserialize(System.IO.Stream stream)
-    {
-        int typeId;
-        int count;
-        System.Collections.Generic.List<FourSer.TestUser.CollectionWithCountSizeReference.Item> items = default;
-        Span<byte> typeIdBatchBuffer = stackalloc byte[8];
-        stream.ReadExactly(typeIdBatchBuffer);
-        typeId = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(typeIdBatchBuffer);
-        count = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(typeIdBatchBuffer.Slice(4));
-        items = new System.Collections.Generic.List<FourSer.TestUser.CollectionWithCountSizeReference.Item>(count);
-        switch (typeId)
-        {
-            case 10:
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    var item = global::FourSer.TestUser.CollectionWithCountSizeReference.Sword.Deserialize(stream);
-                    items.Add(item);
-                }
-                break;
-            }
-            case 20:
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    var item = global::FourSer.TestUser.CollectionWithCountSizeReference.Shield.Deserialize(stream);
-                    items.Add(item);
-                }
-                break;
-            }
-            case 30:
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    var item = global::FourSer.TestUser.CollectionWithCountSizeReference.Potion.Deserialize(stream);
-                    items.Add(item);
-                }
-                break;
-            }
-            default:
-                throw new System.IO.InvalidDataException($"Unknown type id for Items: {typeId}");
-        }
-        var obj = new InventoryWithCountSizeRef(typeId, count, items);
-        return obj;
-    }
-
     public static void Serialize(InventoryWithCountSizeRef obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -243,96 +197,6 @@ public partial class InventoryWithCountSizeRef : global::FourSer.Contracts.ISeri
     {
         Serialize(obj, ref data);
     }
-
-    public static void Serialize(InventoryWithCountSizeRef obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        int itemsDiscriminator = default;
-        if ((obj.Items?.Count ?? 0) == 0)
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(10));
-        }
-        else
-        {
-            var firstValidatedItem = obj.Items[0];
-            if (firstValidatedItem is null)
-            {
-                throw new System.NullReferenceException("Item in collection cannot be null.");
-            }
-            itemsDiscriminator = firstValidatedItem switch
-            {
-                global::FourSer.TestUser.CollectionWithCountSizeReference.Sword _ => (int)(10),
-                global::FourSer.TestUser.CollectionWithCountSizeReference.Shield _ => (int)(20),
-                global::FourSer.TestUser.CollectionWithCountSizeReference.Potion _ => (int)(30),
-                _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstValidatedItem.GetType().Name}")
-            };
-            for (int i = 1; i < obj.Items.Count; i++)
-            {
-                var item = obj.Items[i];
-                if (item is null)
-                {
-                    throw new System.NullReferenceException("Item in collection cannot be null.");
-                }
-                var itemDiscriminator = item switch
-                {
-                    global::FourSer.TestUser.CollectionWithCountSizeReference.Sword _ => (int)(10),
-                    global::FourSer.TestUser.CollectionWithCountSizeReference.Shield _ => (int)(20),
-                    global::FourSer.TestUser.CollectionWithCountSizeReference.Potion _ => (int)(30),
-                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {item.GetType().Name}")
-                };
-                if (!global::System.Collections.Generic.EqualityComparer<int>.Default.Equals(itemDiscriminator, itemsDiscriminator))
-                {
-                    throw new System.IO.InvalidDataException($"Collection 'Items' contains mixed item types. Expected discriminator {itemsDiscriminator} but found {itemDiscriminator}.");
-                }
-            }
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(itemsDiscriminator));
-        }
-        var itemsCount = (obj.Items?.Count ?? 0);
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(itemsCount));
-        if (obj.Items is not null)
-        {
-            if (obj.Items.Count > 0)
-            {
-                switch (itemsDiscriminator)
-                {
-                    case (int)(10):
-                    {
-                        for (int i = 0; i < obj.Items.Count; i++)
-                        {
-                            var swordItem = (global::FourSer.TestUser.CollectionWithCountSizeReference.Sword)obj.Items[i];
-                            global::FourSer.TestUser.CollectionWithCountSizeReference.Sword.Serialize(swordItem, stream);
-                        }
-                        break;
-                    }
-                    case (int)(20):
-                    {
-                        for (int i = 0; i < obj.Items.Count; i++)
-                        {
-                            var shieldItem = (global::FourSer.TestUser.CollectionWithCountSizeReference.Shield)obj.Items[i];
-                            global::FourSer.TestUser.CollectionWithCountSizeReference.Shield.Serialize(shieldItem, stream);
-                        }
-                        break;
-                    }
-                    case (int)(30):
-                    {
-                        for (int i = 0; i < obj.Items.Count; i++)
-                        {
-                            var potionItem = (global::FourSer.TestUser.CollectionWithCountSizeReference.Potion)obj.Items[i];
-                            global::FourSer.TestUser.CollectionWithCountSizeReference.Potion.Serialize(potionItem, stream);
-                        }
-                        break;
-                    }
-                    default:
-                    {
-                        throw new System.IO.InvalidDataException($"Unknown type id for Items: {itemsDiscriminator}");
-                    }
-                }
-            }
-        }
-    }
 }
 
 
@@ -369,12 +233,6 @@ public partial class Item : global::FourSer.Contracts.ISerializable<Item>
         return Deserialize(ref buffer);
     }
 
-    public static Item Deserialize(System.IO.Stream stream)
-    {
-        var obj = new Item();
-        return obj;
-    }
-
     public static void Serialize(Item obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -386,14 +244,6 @@ public partial class Item : global::FourSer.Contracts.ISerializable<Item>
     public static void Serialize(Item obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Item obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
     }
 }
 
@@ -431,12 +281,6 @@ public partial class Sword : global::FourSer.Contracts.ISerializable<Sword>
         return Deserialize(ref buffer);
     }
 
-    public static new Sword Deserialize(System.IO.Stream stream)
-    {
-        var obj = new Sword();
-        return obj;
-    }
-
     public static void Serialize(Sword obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -448,14 +292,6 @@ public partial class Sword : global::FourSer.Contracts.ISerializable<Sword>
     public static void Serialize(Sword obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Sword obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
     }
 }
 
@@ -493,12 +329,6 @@ public partial class Shield : global::FourSer.Contracts.ISerializable<Shield>
         return Deserialize(ref buffer);
     }
 
-    public static new Shield Deserialize(System.IO.Stream stream)
-    {
-        var obj = new Shield();
-        return obj;
-    }
-
     public static void Serialize(Shield obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -510,14 +340,6 @@ public partial class Shield : global::FourSer.Contracts.ISerializable<Shield>
     public static void Serialize(Shield obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Shield obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
     }
 }
 
@@ -555,12 +377,6 @@ public partial class Potion : global::FourSer.Contracts.ISerializable<Potion>
         return Deserialize(ref buffer);
     }
 
-    public static new Potion Deserialize(System.IO.Stream stream)
-    {
-        var obj = new Potion();
-        return obj;
-    }
-
     public static void Serialize(Potion obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -572,13 +388,5 @@ public partial class Potion : global::FourSer.Contracts.ISerializable<Potion>
     public static void Serialize(Potion obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Potion obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
     }
 }

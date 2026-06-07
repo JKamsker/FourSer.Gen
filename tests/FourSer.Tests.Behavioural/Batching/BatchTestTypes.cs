@@ -10,7 +10,7 @@ namespace FourSer.Tests.Behavioural.Batching;
 /// All primitive unmanaged types - ideal batching case (single batch).
 /// Total size: 1+1+2+2+4+4+8+8+4+8 = 42 bytes
 /// </summary>
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class BatchTestAllPrimitives
 {
     public byte B1 { get; set; }
@@ -31,7 +31,7 @@ public partial class BatchTestAllPrimitives
 /// String: variable
 /// Batch2: After1 (4) + After2 (4) = 8 bytes
 /// </summary>
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class BatchTestMixedWithString
 {
     public int Before1 { get; set; }
@@ -44,7 +44,7 @@ public partial class BatchTestMixedWithString
 /// <summary>
 /// Primitives with a collection in the middle - should produce two batches.
 /// </summary>
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class BatchTestMixedWithCollection
 {
     public int Before1 { get; set; }
@@ -60,7 +60,7 @@ public partial class BatchTestMixedWithCollection
 /// <summary>
 /// String first, then primitives - should produce one batch after string.
 /// </summary>
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class BatchTestLeadingString
 {
     public string Name { get; set; } = string.Empty;
@@ -72,7 +72,7 @@ public partial class BatchTestLeadingString
 /// <summary>
 /// Primitives, then collection at end - should produce one batch before collection.
 /// </summary>
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class BatchTestTrailingCollection
 {
     public int Header1 { get; set; }
@@ -86,7 +86,7 @@ public partial class BatchTestTrailingCollection
 /// <summary>
 /// Single primitive - should NOT batch (below minimum threshold).
 /// </summary>
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class BatchTestSinglePrimitive
 {
     public int Value { get; set; }
@@ -95,7 +95,7 @@ public partial class BatchTestSinglePrimitive
 /// <summary>
 /// Two small primitives - exactly at 8 byte threshold.
 /// </summary>
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class BatchTestExactThreshold
 {
     public int Value1 { get; set; }
@@ -105,7 +105,7 @@ public partial class BatchTestExactThreshold
 /// <summary>
 /// Below threshold - 7 bytes, should NOT batch.
 /// </summary>
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class BatchTestBelowThreshold
 {
     public int Value1 { get; set; }   // 4 bytes
@@ -116,7 +116,7 @@ public partial class BatchTestBelowThreshold
 /// <summary>
 /// Multiple strings interleaved with primitives - multiple small batches.
 /// </summary>
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class BatchTestMultipleStrings
 {
     public int Id { get; set; }
@@ -130,7 +130,7 @@ public partial class BatchTestMultipleStrings
 /// Many consecutive bytes - tests large batch with simple types.
 /// Total: 20 bytes
 /// </summary>
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class BatchTestManyBytes
 {
     public byte B1 { get; set; }
@@ -158,7 +158,7 @@ public partial class BatchTestManyBytes
 /// <summary>
 /// Boolean values mixed with other primitives.
 /// </summary>
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class BatchTestWithBooleans
 {
     public bool Flag1 { get; set; }
@@ -171,7 +171,7 @@ public partial class BatchTestWithBooleans
 /// <summary>
 /// Nested serializable type - should break the batch.
 /// </summary>
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class BatchTestNestedType
 {
     public int Before { get; set; }
@@ -182,7 +182,7 @@ public partial class BatchTestNestedType
 /// <summary>
 /// Large primitive payload to force the pooled stream batch path.
 /// </summary>
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class LargeBatchWritePacket
 {
     public int Value01 { get; set; }
@@ -252,13 +252,13 @@ public partial class LargeBatchWritePacket
     public int Value65 { get; set; }
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class FusedStringPacket
 {
     public string Value { get; set; } = string.Empty;
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class BatchTestFixedCollectionSandwich
 {
     public int Before1 { get; set; }

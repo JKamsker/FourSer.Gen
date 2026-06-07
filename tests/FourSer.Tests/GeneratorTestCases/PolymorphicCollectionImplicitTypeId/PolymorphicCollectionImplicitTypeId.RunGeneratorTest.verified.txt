@@ -97,48 +97,6 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
         return Deserialize(ref buffer);
     }
 
-    public static Inventory Deserialize(System.IO.Stream stream)
-    {
-        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Item> items = default;
-        var itemsCount = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        items = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Item>(itemsCount);
-        var itemsTypeId = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
-        switch (itemsTypeId)
-        {
-            case 10:
-            {
-                for (int i = 0; i < itemsCount; i++)
-                {
-                    var item = global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Sword.Deserialize(stream);
-                    items.Add(item);
-                }
-                break;
-            }
-            case 20:
-            {
-                for (int i = 0; i < itemsCount; i++)
-                {
-                    var item = global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Shield.Deserialize(stream);
-                    items.Add(item);
-                }
-                break;
-            }
-            case 30:
-            {
-                for (int i = 0; i < itemsCount; i++)
-                {
-                    var item = global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Potion.Deserialize(stream);
-                    items.Add(item);
-                }
-                break;
-            }
-            default:
-                throw new System.IO.InvalidDataException($"Unknown type id for Items: {itemsTypeId}");
-        }
-        var obj = new Inventory(items);
-        return obj;
-    }
-
     public static void Serialize(Inventory obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -234,97 +192,6 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
     {
         Serialize(obj, ref data);
     }
-
-    public static void Serialize(Inventory obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Items is null)
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(0));
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)(10));
-        }
-        else
-        {
-            if (obj.Items.Count == 0)
-            {
-                global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(0));
-                global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)(10));
-            }
-            else
-            {
-                var firstValidatedItem = obj.Items[0];
-                if (firstValidatedItem is null)
-                {
-                    throw new System.NullReferenceException("Item in collection cannot be null.");
-                }
-                var discriminator = firstValidatedItem switch
-                {
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Sword _ => (byte)(10),
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Shield _ => (byte)(20),
-                    global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Potion _ => (byte)(30),
-                    _ => throw new System.IO.InvalidDataException($"Unknown item type: {firstValidatedItem.GetType().Name}")
-                };
-                for (int i = 1; i < obj.Items.Count; i++)
-                {
-                    var item = obj.Items[i];
-                    if (item is null)
-                    {
-                        throw new System.NullReferenceException("Item in collection cannot be null.");
-                    }
-                    var itemDiscriminator = item switch
-                    {
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Sword _ => (byte)(10),
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Shield _ => (byte)(20),
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Potion _ => (byte)(30),
-                        _ => throw new System.IO.InvalidDataException($"Unknown item type: {item.GetType().Name}")
-                    };
-                    if (!global::System.Collections.Generic.EqualityComparer<byte>.Default.Equals(itemDiscriminator, discriminator))
-                    {
-                        throw new System.IO.InvalidDataException($"Collection 'Items' contains mixed item types. Expected discriminator {discriminator} but found {itemDiscriminator}.");
-                    }
-                }
-                global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.Items.Count));
-                global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)(discriminator));
-                switch (discriminator)
-                {
-                    case (byte)(10):
-                    {
-                        for (int i = 0; i < obj.Items.Count; i++)
-                        {
-                            var swordItem = (global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Sword)obj.Items[i];
-                            global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Sword.Serialize(swordItem, stream);
-                        }
-                        break;
-                    }
-                    case (byte)(20):
-                    {
-                        for (int i = 0; i < obj.Items.Count; i++)
-                        {
-                            var shieldItem = (global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Shield)obj.Items[i];
-                            global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Shield.Serialize(shieldItem, stream);
-                        }
-                        break;
-                    }
-                    case (byte)(30):
-                    {
-                        for (int i = 0; i < obj.Items.Count; i++)
-                        {
-                            var potionItem = (global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Potion)obj.Items[i];
-                            global::FourSer.Tests.GeneratorTestCases.PolymorphicCollectionImplicitTypeId.Potion.Serialize(potionItem, stream);
-                        }
-                        break;
-                    }
-                    default:
-                    {
-                        throw new System.IO.InvalidDataException($"Unknown type id for Items: {discriminator}");
-                    }
-                }
-            }
-        }
-    }
 }
 
 
@@ -361,12 +228,6 @@ public partial class Item : global::FourSer.Contracts.ISerializable<Item>
         return Deserialize(ref buffer);
     }
 
-    public static Item Deserialize(System.IO.Stream stream)
-    {
-        var obj = new Item();
-        return obj;
-    }
-
     public static void Serialize(Item obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -378,14 +239,6 @@ public partial class Item : global::FourSer.Contracts.ISerializable<Item>
     public static void Serialize(Item obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Item obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
     }
 }
 
@@ -423,12 +276,6 @@ public partial class Sword : global::FourSer.Contracts.ISerializable<Sword>
         return Deserialize(ref buffer);
     }
 
-    public static new Sword Deserialize(System.IO.Stream stream)
-    {
-        var obj = new Sword();
-        return obj;
-    }
-
     public static void Serialize(Sword obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -440,14 +287,6 @@ public partial class Sword : global::FourSer.Contracts.ISerializable<Sword>
     public static void Serialize(Sword obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Sword obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
     }
 }
 
@@ -485,12 +324,6 @@ public partial class Shield : global::FourSer.Contracts.ISerializable<Shield>
         return Deserialize(ref buffer);
     }
 
-    public static new Shield Deserialize(System.IO.Stream stream)
-    {
-        var obj = new Shield();
-        return obj;
-    }
-
     public static void Serialize(Shield obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -502,14 +335,6 @@ public partial class Shield : global::FourSer.Contracts.ISerializable<Shield>
     public static void Serialize(Shield obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Shield obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
     }
 }
 
@@ -547,12 +372,6 @@ public partial class Potion : global::FourSer.Contracts.ISerializable<Potion>
         return Deserialize(ref buffer);
     }
 
-    public static new Potion Deserialize(System.IO.Stream stream)
-    {
-        var obj = new Potion();
-        return obj;
-    }
-
     public static void Serialize(Potion obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -564,13 +383,5 @@ public partial class Potion : global::FourSer.Contracts.ISerializable<Potion>
     public static void Serialize(Potion obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Potion obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
     }
 }

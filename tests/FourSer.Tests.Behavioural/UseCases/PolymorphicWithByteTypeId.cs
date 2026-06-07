@@ -3,7 +3,7 @@ using Xunit;
 
 namespace FourSer.Tests.Behavioural.UseCases;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class PolymorphicWithByteTypeId
 {
     public int Id { get; set; }
@@ -13,18 +13,18 @@ public partial class PolymorphicWithByteTypeId
     [PolymorphicOption((byte)2, typeof(ByteEntityType2))]
     public BaseByteEntity? Entity { get; set; }
     
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class BaseByteEntity
     {
     }
     
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class ByteEntityType1 : BaseByteEntity
     {
         public string Name { get; set; } = string.Empty;
     }
     
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class ByteEntityType2 : BaseByteEntity
     {
         public string Description { get; set; } = string.Empty;

@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TEquipCreateChar.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TEquipCreateCharCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TEquipCreateCharEntry> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TEquipCreateCharEntry
     {
         private const int EquipSlotCount = 9;
@@ -35,7 +35,7 @@ namespace FourSer.Tests.Behavioural.Demo
         }
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TEquipCreateCharSlot
     {
         public ushort ItemId { get; set; }
