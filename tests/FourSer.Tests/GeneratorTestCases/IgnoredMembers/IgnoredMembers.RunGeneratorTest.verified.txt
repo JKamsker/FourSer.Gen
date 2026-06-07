@@ -13,7 +13,7 @@ public partial class IgnoredMembersPacket : global::FourSer.Contracts.ISerializa
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        size += 1;
+        size += sizeof(byte); // Size for unmanaged type Included
         return size;
     }
 

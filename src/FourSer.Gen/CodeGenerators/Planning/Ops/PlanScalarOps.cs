@@ -60,4 +60,5 @@ internal sealed record SizeAddOp(
     string Expression,
     int? ConstantValue = null,
     string? CacheKey = null,
+    string? InlineComment = null,
     string? Comment = null) : PlanOp(Comment);

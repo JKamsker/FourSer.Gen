@@ -13,7 +13,8 @@ public partial class InventoryWithCountSizeRef : global::FourSer.Contracts.ISeri
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        size += 8;
+        size += sizeof(int); // Size for unmanaged type TypeId
+        size += sizeof(int); // Size for unmanaged type Count
         if (obj.Items is not null)
         {
             var hasDiscriminator = false;

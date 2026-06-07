@@ -13,7 +13,7 @@ public partial class Inventory : global::FourSer.Contracts.ISerializable<Invento
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        size += 1;
+        size += sizeof(byte); // Size for unmanaged type ItemType
         size += sizeof(int); // Count size for Items
         if (obj.Items is not null)
         {

@@ -69,7 +69,10 @@ internal static class PlanScalarEmitter
 
     public static void EmitSizeAdd(PlanEmitterContext context, SizeAddOp op)
     {
-        context.Builder.WriteLine($"size += {op.Expression};");
+        var inlineComment = string.IsNullOrEmpty(op.InlineComment)
+            ? string.Empty
+            : $" // {op.InlineComment}";
+        context.Builder.WriteLine($"size += {op.Expression};{inlineComment}");
     }
 
     private static void EmitFusedStreamStringWrite(PlanEmitterContext context, StringWriteOp op)

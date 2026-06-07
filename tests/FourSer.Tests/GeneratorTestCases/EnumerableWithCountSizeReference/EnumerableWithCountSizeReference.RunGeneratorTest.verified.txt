@@ -13,7 +13,7 @@ public partial class EnumerableOfReferenceTypes : global::FourSer.Contracts.ISer
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        size += 4;
+        size += sizeof(int); // Size for unmanaged type Count
         var myListSizedItems = obj.MyList is null ? null : global::System.Linq.Enumerable.ToArray(obj.MyList);
         if (myListSizedItems is not null)
         {
@@ -136,7 +136,7 @@ public partial class Entity : global::FourSer.Contracts.ISerializable<Entity>
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        size += 4;
+        size += sizeof(int); // Size for unmanaged type Id
         size += global::FourSer.Gen.Helpers.StringEx.MeasureSize(obj.Name);
         return size;
     }

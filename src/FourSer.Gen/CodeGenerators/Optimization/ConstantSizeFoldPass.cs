@@ -38,8 +38,12 @@ internal sealed class ConstantSizeFoldPass : IPlanPass
         {
             switch (op)
             {
-                case SizeAddOp sizeAdd when sizeAdd.ConstantValue is { } constantValue:
+                case SizeAddOp sizeAdd when sizeAdd.ConstantValue is { } constantValue && CanFold(sizeAdd):
                     constantAccumulator += constantValue;
+                    break;
+                case SizeAddOp sizeAdd:
+                    FlushConstantAccumulator();
+                    rewritten.Add(sizeAdd);
                     break;
                 case GuardOp guard:
                     FlushConstantAccumulator();
@@ -68,5 +72,11 @@ internal sealed class ConstantSizeFoldPass : IPlanPass
 
         FlushConstantAccumulator();
         return rewritten.ToEquatableArray();
+    }
+
+    private static bool CanFold(SizeAddOp op)
+    {
+        return string.IsNullOrEmpty(op.InlineComment)
+            && !op.Expression.Contains("sizeof(", StringComparison.Ordinal);
     }
 }

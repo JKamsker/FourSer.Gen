@@ -807,6 +807,25 @@ public class GeneratorTests
     }
 
     [Fact]
+    public void UnmanagedPacketSize_ShouldKeepSizeOfExpressionAndMemberComment()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Size;
+
+        [GenerateSerializer]
+        public partial class SizePacket
+        {
+            public int Id { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "SizePacket");
+
+        Assert.Contains("size += sizeof(int); // Size for unmanaged type Id", generatedCode);
+        Assert.DoesNotContain("size += 4;", generatedCode);
+    }
+
+    [Fact]
     public void DefaultOptimizationLevel_ShouldFuseStreamStringWrites()
     {
         const string source = """

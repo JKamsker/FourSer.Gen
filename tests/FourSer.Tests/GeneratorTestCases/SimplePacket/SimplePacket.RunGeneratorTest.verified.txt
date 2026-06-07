@@ -13,7 +13,8 @@ public partial class LoginPacket : global::FourSer.Contracts.ISerializable<Login
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        size += 5;
+        size += sizeof(byte); // Size for unmanaged type Result
+        size += sizeof(uint); // Size for unmanaged type UserID
         size += global::FourSer.Gen.Helpers.StringEx.MeasureSize(obj.Username);
         return size;
     }

@@ -13,7 +13,7 @@ public partial class NestedObject : global::FourSer.Contracts.ISerializable<Nest
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        size += 4;
+        size += sizeof(int); // Size for unmanaged type Id
         return size;
     }
 

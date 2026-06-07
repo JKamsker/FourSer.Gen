@@ -13,7 +13,7 @@ public partial record class RecordClass : global::FourSer.Contracts.ISerializabl
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        size += 4;
+        size += sizeof(int); // Size for unmanaged type A
         size += global::FourSer.Gen.Helpers.StringEx.MeasureSize(obj.B);
         return size;
     }
@@ -111,7 +111,7 @@ public partial record struct RecordStruct : global::FourSer.Contracts.ISerializa
     public static int GetPacketSize(RecordStruct obj)
     {
         var size = 0;
-        size += 4;
+        size += sizeof(int); // Size for unmanaged type C
         size += global::FourSer.Gen.Helpers.StringEx.MeasureSize(obj.D);
         return size;
     }

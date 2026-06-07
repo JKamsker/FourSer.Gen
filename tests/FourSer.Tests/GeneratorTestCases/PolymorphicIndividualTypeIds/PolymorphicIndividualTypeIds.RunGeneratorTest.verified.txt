@@ -205,7 +205,7 @@ public partial class Cat : global::FourSer.Contracts.ISerializable<Cat>
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        size += 4;
+        size += sizeof(int); // Size for unmanaged type Id
         size += global::FourSer.Gen.Helpers.StringEx.MeasureSize(obj.Name);
         return size;
     }
@@ -317,7 +317,7 @@ public partial class Dog : global::FourSer.Contracts.ISerializable<Dog>
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        size += 4;
+        size += sizeof(int); // Size for unmanaged type Id
         size += global::FourSer.Gen.Helpers.StringEx.MeasureSize(obj.Breed);
         return size;
     }
@@ -429,7 +429,7 @@ public partial class Animal : global::FourSer.Contracts.ISerializable<Animal>
             throw new System.ArgumentNullException(nameof(obj));
         }
         var size = 0;
-        size += 4;
+        size += sizeof(int); // Size for unmanaged type Id
         return size;
     }
 

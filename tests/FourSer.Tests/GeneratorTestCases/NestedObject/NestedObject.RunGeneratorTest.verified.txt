@@ -17,7 +17,7 @@ public partial class ContainerPacket : global::FourSer.Contracts.ISerializable<C
         {
             throw new System.NullReferenceException("Member \"obj.Data\" cannot be null.");
         }
-        size += 4;
+        size += sizeof(int); // Size for unmanaged type Id
         size += global::FourSer.Tests.GeneratorTestCases.NestedObject.NestedData.GetPacketSize(obj.Data);
         return size;
     }
@@ -108,7 +108,7 @@ public partial class NestedData : global::FourSer.Contracts.ISerializable<Nested
         }
         var size = 0;
         size += global::FourSer.Gen.Helpers.StringEx.MeasureSize(obj.Name);
-        size += 4;
+        size += sizeof(float); // Size for unmanaged type Value
         return size;
     }
 

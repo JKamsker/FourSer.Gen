@@ -114,7 +114,8 @@ internal static class SizePlanBuilder
             ops.Add(new SizeAddOp(
                 member.Name,
                 $"sizeof({member.TypeName})",
-                constantSize > 0 ? constantSize : null));
+                constantSize > 0 ? constantSize : null,
+                InlineComment: $"Size for unmanaged type {member.Name}"));
         }
     }
 

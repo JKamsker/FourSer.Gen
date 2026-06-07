@@ -141,7 +141,7 @@ public partial class Dog : global::FourSer.Contracts.ISerializable<Dog>
         }
         var size = 0;
         size += global::FourSer.Gen.Helpers.StringEx.MeasureSize(obj.Name);
-        size += 4;
+        size += sizeof(int); // Size for unmanaged type Age
         size += global::FourSer.Gen.Helpers.StringEx.MeasureSize(obj.Breed);
         return size;
     }
@@ -291,7 +291,7 @@ public partial class Pet : global::FourSer.Contracts.ISerializable<Pet>
         }
         var size = 0;
         size += global::FourSer.Gen.Helpers.StringEx.MeasureSize(obj.Name);
-        size += 4;
+        size += sizeof(int); // Size for unmanaged type Age
         return size;
     }
 
