@@ -67,6 +67,28 @@ public static class AttributeHelper
             : FourSer.Gen.Models.SerializerGenerationMethods.None;
     }
 
+    public static FourSer.Gen.Models.SerializerGenerationMethods GetAssemblyAdditionalMethods(IAssemblySymbol assemblySymbol)
+    {
+        var additionalMethods = FourSer.Gen.Models.SerializerGenerationMethods.None;
+        foreach (var attribute in assemblySymbol.GetAttributes())
+        {
+            if (attribute.AttributeClass is null)
+            {
+                continue;
+            }
+
+            if (!attribute.AttributeClass.IsSerializerGenerationOptionsAttribute()
+                && !attribute.AttributeClass.IsGenerateSerializerAttribute())
+            {
+                continue;
+            }
+
+            additionalMethods |= GetAdditionalMethods(attribute);
+        }
+
+        return additionalMethods;
+    }
+
     public static string? GetCountSizeReference(AttributeData? collectionAttribute)
     {
         return collectionAttribute?.NamedArguments

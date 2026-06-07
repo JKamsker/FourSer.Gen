@@ -79,8 +79,20 @@ public class SerializerGenerator : IIncrementalGenerator
             .Select(static (provider, _) => FourSerGeneratorOptionsProvider.GetOptions(provider))
             .WithTrackingName("FourSerGeneratorOptions");
 
+        var assemblyAdditionalMethods = context.CompilationProvider
+            .Select(static (compilation, _) => AttributeHelper.GetAssemblyAdditionalMethods(compilation.Assembly))
+            .WithTrackingName("FourSerAssemblyAdditionalMethods");
+
+        var generatorConfiguration = generatorOptions
+            .Combine(assemblyAdditionalMethods)
+            .Select(static (source, _) => source.Left with
+            {
+                AdditionalMethods = source.Left.AdditionalMethods | source.Right,
+            })
+            .WithTrackingName("FourSerGeneratorConfiguration");
+
         context.RegisterSourceOutput(
-            nonNullableTypes.Combine(generatorOptions),
+            nonNullableTypes.Combine(generatorConfiguration),
             static (spc, source) => Execute(spc, source.Left, source.Right));
 
         var allSerializers = nonNullableTypes
@@ -201,6 +213,8 @@ public class SerializerGenerator : IIncrementalGenerator
             {
                 return;
             }
+
+            typeToGenerate = SerializerGenerationDefaults.Apply(typeToGenerate, options.AdditionalMethods);
 
             var sb = new IndentedStringBuilder();
 

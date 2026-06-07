@@ -172,6 +172,98 @@ public class GeneratorTests
     }
 
     [Fact]
+    public void AdditionalMethodsFromProjectOptions_ShouldApplyToAllSerializers()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Transport;
+
+        [GenerateSerializer]
+        public partial class ProjectConfiguredPacket
+        {
+            public int Id { get; set; }
+        }
+        """;
+
+        var globalOptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["build_property.FourSerAdditionalMethods"] = "Stream, BufferWriter",
+        };
+
+        var compilation = CreateCompilation(AddDefaultUsings(source));
+        var runResult = GetRunResult(compilation, out var finalCompilation, globalOptions);
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "ProjectConfiguredPacket", globalOptions);
+
+        Assert.DoesNotContain(runResult.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Contains("public static ProjectConfiguredPacket Deserialize(System.IO.Stream stream)", generatedCode);
+        Assert.Contains("public static void Serialize(ProjectConfiguredPacket obj, System.IO.Stream stream)", generatedCode);
+        Assert.Contains("public static void Serialize(ProjectConfiguredPacket obj, global::System.Buffers.IBufferWriter<byte> writer)", generatedCode);
+        Assert.DoesNotContain("global::System.IO.Pipelines.PipeWriter", generatedCode);
+
+        using var ms = new MemoryStream();
+        var emitResult = finalCompilation.Emit(ms);
+        Assert.True(emitResult.Success, $"Compilation failed with errors: {string.Join(", ", emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.GetMessage()))}");
+    }
+
+    [Fact]
+    public void AdditionalMethodsFromAssemblyOptionsAttribute_ShouldApplyToAllSerializers()
+    {
+        const string source = """
+        [assembly: SerializerGenerationOptions(
+            SerializerGenerationMethods.SequenceReader
+            | SerializerGenerationMethods.PipeReader)]
+
+        namespace FourSer.Tests.Custom.Transport;
+
+        [GenerateSerializer]
+        public partial class AssemblyConfiguredPacket
+        {
+            public int Id { get; set; }
+        }
+        """;
+
+        var compilation = CreateCompilation(AddDefaultUsings(source));
+        var runResult = GetRunResult(compilation, out var finalCompilation);
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "AssemblyConfiguredPacket");
+
+        Assert.DoesNotContain(runResult.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Contains("public static AssemblyConfiguredPacket Deserialize(ref global::System.Buffers.SequenceReader<byte> reader)", generatedCode);
+        Assert.Contains("public static AssemblyConfiguredPacket Deserialize(global::System.IO.Pipelines.PipeReader pipeReader)", generatedCode);
+        Assert.DoesNotContain("public static void Serialize(AssemblyConfiguredPacket obj, System.IO.Stream stream)", generatedCode);
+
+        using var ms = new MemoryStream();
+        var emitResult = finalCompilation.Emit(ms);
+        Assert.True(emitResult.Success, $"Compilation failed with errors: {string.Join(", ", emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.GetMessage()))}");
+    }
+
+    [Fact]
+    public void AdditionalMethodsFromAssemblyGenerateSerializerAttribute_ShouldApplyToAllSerializers()
+    {
+        const string source = """
+        [assembly: GenerateSerializer(SerializerGenerationMethods.PipeWriter)]
+
+        namespace FourSer.Tests.Custom.Transport;
+
+        [GenerateSerializer]
+        public partial class AssemblyGenerateSerializerPacket
+        {
+            public int Id { get; set; }
+        }
+        """;
+
+        var compilation = CreateCompilation(AddDefaultUsings(source));
+        var runResult = GetRunResult(compilation, out var finalCompilation);
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "AssemblyGenerateSerializerPacket");
+
+        Assert.DoesNotContain(runResult.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Contains("public static void Serialize(AssemblyGenerateSerializerPacket obj, global::System.IO.Pipelines.PipeWriter writer)", generatedCode);
+        Assert.DoesNotContain("public static AssemblyGenerateSerializerPacket Deserialize(global::System.IO.Pipelines.PipeReader pipeReader)", generatedCode);
+
+        using var ms = new MemoryStream();
+        var emitResult = finalCompilation.Emit(ms);
+        Assert.True(emitResult.Success, $"Compilation failed with errors: {string.Join(", ", emitResult.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => d.GetMessage()))}");
+    }
+
+    [Fact]
     public void UnlimitedCollection_ShouldNotEmitCountPrefix()
     {
         const string source = """

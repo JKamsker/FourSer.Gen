@@ -1,6 +1,6 @@
 namespace FourSer.Contracts;
 
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly)]
 public class GenerateSerializerAttribute : Attribute
 {
     public GenerateSerializerAttribute()

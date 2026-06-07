@@ -91,6 +91,27 @@ public partial class NetworkPacket
 }
 ```
 
+You can also enable additional methods for every generated serializer in a project:
+
+```xml
+<PropertyGroup>
+  <FourSerAdditionalMethods>Stream, BufferWriter, SequenceReader, PipeWriter, PipeReader</FourSerAdditionalMethods>
+</PropertyGroup>
+```
+
+Or with an assembly-level attribute:
+
+```csharp
+[assembly: SerializerGenerationOptions(
+    SerializerGenerationMethods.Stream
+    | SerializerGenerationMethods.BufferWriter
+    | SerializerGenerationMethods.SequenceReader
+    | SerializerGenerationMethods.PipeWriter
+    | SerializerGenerationMethods.PipeReader)]
+```
+
+Assembly-level `[GenerateSerializer(...)]` is also accepted for global defaults. Global and per-type flags are additive.
+
 ### 3. Use the Generated Methods
 
 The source generator creates static `GetPacketSize`, `Serialize`, and `Deserialize` methods on your types.
@@ -660,6 +681,7 @@ You can override the optimizer from MSBuild:
   <FourSerStackallocThreshold>256</FourSerStackallocThreshold>
   <FourSerMaxBatchBytes>8192</FourSerMaxBatchBytes>
   <FourSerEmitOptimizationComments>false</FourSerEmitOptimizationComments>
+  <FourSerAdditionalMethods>None</FourSerAdditionalMethods>
 </PropertyGroup>
 ```
 

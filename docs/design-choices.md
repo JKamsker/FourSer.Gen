@@ -51,6 +51,9 @@ This document is the source of truth for the wire-contract decisions that FourSe
 - `SerializerGenerationMethods.SequenceReader` enables `SequenceReader<byte>` deserialization.
 - `SerializerGenerationMethods.PipeWriter` enables `PipeWriter` serialization.
 - `SerializerGenerationMethods.PipeReader` enables `PipeReader` deserialization and uses the generated `SequenceReader<byte>` path internally.
+- Project-wide defaults can be configured with `<FourSerAdditionalMethods>...</FourSerAdditionalMethods>`.
+- Assembly-wide defaults can be configured with `[assembly: SerializerGenerationOptions(...)]` or assembly-level `[GenerateSerializer(...)]`.
+- Project-wide, assembly-wide, and per-type additional methods are additive.
 
 ## Referenced member ordering
 
