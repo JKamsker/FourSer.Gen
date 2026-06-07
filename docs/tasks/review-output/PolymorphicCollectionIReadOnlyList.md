@@ -1,0 +1,19 @@
+# PolymorphicCollectionIReadOnlyList Review
+
+## Verdict
+
+Functionally correct for the intended `SingleTypeId` `IReadOnlyList<IItem>` scenario in `tests/FourSer.Tests/GeneratorTestCases/PolymorphicCollectionIReadOnlyList/input.cs:8-12`. The generated code enforces the documented homogeneous-collection contract for `PolymorphicMode.SingleTypeId`, rejects mixed/null items before writing, and round-trips non-empty collections consistently. No material correctness findings or likely user-expectation mismatches surfaced in this case.
+
+## Findings
+
+- Low: Both deserializers build `itemsStaging`, then immediately copy it into a second `List<IItem>` before assigning the property (`tests/FourSer.Tests/GeneratorTestCases/PolymorphicCollectionIReadOnlyList/PolymorphicCollectionIReadOnlyList.RunGeneratorTest.verified.txt:68-103`, `tests/FourSer.Tests/GeneratorTestCases/PolymorphicCollectionIReadOnlyList/PolymorphicCollectionIReadOnlyList.RunGeneratorTest.verified.txt:115-150`). Since `List<T>` already implements `IReadOnlyList<T>`, the extra allocation and element copy are redundant and provide no functional benefit.
+
+## Performance Opportunities
+
+- The discriminator lookup and homogeneous-collection validation logic is emitted three times for the same property in `GetPacketSize`, span serialization, and stream serialization (`tests/FourSer.Tests/GeneratorTestCases/PolymorphicCollectionIReadOnlyList/PolymorphicCollectionIReadOnlyList.RunGeneratorTest.verified.txt:32-50`, `tests/FourSer.Tests/GeneratorTestCases/PolymorphicCollectionIReadOnlyList/PolymorphicCollectionIReadOnlyList.RunGeneratorTest.verified.txt:160-190`, `tests/FourSer.Tests/GeneratorTestCases/PolymorphicCollectionIReadOnlyList/PolymorphicCollectionIReadOnlyList.RunGeneratorTest.verified.txt:260-290`). A generated helper for "validate and get discriminator" would reduce code size and repeated switch/branch work.
+- The stream serializer writes the fixed collection header as separate primitive writes (`WriteInt32` then `WriteByte`) in all paths (`tests/FourSer.Tests/GeneratorTestCases/PolymorphicCollectionIReadOnlyList/PolymorphicCollectionIReadOnlyList.RunGeneratorTest.verified.txt:295-317`). That header is always 5 bytes here, so it could be batched into one stackalloc-backed `stream.Write(...)` call.
+- The element serializers for `Sword`, `Shield`, and `Potion` are all zero-payload no-ops (`tests/FourSer.Tests/GeneratorTestCases/PolymorphicCollectionIReadOnlyList/PolymorphicCollectionIReadOnlyList.RunGeneratorTest.verified.txt:369-570`). After validation establishes a homogeneous collection, the per-item serialization loops still pay cast and method-call overhead that could be skipped for known zero-size element types.
+
+## Open Questions / Assumptions
+
+- I assumed the intended fallback for empty or null `SingleTypeId` collections without an explicit default option is "use the first declared polymorphic option" (`Sword` / `10`), because this input declares no `isDefault` option (`tests/FourSer.Tests/GeneratorTestCases/PolymorphicCollectionIReadOnlyList/input.cs:8-12`) and the generated serializer/deserializer are internally consistent about that fallback (`tests/FourSer.Tests/GeneratorTestCases/PolymorphicCollectionIReadOnlyList/PolymorphicCollectionIReadOnlyList.RunGeneratorTest.verified.txt:193-205`, `tests/FourSer.Tests/GeneratorTestCases/PolymorphicCollectionIReadOnlyList/PolymorphicCollectionIReadOnlyList.RunGeneratorTest.verified.txt:293-305`). That assumption is consistent with the documented "homogeneous collections" contract (`src/FourSer.Contracts/SerializeCollectionAttribute.cs:23-24`) and with behavioral coverage for defaulted empty/null collections plus non-default non-empty collections (`tests/FourSer.Tests.Behavioural/Polymorphism/PolymorphicCollectionParityTests.cs:292-345`, `tests/FourSer.Tests.Behavioural/Polymorphism/PolymorphicCollectionParityTests.cs:437-500`).

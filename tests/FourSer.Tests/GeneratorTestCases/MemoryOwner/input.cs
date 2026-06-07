@@ -12,6 +12,5 @@ public partial class Child
 public partial class Parent
 {
     public IMemoryOwner<byte>? Data { get; set; }
-    public Child? DisposableProperty { get; set; }
+    public Child DisposableProperty { get; set; } = new();
 }
-

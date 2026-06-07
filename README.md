@@ -31,7 +31,13 @@ This project provides a compile-time source generator that creates efficient bin
 
 ## Limitations
 
-The source generator has some intentional limitations. By design, it does not support `null` reference values or collections containing `null` items. This is because the generator is primarily intended for serializing and deserializing pre-existing binary formats, which typically do not have a concept of "null" objects.
+The source generator keeps a strict wire contract:
+
+- Nested generated reference members and collection items are required on the wire.
+- `string` and dynamic-count collections keep canonical null behavior: `null` serializes as empty or zero-count and deserializes back as empty.
+- Pure `IEnumerable<T>` members are replayable-only across separate `GetPacketSize(obj)` and `Serialize(obj, ...)` calls. Each generated method enumerates at most once internally, but one-shot enumerables are not cached or mutated across calls.
+
+For the full contract rationale, see [docs/design-choices.md](docs/design-choices.md).
 
 ## Quick Start
 
@@ -191,6 +197,9 @@ public partial class MyPacket
 }
 ```
 
+During serialization, the generator writes the actual count derived from `Name`.
+During deserialization, the count read from the wire is assigned back to `NameLength`.
+
 #### 4. Unlimited Collections
 
 For collections that should be serialized until the end of the data stream, use the `Unlimited` property. This is useful for top-level objects or when the length is implicitly known.
@@ -284,7 +293,7 @@ If all elements in the collection are of the same derived type, you can use `Pol
 [GenerateSerializer]
 public partial class Scene
 {
-    public byte EntityType { get; set; } // Determines the type for all entities
+    public byte EntityType { get; set; } // Restored from the wire on deserialize
 
     [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdProperty = nameof(EntityType))]
     [PolymorphicOption((byte)1, typeof(Player))]
@@ -292,6 +301,9 @@ public partial class Scene
     public List<Entity> Entities { get; set; }
 }
 ```
+
+During serialization, the discriminator is derived from the actual contents of `Entities`, not from the current `EntityType` value.
+During deserialization, the discriminator read from the wire is assigned back to `EntityType`.
 
 #### 2. Heterogeneous Polymorphic Collections (`IndividualTypeIds`)
 
@@ -358,7 +370,8 @@ public partial class AutoPolymorphicEntity
 
 ### Approach 2: Explicit Type Discriminator
 
-In this approach, the type discriminator is linked to a property in your model. The generator will use this property to determine which type to serialize or deserialize.
+In this approach, the type discriminator is linked to a property in your model.
+The generated serializer writes the discriminator that matches the actual runtime value and restores the linked property from the wire during deserialization.
 
 ```csharp
 [GenerateSerializer]
@@ -374,17 +387,15 @@ public partial class PolymorphicEntity
 }
 ```
 
-A key feature of this approach is that the generator automatically synchronizes the `TypeId` property during serialization. If you assign an `EntityType1` to the `Entity` property, the `TypeId` will be automatically set to `1` before serialization, preventing inconsistencies.
-
 ```csharp
 var entity = new PolymorphicEntity
 {
     Id = 100,
-    TypeId = 999, // This value will be ignored and corrected
+    TypeId = 999, // Stale value; the wire discriminator is derived from Entity
     Entity = new EntityType1 { Name = "Test" }
 };
 
-// During serialization, the generator will set entity.TypeId to 1.
+// Serialization writes discriminator 1 for EntityType1.
 var bytesWritten = PolymorphicEntity.Serialize(entity, buffer);
 ```
 
@@ -435,6 +446,9 @@ public interface ISerializer<T>
     T Deserialize(Stream stream);
 }
 ```
+
+All members are required.
+Generated stream serializers call `Serialize(T, Stream)` and `Deserialize(Stream)` directly; the generator does not bridge stream paths through the span-based members.
 
 Here is an example of a custom serializer for handling MFC-style Unicode strings, which have a specific length prefix format:
 
@@ -516,7 +530,7 @@ The generator supports a wide range of collection types, where `T` can be any su
 - `List<T>`
 - `T[]` (Arrays)
 - `ICollection<T>`
-- `IEnumerable<T>`
+- `IEnumerable<T>` (replayable across separate `GetPacketSize` and `Serialize` calls only)
 - `IList<T>`
 - `IReadOnlyCollection<T>`
 - `IReadOnlyList<T>`
@@ -615,6 +629,38 @@ var received = LoginAckPacket.Deserialize(readSpan);
 - .NET 9.0 or later
 - C# 12.0 or later (for static abstract interface members)
 
+## Generator Optimization Options
+
+The generator now ships with an internal planning and optimization pipeline between type discovery and C# emission. The default package setting is `AggressivePortable`.
+
+You can override the optimizer from MSBuild:
+
+```xml
+<PropertyGroup>
+  <FourSerOptimizationLevel>AggressivePortable</FourSerOptimizationLevel>
+  <FourSerMinBatchBytes>8</FourSerMinBatchBytes>
+  <FourSerStackallocThreshold>256</FourSerStackallocThreshold>
+  <FourSerMaxBatchBytes>8192</FourSerMaxBatchBytes>
+  <FourSerEmitOptimizationComments>false</FourSerEmitOptimizationComments>
+</PropertyGroup>
+```
+
+Available values for `FourSerOptimizationLevel`:
+
+- `Off`: disables batching, string fusion, and collection fast paths while keeping planning and validation active.
+- `Conservative`: enables guard/count/type-id caching, constant size folding, and primitive batching.
+- `AggressivePortable`: adds portable collection fast paths and fused stream string writes.
+- `AggressiveNativeLayout`: adds runtime-guarded native-layout bulk paths with portable fallback.
+
+Notes:
+
+- `AggressivePortable` is the default imported by `FourSer.Gen.props`.
+- `AggressiveNativeLayout` is opt-in and always keeps a portable fallback path.
+- Optimizer diagnostics `FSGOPT001` to `FSGOPT004` are informational and are emitted only when a fast path is evaluated and declined.
+- The branch currently assumes `.NET 9+` consumer capabilities.
+
+For the internal architecture and pass order, see [docs/optimizer-design.md](docs/optimizer-design.md).
+
 ## Building
 
 ```bash
@@ -651,6 +697,33 @@ To run all tests, use the following command from the root of the repository:
 
 ```bash
 dotnet test
+```
+
+To accept all `Verify` snapshot updates on PowerShell:
+
+```powershell
+Get-ChildItem . -Recurse -Filter *.received.txt |
+    ForEach-Object {
+        Copy-Item -LiteralPath $_.FullName -Destination ($_.FullName -replace '\.received\.txt$', '.verified.txt') -Force
+    }
+```
+
+## Benchmarking
+
+`src/FourSer.Gen.Benchmark.Simple` benchmarks both generator and runtime behavior from in-memory compilations. It reports:
+
+- full generator run time
+- tracked incremental step timings
+- generated source count and size
+- runtime `GetPacketSize`
+- runtime span serialize and deserialize
+- runtime stream serialize and deserialize
+- per-operation allocations from `GC.GetAllocatedBytesForCurrentThread`
+
+Example:
+
+```bash
+dotnet run --project src/FourSer.Gen.Benchmark.Simple/FourSer.Gen.Benchmark.Simple.csproj -- --levels=Off,Conservative,AggressivePortable,AggressiveNativeLayout --cases=SimplePacket --generation-iterations=5 --runtime-iterations=1000
 ```
 
 ## Contributing

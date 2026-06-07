@@ -5,11 +5,33 @@ namespace FourSer.Gen.Helpers;
 /// </summary>
 public static class TypeHelper
 {
+    private static string NormalizeBuiltInTypeName(string typeName)
+    {
+        return typeName switch
+        {
+            "Byte" or "System.Byte" => "byte",
+            "SByte" or "System.SByte" => "sbyte",
+            "Int16" or "System.Int16" => "short",
+            "UInt16" or "System.UInt16" => "ushort",
+            "Int32" or "System.Int32" => "int",
+            "UInt32" or "System.UInt32" => "uint",
+            "Int64" or "System.Int64" => "long",
+            "UInt64" or "System.UInt64" => "ulong",
+            "Single" or "System.Single" => "float",
+            "Double" or "System.Double" => "double",
+            "Boolean" or "System.Boolean" => "bool",
+            "Char" or "System.Char" => "char",
+            "Decimal" or "System.Decimal" => "decimal",
+            _ => typeName
+        };
+    }
+
     /// <summary>
     ///     Converts a type name to the appropriate Read method name for Span extensions
     /// </summary>
     public static string GetReadMethodName(string typeName)
     {
+        typeName = NormalizeBuiltInTypeName(typeName);
         return typeName switch
         {
             "byte" => "ReadByte",
@@ -33,6 +55,7 @@ public static class TypeHelper
     /// </summary>
     public static string GetWriteMethodName(string typeName)
     {
+        typeName = NormalizeBuiltInTypeName(typeName);
         return typeName switch
         {
             "byte" => "WriteByte",
@@ -53,6 +76,7 @@ public static class TypeHelper
 
     public static int GetSizeOf(string typeName)
     {
+        typeName = NormalizeBuiltInTypeName(typeName);
         return typeName switch
         {
             "byte" => sizeof(byte),
@@ -93,6 +117,7 @@ public static class TypeHelper
     /// </summary>
     public static string GetMethodFriendlyTypeName(string typeName)
     {
+        typeName = NormalizeBuiltInTypeName(typeName);
         return typeName switch
         {
             "int" => "Int32",
@@ -163,6 +188,12 @@ public static class TypeHelper
     /// </summary>
     public static bool IsByteCollection(string? elementTypeName)
     {
-        return elementTypeName == "byte";
+        if (string.IsNullOrEmpty(elementTypeName))
+        {
+            return false;
+        }
+
+        var normalizedElementTypeName = NormalizeBuiltInTypeName(elementTypeName!);
+        return normalizedElementTypeName == "byte";
     }
 }

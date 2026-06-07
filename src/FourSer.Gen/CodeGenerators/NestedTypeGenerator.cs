@@ -1,18 +1,24 @@
 using FourSer.Gen.Helpers;
 using FourSer.Gen.Models;
+using FourSer.Gen.CodeGenerators.Planning;
 
 namespace FourSer.Gen.CodeGenerators;
 
 /// <summary>
 ///     Generates serialization code for nested types
 /// </summary>
-public static class NestedTypeGenerator
+internal static class NestedTypeGenerator
 {
-    public static void GenerateNestedTypes(IndentedStringBuilder sb, EquatableArray<TypeToGenerate> nestedTypes)
+    internal static EquatableArray<MethodPlan> GenerateNestedTypes(
+        IndentedStringBuilder sb,
+        EquatableArray<TypeToGenerate> nestedTypes,
+        FourSerGeneratorOptions options,
+        TargetCapabilities capabilities)
     {
+        var plans = new List<MethodPlan>();
         if (nestedTypes.IsEmpty)
         {
-            return;
+            return plans.ToEquatableArray();
         }
 
         foreach (var nestedType in nestedTypes)
@@ -23,8 +29,12 @@ public static class NestedTypeGenerator
             {
                 typeKeyword = $"record {typeKeyword}";
             }
-            var disposableInterface = DisposalGenerator.ShouldGenerateDispose(nestedType) ? ", IDisposable" : string.Empty;
-            sb.WriteLineFormat("public partial {0} {1} : ISerializable<{1}>{2}", typeKeyword, nestedType.Name, disposableInterface);
+            var disposableInterface = DisposalGenerator.ShouldGenerateDispose(nestedType) ? ", global::System.IDisposable" : string.Empty;
+            sb.WriteLineFormat(
+                "public partial {0} {1} : global::FourSer.Contracts.ISerializable<{1}>{2}",
+                typeKeyword,
+                nestedType.Name,
+                disposableInterface);
             using var _ = sb.BeginBlock();
             // Delegate to the primary generators
             if (nestedType.Constructor is { ShouldGenerate: true } ctor)        
@@ -42,19 +52,21 @@ public static class NestedTypeGenerator
                 }
             }
 
-            PacketSizeGenerator.GenerateGetSize(sb, nestedType);
+            plans.Add(PacketSizeGenerator.GenerateGetSize(sb, nestedType, options, capabilities));
             sb.WriteLine();
-            DeserializationGenerator.GenerateDeserialize(sb, nestedType);
+            plans.AddRange(DeserializationGenerator.GenerateDeserialize(sb, nestedType, options, capabilities));
             sb.WriteLine();
-            SerializationGenerator.GenerateSerialize(sb, nestedType);
+            plans.AddRange(SerializationGenerator.GenerateSerialize(sb, nestedType, options, capabilities));
 
             DisposalGenerator.GenerateDispose(sb, nestedType);
 
             // Handle even deeper nested types recursively
             if (!nestedType.NestedTypes.IsEmpty)
             {
-                GenerateNestedTypes(sb, nestedType.NestedTypes);
+                plans.AddRange(GenerateNestedTypes(sb, nestedType.NestedTypes, options, capabilities));
             }
         }
+
+        return plans.ToEquatableArray();
     }
 }

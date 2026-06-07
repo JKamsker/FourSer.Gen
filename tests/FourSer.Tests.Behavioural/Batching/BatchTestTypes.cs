@@ -178,3 +178,95 @@ public partial class BatchTestNestedType
     public BatchTestSinglePrimitive Nested { get; set; } = new();
     public int After { get; set; }
 }
+
+/// <summary>
+/// Large primitive payload to force the pooled stream batch path.
+/// </summary>
+[GenerateSerializer]
+public partial class LargeBatchWritePacket
+{
+    public int Value01 { get; set; }
+    public int Value02 { get; set; }
+    public int Value03 { get; set; }
+    public int Value04 { get; set; }
+    public int Value05 { get; set; }
+    public int Value06 { get; set; }
+    public int Value07 { get; set; }
+    public int Value08 { get; set; }
+    public int Value09 { get; set; }
+    public int Value10 { get; set; }
+    public int Value11 { get; set; }
+    public int Value12 { get; set; }
+    public int Value13 { get; set; }
+    public int Value14 { get; set; }
+    public int Value15 { get; set; }
+    public int Value16 { get; set; }
+    public int Value17 { get; set; }
+    public int Value18 { get; set; }
+    public int Value19 { get; set; }
+    public int Value20 { get; set; }
+    public int Value21 { get; set; }
+    public int Value22 { get; set; }
+    public int Value23 { get; set; }
+    public int Value24 { get; set; }
+    public int Value25 { get; set; }
+    public int Value26 { get; set; }
+    public int Value27 { get; set; }
+    public int Value28 { get; set; }
+    public int Value29 { get; set; }
+    public int Value30 { get; set; }
+    public int Value31 { get; set; }
+    public int Value32 { get; set; }
+    public int Value33 { get; set; }
+    public int Value34 { get; set; }
+    public int Value35 { get; set; }
+    public int Value36 { get; set; }
+    public int Value37 { get; set; }
+    public int Value38 { get; set; }
+    public int Value39 { get; set; }
+    public int Value40 { get; set; }
+    public int Value41 { get; set; }
+    public int Value42 { get; set; }
+    public int Value43 { get; set; }
+    public int Value44 { get; set; }
+    public int Value45 { get; set; }
+    public int Value46 { get; set; }
+    public int Value47 { get; set; }
+    public int Value48 { get; set; }
+    public int Value49 { get; set; }
+    public int Value50 { get; set; }
+    public int Value51 { get; set; }
+    public int Value52 { get; set; }
+    public int Value53 { get; set; }
+    public int Value54 { get; set; }
+    public int Value55 { get; set; }
+    public int Value56 { get; set; }
+    public int Value57 { get; set; }
+    public int Value58 { get; set; }
+    public int Value59 { get; set; }
+    public int Value60 { get; set; }
+    public int Value61 { get; set; }
+    public int Value62 { get; set; }
+    public int Value63 { get; set; }
+    public int Value64 { get; set; }
+    public int Value65 { get; set; }
+}
+
+[GenerateSerializer]
+public partial class FusedStringPacket
+{
+    public string Value { get; set; } = string.Empty;
+}
+
+[GenerateSerializer]
+public partial class BatchTestFixedCollectionSandwich
+{
+    public int Before1 { get; set; }
+    public int Before2 { get; set; }
+
+    [SerializeCollection(CountSize = 4)]
+    public int[] Middle { get; set; } = new int[4];
+
+    public int After1 { get; set; }
+    public int After2 { get; set; }
+}

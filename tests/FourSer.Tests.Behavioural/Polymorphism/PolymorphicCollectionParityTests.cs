@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using FourSer.Contracts;
+using FourSer.Tests.Behavioural.Infrastructure;
 
 namespace FourSer.Tests.Behavioural.Polymorphism.FullSupport;
 
@@ -114,6 +115,42 @@ public partial class DefaultedTypeIdPropertyPacket
     [PolymorphicOption((byte)10, typeof(DogAnimal))]
     [PolymorphicOption((byte)20, typeof(CatAnimal), isDefault: true)]
     public IReadOnlyCollection<IAnimal>? Animals { get; set; } = Array.Empty<IAnimal>();
+}
+
+[GenerateSerializer]
+public partial class SingleTypeIdListFailurePacket
+{
+    [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte), CountType = typeof(byte))]
+    [PolymorphicOption((byte)10, typeof(DogAnimal))]
+    [PolymorphicOption((byte)20, typeof(CatAnimal))]
+    public List<IAnimal> Animals { get; set; } = new();
+}
+
+[GenerateSerializer]
+public partial class SingleTypeIdReadOnlyCollectionFailurePacket
+{
+    [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte), CountType = typeof(byte))]
+    [PolymorphicOption((byte)10, typeof(DogAnimal))]
+    [PolymorphicOption((byte)20, typeof(CatAnimal))]
+    public IReadOnlyCollection<IAnimal> Animals { get; set; } = Array.Empty<IAnimal>();
+}
+
+[GenerateSerializer]
+public partial class SingleTypeIdReadOnlyListFailurePacket
+{
+    [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte), CountType = typeof(byte))]
+    [PolymorphicOption((byte)10, typeof(DogAnimal))]
+    [PolymorphicOption((byte)20, typeof(CatAnimal))]
+    public IReadOnlyList<IAnimal> Animals { get; set; } = Array.Empty<IAnimal>();
+}
+
+[GenerateSerializer]
+public partial class SingleTypeIdEnumerableFailurePacket
+{
+    [SerializeCollection(PolymorphicMode = PolymorphicMode.SingleTypeId, TypeIdType = typeof(byte), CountType = typeof(byte))]
+    [PolymorphicOption((byte)10, typeof(DogAnimal))]
+    [PolymorphicOption((byte)20, typeof(CatAnimal))]
+    public IEnumerable<IAnimal> Animals { get; set; } = Array.Empty<IAnimal>();
 }
 
 public class PolymorphicCollectionParityTests
@@ -396,6 +433,74 @@ public class PolymorphicCollectionParityTests
         Assert.Throws<NullReferenceException>(() => InterfaceCollectionPacket.Serialize(original, new MemoryStream()));
     }
 
+    [Fact]
+    public void SingleTypeIdCollections_ShouldRejectMixedTypesBeforeWritingCollectionBytes()
+    {
+        var mixedAnimals = CreateAnimalSequence();
+
+        AssertSingleTypeIdFailureBeforeWritingBytes(
+            new SingleTypeIdListFailurePacket { Animals = mixedAnimals.ToList() },
+            SingleTypeIdListFailurePacket.GetPacketSize,
+            SingleTypeIdListFailurePacket.Serialize,
+            SingleTypeIdListFailurePacket.Serialize,
+            typeof(InvalidDataException));
+
+        AssertSingleTypeIdFailureBeforeWritingBytes(
+            new SingleTypeIdReadOnlyCollectionFailurePacket { Animals = mixedAnimals },
+            SingleTypeIdReadOnlyCollectionFailurePacket.GetPacketSize,
+            SingleTypeIdReadOnlyCollectionFailurePacket.Serialize,
+            SingleTypeIdReadOnlyCollectionFailurePacket.Serialize,
+            typeof(InvalidDataException));
+
+        AssertSingleTypeIdFailureBeforeWritingBytes(
+            new SingleTypeIdReadOnlyListFailurePacket { Animals = mixedAnimals },
+            SingleTypeIdReadOnlyListFailurePacket.GetPacketSize,
+            SingleTypeIdReadOnlyListFailurePacket.Serialize,
+            SingleTypeIdReadOnlyListFailurePacket.Serialize,
+            typeof(InvalidDataException));
+
+        AssertSingleTypeIdFailureBeforeWritingBytes(
+            new SingleTypeIdEnumerableFailurePacket { Animals = mixedAnimals },
+            SingleTypeIdEnumerableFailurePacket.GetPacketSize,
+            SingleTypeIdEnumerableFailurePacket.Serialize,
+            SingleTypeIdEnumerableFailurePacket.Serialize,
+            typeof(InvalidDataException));
+    }
+
+    [Fact]
+    public void SingleTypeIdCollections_ShouldRejectLateNullsBeforeWritingCollectionBytes()
+    {
+        var lateNullAnimals = CreateLateNullSequence();
+
+        AssertSingleTypeIdFailureBeforeWritingBytes(
+            new SingleTypeIdListFailurePacket { Animals = lateNullAnimals.ToList() },
+            SingleTypeIdListFailurePacket.GetPacketSize,
+            SingleTypeIdListFailurePacket.Serialize,
+            SingleTypeIdListFailurePacket.Serialize,
+            typeof(NullReferenceException));
+
+        AssertSingleTypeIdFailureBeforeWritingBytes(
+            new SingleTypeIdReadOnlyCollectionFailurePacket { Animals = lateNullAnimals },
+            SingleTypeIdReadOnlyCollectionFailurePacket.GetPacketSize,
+            SingleTypeIdReadOnlyCollectionFailurePacket.Serialize,
+            SingleTypeIdReadOnlyCollectionFailurePacket.Serialize,
+            typeof(NullReferenceException));
+
+        AssertSingleTypeIdFailureBeforeWritingBytes(
+            new SingleTypeIdReadOnlyListFailurePacket { Animals = lateNullAnimals },
+            SingleTypeIdReadOnlyListFailurePacket.GetPacketSize,
+            SingleTypeIdReadOnlyListFailurePacket.Serialize,
+            SingleTypeIdReadOnlyListFailurePacket.Serialize,
+            typeof(NullReferenceException));
+
+        AssertSingleTypeIdFailureBeforeWritingBytes(
+            new SingleTypeIdEnumerableFailurePacket { Animals = lateNullAnimals },
+            SingleTypeIdEnumerableFailurePacket.GetPacketSize,
+            SingleTypeIdEnumerableFailurePacket.Serialize,
+            SingleTypeIdEnumerableFailurePacket.Serialize,
+            typeof(NullReferenceException));
+    }
+
     private static IAnimal[] CreateAnimalSequence()
     {
         return
@@ -411,6 +516,15 @@ public class PolymorphicCollectionParityTests
         [
             new DogAnimal { Name = "Rex", BarkPitch = 4 },
             new DogAnimal { Name = "Bolt", BarkPitch = 8 }
+        ];
+    }
+
+    private static IAnimal[] CreateLateNullSequence()
+    {
+        return
+        [
+            new DogAnimal { Name = "Scout", BarkPitch = 5 },
+            null!
         ];
     }
 
@@ -430,6 +544,25 @@ public class PolymorphicCollectionParityTests
         Assert.Equal(expectedDescriptors, actualDescriptors);
     }
 
+    private static void AssertSingleTypeIdFailureBeforeWritingBytes<TPacket>(
+        TPacket packet,
+        Func<TPacket, int> getPacketSize,
+        SpanSerialize<TPacket> serializeSpan,
+        Action<TPacket, Stream> serializeStream,
+        Type exceptionType)
+    {
+        Assert.Throws(exceptionType, () => getPacketSize(packet));
+
+        var buffer = Enumerable.Repeat((byte)0xCC, 32).ToArray();
+        Assert.Throws(exceptionType, () => serializeSpan(packet, buffer));
+        Assert.All(buffer, value => Assert.Equal((byte)0xCC, value));
+
+        using var trackingStream = new TrackingWriteStream();
+        Assert.Throws(exceptionType, () => serializeStream(packet, trackingStream));
+        Assert.Equal(0, trackingStream.WriteCallCount);
+        Assert.Empty(trackingStream.ToArray());
+    }
+
     private static (string Type, string Name, int Value) DescribeAnimal(IAnimal animal)
     {
         return animal switch
@@ -439,4 +572,6 @@ public class PolymorphicCollectionParityTests
             _ => throw new InvalidOperationException($"Unexpected animal type '{animal.GetType().FullName}'.")
         };
     }
+
+    private delegate void SpanSerialize<in TPacket>(TPacket packet, Span<byte> buffer);
 }

@@ -22,6 +22,10 @@ internal static class TypeInfoProvider
         string? CountPropertyName
     );
 
+    private readonly record struct GeneratedFixedSizeInfo(
+        int SerializedSizeBytes,
+        bool BulkLayoutSafe);
+
     private static readonly SymbolDisplayFormat s_typeNameFormat = new
     (
         SymbolDisplayGlobalNamespaceStyle.Omitted,
@@ -636,7 +640,7 @@ internal static class TypeInfoProvider
             }
         }
 
-        var hasParameterlessCtor = HasParameterlessConstructor(constructors);
+        var hasUserDefinedParameterlessCtor = HasParameterlessConstructor(constructors);
         var shouldGenerate = HasReadOnlyMembers(members);
 
         if (!shouldGenerate)
@@ -654,7 +658,7 @@ internal static class TypeInfoProvider
                         parameters.Add(new(p.Name, p.Type.ToDisplayString(s_typeNameFormat)));
                     }
 
-                    return new ConstructorInfo(new(parameters.ToImmutable()), false, hasParameterlessCtor);
+                    return new ConstructorInfo(new(parameters.ToImmutable()), false, hasUserDefinedParameterlessCtor);
                 }
             }
         }
@@ -665,7 +669,7 @@ internal static class TypeInfoProvider
             generatedParametersBuilder.Add(new(m.Name, m.TypeName));
         }
 
-        return new ConstructorInfo(new(generatedParametersBuilder.ToImmutable()), true, hasParameterlessCtor);
+        return new ConstructorInfo(new(generatedParametersBuilder.ToImmutable()), true, hasUserDefinedParameterlessCtor);
     }
 
     private static bool HasParameterlessConstructor(List<IMethodSymbol> constructors)
@@ -743,6 +747,102 @@ internal static class TypeInfoProvider
         }
 
         return null;
+    }
+
+    private static GeneratedFixedSizeInfo? TryGetGeneratedFixedSizeInfo(ITypeSymbol typeSymbol)
+    {
+        return TryGetGeneratedFixedSizeInfo(
+            typeSymbol,
+            new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default));
+    }
+
+    private static GeneratedFixedSizeInfo? TryGetGeneratedFixedSizeInfo(
+        ITypeSymbol typeSymbol,
+        HashSet<INamedTypeSymbol> visited)
+    {
+        if (typeSymbol is not INamedTypeSymbol namedTypeSymbol
+            || !namedTypeSymbol.IsValueType
+            || !HasGenerateSerializerAttributeDirect(namedTypeSymbol))
+        {
+            return null;
+        }
+
+        if (!visited.Add(namedTypeSymbol))
+        {
+            return null;
+        }
+
+        try
+        {
+            var serializableMembers = namedTypeSymbol.GetMembers()
+                .Where(IsSerializableMember)
+                .ToArray();
+
+            if (serializableMembers.Length == 0)
+            {
+                return null;
+            }
+
+            var totalSize = 0;
+            foreach (var member in serializableMembers)
+            {
+                if (member is not IFieldSymbol field)
+                {
+                    return null;
+                }
+
+                if (GetCustomSerializer(field) is not null
+                    || GetCollectionInfo(field) is not null
+                    || GetPolymorphicInfo(field) is not null)
+                {
+                    return null;
+                }
+
+                if (GetCollectionTypeInfo(field.Type).IsCollection || GetMemoryOwnerTypeInfo(field.Type).IsMemoryOwner)
+                {
+                    return null;
+                }
+
+                if (TryGetFixedScalarSize(field.Type) is { } scalarSize)
+                {
+                    totalSize += scalarSize;
+                    continue;
+                }
+
+                var nestedInfo = TryGetGeneratedFixedSizeInfo(field.Type, visited);
+                if (nestedInfo is not { } nested)
+                {
+                    return null;
+                }
+
+                totalSize += nested.SerializedSizeBytes;
+            }
+
+            return new GeneratedFixedSizeInfo(
+                SerializedSizeBytes: totalSize,
+                BulkLayoutSafe: true);
+        }
+        finally
+        {
+            visited.Remove(namedTypeSymbol);
+        }
+    }
+
+    private static int? TryGetFixedScalarSize(ITypeSymbol typeSymbol)
+    {
+        if (typeSymbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.TypeKind == TypeKind.Enum)
+        {
+            return TryGetFixedScalarSize(namedTypeSymbol.EnumUnderlyingType!);
+        }
+
+        var typeName = typeSymbol.ToDisplayString(s_typeNameFormat);
+        var size = TypeHelper.GetSizeOf(typeName);
+        if (size <= 0 || typeName is "bool" or "decimal")
+        {
+            return null;
+        }
+
+        return size;
     }
 
     private static bool AllParametersMatch(IMethodSymbol constructor, EquatableArray<MemberToGenerate> members, INamedTypeSymbol typeSymbol)
@@ -1130,6 +1230,10 @@ internal static class TypeInfoProvider
         {
             var elementType = arrayTypeSymbol.ElementType;
             var arrayElementHasGenerateSerializerAttribute = HasGenerateSerializerAttribute(elementType as INamedTypeSymbol);
+            var arrayElementFixedSizeBytes = TryGetFixedScalarSize(elementType);
+            var arrayElementLayoutInfo = arrayElementFixedSizeBytes is null && arrayElementHasGenerateSerializerAttribute
+                ? TryGetGeneratedFixedSizeInfo(elementType)
+                : null;
             var arrayElementRequiresDisposal = elementType is INamedTypeSymbol namedArrayElementType
                 && HasGenerateSerializerAttributeDirect(namedArrayElementType)
                 && !HasUserProvidedDisposeMethod(namedArrayElementType)
@@ -1159,7 +1263,9 @@ internal static class TypeInfoProvider
                 IsGenericCollection: isGenericCollection1,
                 CollectionAddMethod: collectionAddMethod,
                 IsGenericList: typeSymbol is INamedTypeSymbol nts && nts.IsGenericList(),
-                IsReadOnlyInterface: false
+                IsReadOnlyInterface: false,
+                ElementFixedSizeBytes: arrayElementFixedSizeBytes ?? arrayElementLayoutInfo?.SerializedSizeBytes,
+                ElementBulkLayoutSafe: arrayElementFixedSizeBytes is not null || arrayElementLayoutInfo?.BulkLayoutSafe == true
             ));
         }
 
@@ -1187,6 +1293,10 @@ internal static class TypeInfoProvider
         }
 
         var hasGenerateSerializerAttribute = HasGenerateSerializerAttribute(genericElementType as INamedTypeSymbol);
+        var fixedElementSizeBytes = TryGetFixedScalarSize(genericElementType);
+        var generatedElementLayoutInfo = fixedElementSizeBytes is null && hasGenerateSerializerAttribute
+            ? TryGetGeneratedFixedSizeInfo(genericElementType)
+            : null;
         var genericElementRequiresDisposal = genericElementType is INamedTypeSymbol namedGenericElementType
             && HasGenerateSerializerAttributeDirect(namedGenericElementType)
             && !HasUserProvidedDisposeMethod(namedGenericElementType)
@@ -1212,7 +1322,9 @@ internal static class TypeInfoProvider
             IsGenericCollection: definitionInfo.IsGenericCollection,
             CollectionAddMethod: addMethod,
             IsGenericList: definitionInfo.IsGenericList,
-            IsReadOnlyInterface: definitionInfo.IsReadOnlyInterface
+            IsReadOnlyInterface: definitionInfo.IsReadOnlyInterface,
+            ElementFixedSizeBytes: fixedElementSizeBytes ?? generatedElementLayoutInfo?.SerializedSizeBytes,
+            ElementBulkLayoutSafe: fixedElementSizeBytes is not null || generatedElementLayoutInfo?.BulkLayoutSafe == true
         ));
     }
 

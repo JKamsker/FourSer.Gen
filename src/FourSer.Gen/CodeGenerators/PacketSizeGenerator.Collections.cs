@@ -4,7 +4,7 @@ using FourSer.Gen.Models;
 
 namespace FourSer.Gen.CodeGenerators;
 
-public static partial class PacketSizeGenerator
+internal static partial class PacketSizeGenerator
 {
     private static bool ShouldDeferCollectionCountValidation(MemberToGenerate member)
     {
@@ -30,11 +30,10 @@ public static partial class PacketSizeGenerator
     {
         var itemsVar = $"{member.Name.ToCamelCase()}SizedItems";
         sb.WriteLineFormat("var {0} = obj.{1} is null ? null : global::System.Linq.Enumerable.ToArray(obj.{1});", itemsVar, member.Name);
-        EmitCheckedCountValidation(sb, validationType, $"{itemsVar}?.Length ?? 0");
 
         if (GeneratorUtilities.ShouldUsePolymorphicSerialization(member))
         {
-            AddPolymorphicSerialization(sb, member, member.CollectionInfo!.Value, itemsVar);
+            AddPolymorphicSerialization(sb, member, member.CollectionInfo!.Value, itemsVar, validationType);
             return;
         }
 
@@ -43,36 +42,6 @@ public static partial class PacketSizeGenerator
             return;
         }
 
-        if (member.CustomSerializer is { } customSerializer)
-        {
-            var serializerField = global::FourSer.Gen.SerializerGenerator.SanitizeTypeName(customSerializer.SerializerTypeName);
-            sb.WriteLineFormat("if ({0} is not null)", itemsVar);
-            using var _ = sb.BeginBlock();
-            sb.WriteLineFormat("foreach (var item in {0}) {{ size += FourSer.Generated.Internal.__FourSer_Generated_Serializers.{1}.GetPacketSize(item); }}", itemsVar, serializerField);
-            return;
-        }
-
-        if (info.HasSerializer)
-        {
-            sb.WriteLineFormat("if ({0} is not null)", itemsVar);
-            using var _ = sb.BeginBlock();
-            sb.WriteLineFormat("foreach (var item in {0})", itemsVar);
-            using var __ = sb.BeginBlock();
-            sb.WriteLineFormat("size += {0}.GetPacketSize(item);", TypeHelper.GetGlobalTypeName(info.TypeName));
-            return;
-        }
-
-        if (info.IsUnmanaged)
-        {
-            sb.WriteLineFormat("size += ({0}?.Length ?? 0) * sizeof({1});", itemsVar, info.TypeName);
-            return;
-        }
-
-        if (info.IsString)
-        {
-            sb.WriteLineFormat("if ({0} is not null)", itemsVar);
-            using var _ = sb.BeginBlock();
-            sb.WriteLineFormat("foreach (var item in {0}) {{ size += StringEx.MeasureSize(item); }}", itemsVar);
-        }
+        GenerateStandardCollectionSizeCalculation(sb, member, info, itemsVar, validationType);
     }
 }

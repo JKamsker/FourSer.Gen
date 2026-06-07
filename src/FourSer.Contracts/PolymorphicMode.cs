@@ -11,7 +11,8 @@ public enum PolymorphicMode
     None,
     /// <summary>
     /// A single TypeId is written for the entire collection. All elements must be of the same type.
-    /// The TypeId is determined by the property specified in `TypeIdProperty`.
+    /// When `SerializeCollectionAttribute.TypeIdProperty` is configured, serialization derives the discriminator from the collection contents,
+    /// and deserialization restores the wire discriminator into the referenced member.
     /// </summary>
     SingleTypeId,
     /// <summary>

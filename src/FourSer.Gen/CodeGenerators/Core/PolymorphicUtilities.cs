@@ -89,6 +89,16 @@ public static class PolymorphicUtilities
         return key.ToString();
     }
 
+    public static string FormatOptionTypePattern(PolymorphicOption option)
+    {
+        return $"{TypeHelper.GetGlobalTypeName(option.Type)} _";
+    }
+
+    public static string FormatTypedTypeIdValue(object key, PolymorphicInfo info, string targetTypeName)
+    {
+        return $"({targetTypeName})({FormatTypeIdKey(key, info)})";
+    }
+
     public static string GenerateTypeIdSizeExpression(PolymorphicInfo info)
     {
         var underlyingType = info.EnumUnderlyingType ?? info.TypeIdType;
@@ -110,7 +120,7 @@ public static class PolymorphicUtilities
         if (isDeserialization)
         {
             var typeIdTypeName = GeneratorUtilities.GetMethodFriendlyTypeName(info.EnumUnderlyingType ?? info.TypeIdType);
-            sb.WriteLine($"var typeId = SpanReader.Read{typeIdTypeName}(ref data);");
+            sb.WriteLine($"var typeId = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.Read{typeIdTypeName}(ref data);");
             return "typeId";
         }
 

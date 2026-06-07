@@ -1,0 +1,35 @@
+using FourSer.Gen.Models;
+
+namespace FourSer.Gen.CodeGenerators.Planning;
+
+internal readonly record struct CollectionPlan(
+    string MemberName,
+    string CollectionTypeName,
+    string ElementTypeName,
+    bool IsMemoryOwner,
+    bool CanBeNull,
+    bool IsArray,
+    bool IsList,
+    bool SupportsIndexing,
+    bool IsPureEnumerable,
+    bool IsGenericList,
+    bool IsReadOnlyInterface,
+    string? ConcreteTypeName,
+    string? RangeFactoryTypeName,
+    string? CountPropertyName,
+    string? CollectionAddMethod,
+    bool ElementIsValueType,
+    bool ElementIsUnmanagedType,
+    bool ElementIsStringType,
+    bool ElementHasGenerateSerializerAttribute,
+    int? ElementFixedSizeBytes,
+    bool ElementBulkLayoutSafe,
+    bool ElementRequiresDisposal,
+    CollectionInfo CollectionInfo,
+    CustomSerializerInfo? CustomSerializer,
+    BulkLayoutMode BulkLayoutMode,
+    bool UsePortableFallback,
+    bool UseListSetCount,
+    string? CachedCountLocalName,
+    string? CachedByteCountLocalName,
+    string? CachedDiscriminatorLocalName);

@@ -1,5 +1,10 @@
 <Project>
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <FourSerOptimizationLevel Condition="'$(FourSerOptimizationLevel)' == ''">AggressivePortable</FourSerOptimizationLevel>
+    <FourSerMinBatchBytes Condition="'$(FourSerMinBatchBytes)' == ''">8</FourSerMinBatchBytes>
+    <FourSerStackallocThreshold Condition="'$(FourSerStackallocThreshold)' == ''">256</FourSerStackallocThreshold>
+    <FourSerMaxBatchBytes Condition="'$(FourSerMaxBatchBytes)' == ''">8192</FourSerMaxBatchBytes>
+    <FourSerEmitOptimizationComments Condition="'$(FourSerEmitOptimizationComments)' == ''">false</FourSerEmitOptimizationComments>
   </PropertyGroup>
 </Project>

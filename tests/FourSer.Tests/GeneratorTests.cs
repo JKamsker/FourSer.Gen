@@ -34,6 +34,16 @@ public class GeneratorTests
         }
     }
 
+    [Fact]
+    public void GeneratorFixtureDiscovery_ShouldIncludeRecordTypes()
+    {
+        var discoveredFixtures = GetTestCases()
+            .Select(testCase => Assert.IsType<string>(testCase[0]))
+            .ToArray();
+
+        Assert.Contains("RecordTypes", discoveredFixtures);
+    }
+
     [Theory]
     [MemberData(nameof(GetTestCases))]
     public Task RunGeneratorTest(string testCaseName)
@@ -256,20 +266,13 @@ public class GeneratorTests
         """;
 
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "DefaultedDiscriminatorPacket");
-        const string emptyCollectionCheck = "if ((obj.Animals?.Count ?? 0) == 0)";
-        var spanBranchStart = generatedCode.IndexOf(emptyCollectionCheck, StringComparison.Ordinal);
-        var streamBranchStart = generatedCode.IndexOf(emptyCollectionCheck, spanBranchStart + emptyCollectionCheck.Length, StringComparison.Ordinal);
 
-        Assert.True(spanBranchStart >= 0, "Expected to find the span empty-collection branch.");
-        Assert.True(streamBranchStart >= 0, "Expected to find the stream empty-collection branch.");
-
-        var spanBranch = generatedCode.Substring(spanBranchStart, streamBranchStart - spanBranchStart);
-        var streamBranch = generatedCode.Substring(streamBranchStart);
-
-        Assert.Contains("SpanWriter.WriteByte(ref data, (byte)(2));", spanBranch);
-        Assert.DoesNotContain("obj.AnimalType", spanBranch);
-        Assert.Contains("StreamWriter.WriteByte(stream, (byte)(2));", streamBranch);
-        Assert.DoesNotContain("obj.AnimalType", streamBranch);
+        Assert.Contains("var animalsPreparedItems = obj.Animals is null ? null : global::System.Linq.Enumerable.ToList(obj.Animals);", generatedCode);
+        Assert.Contains("if ((animalsPreparedItems?.Count ?? 0) == 0)", generatedCode);
+        Assert.Contains("global::FourSer.Gen.Helpers.SpanWriterHelpers.WriteByte(ref data, (byte)(2));", generatedCode);
+        Assert.DoesNotContain("WriteByte(ref data, (byte)(obj.AnimalType));", generatedCode);
+        Assert.Contains("global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)(2));", generatedCode);
+        Assert.DoesNotContain("WriteByte(stream, (byte)(obj.AnimalType));", generatedCode);
     }
 
     [Fact]
@@ -439,20 +442,32 @@ public class GeneratorTests
 
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "ByteEnumerablePacket");
 
-        Assert.Contains("var data = SpanReader.ReadBytes(ref buffer, (int)dataCount);", generatedCode);
-        Assert.Contains("var data = StreamReader.ReadBytes(stream, (int)dataCount);", generatedCode);
-        Assert.Contains("SpanWriter.WriteBytes(ref data, dataCollection);", generatedCode);
-        Assert.Contains("StreamWriter.WriteBytes(stream, dataCollection);", generatedCode);
+        Assert.Contains("var data = global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadBytes(ref buffer, (int)dataCount);", generatedCode);
+        Assert.Contains("var data = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadBytes(stream, (int)dataCount);", generatedCode);
+        Assert.Contains("global::FourSer.Gen.Helpers.SpanWriterHelpers.WriteBytes(ref data, dataCollection);", generatedCode);
+        Assert.Contains("global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteBytes(stream, dataCollection);", generatedCode);
         Assert.Contains("global::System.Linq.Enumerable.ToArray(obj.Data)", generatedCode);
-        Assert.Contains("SpanWriter.WriteBytes(ref data, dataSequence);", generatedCode);
-        Assert.Contains("StreamWriter.WriteBytes(stream, dataSequence);", generatedCode);
+        Assert.Contains("global::FourSer.Gen.Helpers.SpanWriterHelpers.WriteBytes(ref data, dataSequence);", generatedCode);
+        Assert.Contains("global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteBytes(stream, dataSequence);", generatedCode);
         Assert.DoesNotContain("var data = new System.Collections.Generic.List<byte>(dataCount);", generatedCode);
-        Assert.DoesNotContain("data.Add(SpanReader.ReadByte(ref buffer));", generatedCode);
-        Assert.DoesNotContain("data.Add(StreamReader.ReadByte(stream));", generatedCode);
+        Assert.DoesNotContain("data.Add(global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadByte(ref buffer));", generatedCode);
+        Assert.DoesNotContain("data.Add(global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream));", generatedCode);
     }
 
     [Fact]
-    public void ParameterlessConstructor_ShouldPreserveSourceInitializers()
+    public void MemoryOwnerDeserialization_ShouldDisposeRentedOwnerOnFailure()
+    {
+        var generatedCode = GenerateSerializerSource(ReadSource("MemoryOwner"), "Parent");
+
+        Assert.Contains("global::System.Buffers.MemoryPool<byte>.Shared.Rent(dataCount)", generatedCode);
+        Assert.Contains("catch", generatedCode);
+        Assert.Contains("dataOwner.Dispose();", generatedCode);
+        Assert.Contains("throw;", generatedCode);
+        Assert.Contains("data = dataOwner;", generatedCode);
+    }
+
+    [Fact]
+    public void MutableClassWithSourceInitializers_ShouldPreferConstructorBasedDeserialization()
     {
         const string source = """
         using System.Collections.Generic;
@@ -477,12 +492,100 @@ public class GeneratorTests
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "ImmutableArrayPacket");
         const string constructorSignature = "public ImmutableArrayPacket()";
         var constructorStart = generatedCode.IndexOf(constructorSignature, StringComparison.Ordinal);
-        var deserializeStart = generatedCode.IndexOf("public static ImmutableArrayPacket Deserialize", StringComparison.Ordinal);
-        var constructorBody = generatedCode.Substring(constructorStart, deserializeStart - constructorStart);
 
-        Assert.DoesNotContain("this.Items =", constructorBody);
-        Assert.DoesNotContain("this.Numbers =", constructorBody);
-        Assert.DoesNotContain("this.Values =", constructorBody);
+        if (constructorStart >= 0)
+        {
+            var deserializeStart = generatedCode.IndexOf("public static ImmutableArrayPacket Deserialize", StringComparison.Ordinal);
+            var constructorBody = generatedCode.Substring(constructorStart, deserializeStart - constructorStart);
+
+            Assert.DoesNotContain("this.Items =", constructorBody);
+            Assert.DoesNotContain("this.Numbers =", constructorBody);
+            Assert.DoesNotContain("this.Values =", constructorBody);
+        }
+
+        Assert.Contains("private ImmutableArrayPacket(", generatedCode);
+        Assert.Equal(2, CountOccurrences(generatedCode, "var obj = new ImmutableArrayPacket(items, numbers, values);"));
+        Assert.DoesNotContain("var obj = new ImmutableArrayPacket();", generatedCode);
+    }
+
+    [Fact]
+    public void MutableClassWithoutReusablePublicConstructor_ShouldGenerateAllMembersConstructor()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Constructors;
+
+        [GenerateSerializer]
+        public partial class LoginPacket
+        {
+            public byte Result;
+            public uint UserID;
+            public string Username;
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "LoginPacket");
+
+        Assert.Contains("private LoginPacket(byte result, uint userID, string username)", generatedCode);
+        Assert.Equal(2, CountOccurrences(generatedCode, "var obj = new LoginPacket(result, userID, username);"));
+        Assert.DoesNotContain("var obj = new LoginPacket();", generatedCode);
+    }
+
+    [Fact]
+    public void MutableStructWithoutReusablePublicConstructor_ShouldGenerateAllMembersConstructor()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Constructors;
+
+        [GenerateSerializer]
+        public partial struct MyStruct
+        {
+            public int A;
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "MyStruct");
+
+        Assert.Contains("private MyStruct(int a)", generatedCode);
+        Assert.Equal(2, CountOccurrences(generatedCode, "var obj = new MyStruct(a);"));
+        Assert.DoesNotContain("var obj = new MyStruct();", generatedCode);
+    }
+
+    [Fact]
+    public void PrivateParameterlessConstructor_ShouldNotSuppressGeneratedAllMembersConstructor()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Constructors;
+
+        [GenerateSerializer]
+        public partial class PacketWithPrivateCtor
+        {
+            private PacketWithPrivateCtor() { }
+
+            public int Value { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "PacketWithPrivateCtor");
+
+        Assert.Contains("private PacketWithPrivateCtor(int value)", generatedCode);
+        Assert.Equal(2, CountOccurrences(generatedCode, "var obj = new PacketWithPrivateCtor(value);"));
+        Assert.DoesNotContain("public PacketWithPrivateCtor()", generatedCode);
+    }
+
+    [Fact]
+    public void RecordStructPrimaryConstructor_ShouldBeUsedDuringDeserialization()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Constructors;
+
+        [GenerateSerializer]
+        public partial record struct Packet(int A, string B);
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "Packet");
+
+        Assert.Equal(2, CountOccurrences(generatedCode, "var obj = new Packet(a, b);"));
+        Assert.DoesNotContain("var obj = new Packet();", generatedCode);
     }
 
     [Fact]
@@ -504,7 +607,7 @@ public class GeneratorTests
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "StackPacket");
 
         Assert.Contains("var valuesStaging = new System.Collections.Generic.List<uint>(valuesCount);", generatedCode);
-        Assert.Contains("valuesStaging.Add(SpanReader.ReadUInt32(ref buffer));", generatedCode);
+        Assert.Contains("valuesStaging.Add(global::FourSer.Gen.Helpers.RoSpanReaderHelpers.ReadUInt32(ref buffer));", generatedCode);
         Assert.Contains("var values = new System.Collections.Generic.Stack<uint>(global::System.Linq.Enumerable.Reverse(valuesStaging));", generatedCode);
     }
 
@@ -534,7 +637,293 @@ public class GeneratorTests
     }
 
     [Fact]
-    public void PolymorphicEnumerableSerialization_ShouldDisposeEnumerators()
+    public void NarrowCountCollectionSizing_ShouldUseOverflowGuardWithoutValidationCounters()
+    {
+        const string source = """
+        using System.Collections.Generic;
+
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class NarrowCountSizingPacket
+        {
+            [SerializeCollection(CountType = typeof(byte))]
+            public HashSet<string> SmallSet { get; set; } = new();
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "NarrowCountSizingPacket");
+
+        Assert.DoesNotContain("_ = checked(", generatedCode);
+        Assert.DoesNotContain("smallSetValidatedCount", generatedCode);
+        Assert.Contains("if (obj.SmallSet.Count > byte.MaxValue)", generatedCode);
+    }
+
+    [Fact]
+    public void ReferenceTypeListSerialization_ShouldNotPrevalidateWithSeparateEnumeration()
+    {
+        const string source = """
+        using System.Collections.Generic;
+
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class ListPacket
+        {
+            [SerializeCollection(CountType = typeof(byte))]
+            public List<Cat> Cats { get; set; } = new();
+        }
+
+        [GenerateSerializer]
+        public partial class Cat
+        {
+            public int Id { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "ListPacket");
+
+        Assert.DoesNotContain("foreach (var item in obj.Cats)", generatedCode);
+        Assert.Contains("if (obj.Cats[i] is null)", generatedCode);
+    }
+
+    [Fact]
+    public void FixedSizeCollectionSerialization_ShouldNotDuplicateShapeGuards()
+    {
+        const string source = """
+        using System.Collections.Generic;
+
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class FixedSizePacket
+        {
+            [SerializeCollection(CountSize = 10)]
+            public List<Entity> MyList { get; set; } = new();
+        }
+
+        [GenerateSerializer]
+        public partial class Entity
+        {
+            public int Id { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "FixedSizePacket");
+
+        Assert.Equal(3, CountOccurrences(generatedCode, "if (obj.MyList is null)"));
+        Assert.Equal(3, CountOccurrences(generatedCode, "if (obj.MyList.Count != 10)"));
+        Assert.DoesNotContain("if (obj.MyList is not null)", generatedCode);
+    }
+
+    [Fact]
+    public void NestedMemberSerialization_ShouldEmitSingleNullGuardPerMethod()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Nested;
+
+        [GenerateSerializer]
+        public partial class ContainerPacket
+        {
+            public int Id;
+            public NestedData Data;
+        }
+
+        [GenerateSerializer]
+        public partial class NestedData
+        {
+            public string Name;
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "ContainerPacket");
+
+        Assert.Equal(3, CountOccurrences(generatedCode, "if (obj.Data is null)"));
+    }
+
+    [Fact]
+    public void DirectSerializableMemberSerialization_ShouldEmitSingleNullGuardPerMethod()
+    {
+        const string source = """
+        using System.IO;
+        using SpanReader = FourSer.Gen.Helpers.RoSpanReaderHelpers;
+        using StreamReader = FourSer.Gen.Helpers.StreamReaderHelpers;
+        using SpanWriter = FourSer.Gen.Helpers.SpanWriterHelpers;
+        using StreamWriter = FourSer.Gen.Helpers.StreamWriterHelpers;
+
+        namespace FourSer.Tests.Custom.Wrappers;
+
+        public class FourSerString : ISerializable<FourSerString>
+        {
+            public string Value { get; set; } = string.Empty;
+
+            public static int GetPacketSize(FourSerString obj) => StringEx.MeasureSize(obj.Value);
+
+            public static void Serialize(FourSerString obj, ref Span<byte> data) => SpanWriter.WriteString(ref data, obj.Value);
+
+            public static void Serialize(FourSerString obj, Span<byte> data) => Serialize(obj, ref data);
+
+            public static void Serialize(FourSerString obj, Stream stream) => StreamWriter.WriteString(stream, obj.Value);
+
+            public static FourSerString Deserialize(ref ReadOnlySpan<byte> data) => new() { Value = SpanReader.ReadString(ref data) };
+
+            public static FourSerString Deserialize(ReadOnlySpan<byte> data) => Deserialize(ref data);
+
+            public static FourSerString Deserialize(Stream stream) => new() { Value = StreamReader.ReadString(stream) };
+        }
+
+        [GenerateSerializer]
+        public partial class WrapperPacket
+        {
+            public FourSerString Name { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "WrapperPacket");
+
+        Assert.Equal(3, CountOccurrences(generatedCode, "if (obj.Name is null)"));
+    }
+
+    [Fact]
+    public void FixedSizeUnmanagedCollectionSizing_ShouldUseFixedCountWithoutNullableCountExpression()
+    {
+        const string source = """
+        using System.Collections.Concurrent;
+
+        namespace FourSer.Tests.Custom.Collections;
+
+        [GenerateSerializer]
+        public partial class FixedBagPacket
+        {
+            [SerializeCollection(CountSize = 8)]
+            public ConcurrentBag<long> LargeBag { get; set; } = new();
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "FixedBagPacket");
+
+        Assert.Contains("size += 8 * sizeof(long);", generatedCode);
+        Assert.DoesNotContain("LargeBag?.Count", generatedCode);
+    }
+
+    [Fact]
+    public void UnmanagedPacketSize_ShouldKeepSizeOfExpressionAndMemberComment()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Size;
+
+        [GenerateSerializer]
+        public partial class SizePacket
+        {
+            public int Id { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "SizePacket");
+
+        Assert.Contains("size += sizeof(int); // Size for unmanaged type Id", generatedCode);
+        Assert.DoesNotContain("size += 4;", generatedCode);
+    }
+
+    [Fact]
+    public void DefaultOptimizationLevel_ShouldFuseStreamStringWrites()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Options;
+
+        [GenerateSerializer]
+        public partial class StringPacket
+        {
+            public string Name { get; set; } = string.Empty;
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "StringPacket");
+
+        Assert.Contains("System.Text.Encoding.UTF8.GetByteCount(obj.Name)", generatedCode);
+        Assert.DoesNotContain("global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);", generatedCode);
+    }
+
+    [Fact]
+    public void OptimizationLevelOff_ShouldDisableStringFusion()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Options;
+
+        [GenerateSerializer]
+        public partial class StringPacket
+        {
+            public string Name { get; set; } = string.Empty;
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(
+            AddDefaultUsings(source),
+            "StringPacket",
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["build_property.FourSerOptimizationLevel"] = "Off",
+            });
+
+        Assert.Contains("global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteString(stream, obj.Name);", generatedCode);
+        Assert.DoesNotContain("System.Text.Encoding.UTF8.GetByteCount(obj.Name)", generatedCode);
+    }
+
+    [Fact]
+    public void OptimizationLevelOff_ShouldDisableScalarBatching()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Options;
+
+        [GenerateSerializer]
+        public partial class BatchPacket
+        {
+            public int First { get; set; }
+            public int Second { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(
+            AddDefaultUsings(source),
+            "BatchPacket",
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["build_property.FourSerOptimizationLevel"] = "Off",
+            });
+
+        Assert.Contains("global::FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)(obj.First));", generatedCode);
+        Assert.Contains("global::FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)(obj.Second));", generatedCode);
+        Assert.DoesNotContain("BinaryPrimitives.WriteInt32LittleEndian", generatedCode);
+    }
+
+    [Fact]
+    public void ConservativeOptimization_ShouldBatchAdjacentScalars()
+    {
+        const string source = """
+        namespace FourSer.Tests.Custom.Options;
+
+        [GenerateSerializer]
+        public partial class BatchPacket
+        {
+            public int First { get; set; }
+            public int Second { get; set; }
+        }
+        """;
+
+        var generatedCode = GenerateSerializerSource(
+            AddDefaultUsings(source),
+            "BatchPacket",
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["build_property.FourSerOptimizationLevel"] = "Conservative",
+            });
+
+        Assert.Contains("BinaryPrimitives.WriteInt32LittleEndian", generatedCode);
+        Assert.DoesNotContain("global::FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)(obj.First));", generatedCode);
+    }
+
+    [Fact]
+    public void PolymorphicEnumerableSerialization_ShouldMaterializeReplayableSequencesOncePerMethod()
     {
         const string source = """
         namespace FourSer.Tests.Custom.Polymorphism;
@@ -559,11 +948,12 @@ public class GeneratorTests
 
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "Inventory");
 
-        Assert.Contains("using var animalsEnumerator = ((global::System.Collections.Generic.IEnumerable<", generatedCode);
+        Assert.Contains("var animalsPreparedItems = obj.Animals is null ? null : global::System.Linq.Enumerable.ToList(obj.Animals);", generatedCode);
+        Assert.DoesNotContain("using var animalsEnumerator = ((global::System.Collections.Generic.IEnumerable<", generatedCode);
     }
 
     [Fact]
-    public void MultipleNonNullableEnumerableCollections_ShouldUsePrefixedEndPositionLocals()
+    public void MultipleNonNullableEnumerableCollections_ShouldAvoidSeekBackfillLocals()
     {
         const string source = """
         #nullable enable
@@ -583,9 +973,11 @@ public class GeneratorTests
 
         var generatedCode = GenerateSerializerSource(AddDefaultUsings(source), "EnumerablePacket");
 
-        Assert.Contains("var firstValuesEndPosition = stream.Position;", generatedCode);
-        Assert.Contains("var secondValuesEndPosition = stream.Position;", generatedCode);
-        Assert.DoesNotContain("var endPosition = stream.Position;", generatedCode);
+        Assert.Contains("firstValuesPreparedItems", generatedCode);
+        Assert.Contains("global::System.Linq.Enumerable.ToList(obj.FirstValues)", generatedCode);
+        Assert.Contains("secondValuesPreparedItems", generatedCode);
+        Assert.Contains("global::System.Linq.Enumerable.ToList(obj.SecondValues)", generatedCode);
+        Assert.DoesNotContain("stream.Position", generatedCode);
     }
 
     [Fact]
@@ -726,10 +1118,13 @@ public class GeneratorTests
         );
     }
 
-    private static string GenerateSerializerSource(string source, string? hintNameContains = null)
+    private static string GenerateSerializerSource(
+        string source,
+        string? hintNameContains = null,
+        IReadOnlyDictionary<string, string>? globalOptions = null)
     {
         var compilation = CreateCompilation(source);
-        var result = GetRunResult(compilation, out _);
+        var result = GetRunResult(compilation, out _, globalOptions);
 
         var sources = result.Results
             .SelectMany(r => r.GeneratedSources)
@@ -743,10 +1138,29 @@ public class GeneratorTests
         return string.Join("\n\n", sources.Select(g => g.SourceText.ToString()));
     }
 
-    private static GeneratorDriverRunResult GetRunResult(CSharpCompilation compilation, out CSharpCompilation finalCompilation)
+    private static int CountOccurrences(string source, string value)
     {
-        var generator = new SerializerGenerator();
-        var driver = CSharpGeneratorDriver.Create(generator);
+        var count = 0;
+        var index = 0;
+        while ((index = source.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            index += value.Length;
+        }
+
+        return count;
+    }
+
+    private static GeneratorDriverRunResult GetRunResult(
+        CSharpCompilation compilation,
+        out CSharpCompilation finalCompilation,
+        IReadOnlyDictionary<string, string>? globalOptions = null)
+    {
+        var generator = new SerializerGenerator().AsSourceGenerator();
+        var driver = CSharpGeneratorDriver.Create(
+            generators: new ISourceGenerator[] { generator },
+            parseOptions: compilation.SyntaxTrees.FirstOrDefault()?.Options as CSharpParseOptions,
+            optionsProvider: globalOptions is null ? null : new TestAnalyzerConfigOptionsProvider(globalOptions));
 
         driver = (CSharpGeneratorDriver)driver.RunGenerators(compilation);
         var runResult = driver.GetRunResult();
