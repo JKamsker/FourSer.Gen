@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TNODE.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TNodeCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TNodeRecord> Nodes { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TNodeRecord
     {
         public uint MapId { get; set; }

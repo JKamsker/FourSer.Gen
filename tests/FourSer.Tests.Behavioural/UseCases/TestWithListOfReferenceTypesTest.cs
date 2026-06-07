@@ -3,14 +3,14 @@ using Xunit;
 
 namespace FourSer.Tests.Behavioural.UseCases;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class CXEntity
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class TestWithListOfReferenceTypes
 {
     [SerializeCollection]

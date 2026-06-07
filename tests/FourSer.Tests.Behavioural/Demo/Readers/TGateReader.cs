@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TGate.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TGateCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TGateEntry> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TGateEntry
     {
         private const int EquipmentSlotCount = 19;

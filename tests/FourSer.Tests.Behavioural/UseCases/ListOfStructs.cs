@@ -1,15 +1,15 @@
-﻿using FourSer.Contracts;
+using FourSer.Contracts;
 using Xunit;
 
 namespace FourSer.Tests.Behavioural.UseCases;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial struct ListOfStructsEntity
 {
     public int A;
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class ListOfStructs
 {
     public int Count { get; set; }

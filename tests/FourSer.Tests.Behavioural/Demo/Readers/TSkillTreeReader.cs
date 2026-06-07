@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TSkillTree.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TSkillTreeCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TSkillTreeEntry> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TSkillTreeEntry
     {
         public byte CountryId { get; set; }

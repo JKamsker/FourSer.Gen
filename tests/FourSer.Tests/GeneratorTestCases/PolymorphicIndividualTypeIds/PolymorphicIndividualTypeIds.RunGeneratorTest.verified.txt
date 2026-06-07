@@ -77,36 +77,6 @@ public partial class PolymorphicIndividualTest : global::FourSer.Contracts.ISeri
         return Deserialize(ref buffer);
     }
 
-    public static PolymorphicIndividualTest Deserialize(System.IO.Stream stream)
-    {
-        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal> animals = default;
-        var animalsCount = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
-        animals = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal>(animalsCount);
-        for (int i = 0; i < animalsCount; i++)
-        {
-            FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Animal item;
-            var itemTypeId = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
-            switch (itemTypeId)
-            {
-                case 1:
-                {
-                    item = global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat.Deserialize(stream);
-                    break;
-                }
-                case 2:
-                {
-                    item = global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog.Deserialize(stream);
-                    break;
-                }
-                default:
-                    throw new System.IO.InvalidDataException($"Unknown type id for item: {itemTypeId}");
-            }
-            animals.Add(item);
-        }
-        var obj = new PolymorphicIndividualTest(animals);
-        return obj;
-    }
-
     public static void Serialize(PolymorphicIndividualTest obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -148,44 +118,6 @@ public partial class PolymorphicIndividualTest : global::FourSer.Contracts.ISeri
     public static void Serialize(PolymorphicIndividualTest obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(PolymorphicIndividualTest obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Animals is null)
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)(0));
-        }
-        else
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, checked((byte)(obj.Animals.Count)));
-            foreach(var item in obj.Animals)
-            {
-                switch (item)
-                {
-                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat typedInstance:
-                    {
-                        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)(1));
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Cat.Serialize(typedInstance, stream);
-                        break;
-                    }
-                    case global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog typedInstance:
-                    {
-                        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)(2));
-                        global::FourSer.Tests.GeneratorTestCases.PolymorphicIndividualTypeIds.Dog.Serialize(typedInstance, stream);
-                        break;
-                    }
-                    case null:
-                        throw new System.NullReferenceException($"Item in collection cannot be null.");
-                    default:
-                        throw new System.IO.InvalidDataException($"Unknown type for item: {item?.GetType().FullName}");
-                }
-            }
-        }
     }
 }
 
@@ -235,16 +167,6 @@ public partial class Cat : global::FourSer.Contracts.ISerializable<Cat>
         return Deserialize(ref buffer);
     }
 
-    public static new Cat Deserialize(System.IO.Stream stream)
-    {
-        int id;
-        string name;
-        id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        name = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new Cat(id, name);
-        return obj;
-    }
-
     public static void Serialize(Cat obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -258,46 +180,6 @@ public partial class Cat : global::FourSer.Contracts.ISerializable<Cat>
     public static void Serialize(Cat obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Cat obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.Id));
-        if (string.IsNullOrEmpty(obj.Name))
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, 0);
-        }
-        else
-        {
-            var nameStringByteCount = System.Text.Encoding.UTF8.GetByteCount(obj.Name);
-            var nameStringTotalBytes = nameStringByteCount + sizeof(int);
-            if (nameStringTotalBytes <= 256)
-            {
-                Span<byte> nameStringBuffer = stackalloc byte[nameStringTotalBytes];
-                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
-                var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
-                stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
-            }
-            else
-            {
-                var nameStringBufferRented = System.Buffers.ArrayPool<byte>.Shared.Rent(nameStringTotalBytes);
-                try
-                {
-                    var nameStringBuffer = nameStringBufferRented.AsSpan(0, nameStringTotalBytes);
-                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(nameStringBuffer, nameStringByteCount);
-                    var nameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Name, nameStringBuffer.Slice(sizeof(int)));
-                    stream.Write(nameStringBuffer.Slice(0, sizeof(int) + nameStringActualBytes));
-                }
-                finally
-                {
-                    System.Buffers.ArrayPool<byte>.Shared.Return(nameStringBufferRented);
-                }
-            }
-        }
     }
 }
 
@@ -347,16 +229,6 @@ public partial class Dog : global::FourSer.Contracts.ISerializable<Dog>
         return Deserialize(ref buffer);
     }
 
-    public static new Dog Deserialize(System.IO.Stream stream)
-    {
-        int id;
-        string breed;
-        id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        breed = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new Dog(id, breed);
-        return obj;
-    }
-
     public static void Serialize(Dog obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -370,46 +242,6 @@ public partial class Dog : global::FourSer.Contracts.ISerializable<Dog>
     public static void Serialize(Dog obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Dog obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.Id));
-        if (string.IsNullOrEmpty(obj.Breed))
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, 0);
-        }
-        else
-        {
-            var breedStringByteCount = System.Text.Encoding.UTF8.GetByteCount(obj.Breed);
-            var breedStringTotalBytes = breedStringByteCount + sizeof(int);
-            if (breedStringTotalBytes <= 256)
-            {
-                Span<byte> breedStringBuffer = stackalloc byte[breedStringTotalBytes];
-                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(breedStringBuffer, breedStringByteCount);
-                var breedStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Breed, breedStringBuffer.Slice(sizeof(int)));
-                stream.Write(breedStringBuffer.Slice(0, sizeof(int) + breedStringActualBytes));
-            }
-            else
-            {
-                var breedStringBufferRented = System.Buffers.ArrayPool<byte>.Shared.Rent(breedStringTotalBytes);
-                try
-                {
-                    var breedStringBuffer = breedStringBufferRented.AsSpan(0, breedStringTotalBytes);
-                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(breedStringBuffer, breedStringByteCount);
-                    var breedStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Breed, breedStringBuffer.Slice(sizeof(int)));
-                    stream.Write(breedStringBuffer.Slice(0, sizeof(int) + breedStringActualBytes));
-                }
-                finally
-                {
-                    System.Buffers.ArrayPool<byte>.Shared.Return(breedStringBufferRented);
-                }
-            }
-        }
     }
 }
 
@@ -455,14 +287,6 @@ public partial class Animal : global::FourSer.Contracts.ISerializable<Animal>
         return Deserialize(ref buffer);
     }
 
-    public static Animal Deserialize(System.IO.Stream stream)
-    {
-        int id;
-        id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var obj = new Animal(id);
-        return obj;
-    }
-
     public static void Serialize(Animal obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -475,14 +299,5 @@ public partial class Animal : global::FourSer.Contracts.ISerializable<Animal>
     public static void Serialize(Animal obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Animal obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.Id));
     }
 }

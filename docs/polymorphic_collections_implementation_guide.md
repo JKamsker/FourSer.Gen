@@ -66,10 +66,11 @@ In that example:
 
 - Pure `IEnumerable<T>` inputs are replayable-only across separate `GetPacketSize(obj)` and `Serialize(obj, ...)` calls.
 - Each generated method enumerates a pure enumerable at most once internally.
-- For counted or `SingleTypeId` enumerable collections, the generator may materialize items once inside a method so stream serialization still works on non-seekable streams.
+- Stream overloads are emitted only when `SerializerGenerationMethods.Stream` is enabled.
+- For counted or `SingleTypeId` enumerable collections, the generator may materialize items once inside a generated stream method so serialization still works on non-seekable streams.
 
 ## Custom serializers inside polymorphic collections
 
 - Custom serializers must implement the full `ISerializer<T>` contract.
-- Stream generation calls `Serialize(T, Stream)` and `Deserialize(Stream)` directly.
+- Opted-in stream generation calls `Serialize(T, Stream)` and `Deserialize(Stream)` directly.
 - The generator does not bridge stream paths through the span members of a custom serializer.

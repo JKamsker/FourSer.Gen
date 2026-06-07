@@ -39,14 +39,6 @@ public partial class IgnoredMembersPacket : global::FourSer.Contracts.ISerializa
         return Deserialize(ref buffer);
     }
 
-    public static IgnoredMembersPacket Deserialize(System.IO.Stream stream)
-    {
-        byte included;
-        included = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
-        var obj = new IgnoredMembersPacket(included);
-        return obj;
-    }
-
     public static void Serialize(IgnoredMembersPacket obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -59,14 +51,5 @@ public partial class IgnoredMembersPacket : global::FourSer.Contracts.ISerializa
     public static void Serialize(IgnoredMembersPacket obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(IgnoredMembersPacket obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)(obj.Included));
     }
 }

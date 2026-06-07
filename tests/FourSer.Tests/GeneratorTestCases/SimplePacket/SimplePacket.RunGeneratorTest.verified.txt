@@ -47,18 +47,6 @@ public partial class LoginPacket : global::FourSer.Contracts.ISerializable<Login
         return Deserialize(ref buffer);
     }
 
-    public static LoginPacket Deserialize(System.IO.Stream stream)
-    {
-        byte result;
-        uint userID;
-        string username;
-        result = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadByte(stream);
-        userID = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadUInt32(stream);
-        username = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadString(stream);
-        var obj = new LoginPacket(result, userID, username);
-        return obj;
-    }
-
     public static void Serialize(LoginPacket obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -73,46 +61,5 @@ public partial class LoginPacket : global::FourSer.Contracts.ISerializable<Login
     public static void Serialize(LoginPacket obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(LoginPacket obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteByte(stream, (byte)(obj.Result));
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteUInt32(stream, (uint)(obj.UserID));
-        if (string.IsNullOrEmpty(obj.Username))
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, 0);
-        }
-        else
-        {
-            var usernameStringByteCount = System.Text.Encoding.UTF8.GetByteCount(obj.Username);
-            var usernameStringTotalBytes = usernameStringByteCount + sizeof(int);
-            if (usernameStringTotalBytes <= 256)
-            {
-                Span<byte> usernameStringBuffer = stackalloc byte[usernameStringTotalBytes];
-                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(usernameStringBuffer, usernameStringByteCount);
-                var usernameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Username, usernameStringBuffer.Slice(sizeof(int)));
-                stream.Write(usernameStringBuffer.Slice(0, sizeof(int) + usernameStringActualBytes));
-            }
-            else
-            {
-                var usernameStringBufferRented = System.Buffers.ArrayPool<byte>.Shared.Rent(usernameStringTotalBytes);
-                try
-                {
-                    var usernameStringBuffer = usernameStringBufferRented.AsSpan(0, usernameStringTotalBytes);
-                    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(usernameStringBuffer, usernameStringByteCount);
-                    var usernameStringActualBytes = System.Text.Encoding.UTF8.GetBytes(obj.Username, usernameStringBuffer.Slice(sizeof(int)));
-                    stream.Write(usernameStringBuffer.Slice(0, sizeof(int) + usernameStringActualBytes));
-                }
-                finally
-                {
-                    System.Buffers.ArrayPool<byte>.Shared.Return(usernameStringBufferRented);
-                }
-            }
-        }
     }
 }

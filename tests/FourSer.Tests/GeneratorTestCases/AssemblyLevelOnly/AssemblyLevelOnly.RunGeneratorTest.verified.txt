@@ -39,14 +39,6 @@ public partial class Packet : global::FourSer.Contracts.ISerializable<Packet>
         return Deserialize(ref buffer);
     }
 
-    public static Packet Deserialize(System.IO.Stream stream)
-    {
-        string name;
-        name = FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_AssemblyLevelOnly_AssemblyStringSerializer.Deserialize(stream);
-        var obj = new Packet(name);
-        return obj;
-    }
-
     public static void Serialize(Packet obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -60,15 +52,6 @@ public partial class Packet : global::FourSer.Contracts.ISerializable<Packet>
     public static void Serialize(Packet obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Packet obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        FourSer.Generated.Internal.__FourSer_Generated_Serializers.FourSer_Tests_GeneratorTestCases_AssemblyLevelOnly_AssemblyStringSerializer.Serialize(obj.Name, stream);
     }
 }
 

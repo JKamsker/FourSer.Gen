@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TItemAttr.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TItemAttrCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TItemAttrRecord> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TItemAttrRecord
     {
         public ushort Id { get; set; }

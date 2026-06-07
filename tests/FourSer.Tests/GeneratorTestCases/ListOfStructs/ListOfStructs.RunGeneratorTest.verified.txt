@@ -32,14 +32,6 @@ public partial struct MyStruct : global::FourSer.Contracts.ISerializable<MyStruc
         return Deserialize(ref buffer);
     }
 
-    public static MyStruct Deserialize(System.IO.Stream stream)
-    {
-        int a;
-        a = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var obj = new MyStruct(a);
-        return obj;
-    }
-
     public static void Serialize(MyStruct obj, ref System.Span<byte> data)
     {
         global::FourSer.Gen.Helpers.SpanWriterHelpers.WriteInt32(ref data, (int)(obj.A));
@@ -48,11 +40,6 @@ public partial struct MyStruct : global::FourSer.Contracts.ISerializable<MyStruc
     public static void Serialize(MyStruct obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(MyStruct obj, System.IO.Stream stream)
-    {
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.A));
     }
 }
 
@@ -120,29 +107,6 @@ public partial class PacketWithListOfStructs : global::FourSer.Contracts.ISerial
         return Deserialize(ref buffer);
     }
 
-    public static PacketWithListOfStructs Deserialize(System.IO.Stream stream)
-    {
-        System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct> structs;
-        var structsCount = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var structsValue = new System.Collections.Generic.List<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>(checked((int)structsCount));
-        System.Runtime.InteropServices.CollectionsMarshal.SetCount(structsValue, checked((int)structsCount));
-        if (global::System.BitConverter.IsLittleEndian && !global::System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>() && global::System.Runtime.CompilerServices.Unsafe.SizeOf<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>() == 4)
-        {
-            var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(structsValue));
-            stream.ReadExactly(collectionBytes);
-        }
-        else
-        {
-            for (int i = 0; i < checked((int)structsCount); i++)
-            {
-                System.Runtime.InteropServices.CollectionsMarshal.AsSpan(structsValue)[i] = global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.Deserialize(stream);
-            }
-        }
-        structs = structsValue;
-        var obj = new PacketWithListOfStructs(structs);
-        return obj;
-    }
-
     public static void Serialize(PacketWithListOfStructs obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -174,33 +138,5 @@ public partial class PacketWithListOfStructs : global::FourSer.Contracts.ISerial
     public static void Serialize(PacketWithListOfStructs obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(PacketWithListOfStructs obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Structs is null)
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(0));
-        }
-        else
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.Structs.Count));
-            if (global::System.BitConverter.IsLittleEndian && !global::System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>() && global::System.Runtime.CompilerServices.Unsafe.SizeOf<FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct>() == 4)
-            {
-                var collectionBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Structs));
-                global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteBytes(stream, collectionBytes);
-            }
-            else
-            {
-                for (int i = 0; i < System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Structs).Length; i++)
-                {
-                    global::FourSer.Tests.GeneratorTestCases.ListOfStructs.MyStruct.Serialize(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Structs)[i], stream);
-                }
-            }
-        }
     }
 }

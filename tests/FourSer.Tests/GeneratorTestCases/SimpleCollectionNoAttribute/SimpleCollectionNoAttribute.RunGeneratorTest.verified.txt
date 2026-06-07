@@ -44,18 +44,6 @@ public partial class MyPacket : global::FourSer.Contracts.ISerializable<MyPacket
         return Deserialize(ref buffer);
     }
 
-    public static MyPacket Deserialize(System.IO.Stream stream)
-    {
-        System.Collections.Generic.List<byte> data;
-        var dataCount = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var dataValue = new System.Collections.Generic.List<byte>(checked((int)dataCount));
-        System.Runtime.InteropServices.CollectionsMarshal.SetCount(dataValue, checked((int)dataCount));
-        stream.ReadExactly(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(dataValue));
-        data = dataValue;
-        var obj = new MyPacket(data);
-        return obj;
-    }
-
     public static void Serialize(MyPacket obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -76,22 +64,5 @@ public partial class MyPacket : global::FourSer.Contracts.ISerializable<MyPacket
     public static void Serialize(MyPacket obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(MyPacket obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Data is null)
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(0));
-        }
-        else
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.Data.Count));
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteBytes(stream, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(obj.Data));
-        }
     }
 }

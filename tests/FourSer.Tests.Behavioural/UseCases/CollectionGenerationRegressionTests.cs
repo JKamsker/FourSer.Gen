@@ -8,21 +8,21 @@ using Xunit;
 
 namespace FourSer.Tests.Behavioural.UseCases;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class ByteCountPacket
 {
     [SerializeCollection(CountType = typeof(byte))]
     public List<int> Values { get; set; } = new();
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class StackRoundTripPacket
 {
     [SerializeCollection]
     public Stack<int> Values { get; set; } = new();
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class CountSizeReferenceEnumerablePacket
 {
     public byte Count { get; set; }
@@ -31,7 +31,7 @@ public partial class CountSizeReferenceEnumerablePacket
     public IEnumerable<int> Values { get; set; } = Enumerable.Empty<int>();
 }
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class ImmutablePolymorphicPacket
 {
     [SerializeCollection(PolymorphicMode = PolymorphicMode.IndividualTypeIds, TypeIdType = typeof(byte))]
@@ -42,10 +42,10 @@ public partial class ImmutablePolymorphicPacket
 
 public interface IRegressionAnimal;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class RegressionDog : IRegressionAnimal;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class RegressionCat : IRegressionAnimal;
 
 public class CollectionGenerationRegressionTests

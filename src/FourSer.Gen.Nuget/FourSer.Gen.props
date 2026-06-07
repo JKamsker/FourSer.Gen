@@ -6,5 +6,15 @@
     <FourSerStackallocThreshold Condition="'$(FourSerStackallocThreshold)' == ''">256</FourSerStackallocThreshold>
     <FourSerMaxBatchBytes Condition="'$(FourSerMaxBatchBytes)' == ''">8192</FourSerMaxBatchBytes>
     <FourSerEmitOptimizationComments Condition="'$(FourSerEmitOptimizationComments)' == ''">false</FourSerEmitOptimizationComments>
+    <FourSerAdditionalMethods Condition="'$(FourSerAdditionalMethods)' == ''">None</FourSerAdditionalMethods>
   </PropertyGroup>
+
+  <ItemGroup>
+    <CompilerVisibleProperty Include="FourSerOptimizationLevel" />
+    <CompilerVisibleProperty Include="FourSerMinBatchBytes" />
+    <CompilerVisibleProperty Include="FourSerStackallocThreshold" />
+    <CompilerVisibleProperty Include="FourSerMaxBatchBytes" />
+    <CompilerVisibleProperty Include="FourSerEmitOptimizationComments" />
+    <CompilerVisibleProperty Include="FourSerAdditionalMethods" />
+  </ItemGroup>
 </Project>

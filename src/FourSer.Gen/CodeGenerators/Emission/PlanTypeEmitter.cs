@@ -43,7 +43,7 @@ internal static class PlanTypeEmitter
             }
         }
 
-        if (op.TargetKind == TargetKind.Span)
+        if (op.TargetKind.UsesRefWriteTarget())
         {
             context.Builder.WriteLine($"{TypeHelper.GetGlobalTypeName(op.TypeName)}.Serialize({op.InstanceExpression}, ref {op.TargetExpression});");
             return;
@@ -54,6 +54,12 @@ internal static class PlanTypeEmitter
 
     public static void EmitDeserializeNested(PlanEmitterContext context, DeserializeNestedOp op)
     {
+        if (op.SourceExpression == "reader")
+        {
+            context.Builder.WriteLine($"{op.TargetExpression} = global::FourSer.Gen.Helpers.SequenceReaderHelpers.DeserializeSerializable<{TypeHelper.GetGlobalTypeName(op.TypeName)}>(ref reader);");
+            return;
+        }
+
         var refPrefix = op.UseRef ? "ref " : string.Empty;
         context.Builder.WriteLine($"{op.TargetExpression} = {TypeHelper.GetGlobalTypeName(op.TypeName)}.Deserialize({refPrefix}{op.SourceExpression});");
     }
@@ -69,13 +75,17 @@ internal static class PlanTypeEmitter
                 context.Builder.WriteLine($"size += {serializerAccess}.GetPacketSize({op.InstanceExpression});");
                 return;
 
-            case CustomSerializerDirection.Serialize when op.TargetKind == TargetKind.Span:
+            case CustomSerializerDirection.Serialize when op.TargetKind.UsesRefWriteTarget():
                 context.Builder.WriteLine($"var bytesWritten_{op.Key} = {serializerAccess}.Serialize({op.InstanceExpression}, {op.TargetExpression});");
                 context.Builder.WriteLine($"{op.TargetExpression} = {op.TargetExpression}.Slice(bytesWritten_{op.Key});");
                 return;
 
             case CustomSerializerDirection.Serialize:
                 context.Builder.WriteLine($"{serializerAccess}.Serialize({op.InstanceExpression}, {op.TargetExpression});");
+                return;
+
+            case CustomSerializerDirection.Deserialize when op.SourceExpression == "reader":
+                context.Builder.WriteLine($"{op.TargetExpression} = global::FourSer.Gen.Helpers.SequenceReaderHelpers.DeserializeWithSerializer<{TypeHelper.GetGlobalTypeName(op.TypeName)}>(ref reader, {serializerAccess});");
                 return;
 
             case CustomSerializerDirection.Deserialize:

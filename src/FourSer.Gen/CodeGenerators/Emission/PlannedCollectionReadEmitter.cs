@@ -64,7 +64,7 @@ internal static class PlannedCollectionReadEmitter
         string helperName,
         string countVariableName)
     {
-        var refPrefix = sourceExpression == "buffer" ? "ref " : string.Empty;
+        var refPrefix = NeedsRefSource(sourceExpression) ? "ref " : string.Empty;
         if (plan.CollectionInfo.CountSize >= 0)
         {
             return plan.CollectionInfo.CountSize.Value.ToString();
@@ -183,7 +183,7 @@ internal static class PlannedCollectionReadEmitter
         string countExpression,
         string mode)
     {
-        var refPrefix = sourceExpression == "buffer" ? "ref " : string.Empty;
+        var refPrefix = NeedsRefSource(sourceExpression) ? "ref " : string.Empty;
         builder.WriteLine($"for (int i = 0; i < checked((int){countExpression}); i++)");
         using (builder.BeginBlock())
         {
@@ -207,6 +207,11 @@ internal static class PlannedCollectionReadEmitter
     {
         if (plan.ElementHasGenerateSerializerAttribute)
         {
+            if (sourceExpression == "reader")
+            {
+                return $"global::FourSer.Gen.Helpers.SequenceReaderHelpers.DeserializeSerializable<{TypeHelper.GetGlobalTypeName(plan.ElementTypeName)}>(ref reader)";
+            }
+
             return $"{TypeHelper.GetGlobalTypeName(plan.ElementTypeName)}.Deserialize({refPrefix}{sourceExpression})";
         }
 
@@ -226,7 +231,18 @@ internal static class PlannedCollectionReadEmitter
             return;
         }
 
+        if (sourceExpression == "reader")
+        {
+            builder.WriteLine($"global::FourSer.Gen.Helpers.SequenceReaderHelpers.ReadBytes(ref reader, {targetExpression});");
+            return;
+        }
+
         builder.WriteLine($"stream.ReadExactly({targetExpression});");
+    }
+
+    private static bool NeedsRefSource(string sourceExpression)
+    {
+        return sourceExpression is "buffer" or "reader";
     }
 
     private static string GetFastPathGuard(CollectionPlan plan)

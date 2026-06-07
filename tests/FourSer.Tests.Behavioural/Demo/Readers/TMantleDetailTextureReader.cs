@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TMantleDetailTexture.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TMantleDetailTextureCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TMantleDetailTextureEntry> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TMantleDetailTextureEntry
     {
         public byte RaceId { get; set; }

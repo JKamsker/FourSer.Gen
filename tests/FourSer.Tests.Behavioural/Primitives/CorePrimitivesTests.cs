@@ -3,7 +3,7 @@ using System.IO;
 
 namespace FourSer.Tests.Behavioural.Primitives;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class PrimitivesPacket
 {
     public bool BoolValue { get; set; }

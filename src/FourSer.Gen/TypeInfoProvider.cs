@@ -50,6 +50,7 @@ internal static class TypeInfoProvider
         var serializableMembers = GetSerializableMembers(typeSymbol);       
         var nestedTypes = GetNestedTypes(typeSymbol);
         var constructorInfo = GetConstructorInfo(typeSymbol, serializableMembers);
+        var additionalMethods = GetAdditionalMethods(typeSymbol);
 
         var hasSerializableBaseType = HasGenerateSerializerAttribute(typeSymbol.BaseType);
         var defaultSerializers = GetDefaultSerializers(typeSymbol, typeSymbol.ContainingAssembly);
@@ -67,6 +68,7 @@ internal static class TypeInfoProvider
             ns,
             typeSymbol.IsValueType,
             typeSymbol.IsRecord,
+            additionalMethods,
             serializableMembers,
             nestedTypes,
             hasSerializableBaseType,
@@ -1186,6 +1188,14 @@ internal static class TypeInfoProvider
             .Any(ad => ad.AttributeClass is not null && ad.AttributeClass.IsGenerateSerializerAttribute());
     }
 
+    private static SerializerGenerationMethods GetAdditionalMethods(INamedTypeSymbol typeSymbol)
+    {
+        var attribute = typeSymbol.GetAttributes()
+            .FirstOrDefault(ad => ad.AttributeClass is not null && ad.AttributeClass.IsGenerateSerializerAttribute());
+
+        return AttributeHelper.GetAdditionalMethods(attribute);
+    }
+
 
 
     private static TypeToGenerate? CreateNestedTypeToGenerate(INamedTypeSymbol nestedTypeSymbol)
@@ -1197,6 +1207,7 @@ internal static class TypeInfoProvider
 
         var nestedMembers = GetSerializableMembers(nestedTypeSymbol);
         var deeperNestedTypes = GetNestedTypes(nestedTypeSymbol);
+        var additionalMethods = GetAdditionalMethods(nestedTypeSymbol);
 
         var hasSerializableBaseType = HasGenerateSerializerAttribute(nestedTypeSymbol.BaseType);
         var defaultSerializers = GetDefaultSerializers(nestedTypeSymbol, nestedTypeSymbol.ContainingAssembly);
@@ -1213,6 +1224,7 @@ internal static class TypeInfoProvider
             ns,
             nestedTypeSymbol.IsValueType,
             nestedTypeSymbol.IsRecord,
+            additionalMethods,
             nestedMembers,
             deeperNestedTypes,
             hasSerializableBaseType,

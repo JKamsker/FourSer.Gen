@@ -3,7 +3,7 @@ using Xunit;
 
 namespace FourSer.Tests.Behavioural.UseCases;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class PolymorphicEntityImplicitTypeId
 {
     public int Id { get; set; }
@@ -13,18 +13,18 @@ public partial class PolymorphicEntityImplicitTypeId
     [PolymorphicOption(2, typeof(EntityType2))]
     public BaseEntity? Entity { get; set; }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class BaseEntity
     {
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class EntityType1 : BaseEntity
     {
         public string Name { get; set; } = string.Empty;
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class EntityType2 : BaseEntity
     {
         public string Description { get; set; } = string.Empty;

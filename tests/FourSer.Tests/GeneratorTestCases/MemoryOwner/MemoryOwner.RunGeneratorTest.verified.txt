@@ -53,27 +53,6 @@ public partial class Child : global::FourSer.Contracts.ISerializable<Child>, glo
         return Deserialize(ref buffer);
     }
 
-    public static Child Deserialize(System.IO.Stream stream)
-    {
-        System.Buffers.IMemoryOwner<int> numbers;
-        var numbersCount = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var numbersOwner = global::FourSer.Gen.Helpers.MemoryPoolExtensions.SliceToSize(global::System.Buffers.MemoryPool<int>.Shared.Rent(numbersCount), numbersCount);
-        try
-        {
-            var numbersSpan = numbersOwner.Memory.Span;
-            var numbersBytes = System.Runtime.InteropServices.MemoryMarshal.AsBytes(numbersSpan);
-            stream.ReadExactly(numbersBytes);
-        }
-        catch
-        {
-            numbersOwner.Dispose();
-            throw;
-        }
-        numbers = numbersOwner;
-        var obj = new Child(numbers);
-        return obj;
-    }
-
     public static void Serialize(Child obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -95,24 +74,6 @@ public partial class Child : global::FourSer.Contracts.ISerializable<Child>, glo
     public static void Serialize(Child obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Child obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Numbers is null)
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(0));
-        }
-        else
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.Numbers.Memory.Length));
-            var numbersSpan = obj.Numbers.Memory.Span;
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteBytes(stream, System.Runtime.InteropServices.MemoryMarshal.AsBytes(numbersSpan));
-        }
     }
 
     public void Dispose()
@@ -184,28 +145,6 @@ public partial class Parent : global::FourSer.Contracts.ISerializable<Parent>, g
         return Deserialize(ref buffer);
     }
 
-    public static Parent Deserialize(System.IO.Stream stream)
-    {
-        System.Buffers.IMemoryOwner<byte> data;
-        FourSer.Tests.GeneratorTestCases.MemoryOwner.Child disposableProperty;
-        var dataCount = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var dataOwner = global::FourSer.Gen.Helpers.MemoryPoolExtensions.SliceToSize(global::System.Buffers.MemoryPool<byte>.Shared.Rent(dataCount), dataCount);
-        try
-        {
-            var dataSpan = dataOwner.Memory.Span;
-            stream.ReadExactly(dataSpan);
-        }
-        catch
-        {
-            dataOwner.Dispose();
-            throw;
-        }
-        data = dataOwner;
-        disposableProperty = global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.Deserialize(stream);
-        var obj = new Parent(data, disposableProperty);
-        return obj;
-    }
-
     public static void Serialize(Parent obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -232,29 +171,6 @@ public partial class Parent : global::FourSer.Contracts.ISerializable<Parent>, g
     public static void Serialize(Parent obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(Parent obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Data is null)
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(0));
-        }
-        else
-        {
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.Data.Memory.Length));
-            var dataSpan = obj.Data.Memory.Span;
-            global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteBytes(stream, dataSpan);
-        }
-        if (obj.DisposableProperty is null)
-        {
-            throw new System.NullReferenceException("Member \"obj.DisposableProperty\" cannot be null.");
-        }
-        global::FourSer.Tests.GeneratorTestCases.MemoryOwner.Child.Serialize(obj.DisposableProperty, stream);
     }
 
     public void Dispose()

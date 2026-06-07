@@ -37,14 +37,6 @@ public partial class MyGlobalClass : global::FourSer.Contracts.ISerializable<MyG
         return Deserialize(ref buffer);
     }
 
-    public static MyGlobalClass Deserialize(System.IO.Stream stream)
-    {
-        int myProperty;
-        myProperty = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var obj = new MyGlobalClass(myProperty);
-        return obj;
-    }
-
     public static void Serialize(MyGlobalClass obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -57,14 +49,5 @@ public partial class MyGlobalClass : global::FourSer.Contracts.ISerializable<MyG
     public static void Serialize(MyGlobalClass obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(MyGlobalClass obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.MyProperty));
     }
 }

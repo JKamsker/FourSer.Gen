@@ -1,3 +1,4 @@
+using FourSer.Gen.Models;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace FourSer.Gen;
@@ -9,6 +10,7 @@ internal static class FourSerGeneratorOptionsProvider
     private const string StackallocThresholdKey = "build_property.FourSerStackallocThreshold";
     private const string MaxBatchBytesKey = "build_property.FourSerMaxBatchBytes";
     private const string EmitOptimizationCommentsKey = "build_property.FourSerEmitOptimizationComments";
+    private const string AdditionalMethodsKey = "build_property.FourSerAdditionalMethods";
 
     public static FourSerGeneratorOptions GetOptions(AnalyzerConfigOptionsProvider provider)
     {
@@ -24,6 +26,7 @@ internal static class FourSerGeneratorOptionsProvider
         var stackallocThreshold = TryGetPositiveInt(options, StackallocThresholdKey, defaults.StackallocThreshold);
         var maxBatchBytes = TryGetPositiveInt(options, MaxBatchBytesKey, defaults.MaxBatchBytes);
         var emitOptimizationComments = TryGetBool(options, EmitOptimizationCommentsKey, defaults.EmitOptimizationComments);
+        var additionalMethods = TryGetEnum(options, AdditionalMethodsKey, defaults.AdditionalMethods);
 
         if (maxBatchBytes < minBatchBytes)
         {
@@ -40,7 +43,8 @@ internal static class FourSerGeneratorOptionsProvider
             minBatchBytes,
             stackallocThreshold,
             maxBatchBytes,
-            emitOptimizationComments);
+            emitOptimizationComments,
+            additionalMethods);
     }
 
     private static bool TryGetBool(AnalyzerConfigOptions options, string key, bool fallback)

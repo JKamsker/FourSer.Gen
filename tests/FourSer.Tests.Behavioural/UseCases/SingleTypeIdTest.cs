@@ -3,7 +3,7 @@ using Xunit;
 
 namespace FourSer.Tests.Behavioural.UseCases
 {
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class SingleTypeIdTest
     {
         public long AnimalType { get; set; }
@@ -13,19 +13,19 @@ namespace FourSer.Tests.Behavioural.UseCases
         public List<AnimalBase> Animals { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class AnimalBase
     {
         public int Age { get; set; }
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class CatBase : AnimalBase
     {
         public string Name { get; set; } = string.Empty;
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class DogBase : AnimalBase
     {
         public int Weight { get; set; }

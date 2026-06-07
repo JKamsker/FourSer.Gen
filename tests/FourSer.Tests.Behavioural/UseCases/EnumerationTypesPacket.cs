@@ -1,10 +1,10 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using FourSer.Contracts;
 using Xunit;
 
 namespace FourSer.Tests.Behavioural.UseCases;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class EnumerationTypesPacket
 {
     // List<T> - already supported

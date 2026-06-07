@@ -101,7 +101,7 @@ internal sealed class BatchPrimitiveRunsPass : IPlanPass
                 Members: batchMembers,
                 TotalSize: pendingSize,
                 BufferName: bufferName,
-                TargetExpression: plan.TargetKind == TargetKind.Span ? "data" : "stream"));
+                TargetExpression: plan.TargetKind.GetWriteTargetExpression()));
             return;
         }
 
@@ -111,8 +111,8 @@ internal sealed class BatchPrimitiveRunsPass : IPlanPass
             Members: batchMembers,
             TotalSize: pendingSize,
             BufferName: bufferName,
-            SourceExpression: plan.TargetKind == TargetKind.Span ? "buffer" : "stream",
-            UseRef: plan.TargetKind == TargetKind.Span));
+            SourceExpression: plan.TargetKind.GetReadSourceExpression(),
+            UseRef: plan.TargetKind.UsesRefReadSource()));
     }
 
     private static void TryAddSkippedBatchDiagnostic(

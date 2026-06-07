@@ -59,11 +59,9 @@ internal static class DeserializePlanBuilder
         TypeToGenerate type,
         TargetKind targetKind)
     {
-        var sourceExpression = targetKind == TargetKind.Span ? "buffer" : "stream";
-        var helperName = targetKind == TargetKind.Span
-            ? "global::FourSer.Gen.Helpers.RoSpanReaderHelpers"
-            : "global::FourSer.Gen.Helpers.StreamReaderHelpers";
-        var useRef = targetKind == TargetKind.Span;
+        var sourceExpression = targetKind.GetReadSourceExpression();
+        var helperName = targetKind.GetReaderHelperName();
+        var useRef = targetKind.UsesRefReadSource();
         var targetLocalName = PlanExpressionFactory.GetMemberLocalName(member);
         var collectionTargetExpression = ShouldInferCollectionLocal(member)
             ? $"var {targetLocalName}"

@@ -14,7 +14,7 @@ internal static class PlanScalarEmitter
 
     public static void EmitScalarWrite(PlanEmitterContext context, ScalarWriteOp op)
     {
-        var refPrefix = context.Plan.TargetKind == TargetKind.Span ? "ref " : string.Empty;
+        var refPrefix = context.Plan.TargetKind.UsesRefWriteTarget() ? "ref " : string.Empty;
         var writeMethod = TypeHelper.GetWriteMethodName(op.TypeName);
         var valueExpression = op.UseCheckedConversion
             ? $"checked(({op.TypeName})({op.ValueExpression}))"
@@ -36,7 +36,7 @@ internal static class PlanScalarEmitter
             return;
         }
 
-        var refPrefix = context.Plan.TargetKind == TargetKind.Span ? "ref " : string.Empty;
+        var refPrefix = context.Plan.TargetKind.UsesRefWriteTarget() ? "ref " : string.Empty;
         context.Builder.WriteLine($"{op.HelperName}.WriteString({refPrefix}{op.TargetExpression}, {op.ValueExpression});");
     }
 

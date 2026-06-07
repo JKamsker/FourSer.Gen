@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("THelpLink.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class THelpLinkCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<THelpLinkRecord> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class THelpLinkRecord
     {
         public uint QuestId { get; set; }

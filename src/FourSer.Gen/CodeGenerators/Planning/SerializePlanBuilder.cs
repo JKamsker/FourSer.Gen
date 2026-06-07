@@ -55,10 +55,8 @@ internal static class SerializePlanBuilder
         TargetKind targetKind,
         IReadOnlyDictionary<string, string> sourceExpressions)
     {
-        var helperName = targetKind == TargetKind.Span
-            ? "global::FourSer.Gen.Helpers.SpanWriterHelpers"
-            : "global::FourSer.Gen.Helpers.StreamWriterHelpers";
-        var targetExpression = targetKind == TargetKind.Span ? "data" : "stream";
+        var helperName = targetKind.GetWriterHelperName();
+        var targetExpression = targetKind.GetWriteTargetExpression();
         var sourceExpression = GetSourceExpression(member, sourceExpressions);
 
         if (TryAddCountReferenceWrite(ops, member, type, helperName, targetExpression, sourceExpressions))
@@ -84,7 +82,7 @@ internal static class SerializePlanBuilder
                 SourceExpression: string.Empty,
                 HelperName: helperName,
                 TargetKind: targetKind,
-                UseRef: targetKind == TargetKind.Span));
+                UseRef: targetKind.UsesRefWriteTarget()));
             return;
         }
 

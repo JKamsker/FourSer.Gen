@@ -45,6 +45,50 @@ public static class AttributeHelper
             .Any(a => a.AttributeClass is not null && a.AttributeClass.IsGenerateSerializerAttribute());
     }
 
+    public static FourSer.Gen.Models.SerializerGenerationMethods GetAdditionalMethods(AttributeData? generateSerializerAttribute)
+    {
+        if (generateSerializerAttribute is null)
+        {
+            return FourSer.Gen.Models.SerializerGenerationMethods.None;
+        }
+
+        if (generateSerializerAttribute.ConstructorArguments.Length > 0
+            && generateSerializerAttribute.ConstructorArguments[0].Value is int constructorValue)
+        {
+            return (FourSer.Gen.Models.SerializerGenerationMethods)constructorValue;
+        }
+
+        var namedValue = generateSerializerAttribute.NamedArguments
+            .FirstOrDefault(arg => arg.Key == "AdditionalMethods")
+            .Value.Value;
+
+        return namedValue is int value
+            ? (FourSer.Gen.Models.SerializerGenerationMethods)value
+            : FourSer.Gen.Models.SerializerGenerationMethods.None;
+    }
+
+    public static FourSer.Gen.Models.SerializerGenerationMethods GetAssemblyAdditionalMethods(IAssemblySymbol assemblySymbol)
+    {
+        var additionalMethods = FourSer.Gen.Models.SerializerGenerationMethods.None;
+        foreach (var attribute in assemblySymbol.GetAttributes())
+        {
+            if (attribute.AttributeClass is null)
+            {
+                continue;
+            }
+
+            if (!attribute.AttributeClass.IsSerializerGenerationOptionsAttribute()
+                && !attribute.AttributeClass.IsGenerateSerializerAttribute())
+            {
+                continue;
+            }
+
+            additionalMethods |= GetAdditionalMethods(attribute);
+        }
+
+        return additionalMethods;
+    }
+
     public static string? GetCountSizeReference(AttributeData? collectionAttribute)
     {
         return collectionAttribute?.NamedArguments

@@ -3,13 +3,13 @@ using Xunit;
 
 namespace FourSer.Tests.Behavioural.UseCases;
 
-[GenerateSerializer]
+[GenerateSerializer(SerializerGenerationMethods.Stream)]
 public partial class TestWithListOfNestedReferenceTypes
 {
     [SerializeCollection]
     public List<NestedEntity> MyList { get; set; } = new();
     
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class NestedEntity
     {
         public int Id { get; set; }

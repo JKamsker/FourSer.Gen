@@ -67,6 +67,19 @@ public static class SymbolExtensions
         };
     }
 
+    public static bool IsSerializerGenerationOptionsAttribute(this INamedTypeSymbol typeSymbol)
+    {
+        return typeSymbol is
+        {
+            Name: "SerializerGenerationOptionsAttribute",
+            ContainingNamespace:
+            {
+                Name: "Contracts",
+                ContainingNamespace: { Name: "FourSer", ContainingNamespace: { IsGlobalNamespace: true } }
+            }
+        };
+    }
+
     public static bool IsSerializerAttribute(this INamedTypeSymbol typeSymbol)
     {
         return typeSymbol is

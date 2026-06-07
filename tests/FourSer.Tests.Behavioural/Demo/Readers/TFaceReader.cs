@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TFace.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TFaceAppearanceCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TFaceAppearance> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TFaceAppearance
     {
         public byte FaceId { get; set; }
@@ -19,7 +19,7 @@ namespace FourSer.Tests.Behavioural.Demo
         public TFaceClothAppearance Appearance { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TFaceClothAppearance
     {
         public uint Clk { get; set; }

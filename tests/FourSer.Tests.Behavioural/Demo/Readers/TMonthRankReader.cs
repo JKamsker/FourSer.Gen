@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TMonthRank.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TMonthRankCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TFameTitleEntry> Titles { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TFameTitleEntry
     {
         public byte RankId { get; set; }

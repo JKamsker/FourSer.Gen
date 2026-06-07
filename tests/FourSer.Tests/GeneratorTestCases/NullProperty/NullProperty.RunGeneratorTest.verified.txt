@@ -39,14 +39,6 @@ public partial class NestedObject : global::FourSer.Contracts.ISerializable<Nest
         return Deserialize(ref buffer);
     }
 
-    public static NestedObject Deserialize(System.IO.Stream stream)
-    {
-        int id;
-        id = global::FourSer.Gen.Helpers.StreamReaderHelpers.ReadInt32(stream);
-        var obj = new NestedObject(id);
-        return obj;
-    }
-
     public static void Serialize(NestedObject obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -59,15 +51,6 @@ public partial class NestedObject : global::FourSer.Contracts.ISerializable<Nest
     public static void Serialize(NestedObject obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(NestedObject obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        global::FourSer.Gen.Helpers.StreamWriterHelpers.WriteInt32(stream, (int)(obj.Id));
     }
 }
 
@@ -117,14 +100,6 @@ public partial class MainObject : global::FourSer.Contracts.ISerializable<MainOb
         return Deserialize(ref buffer);
     }
 
-    public static MainObject Deserialize(System.IO.Stream stream)
-    {
-        FourSer.Tests.GeneratorTestCases.NullProperty.NestedObject nested;
-        nested = global::FourSer.Tests.GeneratorTestCases.NullProperty.NestedObject.Deserialize(stream);
-        var obj = new MainObject(nested);
-        return obj;
-    }
-
     public static void Serialize(MainObject obj, ref System.Span<byte> data)
     {
         if (obj is null)
@@ -141,18 +116,5 @@ public partial class MainObject : global::FourSer.Contracts.ISerializable<MainOb
     public static void Serialize(MainObject obj, System.Span<byte> data)
     {
         Serialize(obj, ref data);
-    }
-
-    public static void Serialize(MainObject obj, System.IO.Stream stream)
-    {
-        if (obj is null)
-        {
-            throw new System.ArgumentNullException(nameof(obj));
-        }
-        if (obj.Nested is null)
-        {
-            throw new System.NullReferenceException("Member \"obj.Nested\" cannot be null.");
-        }
-        global::FourSer.Tests.GeneratorTestCases.NullProperty.NestedObject.Serialize(obj.Nested, stream);
     }
 }

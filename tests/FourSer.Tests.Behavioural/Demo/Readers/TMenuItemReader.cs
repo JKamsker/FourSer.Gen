@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TMenuItem.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TMenuItemCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TMenuItemEntry> Items { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TMenuItemEntry
     {
         [Serializer(typeof(MfcAnsiStringSerializer))]

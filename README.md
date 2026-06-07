@@ -14,6 +14,7 @@ This project provides a compile-time source generator that creates efficient bin
 ## Features
 
 - **High-Performance Serialization**: Zero-allocation serialization and deserialization using `Span<byte>` and `ReadOnlySpan<byte>`.
+- **Opt-In Transport Overloads**: Generate `Stream`, `IBufferWriter<byte>`, `SequenceReader<byte>`, `PipeWriter`, and `PipeReader` overloads only when requested.
 - **Compile-Time Code Generation**: Eliminates runtime reflection, ensuring maximum performance.
 - **Wide Type Support**: Supports all primitive types, strings, and a comprehensive range of collection types.
 - **Nested Objects**: Automatically handles serialization of complex object graphs with nested classes and structs.
@@ -75,6 +76,42 @@ public partial class GameState
 }
 ```
 
+To generate transport-specific overloads, pass `SerializerGenerationMethods` flags to `[GenerateSerializer]`:
+
+```csharp
+[GenerateSerializer(
+    SerializerGenerationMethods.Stream
+    | SerializerGenerationMethods.BufferWriter
+    | SerializerGenerationMethods.SequenceReader
+    | SerializerGenerationMethods.PipeWriter
+    | SerializerGenerationMethods.PipeReader)]
+public partial class NetworkPacket
+{
+    public int Id { get; set; }
+}
+```
+
+You can also enable additional methods for every generated serializer in a project:
+
+```xml
+<PropertyGroup>
+  <FourSerAdditionalMethods>Stream, BufferWriter, SequenceReader, PipeWriter, PipeReader</FourSerAdditionalMethods>
+</PropertyGroup>
+```
+
+Or with an assembly-level attribute:
+
+```csharp
+[assembly: SerializerGenerationOptions(
+    SerializerGenerationMethods.Stream
+    | SerializerGenerationMethods.BufferWriter
+    | SerializerGenerationMethods.SequenceReader
+    | SerializerGenerationMethods.PipeWriter
+    | SerializerGenerationMethods.PipeReader)]
+```
+
+Assembly-level `[GenerateSerializer(...)]` is also accepted for global defaults. Global and per-type flags are additive.
+
 ### 3. Use the Generated Methods
 
 The source generator creates static `GetPacketSize`, `Serialize`, and `Deserialize` methods on your types.
@@ -116,7 +153,7 @@ foreach (var player in deserializedState.Players)
 
 ## Generated Interface
 
-Each class marked with `[GenerateSerializer]` implements `ISerializable<T>`. This interface provides the core methods for serialization and deserialization.
+Each class marked with `[GenerateSerializer]` implements `ISerializable<T>`. This interface provides the core span-based methods for serialization and deserialization. Stream and pipeline overloads are generated only through `SerializerGenerationMethods`.
 
 ```csharp
 public interface ISerializable<T> where T : ISerializable<T>
@@ -130,20 +167,22 @@ public interface ISerializable<T> where T : ISerializable<T>
     // Serializes the object into the provided span.
     static abstract void Serialize(T obj, Span<byte> data);
 
-    // Serializes the object into the provided stream.
-    static abstract void Serialize(T obj, Stream stream);
-
     // Deserializes an object from the provided span.
     // The span is advanced by the number of bytes read.
     static abstract T Deserialize(ref ReadOnlySpan<byte> data);
 
     // Deserializes an object from the provided span without advancing it.
     static abstract T Deserialize(ReadOnlySpan<byte> data);
-
-    // Deserializes an object from the provided stream.
-    static abstract T Deserialize(Stream stream);
 }
 ```
+
+When opted in, the generator can additionally emit:
+
+- `Serialize(T obj, Stream stream)` / `Deserialize(Stream stream)`
+- `Serialize(T obj, IBufferWriter<byte> writer)`
+- `Deserialize(ref SequenceReader<byte> reader)`
+- `Serialize(T obj, PipeWriter writer)`
+- `Deserialize(PipeReader reader)`
 
 ## Collection Serialization
 
@@ -448,7 +487,7 @@ public interface ISerializer<T>
 ```
 
 All members are required.
-Generated stream serializers call `Serialize(T, Stream)` and `Deserialize(Stream)` directly; the generator does not bridge stream paths through the span-based members.
+Generated stream serializers call `Serialize(T, Stream)` and `Deserialize(Stream)` directly when `SerializerGenerationMethods.Stream` is enabled; the generator does not bridge stream paths through the span-based members.
 
 Here is an example of a custom serializer for handling MFC-style Unicode strings, which have a specific length prefix format:
 
@@ -642,6 +681,7 @@ You can override the optimizer from MSBuild:
   <FourSerStackallocThreshold>256</FourSerStackallocThreshold>
   <FourSerMaxBatchBytes>8192</FourSerMaxBatchBytes>
   <FourSerEmitOptimizationComments>false</FourSerEmitOptimizationComments>
+  <FourSerAdditionalMethods>None</FourSerAdditionalMethods>
 </PropertyGroup>
 ```
 

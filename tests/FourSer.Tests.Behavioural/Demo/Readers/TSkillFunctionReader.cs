@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TSkillFunction.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TSkillFunctionCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TSkillFunctionEntry> Functions { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TSkillFunctionEntry
     {
         public ushort SkillId { get; set; }

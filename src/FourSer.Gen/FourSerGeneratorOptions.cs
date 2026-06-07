@@ -1,3 +1,5 @@
+using FourSer.Gen.Models;
+
 namespace FourSer.Gen;
 
 internal enum FourSerOptimizationLevel
@@ -13,7 +15,8 @@ internal readonly record struct FourSerGeneratorOptions(
     int MinBatchBytes,
     int StackallocThreshold,
     int MaxBatchBytes,
-    bool EmitOptimizationComments)
+    bool EmitOptimizationComments,
+    SerializerGenerationMethods AdditionalMethods)
 {
     public static FourSerGeneratorOptions Default =>
         new(
@@ -21,7 +24,8 @@ internal readonly record struct FourSerGeneratorOptions(
             MinBatchBytes: 8,
             StackallocThreshold: 256,
             MaxBatchBytes: 8192,
-            EmitOptimizationComments: false);
+            EmitOptimizationComments: false,
+            AdditionalMethods: SerializerGenerationMethods.None);
 
     public bool EnablesGuardCanonicalization =>
         OptimizationLevel >= FourSerOptimizationLevel.Conservative;

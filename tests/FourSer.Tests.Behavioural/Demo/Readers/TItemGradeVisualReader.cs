@@ -4,14 +4,14 @@ using FourSer.Contracts;
 namespace FourSer.Tests.Behavioural.Demo
 {
     [TcdResource("TItemGradeVisual.tcd")]
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TItemGradeVisualCatalog
     {
         [SerializeCollection(CountType = typeof(ushort))]
         public List<TItemGradeVisualRecord> Entries { get; set; } = new();
     }
 
-    [GenerateSerializer]
+    [GenerateSerializer(SerializerGenerationMethods.Stream)]
     public partial class TItemGradeVisualRecord
     {
         public byte Kind { get; set; }
